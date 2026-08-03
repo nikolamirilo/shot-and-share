@@ -56,7 +56,7 @@ uses, so it cannot drift from the code that handles actual money.
 ```bash
 npm run dev        # development server
 npm run build      # production build
-npm test           # 80 unit tests
+npm test           # 108 unit tests
 npm run typecheck
 npm run lint
 ```
@@ -183,6 +183,53 @@ Hosts who will print large, or hand files to an editor, can switch to **exactly
 as uploaded**. The setting says plainly that re-encoding cannot be undone. This
 is the one genuinely irreversible choice in the product, so it is a visible
 decision rather than a silent default.
+
+### The custom event page
+
+What a guest sees when they scan the code. Paid plans only — it is the "custom
+event page" the Slice and Wheel tiers already promise.
+
+| | Free | Slice / Wheel |
+|---|---|---|
+| Theme | House palette | 5 presets, or pick your own colours |
+| Cover | Fixed | 4 styles, using any photo from the event |
+| Gallery layout | Fixed grid | Host picks; guests may switch |
+| Say Cheese header and footer | Yes | No |
+
+The free plan's header and footer are the price of the free plan. Not a
+watermark across somebody's photographs — a small bar above and an invitation
+below, on the one page where the audience is a hundred people who have just
+watched the product work while holding phones full of their own events.
+
+**The gate is applied on read, not on write.** `resolveAppearance()` is the only
+way to find out how an event looks, and it returns the defaults for a free event
+regardless of what is in the row. Enforcing it only in the form would mean a
+stale value, a downgrade, or any future code path that skips the form quietly
+serves paid styling. The form rejects too, but that is for the error message,
+not for the paywall.
+
+Themes work by setting the design system's own CSS custom properties on a
+wrapper element, so a theme re-skins every existing component underneath it and
+**no component takes a `theme` prop**.
+
+### Host colours are not trusted
+
+A host choosing their own colours can choose pale grey text on white and hand it
+to two hundred guests in a dark room. So `src/lib/color.ts` does real WCAG
+contrast maths:
+
+- Text is **corrected**, not accepted. `readableInk()` keeps the host's colour
+  when it passes, pushes it to its extreme when that rescues it — dark plum
+  becomes near-black rather than jumping to white — and otherwise picks whichever
+  of black or white actually measures better.
+- A card colour that would vanish into the background is nudged away from it.
+- Every value is parsed as hex and falls back if it is not, because these end up
+  in an inline `style` attribute.
+- The editor shows the live contrast ratio, so the host is told rather than
+  silently overridden.
+
+An exhaustive test asserts every background/ink combination lands above 4.5:1,
+and every shipped preset is checked the same way.
 
 ### Presigned POST, not PUT
 

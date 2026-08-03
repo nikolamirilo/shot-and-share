@@ -37,6 +37,9 @@ export type EventRow = {
   gallery_visible: boolean;
   gallery_layout: GalleryLayout;
   media_quality: MediaQuality;
+  theme: string;
+  theme_custom: unknown;
+  cover_variant: string;
   welcome_message: string | null;
   cover_media_id: string | null;
   link_opens: number;
@@ -122,11 +125,20 @@ export interface Database {
           // Have database defaults, so an insert may leave them out.
           | "gallery_layout"
           | "media_quality"
+          | "theme"
+          | "theme_custom"
+          | "cover_variant"
         > &
           Partial<
             Pick<
               EventRow,
-              "id" | "created_at" | "gallery_layout" | "media_quality"
+              | "id"
+              | "created_at"
+              | "gallery_layout"
+              | "media_quality"
+              | "theme"
+              | "theme_custom"
+              | "cover_variant"
             >
           >
       >;

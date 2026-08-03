@@ -2,11 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { GuestExperience } from "@/app/e/[token]/guest-experience";
+import { EventCover, EventThemeRoot } from "@/components/event-cover";
 import { LogoMark } from "@/components/logo";
+import { PlatformFooter, PlatformHeader } from "@/components/platform-banner";
 import { Hole } from "@/components/ui";
-import { gateGuest, resolveGuestToken, storageSummary } from "@/lib/events";
-import { formatEventDate } from "@/lib/format";
-import { coerceLayout } from "@/lib/gallery";
+import { resolveAppearance } from "@/lib/appearance";
+import type { MediaRow } from "@/lib/db/types";
+import {
+  gateGuest,
+  resolveGuestToken,
+  storageSummary,
+  toMediaView,
+} from "@/lib/events";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getTier } from "@/lib/tiers";
 
 export const dynamic = "force-dynamic";
@@ -56,52 +64,68 @@ export default async function GuestPage({
   const tier = getTier(event.tier);
   const summary = storageSummary(event);
 
+  // The gate is here, not in the form that wrote these columns. A free event
+  // renders as a free event whatever its row happens to contain.
+  const appearance = resolveAppearance(event);
+
+  let coverUrl: string | null = null;
+  if (event.cover_media_id && appearance.cover !== "type") {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("media")
+      .select("*")
+      .eq("id", event.cover_media_id)
+      .eq("status", "ready")
+      .maybeSingle();
+    if (data) {
+      const view = await toMediaView(data as MediaRow);
+      coverUrl = view.thumbUrl;
+    }
+  }
+
   return (
-    <div className="min-h-dvh bg-butter">
-      <header className="border-b-2 border-pepper bg-butter">
-        <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-5 py-3">
-          <LogoMark className="h-8 w-auto" />
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-            Say Cheese
-          </span>
-        </div>
-      </header>
+    <EventThemeRoot palette={appearance.palette} className="min-h-dvh">
+      {appearance.platformBranding ? (
+        <PlatformHeader />
+      ) : (
+        <header className="border-b-2 border-pepper">
+          <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-5 py-3">
+            <LogoMark className="h-7 w-auto" />
+          </div>
+        </header>
+      )}
 
-      <main className="mx-auto max-w-3xl px-5 pb-20 pt-9">
-        <p className="eyebrow">{formatEventDate(event.event_date)}</p>
-        <h1 className="mt-3 text-[2.75rem] leading-[0.98] sm:text-[4rem]">
-          {event.name}
-        </h1>
+      <EventCover
+        variant={appearance.cover}
+        name={event.name}
+        date={event.event_date}
+        message={event.welcome_message}
+        coverUrl={coverUrl}
+        palette={appearance.palette}
+      />
 
-        {event.welcome_message ? (
-          <p className="mt-4 max-w-xl text-lead text-crust">
-            {event.welcome_message}
-          </p>
-        ) : (
-          <p className="mt-4 max-w-xl text-lead text-crust">
-            Add the photos you took. No account, no app — they go straight to the
-            host.
-          </p>
-        )}
-
+      <main className="mx-auto max-w-3xl px-5 pb-20 pt-8">
         <GuestExperience
           token={token}
           eventId={event.id}
           galleryVisible={event.gallery_visible}
-          galleryLayout={coerceLayout(event.gallery_layout)}
+          galleryLayout={appearance.layout}
+          allowLayoutChoice={appearance.allowViewerLayoutChoice}
           allowVideo={tier.video}
           maxFileBytes={tier.maxFileBytes}
           remainingBytes={summary.remaining}
         />
       </main>
 
-      <footer className="border-t-2 border-pepper bg-butter">
+      <div className="border-t-2 border-pepper">
         <p className="mx-auto max-w-3xl px-5 py-6 text-[0.8125rem] leading-relaxed text-rind">
           Photos you add here go to the host of this event. Uploaded something by
-          mistake? Tap it in the gallery below to remove it, within the hour.
+          mistake? Tap it in the gallery above to remove it, within the hour.
         </p>
-      </footer>
-    </div>
+      </div>
+
+      {appearance.platformBranding && <PlatformFooter />}
+    </EventThemeRoot>
   );
 }
 

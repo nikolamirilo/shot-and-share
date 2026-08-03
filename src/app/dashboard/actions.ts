@@ -138,7 +138,6 @@ const settingsSchema = z.object({
   name: z.string().trim().min(1).max(120),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gallery_visible: z.boolean(),
-  gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
   media_quality: z.enum(["optimised", "original"]),
   welcome_message: z.string().trim().max(400).nullable(),
 });
@@ -156,7 +155,6 @@ export async function updateEventSettings(
     name: formData.get("name"),
     event_date: formData.get("event_date"),
     gallery_visible: formData.get("gallery_visible") === "on",
-    gallery_layout: formData.get("gallery_layout") ?? event.gallery_layout,
     media_quality: formData.get("media_quality") ?? event.media_quality,
     welcome_message: welcome.length > 0 ? welcome : null,
   });
@@ -175,10 +173,96 @@ export async function updateEventSettings(
       name: parsed.data.name,
       event_date: parsed.data.event_date,
       gallery_visible: parsed.data.gallery_visible,
-      gallery_layout: parsed.data.gallery_layout,
       media_quality: parsed.data.media_quality,
       welcome_message: parsed.data.welcome_message,
       expires_at: expiresAt,
+    })
+    .eq("id", eventId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  return { ok: true };
+}
+
+/* -------------------------------------------------------------------------- */
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+const appearanceSchema = z.object({
+  theme: z.string().trim().min(1).max(32),
+  cover_variant: z.enum(["classic", "band", "framed", "type"]),
+  gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
+  cover_media_id: z.string().uuid().nullable(),
+  custom_bg: z.string().regex(HEX).optional(),
+  custom_surface: z.string().regex(HEX).optional(),
+  custom_accent: z.string().regex(HEX).optional(),
+  custom_ink: z.string().regex(HEX).optional(),
+});
+
+/**
+ * The custom event page.
+ *
+ * Refused outright on the free plan. resolveAppearance() would render a free
+ * event with the house theme regardless of what is stored, so this check is not
+ * what protects the paywall — it is what gives the host a clear answer instead
+ * of a form that appears to save and then changes nothing.
+ */
+export async function updateAppearance(
+  eventId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const event = await requireOwnedEvent(eventId);
+  const { supabase } = await requireUser();
+
+  if (!getTier(event.tier).customPage) {
+    return {
+      error:
+        "Custom event pages are on Slice and Wheel. Your event still works exactly the same on the free plan.",
+    };
+  }
+
+  const coverMediaId = String(formData.get("cover_media_id") ?? "").trim();
+  const parsed = appearanceSchema.safeParse({
+    theme: formData.get("theme"),
+    cover_variant: formData.get("cover_variant"),
+    gallery_layout: formData.get("gallery_layout"),
+    cover_media_id: coverMediaId.length > 0 ? coverMediaId : null,
+    custom_bg: formData.get("custom_bg") ?? undefined,
+    custom_surface: formData.get("custom_surface") ?? undefined,
+    custom_accent: formData.get("custom_accent") ?? undefined,
+    custom_ink: formData.get("custom_ink") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { error: "Those settings did not look right. Try again." };
+  }
+
+  // A cover photo has to belong to this event. Without this check a host could
+  // point their cover at any media id they could guess.
+  if (parsed.data.cover_media_id) {
+    const { data: owned } = await supabase
+      .from("media")
+      .select("id")
+      .eq("id", parsed.data.cover_media_id)
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (!owned) return { error: "That photo is not part of this event." };
+  }
+
+  const { error } = await supabase
+    .from("events")
+    .update({
+      theme: parsed.data.theme,
+      cover_variant: parsed.data.cover_variant,
+      gallery_layout: parsed.data.gallery_layout,
+      cover_media_id: parsed.data.cover_media_id,
+      theme_custom: {
+        bg: parsed.data.custom_bg,
+        surface: parsed.data.custom_surface,
+        accent: parsed.data.custom_accent,
+        ink: parsed.data.custom_ink,
+      },
     })
     .eq("id", eventId);
 

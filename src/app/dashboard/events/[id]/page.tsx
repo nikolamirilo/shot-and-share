@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AppearanceForm } from "@/app/dashboard/events/[id]/appearance-form";
 import { ArchivePanel } from "@/app/dashboard/events/[id]/archive-panel";
 import { DangerZone } from "@/app/dashboard/events/[id]/danger-zone";
 import { HostGallery } from "@/app/dashboard/events/[id]/host-gallery";
@@ -204,11 +205,13 @@ export default async function EventPage({
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
         <ArchivePanel eventId={event.id} photoCount={total} />
-        <UpgradePanel
-          eventId={event.id}
-          tier={event.tier}
-          keepForever={event.keep_forever}
-        />
+        <div id="upgrade">
+          <UpgradePanel
+            eventId={event.id}
+            tier={event.tier}
+            keepForever={event.keep_forever}
+          />
+        </div>
       </div>
 
       <section className="mt-10">
@@ -237,7 +240,15 @@ export default async function EventPage({
       </section>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <AppearanceForm
+          event={event}
+          media={media}
+          locked={!tier.customPage}
+        />
         <SettingsForm event={event} />
+      </div>
+
+      <div className="mt-6">
         <DangerZone event={event} />
       </div>
     </div>

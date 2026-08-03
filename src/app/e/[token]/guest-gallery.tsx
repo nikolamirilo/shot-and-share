@@ -25,10 +25,13 @@ export function GuestGallery({
   token,
   refreshKey,
   eventLayout,
+  allowLayoutChoice,
 }: {
   token: string;
   refreshKey: number;
   eventLayout: GalleryLayout;
+  /** Free events fix the layout, so there is nothing to switch. */
+  allowLayoutChoice: boolean;
 }) {
   const [items, setItems] = useState<MediaView[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -43,9 +46,10 @@ export function GuestGallery({
   // Server-rendered markup has to match the host's default on first paint;
   // the viewer's own preference is only knowable once we are in the browser.
   useEffect(() => {
+    if (!allowLayoutChoice) return;
     const preferred = readViewerLayout();
     if (preferred) setLayout(preferred);
-  }, []);
+  }, [allowLayoutChoice]);
 
   function chooseLayout(next: GalleryLayout) {
     setLayout(next);
@@ -131,7 +135,7 @@ export function GuestGallery({
         <>
           {/* Only worth offering once there is enough on screen for the choice
               to make any visible difference. */}
-          {items.length >= 4 && (
+          {allowLayoutChoice && items.length >= 4 && (
             <div className="mt-4 flex justify-end overflow-x-auto">
               <LayoutSwitcher value={layout} onChange={chooseLayout} />
             </div>

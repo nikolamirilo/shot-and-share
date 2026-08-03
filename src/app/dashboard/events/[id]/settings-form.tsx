@@ -4,7 +4,6 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { updateEventSettings, type ActionState } from "@/app/dashboard/actions";
-import { LayoutChooser } from "@/components/gallery";
 import { Button, Field, inputClass } from "@/components/ui";
 import type { EventRow, MediaQuality } from "@/lib/db/types";
 
@@ -75,8 +74,6 @@ export function SettingsForm({ event }: { event: EventRow }) {
           </span>
         </span>
       </label>
-
-      <LayoutChooser name="gallery_layout" defaultValue={event.gallery_layout} />
 
       <QualityChooser defaultValue={event.media_quality} />
 
