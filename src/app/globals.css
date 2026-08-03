@@ -1,0 +1,199 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Say Cheese design tokens.
+
+   One warm family. Yellow leads, near-black carries the contrast. Ember exists
+   for the shutter light in the logo and appears nowhere in the interface.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  --color-butter: #fff6dc;
+  --color-cream: #fffdf4;
+  --color-gouda: #ffc02e;
+  --color-gouda-light: #ffd666;
+  --color-gouda-deep: #f0a000;
+  --color-rind: #b0670f;
+  --color-crust: #7a4409;
+  --color-pepper: #1f1607;
+  --color-hole: #4a3110;
+  --color-ember: #e2542f;
+
+  /* Display: variable width and weight, slightly awkward, physically heavy.
+     Body: friendly geometric sans with more character than Inter.
+     Mono: labels the machine-readable parts — tokens, short links, prices per
+     unit. It is not styling; scanning a QR code is a technical act. */
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Deliberate steps, not a gradient. Nothing sits between 24px and 31px. */
+  --text-micro: 0.6875rem; /* 11 */
+  --text-label: 0.8125rem; /* 13 */
+  --text-small: 0.9375rem; /* 15 */
+  --text-body: 1.0625rem; /* 17 */
+  --text-lead: 1.3125rem; /* 21 */
+  --text-h3: 1.5rem; /* 24 */
+  --text-h2: 1.9375rem; /* 31 */
+  --text-h1: 2.75rem; /* 44 */
+  --text-display: 4rem; /* 64 */
+  --text-mega: 5.5rem; /* 88 */
+
+  --radius-card: 1.25rem;
+
+  --shadow-hard: 4px 4px 0 var(--color-pepper);
+  --shadow-hard-lg: 7px 7px 0 var(--color-pepper);
+  --shadow-hard-sm: 3px 3px 0 var(--color-pepper);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-pepper);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-butter);
+    color: var(--color-pepper);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    font-stretch: 86%;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background-color: var(--color-gouda);
+    color: var(--color-pepper);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-pepper);
+    outline-offset: 3px;
+  }
+
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer components {
+  /* The eyebrow. Machine-readable register: mono, wide, small. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--text-micro);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-rind);
+  }
+
+  /* A punched hole. Not a circle with a fill: a void with depth.
+     Dark interior, inner shadow at the top, faint warm bounce at the bottom. */
+  .hole {
+    background-color: var(--color-hole);
+    border-radius: 9999px;
+    box-shadow:
+      inset 0 6px 10px -2px rgba(0, 0, 0, 0.75),
+      inset 0 -4px 8px -3px rgba(255, 214, 102, 0.35);
+  }
+
+  .card {
+    background-color: var(--color-cream);
+    border: 2px solid var(--color-pepper);
+    border-radius: var(--radius-card);
+  }
+}
+
+/* --- The slab -------------------------------------------------------------
+   Two behaviours and no more: holes punch open on load, the slab tilts on
+   pointer move. Both off under prefers-reduced-motion.
+   ------------------------------------------------------------------------- */
+
+@keyframes punch-open {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.punch {
+  animation: punch-open 520ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 214, 102, 0.45),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .punch,
+  .rise,
+  .shimmer::after {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

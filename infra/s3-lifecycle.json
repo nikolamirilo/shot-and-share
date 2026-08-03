@@ -1,0 +1,49 @@
+{
+  "Rules": [
+    {
+      "ID": "originals-to-glacier-ir-after-30-days",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "events/" },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "GLACIER_IR"
+        }
+      ],
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 3 }
+    },
+    {
+      "ID": "keep-forever-to-deep-archive",
+      "Status": "Enabled",
+      "Filter": {
+        "And": {
+          "Prefix": "events/",
+          "Tags": [{ "Key": "retention", "Value": "forever" }]
+        }
+      },
+      "Transitions": [
+        {
+          "Days": 400,
+          "StorageClass": "DEEP_ARCHIVE"
+        }
+      ]
+    },
+    {
+      "ID": "expire-generated-archives",
+      "Status": "Enabled",
+      "_comment": [
+        "Filters on the object TAG, not the prefix. S3 prefix filters are",
+        "literal — there is no way to write events/*/archive/ — so a prefix",
+        "rule here would expire every photo in the bucket after 30 days.",
+        "The ZIP is derived data and can always be rebuilt."
+      ],
+      "Filter": {
+        "And": {
+          "Prefix": "events/",
+          "Tags": [{ "Key": "kind", "Value": "archive" }]
+        }
+      },
+      "Expiration": { "Days": 30 }
+    }
+  ]
+}

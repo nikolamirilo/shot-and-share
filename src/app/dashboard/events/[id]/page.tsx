@@ -1,0 +1,272 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { ArchivePanel } from "@/app/dashboard/events/[id]/archive-panel";
+import { DangerZone } from "@/app/dashboard/events/[id]/danger-zone";
+import { HostGallery } from "@/app/dashboard/events/[id]/host-gallery";
+import { SettingsForm } from "@/app/dashboard/events/[id]/settings-form";
+import { SharePanel } from "@/app/dashboard/events/[id]/share-panel";
+import { UpgradePanel } from "@/app/dashboard/events/[id]/upgrade-panel";
+import { Badge, ButtonLink, Eyebrow, Hole, ProgressBar } from "@/components/ui";
+import type { EventRow, MediaRow } from "@/lib/db/types";
+import { env } from "@/lib/env";
+import { getActiveShareToken, storageSummary, toMediaViews } from "@/lib/events";
+import {
+  describeRetention,
+  formatBytes,
+  formatEventDate,
+  pluralise,
+} from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
+import { getTier } from "@/lib/tiers";
+import { shareUrl } from "@/lib/tokens";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("events")
+    .select("name")
+    .eq("id", id)
+    .maybeSingle();
+  return { title: data?.name ?? "Event" };
+}
+
+export default async function EventPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ purchase?: string }>;
+}) {
+  const { id } = await params;
+  const { purchase } = await searchParams;
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (!data) notFound();
+  const event = data as EventRow;
+
+  const [{ data: stats }, { data: mediaRows }, active] = await Promise.all([
+    supabase.rpc("event_stats", { p_event: event.id }),
+    supabase
+      .from("media")
+      .select("*")
+      .eq("event_id", event.id)
+      .eq("status", "ready")
+      .order("created_at", { ascending: false })
+      .limit(120),
+    getActiveShareToken(event.id),
+  ]);
+
+  const counts = stats?.[0] ?? {
+    photo_count: 0,
+    video_count: 0,
+    uploader_count: 0,
+    bytes: 0,
+  };
+  const total = Number(counts.photo_count) + Number(counts.video_count);
+  const media = await toMediaViews((mediaRows ?? []) as MediaRow[]);
+  const summary = storageSummary(event);
+  const tier = getTier(event.tier);
+  const link = active ? shareUrl(env.siteUrl, active.token) : null;
+
+  /**
+   * The number that predicts whether the product works. A guest who opens the
+   * link and does not upload is the clearest signal of a broken experience, so
+   * it is on the host's page, not buried in an analytics tool.
+   */
+  const conversion =
+    event.link_opens > 0
+      ? Math.min(
+          100,
+          Math.round((Number(counts.uploader_count) / event.link_opens) * 100),
+        )
+      : null;
+
+  return (
+    <div className="mx-auto max-w-6xl px-5 py-10">
+      <Link
+        href="/dashboard"
+        className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind hover:underline"
+      >
+        ← All events
+      </Link>
+
+      <header className="mt-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Eyebrow>{formatEventDate(event.event_date)}</Eyebrow>
+          <h1 className="mt-2 text-h1">{event.name}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge tone="gouda">{tier.name}</Badge>
+          {event.keep_forever && <Badge tone="dark">Kept forever</Badge>}
+          {event.status === "expired" && <Badge tone="outline">Paused</Badge>}
+        </div>
+      </header>
+
+      {purchase && (
+        <Notice>
+          Payment received. If the plan below still looks the same, give the
+          provider a few seconds — the upgrade lands when their webhook does,
+          not when your browser comes back.
+        </Notice>
+      )}
+
+      {event.status === "expired" && (
+        <Notice>
+          The storage window for this event has ended.{" "}
+          <strong>Nothing has been deleted.</strong> Restore it below, or add The
+          Cellar to keep the photos permanently.
+        </Notice>
+      )}
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <SharePanel
+          eventId={event.id}
+          link={link}
+          brandedQr={tier.brandedQr}
+          revoked={!active}
+        />
+
+        <section className="card p-6">
+          <h2 className="text-h3">How it is going</h2>
+
+          <dl className="mt-5 grid grid-cols-2 gap-5">
+            <Stat label="Photos" value={total.toLocaleString("en-GB")} />
+            <Stat
+              label="People who uploaded"
+              value={Number(counts.uploader_count).toLocaleString("en-GB")}
+            />
+            <Stat
+              label="Link opened"
+              value={pluralise(event.link_opens, "time")}
+            />
+            <Stat
+              label="Opened then uploaded"
+              value={conversion === null ? "—" : `${conversion}%`}
+              hint={
+                conversion === null
+                  ? "No opens yet"
+                  : conversion < 40
+                    ? "Low. Check the code is easy to reach."
+                    : "Healthy"
+              }
+            />
+          </dl>
+
+          <div className="mt-7">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+                Storage
+              </span>
+              <span className="text-[0.8125rem] text-crust">
+                {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
+              </span>
+            </div>
+            <div className="mt-2">
+              <ProgressBar
+                percent={summary.percent}
+                tone={summary.percent >= 85 ? "warn" : "dark"}
+              />
+            </div>
+            <p className="mt-2 flex items-center gap-2 text-[0.8125rem] text-crust">
+              <Hole size={8} />
+              {event.keep_forever
+                ? "Kept forever. This event is never deleted."
+                : describeRetention(event.expires_at)}
+            </p>
+          </div>
+
+          {tier.slideshow && (
+            <ButtonLink
+              href={`/dashboard/events/${event.id}/slideshow`}
+              variant="secondary"
+              className="mt-6 w-full"
+            >
+              Open the live slideshow
+            </ButtonLink>
+          )}
+        </section>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <ArchivePanel eventId={event.id} photoCount={total} />
+        <UpgradePanel
+          eventId={event.id}
+          tier={event.tier}
+          keepForever={event.keep_forever}
+        />
+      </div>
+
+      <section className="mt-10">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <Eyebrow>Gallery</Eyebrow>
+            <h2 className="mt-2 text-h2">
+              {total === 0 ? "Waiting for the first photo" : "Everything so far"}
+            </h2>
+          </div>
+          {media.length < total && (
+            <p className="text-[0.8125rem] text-crust">
+              Showing the {media.length} most recent of {total}.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-6">
+          <HostGallery eventId={event.id} media={media} shareLink={link} />
+        </div>
+      </section>
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <SettingsForm event={event} />
+        <DangerZone event={event} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <dt className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+        {label}
+      </dt>
+      <dd
+        className="mt-1 font-display text-[1.9375rem] font-extrabold leading-none tracking-[-0.04em]"
+        style={{ fontStretch: "86%" }}
+      >
+        {value}
+      </dd>
+      {hint && <p className="mt-1 text-[0.8125rem] text-crust">{hint}</p>}
+    </div>
+  );
+}
+
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-6 rounded-[1.25rem] border-2 border-pepper bg-gouda p-5">
+      <p className="text-[0.9375rem] leading-relaxed">{children}</p>
+    </div>
+  );
+}

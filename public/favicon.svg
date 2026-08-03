@@ -1,0 +1,21 @@
+<svg viewBox="0 0 64 64" width="64" height="64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Say Cheese">
+  <title>Say Cheese</title>
+  <!-- Lens and slice only. No body: it has to survive 16px. -->
+  <circle cx="32" cy="32" r="31" fill="#1F1607" />
+  <circle cx="32" cy="32" r="26" fill="#B0670F" />
+  <circle cx="32" cy="32" r="23" fill="#FFFDF4" />
+  <defs>
+    <clipPath id="f">
+      <circle cx="32" cy="32" r="23" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#f)">
+    <g transform="translate(32 32) rotate(-7)">
+      <path d="M -21 -10 L 17 -15 L 22 8 L -16 14 Z" transform="translate(0 5)" fill="#B0670F" stroke="#1F1607" stroke-width="3" stroke-linejoin="round" />
+      <path d="M -21 -10 L 17 -15 L 22 8 L -16 14 Z" fill="#FFC02E" stroke="#1F1607" stroke-width="3" stroke-linejoin="round" />
+      <circle cx="-9" cy="-1" r="5" fill="#4A3110" />
+      <circle cx="8" cy="3" r="3.4" fill="#4A3110" />
+      <circle cx="10" cy="-8" r="2.2" fill="#4A3110" />
+    </g>
+  </g>
+</svg>
