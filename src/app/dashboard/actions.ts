@@ -8,7 +8,7 @@ import { z } from "zod";
 import type { EventRow } from "@/lib/db/types";
 import { encryptToken } from "@/lib/crypto";
 import { env } from "@/lib/env";
-import { archiveKey, eventPrefix } from "@/lib/media";
+import { archiveKey, eventPrefix, mediaBytes, mediaKeys } from "@/lib/media";
 import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -139,6 +139,7 @@ const settingsSchema = z.object({
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gallery_visible: z.boolean(),
   gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
+  media_quality: z.enum(["optimised", "original"]),
   welcome_message: z.string().trim().max(400).nullable(),
 });
 
@@ -156,6 +157,7 @@ export async function updateEventSettings(
     event_date: formData.get("event_date"),
     gallery_visible: formData.get("gallery_visible") === "on",
     gallery_layout: formData.get("gallery_layout") ?? event.gallery_layout,
+    media_quality: formData.get("media_quality") ?? event.media_quality,
     welcome_message: welcome.length > 0 ? welcome : null,
   });
   if (!parsed.success) {
@@ -174,6 +176,7 @@ export async function updateEventSettings(
       event_date: parsed.data.event_date,
       gallery_visible: parsed.data.gallery_visible,
       gallery_layout: parsed.data.gallery_layout,
+      media_quality: parsed.data.media_quality,
       welcome_message: parsed.data.welcome_message,
       expires_at: expiresAt,
     })
@@ -244,13 +247,8 @@ export async function deleteMedia(
   if (error) return { error: error.message };
   if (!rows || rows.length === 0) return { ok: true };
 
-  const keys = rows.flatMap((row) =>
-    [row.original_key, row.thumb_key].filter((k): k is string => Boolean(k)),
-  );
-  const bytes = rows.reduce(
-    (sum, row) => sum + Number(row.size_bytes) + Number(row.thumb_size_bytes),
-    0,
-  );
+  const keys = rows.flatMap((row) => mediaKeys(row));
+  const bytes = rows.reduce((sum, row) => sum + mediaBytes(row), 0);
 
   await storage.remove(keys);
   await admin

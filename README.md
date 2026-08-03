@@ -27,9 +27,9 @@ guest pages need Supabase.
 ### Supabase
 
 1. Create a project.
-2. Run `supabase/migrations/0001_init.sql` then `0002_realtime.sql` in the SQL
-   editor, in that order. **No migration tooling is wired up on purpose** —
-   these are plain SQL files you apply yourself.
+2. Run the files in `supabase/migrations/` in the SQL editor, in numerical
+   order. **No migration tooling is wired up on purpose** — these are plain SQL
+   files you apply yourself.
 3. Enable the Google provider under Authentication → Providers, and add
    `http://localhost:3000/auth/callback` to the redirect allow-list.
 4. Copy the project URL, the anon key, and the service role key into
@@ -56,7 +56,7 @@ uses, so it cannot drift from the code that handles actual money.
 ```bash
 npm run dev        # development server
 npm run build      # production build
-npm test           # 54 unit tests
+npm test           # 80 unit tests
 npm run typecheck
 npm run lint
 ```
@@ -92,17 +92,97 @@ This is the path two hundred guests hit at the same time on a Saturday night.
 
 1. Guest opens `/e/{token}`. The token is hashed and matched against
    `event_tokens`; there is no session anywhere on the guest side.
-2. The browser shrinks each photo to a 720px WebP thumbnail on a canvas. The
-   phone that took the photo does the work.
+2. The browser re-encodes each photo into an optimised full-size copy and a
+   thumbnail, and pulls a poster frame out of any video. See Compression below.
 3. `POST /api/upload/presign` — **the quota is checked and reserved here, before
    a single URL is issued.** Checking afterwards means the bytes are already in
    the bucket and already billable.
-4. The browser POSTs original and thumbnail straight to storage, three at a time,
-   with a progress bar.
+4. The browser POSTs each copy straight to storage, three files at a time, with
+   a progress bar. Renditions upload independently — a failed thumbnail is
+   cosmetic and never costs the photo.
 5. `POST /api/upload/confirm` flips the rows from `pending` to `ready`.
 
 A row that never gets confirmed — a phone that died halfway — stays `pending`,
 and the nightly job sweeps it and hands the reserved quota back.
+
+### Compression
+
+Photos are re-encoded **on the device that took them**, before upload. The phone
+has the pixels decoded already, the guest is looking at the screen anyway, and a
+4 MB photo becomes a ~1 MB upload — which on venue wifi is the difference
+between a guest finishing and a guest giving up.
+
+Measured in Chromium on a deliberately hard case (12 MP of pure noise, which is
+the worst thing you can hand an encoder):
+
+| | |
+|---|---|
+| Source | 6.35 MB JPEG |
+| Stored | 1.56 MB WebP at 2560px |
+| Saving | **75%** |
+| Encode time | 829 ms |
+
+Quality is held roughly constant by encoding to a **budget of bytes per
+megapixel** rather than a fixed encoder quality. A flat quality setting gives a
+plain sky and a confetti-covered dance floor wildly different file sizes; a
+budget pushes the encoder harder exactly where there is more going on, which is
+what "looks the same, weighs less" actually requires.
+
+**Why not AVIF.** It beats WebP by 15–20% at these sizes, and it is still the
+wrong choice here. Chromium's `canvas.toBlob` cannot encode it at all — asked
+for `image/avif`, it silently returns PNG — and where encoders do exist they
+take seconds per image on a phone with thirty photos queued behind it. Roughly
+7% of devices also cannot decode it, so shipping AVIF as the only stored copy
+breaks the promise that everyone can view and download. When the transcode
+worker is deployed and encoding is off the phone, it is worth revisiting.
+
+That silent PNG fallback is worth knowing about generally: `canvas.toBlob`
+returns a blob for *any* type you ask for. Every capability probe here checks
+`blob.type`, because the naive check succeeds everywhere and quietly stores the
+wrong bytes under the wrong extension.
+
+### Every device can open everything
+
+| Situation | What happens |
+|---|---|
+| Normal photo | Re-encoded to WebP, or JPEG where WebP encoding is unavailable. Both open anywhere |
+| HEIC from an iPhone, uploaded via Safari | Browser decodes it and stores an openable copy |
+| HEIC uploaded from desktop Chrome | Browser cannot decode it. The original uploads untouched and the worker converts it |
+| Any video | Poster frame extracted in-browser immediately; the worker converts the clip to H.264/AAC MP4 with faststart |
+| ZIP download | Originals, plus an `openable-anywhere/` folder holding converted copies of anything HEIC, so a host on Windows is not handed files that will not open |
+
+HEIC is the one that actually strands people: iPhones produce it by default, it
+is half the size of the equivalent JPEG, and Chrome, Firefox and Windows Photo
+Viewer cannot open it.
+
+### Video
+
+Compressing video client-side is not attempted, and that is a deliberate
+decision rather than a gap. The only browser route is MediaRecorder, which
+re-encodes in **real time** — a two-minute clip takes two minutes with a guest
+watching a spinner at a party. What the browser *can* usefully do is pull a
+poster frame in a few hundred milliseconds, so the gallery shows the video
+instead of a grey box while the rest happens elsewhere.
+
+The clip itself goes to `workers/transcode`: ffmpeg to H.264/AAC MP4, max 1080p,
+`+faststart` so playback begins before the download finishes. That typically
+halves a phone clip, because phones encode for speed rather than size.
+
+The worker **holds no AWS credentials**. It asks the app for jobs and receives
+presigned URLs for the input and each permitted output. A process running ffmpeg
+over files uploaded by strangers is the most likely thing here to be
+compromised, so it is given nothing worth stealing.
+
+### Optimised or original
+
+A per-event setting, defaulting to **optimised**: the re-encoded copy becomes the
+stored file and the uploaded original is discarded. Four times as many photos fit
+in the same quota, and on a screen nobody can tell.
+
+Hosts who will print large, or hand files to an editor, can switch to **exactly
+as uploaded**. The setting says plainly that re-encoding cannot be undone. This
+is the one genuinely irreversible choice in the product, so it is a visible
+decision rather than a silent default.
 
 ### Presigned POST, not PUT
 
@@ -201,10 +281,12 @@ Stated plainly rather than left to be discovered:
 - **Rate limits are per instance.** The real controls belong at the CDN edge,
   where they work across every instance; what is in `lib/ratelimit.ts` is a
   second line, not a guarantee.
-- **HEIC thumbnails depend on the browser.** Where `createImageBitmap` cannot
-  decode a file the original still uploads and the gallery falls back. The Lambda
-  fallback should be added once real upload data shows which formats actually
-  fail, rather than guessed at now.
+- **The transcode worker is written but not deployed.** `workers/transcode`
+  runs anywhere with ffmpeg and has a Dockerfile, but it needs a host — Fargate
+  is the recommendation. Until it runs, HEIC uploaded from a non-Safari browser
+  stays unviewable in the gallery and videos are served in whatever format they
+  arrived in. Nothing is lost in either case: the originals are intact,
+  downloadable, and in the ZIP.
 - **Legal copy is a placeholder.** It describes what the product genuinely does
   with data, which is the part that has to be true, but it needs a lawyer before
   launch.

@@ -2,6 +2,7 @@ import archiver from "archiver";
 import { PassThrough } from "node:stream";
 
 import { ApiError, fail, handle, ok } from "@/lib/api";
+import { type ImageFormat, isUniversallyViewable } from "@/lib/formats";
 import { archiveKey } from "@/lib/media";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
@@ -191,7 +192,32 @@ async function buildArchive(key: string, event: EventRow, media: MediaRow[]) {
       failures.push(row.id);
       console.error("[archive] skipped", row.id, err);
     }
+
+    /*
+     * HEIC is the trap here. A host who downloads a ZIP of iPhone photos on a
+     * Windows machine has been handed a folder of files that will not open —
+     * technically a complete delivery, practically nothing. So the converted
+     * copy rides along in an `openable-anywhere/` folder, and the untouched
+     * original stays where it is for anyone who wants it.
+     */
+    const needsOpenableCopy =
+      row.display_key &&
+      row.original_format &&
+      !isUniversallyViewable(row.original_format as ImageFormat);
+
+    if (needsOpenableCopy && row.display_key) {
+      try {
+        const stream = await storage.getStream(row.display_key);
+        zip.append(stream, {
+          name: `${slug(event.name)}/openable-anywhere/${String(index + 1).padStart(4, "0")}.${row.display_format === "webp" ? "webp" : "jpg"}`,
+        });
+      } catch (err) {
+        console.error("[archive] no openable copy for", row.id, err);
+      }
+    }
   }
+
+  zip.append(README_TEXT, { name: `${slug(event.name)}/README.txt` });
 
   if (failures.length > 0) {
     zip.append(
@@ -203,6 +229,20 @@ async function buildArchive(key: string, event: EventRow, media: MediaRow[]) {
   await zip.finalize();
   await uploading;
 }
+
+const README_TEXT = `Your photos from Say Cheese
+============================
+
+Everything guests uploaded is in this folder, named by the time it was taken.
+
+If there is an "openable-anywhere" folder, it holds converted copies of photos
+that arrived in Apple's HEIC format. HEIC is excellent and about half the size
+of a JPEG, but Windows, Chrome and Firefox often cannot open it. The originals
+are still here alongside them, untouched -- the converted copies are there so
+you can actually see them today.
+
+Videos have been converted to MP4 so they play on anything.
+`;
 
 function entryName(event: EventRow, row: MediaRow, index: number): string {
   const ext = row.original_key.split(".").pop() ?? "jpg";

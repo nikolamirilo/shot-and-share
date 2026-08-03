@@ -183,15 +183,15 @@ function Lightbox({
   onClose: () => void;
   onRemove: () => void;
 }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const [full, setFull] = useState<MediaView | null>(null);
 
   useEffect(() => {
-    // The full-resolution original resolves only now, never for a whole page.
+    // Full-resolution URLs resolve only now, never for a whole page.
     const params = new URLSearchParams({ token, id: item.id });
     fetch(`/api/photo?${params}`)
       .then((r) => r.json())
-      .then((data) => setUrl(data.originalUrl ?? null))
-      .catch(() => setUrl(null));
+      .then((data) => setFull(data?.id ? data : null))
+      .catch(() => setFull(null));
   }, [token, item.id]);
 
   useEffect(() => {
@@ -199,6 +199,11 @@ function Lightbox({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // The optimised copy is what gets shown. It is a quarter of the bytes and,
+  // for a HEIC upload, the difference between the photo appearing at all and a
+  // broken image icon on anything that is not an iPhone.
+  const viewUrl = full?.displayUrl;
 
   return (
     <div
@@ -211,18 +216,44 @@ function Lightbox({
         className="max-h-full w-full max-w-2xl overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {item.kind === "video" && url ? (
-          <video src={url} controls className="w-full rounded-xl" />
-        ) : url ? (
-          <img src={url} alt="" className="w-full rounded-xl" />
+        {item.kind === "video" ? (
+          viewUrl ? (
+            <video
+              src={viewUrl}
+              poster={item.posterUrl ?? undefined}
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full rounded-xl"
+            />
+          ) : (
+            <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-hole" />
+          )
+        ) : viewUrl ? (
+          <img src={viewUrl} alt="" className="w-full rounded-xl" />
         ) : (
           <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-hole" />
+        )}
+
+        {item.processing && (
+          <p className="mt-3 rounded-xl border-2 border-gouda bg-pepper px-3 py-2 text-center text-[0.8125rem] text-butter/80">
+            Still being converted so it plays everywhere. Check back shortly.
+          </p>
         )}
 
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Button onClick={onClose} variant="onDark" size="sm">
             Close
           </Button>
+          {full?.originalUrl && (
+            <a
+              href={full.originalUrl}
+              download
+              className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-pepper bg-gouda px-3.5 py-2 text-[0.9375rem] font-semibold text-pepper shadow-[4px_4px_0_var(--color-crust)]"
+            >
+              Download
+            </a>
+          )}
           {mine && (
             <Button onClick={onRemove} variant="onDark" size="sm">
               Remove mine

@@ -3,10 +3,10 @@
 import { useRef, useState } from "react";
 
 import { Button, Hole, ProgressBar, cx } from "@/components/ui";
+import { makeImageRenditions, probeVideo } from "@/lib/client/codec";
 import {
   getFingerprint,
   getSavedName,
-  makeThumbnail,
   pool,
   saveName,
   uploadToPresigned,
@@ -19,7 +19,7 @@ import {
 } from "@/lib/media";
 import type { PresignedUpload } from "@/lib/storage/types";
 
-type ItemStatus = "preparing" | "uploading" | "done" | "failed";
+type ItemStatus = "preparing" | "prepared" | "uploading" | "done" | "failed";
 
 interface Item {
   key: string;
@@ -32,9 +32,26 @@ interface Item {
 interface PresignResponse {
   uploads: Array<{
     mediaId: string;
+    /** "display" means the server wants the optimised copy as the archive. */
+    originalSource: "file" | "display";
     original: PresignedUpload;
+    display: PresignedUpload | null;
     thumb: PresignedUpload | null;
+    poster: PresignedUpload | null;
   }>;
+}
+
+/** Everything the browser managed to produce for one selected file. */
+interface Prepared {
+  file: File;
+  display: Blob | null;
+  thumb: Blob | null;
+  poster: Blob | null;
+  sourceWidth: number | null;
+  sourceHeight: number | null;
+  durationSeconds: number | null;
+  needsServer: boolean;
+  descriptor: Record<string, unknown>;
 }
 
 /**
@@ -67,6 +84,8 @@ export function Uploader({
     typeof window === "undefined" ? "" : getSavedName(),
   );
   const [completed, setCompleted] = useState(0);
+  const [stage, setStage] = useState<"Preparing" | "Uploading">("Preparing");
+  const [saved, setSaved] = useState({ from: 0, to: 0 });
 
   function update(key: string, patch: Partial<Item>) {
     setItems((prev) =>
@@ -100,10 +119,29 @@ export function Uploader({
     saveName(name.trim());
 
     try {
-      // 1. Shrink locally. The phone that took the photo does the work.
-      const thumbs = await Promise.all(next.map((i) => makeThumbnail(i.file)));
+      // 1. Compress locally. The phone that took the photo has the pixels
+      //    already decoded and the guest is looking at the screen anyway.
+      setStage("Preparing");
+      const prepared: Prepared[] = [];
+      for (const item of next) {
+        prepared.push(await prepare(item.file));
+        update(item.key, { status: "prepared" });
+      }
 
-      // 2. Ask for URLs. The quota is checked before a single one is issued.
+      // What the guest would have sent versus what they are about to send.
+      setSaved((prev) => ({
+        from: prev.from + next.reduce((sum, i) => sum + i.file.size, 0),
+        to:
+          prev.to +
+          prepared.reduce(
+            (sum, p) => sum + (p.display ? p.display.size : p.file.size),
+            0,
+          ),
+      }));
+
+      // 2. Ask for URLs. The quota is checked before a single one is issued,
+      //    and the server decides which copies are worth storing.
+      setStage("Uploading");
       const fingerprint = getFingerprint();
       const presignRes = await fetch("/api/upload/presign", {
         method: "POST",
@@ -112,11 +150,7 @@ export function Uploader({
           token,
           fingerprint,
           uploaderName: name.trim() || null,
-          files: next.map((item, i) => ({
-            size: item.file.size,
-            type: item.file.type,
-            thumbSize: thumbs[i]?.blob.size ?? 0,
-          })),
+          files: prepared.map((p) => p.descriptor),
         }),
       });
 
@@ -130,40 +164,50 @@ export function Uploader({
 
       const { uploads } = presignBody as PresignResponse;
 
-      // 3. Straight to storage, three at a time.
-      const results: Array<{
-        mediaId: string;
-        width: number | null;
-        height: number | null;
-        thumbUploaded: boolean;
-        failed: boolean;
-      }> = uploads.map((u) => ({
+      const results = uploads.map((u) => ({
         mediaId: u.mediaId,
-        width: null,
-        height: null,
+        width: null as number | null,
+        height: null as number | null,
+        originalUploaded: false,
+        displayUploaded: false,
         thumbUploaded: false,
+        posterUploaded: false,
         failed: false,
       }));
 
+      // 3. Straight to storage, three at a time.
       await pool(next, 3, async (item, index) => {
         const upload = uploads[index];
-        const thumb = thumbs[index];
+        const source = prepared[index];
         update(item.key, { status: "uploading" });
 
+        const archival =
+          upload.originalSource === "display" && source.display
+            ? source.display
+            : item.file;
+
         try {
-          await uploadToPresigned(upload.original, item.file, (fraction) =>
+          await uploadToPresigned(upload.original, archival, (fraction) =>
             update(item.key, { progress: Math.round(fraction * 100) }),
           );
+          results[index].originalUploaded = true;
+          results[index].width = source.sourceWidth;
+          results[index].height = source.sourceHeight;
 
-          if (thumb && upload.thumb) {
+          // Secondary copies are cosmetic. One failing must never cost the
+          // photo, so each is attempted on its own and forgiven on its own.
+          const extras: Array<[PresignedUpload | null, Blob | null, "displayUploaded" | "thumbUploaded" | "posterUploaded"]> = [
+            [upload.display, source.display, "displayUploaded"],
+            [upload.thumb, source.thumb, "thumbUploaded"],
+            [upload.poster, source.poster, "posterUploaded"],
+          ];
+          for (const [presigned, blob, flag] of extras) {
+            if (!presigned || !blob) continue;
             try {
-              await uploadToPresigned(upload.thumb, thumb.blob);
-              results[index].thumbUploaded = true;
-              results[index].width = thumb.width;
-              results[index].height = thumb.height;
+              await uploadToPresigned(presigned, blob);
+              results[index][flag] = true;
             } catch {
-              // A missing thumbnail is a cosmetic problem, not a lost photo.
-              results[index].thumbUploaded = false;
+              /* the server hands the reserved bytes back on confirm */
             }
           }
 
@@ -229,7 +273,7 @@ export function Uploader({
         disabled={busy}
         onClick={() => inputRef.current?.click()}
       >
-        {busy ? `Uploading… ${overall}%` : "Add your photos"}
+        {busy ? `${stage}… ${stage === "Uploading" ? `${overall}%` : ""}` : "Add your photos"}
       </Button>
 
       <p className="mt-3 text-center text-[0.9375rem] text-crust">
@@ -282,7 +326,9 @@ export function Uploader({
                       ? "failed"
                       : item.status === "uploading"
                         ? `${item.progress}%`
-                        : "preparing"}
+                        : item.status === "prepared"
+                          ? "ready"
+                          : "shrinking"}
                 </span>
               </li>
             ))}
@@ -297,6 +343,11 @@ export function Uploader({
             ? "Your photo is with the host."
             : `All ${completed} are with the host.`}{" "}
           Add more any time tonight.
+          {saved.from > saved.to && saved.to > 0 && (
+            <span className="mt-1 block font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-crust">
+              sent {formatBytes(saved.to)} instead of {formatBytes(saved.from)}
+            </span>
+          )}
         </p>
       )}
 
@@ -313,4 +364,76 @@ export function Uploader({
       )}
     </section>
   );
+}
+
+/**
+ * Everything the browser can do for one file before it leaves the device:
+ * decode it, shrink it, re-encode it into a format that opens anywhere, and —
+ * for a video — pull a poster frame out of it.
+ */
+async function prepare(file: File): Promise<Prepared> {
+  if (file.type.startsWith("video/")) {
+    const probe = await probeVideo(file);
+    return {
+      file,
+      display: null,
+      thumb: null,
+      poster: probe.poster?.blob ?? null,
+      sourceWidth: probe.width,
+      sourceHeight: probe.height,
+      durationSeconds: probe.durationSeconds,
+      needsServer: true,
+      descriptor: {
+        size: file.size,
+        type: file.type,
+        poster: probe.poster
+          ? {
+              size: probe.poster.blob.size,
+              format: probe.poster.format,
+              width: probe.poster.width,
+              height: probe.poster.height,
+            }
+          : null,
+        sourceWidth: probe.width,
+        sourceHeight: probe.height,
+        durationSeconds: probe.durationSeconds,
+        needsServer: true,
+      },
+    };
+  }
+
+  const renditions = await makeImageRenditions(file);
+  return {
+    file,
+    display: renditions.display?.blob ?? null,
+    thumb: renditions.thumb?.blob ?? null,
+    poster: null,
+    sourceWidth: renditions.sourceWidth,
+    sourceHeight: renditions.sourceHeight,
+    durationSeconds: null,
+    needsServer: renditions.needsServer,
+    descriptor: {
+      size: file.size,
+      type: file.type,
+      display: renditions.display
+        ? {
+            size: renditions.display.blob.size,
+            format: renditions.display.format,
+            width: renditions.display.width,
+            height: renditions.display.height,
+          }
+        : null,
+      thumb: renditions.thumb
+        ? {
+            size: renditions.thumb.blob.size,
+            format: renditions.thumb.format,
+            width: renditions.thumb.width,
+            height: renditions.thumb.height,
+          }
+        : null,
+      sourceWidth: renditions.sourceWidth,
+      sourceHeight: renditions.sourceHeight,
+      needsServer: renditions.needsServer,
+    },
+  };
 }

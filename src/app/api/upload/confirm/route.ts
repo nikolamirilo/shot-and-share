@@ -16,7 +16,11 @@ const bodySchema = z.object({
         mediaId: z.string().uuid(),
         width: z.number().int().positive().max(60_000).nullable().optional(),
         height: z.number().int().positive().max(60_000).nullable().optional(),
+        /** Which of the signed objects actually made it into the bucket. */
+        originalUploaded: z.boolean().default(true),
+        displayUploaded: z.boolean().default(false),
         thumbUploaded: z.boolean().default(false),
+        posterUploaded: z.boolean().default(false),
         failed: z.boolean().default(false),
       }),
     )
@@ -28,9 +32,14 @@ const bodySchema = z.object({
  * Second half of the upload handshake: the bytes are in the bucket, so the rows
  * become real.
  *
- * A row that never gets confirmed stays `pending` and is swept by the retention
- * job, which also gives its reserved quota back. That is the failure mode we
- * want — a guest whose phone dies mid-upload costs the host nothing permanent.
+ * Each rendition is confirmed independently, because they fail independently. A
+ * thumbnail that did not upload is a cosmetic problem; the photo is still
+ * there. What matters is that any object which did *not* arrive has its
+ * reserved bytes handed straight back, or the host slowly loses quota to
+ * uploads that never happened.
+ *
+ * A row that is never confirmed at all stays `pending` and the nightly job
+ * sweeps it — a guest whose phone dies mid-upload costs the host nothing.
  */
 export async function POST(request: Request) {
   return handle(async () => {
@@ -57,30 +66,49 @@ export async function POST(request: Request) {
       const row = pending.get(item.mediaId);
       if (!row) continue;
 
-      if (item.failed) {
-        await admin
-          .from("media")
-          .update({ status: "deleted" })
-          .eq("id", row.id);
-        released += Number(row.size_bytes) + Number(row.thumb_size_bytes);
+      // The archival object is the photo. Without it there is nothing to keep,
+      // so the whole row goes back, renditions and all.
+      if (item.failed || !item.originalUploaded) {
+        await admin.from("media").update({ status: "deleted" }).eq("id", row.id);
+        released +=
+          Number(row.size_bytes) +
+          Number(row.display_size_bytes) +
+          Number(row.thumb_size_bytes) +
+          Number(row.poster_size_bytes);
         continue;
       }
 
-      // A thumbnail that failed to generate is not a failed upload. The gallery
-      // falls back to the original; only the reserved bytes come back.
+      const displayOk = item.displayUploaded && Boolean(row.display_key);
       const thumbOk = item.thumbUploaded && Boolean(row.thumb_key);
-      if (!thumbOk && Number(row.thumb_size_bytes) > 0) {
-        released += Number(row.thumb_size_bytes);
-      }
+      const posterOk = item.posterUploaded && Boolean(row.poster_key);
+
+      if (!displayOk) released += Number(row.display_size_bytes);
+      if (!thumbOk) released += Number(row.thumb_size_bytes);
+      if (!posterOk) released += Number(row.poster_size_bytes);
+
+      /*
+       * If the copy meant for viewing never arrived, the worker should make one
+       * rather than leaving guests to download the full-size archival object on
+       * a phone.
+       */
+      const needsServer =
+        row.processing === "pending" || (!thumbOk && !displayOk);
 
       await admin
         .from("media")
         .update({
           status: "ready",
-          width: item.width ?? null,
-          height: item.height ?? null,
+          width: item.width ?? row.width,
+          height: item.height ?? row.height,
+          display_key: displayOk ? row.display_key : null,
+          display_size_bytes: displayOk ? row.display_size_bytes : 0,
+          display_format: displayOk ? row.display_format : null,
           thumb_key: thumbOk ? row.thumb_key : null,
           thumb_size_bytes: thumbOk ? row.thumb_size_bytes : 0,
+          thumb_format: thumbOk ? row.thumb_format : null,
+          poster_key: posterOk ? row.poster_key : null,
+          poster_size_bytes: posterOk ? row.poster_size_bytes : 0,
+          processing: needsServer ? "pending" : "done",
         })
         .eq("id", row.id);
       confirmed += 1;

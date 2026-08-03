@@ -6,7 +6,9 @@ import { MB } from "@/lib/tiers";
  * lifecycle tagging and the ZIP build a single prefix operation.
  *
  *   events/{event_id}/originals/{media_id}.{ext}
- *   events/{event_id}/thumbs/{media_id}.webp
+ *   events/{event_id}/display/{media_id}.{ext}
+ *   events/{event_id}/thumbs/{media_id}.{ext}
+ *   events/{event_id}/posters/{media_id}.{ext}
  *   events/{event_id}/archive/{event_id}.zip
  */
 
@@ -18,8 +20,26 @@ export function originalKey(
   return `events/${eventId}/originals/${mediaId}.${ext}`;
 }
 
-export function thumbKey(eventId: string, mediaId: string): string {
-  return `events/${eventId}/thumbs/${mediaId}.webp`;
+export function thumbKey(eventId: string, mediaId: string, ext = "webp"): string {
+  return `events/${eventId}/thumbs/${mediaId}.${ext}`;
+}
+
+/** The optimised full-size copy. This is what a lightbox actually loads. */
+export function displayKey(
+  eventId: string,
+  mediaId: string,
+  ext: string,
+): string {
+  return `events/${eventId}/display/${mediaId}.${ext}`;
+}
+
+/** First usable frame of a video, so a gallery never shows a grey box. */
+export function posterKey(
+  eventId: string,
+  mediaId: string,
+  ext = "webp",
+): string {
+  return `events/${eventId}/posters/${mediaId}.${ext}`;
 }
 
 export function archiveKey(eventId: string): string {
@@ -78,4 +98,40 @@ export const MAX_THUMB_BYTES = 2 * MB;
 
 export function displayName(mime: string): string {
   return classify(mime)?.kind === "video" ? "video" : "photo";
+}
+
+/**
+ * Every object belonging to one upload.
+ *
+ * A media row can own up to four objects now. Enumerating them by hand at each
+ * delete site is how you end up paying to store the renditions of photos that
+ * were removed months ago, so every caller goes through here.
+ */
+export function mediaKeys(row: {
+  original_key: string;
+  thumb_key?: string | null;
+  display_key?: string | null;
+  poster_key?: string | null;
+}): string[] {
+  return [
+    row.original_key,
+    row.thumb_key,
+    row.display_key,
+    row.poster_key,
+  ].filter((key): key is string => Boolean(key));
+}
+
+/** Total bytes a media row is charged for, across every rendition. */
+export function mediaBytes(row: {
+  size_bytes: number;
+  thumb_size_bytes?: number | null;
+  display_size_bytes?: number | null;
+  poster_size_bytes?: number | null;
+}): number {
+  return (
+    Number(row.size_bytes) +
+    Number(row.thumb_size_bytes ?? 0) +
+    Number(row.display_size_bytes ?? 0) +
+    Number(row.poster_size_bytes ?? 0)
+  );
 }
