@@ -4,6 +4,7 @@
  * the contract the application codes against.
  */
 
+import type { GalleryLayout } from "@/lib/gallery";
 import type { TierId } from "@/lib/tiers";
 
 export type EventStatus = "active" | "expired" | "deleted";
@@ -31,6 +32,7 @@ export type EventRow = {
   expires_at: string | null;
   status: EventStatus;
   gallery_visible: boolean;
+  gallery_layout: GalleryLayout;
   welcome_message: string | null;
   cover_media_id: string | null;
   link_opens: number;
@@ -97,8 +99,16 @@ export interface Database {
       profiles: Table<ProfileRow>;
       events: Table<
         EventRow,
-        Omit<EventRow, "id" | "created_at" | "link_opens" | "archive_builds"> &
-          Partial<Pick<EventRow, "id" | "created_at">>
+        Omit<
+          EventRow,
+          | "id"
+          | "created_at"
+          | "link_opens"
+          | "archive_builds"
+          // Has a database default, so an insert may leave it out.
+          | "gallery_layout"
+        > &
+          Partial<Pick<EventRow, "id" | "created_at" | "gallery_layout">>
       >;
       event_tokens: Table<
         EventTokenRow,

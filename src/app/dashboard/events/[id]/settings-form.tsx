@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { updateEventSettings, type ActionState } from "@/app/dashboard/actions";
+import { LayoutChooser } from "@/components/gallery";
 import { Button, Field, inputClass } from "@/components/ui";
 import type { EventRow } from "@/lib/db/types";
 
@@ -74,6 +75,8 @@ export function SettingsForm({ event }: { event: EventRow }) {
           </span>
         </span>
       </label>
+
+      <LayoutChooser name="gallery_layout" defaultValue={event.gallery_layout} />
 
       {state.error && (
         <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">

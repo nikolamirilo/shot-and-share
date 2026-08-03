@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 import { GuestGallery } from "@/app/e/[token]/guest-gallery";
 import { Uploader } from "@/app/e/[token]/uploader";
 import { markOpened } from "@/lib/client/upload";
+import type { GalleryLayout } from "@/lib/gallery";
 
 export function GuestExperience({
   token,
   eventId,
   galleryVisible,
+  galleryLayout,
   allowVideo,
   maxFileBytes,
   remainingBytes,
@@ -17,6 +19,7 @@ export function GuestExperience({
   token: string;
   eventId: string;
   galleryVisible: boolean;
+  galleryLayout: GalleryLayout;
   allowVideo: boolean;
   maxFileBytes: number;
   remainingBytes: number;
@@ -45,7 +48,11 @@ export function GuestExperience({
         onUploaded={() => setRefreshKey((k) => k + 1)}
       />
       {galleryVisible && (
-        <GuestGallery token={token} refreshKey={refreshKey} />
+        <GuestGallery
+          token={token}
+          refreshKey={refreshKey}
+          eventLayout={galleryLayout}
+        />
       )}
     </>
   );

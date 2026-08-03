@@ -6,6 +6,7 @@ import { LogoMark } from "@/components/logo";
 import { Hole } from "@/components/ui";
 import { gateGuest, resolveGuestToken, storageSummary } from "@/lib/events";
 import { formatEventDate } from "@/lib/format";
+import { coerceLayout } from "@/lib/gallery";
 import { getTier } from "@/lib/tiers";
 
 export const dynamic = "force-dynamic";
@@ -87,6 +88,7 @@ export default async function GuestPage({
           token={token}
           eventId={event.id}
           galleryVisible={event.gallery_visible}
+          galleryLayout={coerceLayout(event.gallery_layout)}
           allowVideo={tier.video}
           maxFileBytes={tier.maxFileBytes}
           remainingBytes={summary.remaining}

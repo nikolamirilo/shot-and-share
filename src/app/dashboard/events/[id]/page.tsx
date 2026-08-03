@@ -18,6 +18,7 @@ import {
   formatEventDate,
   pluralise,
 } from "@/lib/format";
+import { coerceLayout } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/server";
 import { getTier } from "@/lib/tiers";
 import { shareUrl } from "@/lib/tokens";
@@ -226,7 +227,12 @@ export default async function EventPage({
         </div>
 
         <div className="mt-6">
-          <HostGallery eventId={event.id} media={media} shareLink={link} />
+          <HostGallery
+            eventId={event.id}
+            media={media}
+            shareLink={link}
+            eventLayout={coerceLayout(event.gallery_layout)}
+          />
         </div>
       </section>
 
