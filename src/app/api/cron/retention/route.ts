@@ -6,7 +6,7 @@ import {
   sendEmail,
 } from "@/lib/email";
 import { env } from "@/lib/env";
-import { eventPrefix } from "@/lib/media";
+import { eventPrefix, mediaBytes, mediaKeys } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { HARD_DELETE_GRACE_DAYS, RETENTION_WARNING_DAYS } from "@/lib/tiers";
@@ -82,14 +82,11 @@ async function sweepStalePending(summary: { pendingSwept: number }) {
     .limit(500);
 
   for (const row of rows ?? []) {
-    const keys = [row.original_key, row.thumb_key].filter(
-      (k): k is string => Boolean(k),
-    );
-    await storage.remove(keys);
+    await storage.remove(mediaKeys(row));
     await admin.from("media").update({ status: "deleted" }).eq("id", row.id);
     await admin.rpc("release_storage", {
       p_event: row.event_id,
-      p_bytes: Number(row.size_bytes) + Number(row.thumb_size_bytes),
+      p_bytes: mediaBytes(row),
     });
     summary.pendingSwept += 1;
   }

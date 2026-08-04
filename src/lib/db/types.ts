@@ -4,11 +4,15 @@
  * the contract the application codes against.
  */
 
+import type { GalleryLayout } from "@/lib/gallery";
 import type { TierId } from "@/lib/tiers";
 
 export type EventStatus = "active" | "expired" | "deleted";
 export type MediaStatus = "pending" | "ready" | "deleted";
 export type MediaKind = "photo" | "video";
+export type MediaProcessing = "done" | "pending" | "failed";
+/** Store the re-encoded copy, or keep exactly what the guest uploaded. */
+export type MediaQuality = "optimised" | "original";
 export type Product = TierId | "keep_forever";
 
 export type ProfileRow = {
@@ -31,6 +35,11 @@ export type EventRow = {
   expires_at: string | null;
   status: EventStatus;
   gallery_visible: boolean;
+  gallery_layout: GalleryLayout;
+  media_quality: MediaQuality;
+  theme: string;
+  theme_custom: unknown;
+  cover_variant: string;
   welcome_message: string | null;
   cover_media_id: string | null;
   link_opens: number;
@@ -58,8 +67,18 @@ export type MediaRow = {
   event_id: string;
   original_key: string;
   thumb_key: string | null;
+  display_key: string | null;
+  poster_key: string | null;
   size_bytes: number;
   thumb_size_bytes: number;
+  display_size_bytes: number;
+  poster_size_bytes: number;
+  original_format: string | null;
+  display_format: string | null;
+  thumb_format: string | null;
+  duration_seconds: number | null;
+  processing: MediaProcessing;
+  original_replaced: boolean;
   mime_type: string;
   kind: MediaKind;
   width: number | null;
@@ -97,8 +116,31 @@ export interface Database {
       profiles: Table<ProfileRow>;
       events: Table<
         EventRow,
-        Omit<EventRow, "id" | "created_at" | "link_opens" | "archive_builds"> &
-          Partial<Pick<EventRow, "id" | "created_at">>
+        Omit<
+          EventRow,
+          | "id"
+          | "created_at"
+          | "link_opens"
+          | "archive_builds"
+          // Have database defaults, so an insert may leave them out.
+          | "gallery_layout"
+          | "media_quality"
+          | "theme"
+          | "theme_custom"
+          | "cover_variant"
+        > &
+          Partial<
+            Pick<
+              EventRow,
+              | "id"
+              | "created_at"
+              | "gallery_layout"
+              | "media_quality"
+              | "theme"
+              | "theme_custom"
+              | "cover_variant"
+            >
+          >
       >;
       event_tokens: Table<
         EventTokenRow,
@@ -107,7 +149,25 @@ export interface Database {
       >;
       media: Table<
         MediaRow,
-        Omit<MediaRow, "id" | "created_at"> & Partial<Pick<MediaRow, "id">>
+        Omit<
+          MediaRow,
+          | "id"
+          | "created_at"
+          | "display_size_bytes"
+          | "poster_size_bytes"
+          | "processing"
+          | "original_replaced"
+        > &
+          Partial<
+            Pick<
+              MediaRow,
+              | "id"
+              | "display_size_bytes"
+              | "poster_size_bytes"
+              | "processing"
+              | "original_replaced"
+            >
+          >
       >;
       purchases: Table<
         PurchaseRow,

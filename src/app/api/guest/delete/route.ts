@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { ApiError, handle, ok, parseBody } from "@/lib/api";
 import { requireGuestEvent } from "@/lib/events";
+import { mediaBytes, mediaKeys } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -54,14 +55,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const keys = [row.original_key, row.thumb_key].filter(
-      (k): k is string => Boolean(k),
-    );
-    await storage.remove(keys);
+    await storage.remove(mediaKeys(row));
     await admin.from("media").update({ status: "deleted" }).eq("id", row.id);
     await admin.rpc("release_storage", {
       p_event: event.id,
-      p_bytes: Number(row.size_bytes) + Number(row.thumb_size_bytes),
+      p_bytes: mediaBytes(row),
     });
 
     return ok({ deleted: true });

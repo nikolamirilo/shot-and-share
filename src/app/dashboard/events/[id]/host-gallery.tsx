@@ -1,24 +1,45 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { deleteMedia, setCoverPhoto } from "@/app/dashboard/actions";
-import { Button, Hole, cx } from "@/components/ui";
+import { LayoutSwitcher, PhotoGallery } from "@/components/gallery";
+import { Button, Hole } from "@/components/ui";
 import type { MediaView } from "@/lib/events";
-import { formatDateTime } from "@/lib/format";
+import {
+  type GalleryLayout,
+  readViewerLayout,
+  writeViewerLayout,
+} from "@/lib/gallery";
 
 export function HostGallery({
   eventId,
   media,
   shareLink,
+  eventLayout,
 }: {
   eventId: string;
   media: MediaView[];
   shareLink: string | null;
+  /** The event's default, which is what guests land on. */
+  eventLayout: GalleryLayout;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [layout, setLayout] = useState<GalleryLayout>(eventLayout);
+
+  // Start on the event's layout so the host sees what a guest sees, then let
+  // their own preference take over once the browser has told us there is one.
+  useEffect(() => {
+    const preferred = readViewerLayout();
+    if (preferred) setLayout(preferred);
+  }, []);
+
+  function chooseLayout(next: GalleryLayout) {
+    setLayout(next);
+    writeViewerLayout(next);
+  }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -80,83 +101,60 @@ export function HostGallery({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <p className="text-[0.9375rem] text-crust">
-          {selected.size === 0
-            ? "Tap a photo to select it."
-            : `${selected.size} selected`}
-        </p>
-        {selected.size > 0 && (
-          <>
-            <Button
-              onClick={remove}
-              size="sm"
-              variant="secondary"
-              disabled={pending}
-            >
-              {pending ? "Deleting…" : "Delete selected"}
-            </Button>
-            {selected.size === 1 && (
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[0.9375rem] text-crust">
+            {selected.size === 0
+              ? "Tap a photo to select it."
+              : `${selected.size} selected`}
+          </p>
+          {selected.size > 0 && (
+            <>
               <Button
-                onClick={makeCover}
+                onClick={remove}
                 size="sm"
-                variant="ghost"
+                variant="secondary"
                 disabled={pending}
               >
-                Use as cover
+                {pending ? "Deleting…" : "Delete selected"}
               </Button>
-            )}
-            <Button
-              onClick={() => setSelected(new Set())}
-              size="sm"
-              variant="ghost"
-            >
-              Clear
-            </Button>
-          </>
-        )}
+              {selected.size === 1 && (
+                <Button
+                  onClick={makeCover}
+                  size="sm"
+                  variant="ghost"
+                  disabled={pending}
+                >
+                  Use as cover
+                </Button>
+              )}
+              <Button
+                onClick={() => setSelected(new Set())}
+                size="sm"
+                variant="ghost"
+              >
+                Clear
+              </Button>
+            </>
+          )}
+        </div>
+
+        <LayoutSwitcher value={layout} onChange={chooseLayout} label="View" />
       </div>
 
-      <ul className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
-        {media.map((item) => {
-          const isSelected = selected.has(item.id);
-          return (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => toggle(item.id)}
-                aria-pressed={isSelected}
-                aria-label={`${item.kind} uploaded ${formatDateTime(item.createdAt)}`}
-                className={cx(
-                  "hole relative block aspect-square w-full overflow-hidden transition-transform",
-                  isSelected
-                    ? "scale-95 ring-4 ring-pepper ring-offset-2 ring-offset-butter"
-                    : "hover:scale-[1.03]",
-                )}
-              >
-                {item.thumbUrl ? (
-                  <img
-                    src={item.thumbUrl}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-gouda-light">
-                    {item.kind}
-                  </span>
-                )}
+      <PhotoGallery
+        items={media}
+        layout={layout}
+        onActivate={(item) => toggle(item.id)}
+        isSelected={(item) => selected.has(item.id)}
+      />
 
-                {item.kind === "video" && (
-                  <span className="absolute bottom-1 left-1 rounded-full bg-pepper px-2 py-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-butter">
-                    video
-                  </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {layout !== eventLayout && (
+        <p className="mt-3 text-[0.8125rem] text-rind">
+          You are viewing this your way. Guests still land on the layout set in
+          settings below.
+        </p>
+      )}
 
       {error && (
         <p className="mt-4 rounded-xl border-2 border-pepper bg-cream p-3 text-[0.9375rem]">

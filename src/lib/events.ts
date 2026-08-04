@@ -7,6 +7,7 @@ import { hasSupabase } from "@/lib/env";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken, looksLikeToken } from "@/lib/tokens";
+import { type ImageFormat, isUniversallyViewable } from "@/lib/formats";
 import { getTier } from "@/lib/tiers";
 
 export interface GuestContext {
@@ -89,8 +90,24 @@ export interface MediaView {
   uploaderFingerprint: string | null;
   sizeBytes: number;
   thumbUrl: string | null;
-  /** Only resolved when a photo is opened, never for a whole gallery page. */
+  /** Poster frame for a video, so a grid never shows a grey box. */
+  posterUrl: string | null;
+  durationSeconds: number | null;
+  /** True while the worker still owes this file a viewable copy. */
+  processing: boolean;
+  /**
+   * Resolved only when a photo is actually opened.
+   *
+   * `displayUrl` is the optimised full-size copy and is what the lightbox
+   * should load — typically a quarter of the bytes and, for a HEIC upload, the
+   * difference between the photo appearing and a broken image icon. The
+   * untouched `originalUrl` is offered alongside it for downloading.
+   */
+  displayUrl?: string;
   originalUrl?: string;
+  /** Format of whatever `originalUrl` points at, so the UI can warn about HEIC. */
+  originalFormat: string | null;
+  universallyViewable: boolean;
 }
 
 /**
@@ -102,14 +119,17 @@ export async function toMediaView(
   row: MediaRow,
   opts: { withOriginal?: boolean } = {},
 ): Promise<MediaView> {
-  const thumbUrl = row.thumb_key
-    ? (storage.publicUrl(row.thumb_key) ??
-      (await storage.presignDownload({
-        key: row.thumb_key,
-        expiresInSeconds: 3600,
-      })))
-    : null;
+  const cdn = async (key: string | null) =>
+    key
+      ? (storage.publicUrl(key) ??
+        (await storage.presignDownload({ key, expiresInSeconds: 3600 })))
+      : null;
 
+  // A video grid shows the poster; a photo grid shows the thumbnail.
+  const thumbUrl = await cdn(row.thumb_key);
+  const posterUrl = await cdn(row.poster_key);
+
+  const originalFormat = row.original_format;
   const view: MediaView = {
     id: row.id,
     kind: row.kind,
@@ -119,14 +139,32 @@ export async function toMediaView(
     uploaderName: row.uploader_name,
     uploaderFingerprint: row.uploader_fingerprint,
     sizeBytes: row.size_bytes,
-    thumbUrl,
+    thumbUrl: thumbUrl ?? posterUrl,
+    posterUrl,
+    durationSeconds: row.duration_seconds,
+    processing: row.processing === "pending",
+    originalFormat,
+    universallyViewable: originalFormat
+      ? isUniversallyViewable(originalFormat as ImageFormat)
+      : true,
   };
 
   if (opts.withOriginal) {
-    view.originalUrl = await storage.presignDownload({
-      key: row.original_key,
+    // Serve the copy meant for viewing, and keep the untouched one for
+    // downloading. When there is no separate display copy the original already
+    // *is* the optimised one, so both point at the same object.
+    const displaySource = row.display_key ?? row.original_key;
+    view.displayUrl = await storage.presignDownload({
+      key: displaySource,
       expiresInSeconds: 900,
     });
+    view.originalUrl =
+      displaySource === row.original_key
+        ? view.displayUrl
+        : await storage.presignDownload({
+            key: row.original_key,
+            expiresInSeconds: 900,
+          });
   }
 
   return view;

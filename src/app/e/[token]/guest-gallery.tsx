@@ -2,21 +2,36 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { LayoutSwitcher, PhotoGallery } from "@/components/gallery";
 import { Button, Hole } from "@/components/ui";
 import { getFingerprint } from "@/lib/client/upload";
 import type { MediaView } from "@/lib/events";
+import {
+  type GalleryLayout,
+  readViewerLayout,
+  writeViewerLayout,
+} from "@/lib/gallery";
 
 /**
  * What everyone else has uploaded. Guests genuinely like seeing the night from
  * other people's phones, which is why this is on by default — but it is the
  * host's switch, and when they turn it off the page is upload-only.
+ *
+ * The host chooses which layout a guest lands on. The guest can then change it
+ * for themselves, and that sticks across events, because how somebody likes to
+ * look at photos is a fact about them rather than about the wedding.
  */
 export function GuestGallery({
   token,
   refreshKey,
+  eventLayout,
+  allowLayoutChoice,
 }: {
   token: string;
   refreshKey: number;
+  eventLayout: GalleryLayout;
+  /** Free events fix the layout, so there is nothing to switch. */
+  allowLayoutChoice: boolean;
 }) {
   const [items, setItems] = useState<MediaView[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -24,8 +39,22 @@ export function GuestGallery({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<MediaView | null>(null);
   const [fingerprint, setFingerprint] = useState("");
+  const [layout, setLayout] = useState<GalleryLayout>(eventLayout);
 
   useEffect(() => setFingerprint(getFingerprint()), []);
+
+  // Server-rendered markup has to match the host's default on first paint;
+  // the viewer's own preference is only knowable once we are in the browser.
+  useEffect(() => {
+    if (!allowLayoutChoice) return;
+    const preferred = readViewerLayout();
+    if (preferred) setLayout(preferred);
+  }, [allowLayoutChoice]);
+
+  function chooseLayout(next: GalleryLayout) {
+    setLayout(next);
+    writeViewerLayout(next);
+  }
 
   const load = useCallback(
     async (before: string | null, replace: boolean) => {
@@ -81,7 +110,7 @@ export function GuestGallery({
 
   return (
     <section className="mt-12">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-h2">Everyone&apos;s photos</h2>
         {items.length > 0 && (
           <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
@@ -103,31 +132,22 @@ export function GuestGallery({
           </p>
         </div>
       ) : (
-        <ul className="mt-6 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => setOpen(item)}
-                className="hole relative block aspect-square w-full overflow-hidden transition-transform hover:scale-[1.03]"
-                aria-label="Open photo"
-              >
-                {item.thumbUrl ? (
-                  <img
-                    src={item.thumbUrl}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-gouda-light">
-                    {item.kind}
-                  </span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          {/* Only worth offering once there is enough on screen for the choice
+              to make any visible difference. */}
+          {allowLayoutChoice && items.length >= 4 && (
+            <div className="mt-4 flex justify-end overflow-x-auto">
+              <LayoutSwitcher value={layout} onChange={chooseLayout} />
+            </div>
+          )}
+
+          <PhotoGallery
+            items={items}
+            layout={layout}
+            onActivate={setOpen}
+            className="mt-4"
+          />
+        </>
       )}
 
       {cursor && (
@@ -167,15 +187,15 @@ function Lightbox({
   onClose: () => void;
   onRemove: () => void;
 }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const [full, setFull] = useState<MediaView | null>(null);
 
   useEffect(() => {
-    // The full-resolution original resolves only now, never for a whole page.
+    // Full-resolution URLs resolve only now, never for a whole page.
     const params = new URLSearchParams({ token, id: item.id });
     fetch(`/api/photo?${params}`)
       .then((r) => r.json())
-      .then((data) => setUrl(data.originalUrl ?? null))
-      .catch(() => setUrl(null));
+      .then((data) => setFull(data?.id ? data : null))
+      .catch(() => setFull(null));
   }, [token, item.id]);
 
   useEffect(() => {
@@ -183,6 +203,11 @@ function Lightbox({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // The optimised copy is what gets shown. It is a quarter of the bytes and,
+  // for a HEIC upload, the difference between the photo appearing at all and a
+  // broken image icon on anything that is not an iPhone.
+  const viewUrl = full?.displayUrl;
 
   return (
     <div
@@ -195,18 +220,44 @@ function Lightbox({
         className="max-h-full w-full max-w-2xl overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {item.kind === "video" && url ? (
-          <video src={url} controls className="w-full rounded-xl" />
-        ) : url ? (
-          <img src={url} alt="" className="w-full rounded-xl" />
+        {item.kind === "video" ? (
+          viewUrl ? (
+            <video
+              src={viewUrl}
+              poster={item.posterUrl ?? undefined}
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full rounded-xl"
+            />
+          ) : (
+            <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-hole" />
+          )
+        ) : viewUrl ? (
+          <img src={viewUrl} alt="" className="w-full rounded-xl" />
         ) : (
           <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-hole" />
+        )}
+
+        {item.processing && (
+          <p className="mt-3 rounded-xl border-2 border-gouda bg-pepper px-3 py-2 text-center text-[0.8125rem] text-butter/80">
+            Still being converted so it plays everywhere. Check back shortly.
+          </p>
         )}
 
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <Button onClick={onClose} variant="onDark" size="sm">
             Close
           </Button>
+          {full?.originalUrl && (
+            <a
+              href={full.originalUrl}
+              download
+              className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-pepper bg-gouda px-3.5 py-2 text-[0.9375rem] font-semibold text-pepper shadow-[4px_4px_0_var(--color-crust)]"
+            >
+              Download
+            </a>
+          )}
           {mine && (
             <Button onClick={onRemove} variant="onDark" size="sm">
               Remove mine

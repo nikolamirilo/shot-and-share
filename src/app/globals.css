@@ -106,12 +106,23 @@
 
   /* A punched hole. Not a circle with a fill: a void with depth.
      Dark interior, inner shadow at the top, faint warm bounce at the bottom. */
-  .hole {
+  .hole,
+  .recess {
     background-color: var(--color-hole);
-    border-radius: 9999px;
     box-shadow:
       inset 0 6px 10px -2px rgba(0, 0, 0, 0.75),
       inset 0 -4px 8px -3px rgba(255, 214, 102, 0.35);
+  }
+
+  .hole {
+    border-radius: 9999px;
+  }
+
+  /* The same void with square shoulders. Photo tiles in the Grid, Masonry and
+     Stack layouts sit in one of these: cropping a wedding photo into a circle
+     is a decision the host should be making, not the stylesheet. */
+  .recess {
+    border-radius: 0.875rem;
   }
 
   .card {
