@@ -28,17 +28,43 @@ guest pages need Supabase.
 
 1. Create a project.
 2. Run the files in `supabase/migrations/` in the SQL editor, in numerical
-   order. **No migration tooling is wired up on purpose** — these are plain SQL
+   order. **No migration tooling is wired up on purpose** - these are plain SQL
    files you apply yourself.
-3. Enable the Google provider under Authentication → Providers, and add
-   `http://localhost:3000/auth/callback` to the redirect allow-list.
-4. Copy the project URL, the publishable key, and the secret key into
+3. Under **Authentication → Providers**, enable **Email**. Leave "Confirm email"
+   on or off as you prefer — the sign-up action reads whether a session came
+   back and either lands on the dashboard or asks the host to check their inbox.
+   Enable **Google** in the same place if you want the Google button to work.
+4. Under **Authentication → URL Configuration**, set the site URL to
+   `http://localhost:3000` and add both of these to the redirect allow-list:
+
+   ```
+   http://localhost:3000/auth/callback
+   http://localhost:3000/auth/confirm
+   ```
+
+5. Under **Authentication → Emails**, point two templates at `/auth/confirm`.
+   There is no generic type variable, so each template hard-codes its own:
+
+   ```
+   Confirm signup:  {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup
+   Reset password:  {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery
+   ```
+
+   Without this the default templates send an OAuth-style link, which lands on
+   `/auth/callback` with no code and bounces to `/login?error=missing_code`. The
+   token-hash form also survives a link opened on a different device from the one
+   that started the flow, which the default cannot.
+
+   Supabase's built-in mail server allows only a few messages an hour. For real
+   testing, set custom SMTP under **Project Settings → Auth** using the Resend
+   key already listed in `.env.example`.
+6. Copy the project URL, the publishable key, and the secret key into
    `.env.local`.
 
 ### Storage
 
 Leave `S3_BUCKET` empty and the app writes to `./.storage` through a local driver
-that mirrors the S3 contract — signed, expiring, size-limited uploads and signed
+that mirrors the S3 contract - signed, expiring, size-limited uploads and signed
 reads. Everything works end to end without an AWS account: guest upload, quota
 rejection, gallery, ZIP download, retention deletion.
 
@@ -56,7 +82,7 @@ uses, so it cannot drift from the code that handles actual money.
 ```bash
 npm run dev        # development server
 npm run build      # production build
-npm test           # 108 unit tests
+npm test           # 125 unit tests
 npm run typecheck
 npm run lint
 ```
@@ -69,7 +95,7 @@ npm run lint
 |---|---|
 | Framework | Next.js 15, App Router |
 | Styling | Tailwind CSS v4, tokens in `globals.css` |
-| Auth and database | Supabase — Postgres with Row Level Security, Google sign-in |
+| Auth and database | Supabase - Postgres with Row Level Security, email/password and Google sign-in |
 | File storage | S3, with a local filesystem driver for development |
 | Payments | Lemon Squeezy as merchant of record |
 | Email | Resend, or stdout when no key is set |
@@ -94,22 +120,22 @@ This is the path two hundred guests hit at the same time on a Saturday night.
    `event_tokens`; there is no session anywhere on the guest side.
 2. The browser re-encodes each photo into an optimised full-size copy and a
    thumbnail, and pulls a poster frame out of any video. See Compression below.
-3. `POST /api/upload/presign` — **the quota is checked and reserved here, before
+3. `POST /api/upload/presign` - **the quota is checked and reserved here, before
    a single URL is issued.** Checking afterwards means the bytes are already in
    the bucket and already billable.
 4. The browser POSTs each copy straight to storage, three files at a time, with
-   a progress bar. Renditions upload independently — a failed thumbnail is
+   a progress bar. Renditions upload independently - a failed thumbnail is
    cosmetic and never costs the photo.
 5. `POST /api/upload/confirm` flips the rows from `pending` to `ready`.
 
-A row that never gets confirmed — a phone that died halfway — stays `pending`,
+A row that never gets confirmed - a phone that died halfway - stays `pending`,
 and the nightly job sweeps it and hands the reserved quota back.
 
 ### Compression
 
 Photos are re-encoded **on the device that took them**, before upload. The phone
 has the pixels decoded already, the guest is looking at the screen anyway, and a
-4 MB photo becomes a ~1 MB upload — which on venue wifi is the difference
+4 MB photo becomes a ~1 MB upload - which on venue wifi is the difference
 between a guest finishing and a guest giving up.
 
 Measured in Chromium on a deliberately hard case (12 MP of pure noise, which is
@@ -129,8 +155,8 @@ budget pushes the encoder harder exactly where there is more going on, which is
 what "looks the same, weighs less" actually requires.
 
 **Why not AVIF.** It beats WebP by 15–20% at these sizes, and it is still the
-wrong choice here. Chromium's `canvas.toBlob` cannot encode it at all — asked
-for `image/avif`, it silently returns PNG — and where encoders do exist they
+wrong choice here. Chromium's `canvas.toBlob` cannot encode it at all - asked
+for `image/avif`, it silently returns PNG - and where encoders do exist they
 take seconds per image on a phone with thirty photos queued behind it. Roughly
 7% of devices also cannot decode it, so shipping AVIF as the only stored copy
 breaks the promise that everyone can view and download. When the transcode
@@ -159,7 +185,7 @@ Viewer cannot open it.
 
 Compressing video client-side is not attempted, and that is a deliberate
 decision rather than a gap. The only browser route is MediaRecorder, which
-re-encodes in **real time** — a two-minute clip takes two minutes with a guest
+re-encodes in **real time** - a two-minute clip takes two minutes with a guest
 watching a spinner at a party. What the browser *can* usefully do is pull a
 poster frame in a few hundred milliseconds, so the gallery shows the video
 instead of a grey box while the rest happens elsewhere.
@@ -186,7 +212,7 @@ decision rather than a silent default.
 
 ### The custom event page
 
-What a guest sees when they scan the code. Paid plans only — it is the "custom
+What a guest sees when they scan the code. Paid plans only - it is the "custom
 event page" the Slice and Wheel tiers already promise.
 
 | | Free | Slice / Wheel |
@@ -197,7 +223,7 @@ event page" the Slice and Wheel tiers already promise.
 | Say Cheese header and footer | Yes | No |
 
 The free plan's header and footer are the price of the free plan. Not a
-watermark across somebody's photographs — a small bar above and an invitation
+watermark across somebody's photographs - a small bar above and an invitation
 below, on the one page where the audience is a hundred people who have just
 watched the product work while holding phones full of their own events.
 
@@ -219,8 +245,8 @@ to two hundred guests in a dark room. So `src/lib/color.ts` does real WCAG
 contrast maths:
 
 - Text is **corrected**, not accepted. `readableInk()` keeps the host's colour
-  when it passes, pushes it to its extreme when that rescues it — dark plum
-  becomes near-black rather than jumping to white — and otherwise picks whichever
+  when it passes, pushes it to its extreme when that rescues it - dark plum
+  becomes near-black rather than jumping to white - and otherwise picks whichever
   of black or white actually measures better.
 - A card colour that would vanish into the background is nudged away from it.
 - Every value is parsed as hex and falls back if it is not, because these end up
@@ -257,7 +283,7 @@ restore, or buy The Cellar, at any point before the final arrow.
 Stored twice: hashed for lookup, and encrypted with AES-256-GCM so the dashboard
 can render the QR code again tomorrow.
 
-Hash-only storage is the stricter design and the wrong one here — a host who lost
+Hash-only storage is the stricter design and the wrong one here - a host who lost
 the tab would have to reissue the link, invalidating every card already printed
 and sitting on the tables. Encrypting keeps the property that matters, that a
 stolen database dump alone yields no working links. Set `TOKEN_ENCRYPTION_KEY` in
@@ -271,11 +297,11 @@ role key.
 | **Taste** | Free | 1 GB, ~250 photos | 30 days |
 | **Slice** | €19 once | 10 GB, ~2,500 photos | 6 months |
 | **Wheel** | €39 once | 30 GB, ~7,500 photos | 12 months |
-| **The Cellar** | €29 once | — | permanently |
+| **The Cellar** | €29 once | - | permanently |
 
 The unit is gigabytes, not photo counts: a count limit punishes anyone with a
 recent phone and rewards nobody, while storage is what actually costs money and
-lets us look far more generous for the same spend. Nothing is a subscription —
+lets us look far more generous for the same spend. Nothing is a subscription -
 people plan one wedding, not twelve.
 
 Wheel stops at twelve months deliberately. If retention were unlimited, the
@@ -287,14 +313,14 @@ Cellar add-on would have no job to do.
 
 The whole system comes from one observation: **a cheese hole and a camera
 aperture are the same shape.** So a hole is never decoration here, it is a
-viewfinder — a void you look through to see something. The slab in the hero *is*
+viewfinder - a void you look through to see something. The slab in the hero *is*
 the photo grid, and the photos live inside the holes. Every circle in the
 interface is the same object at a different size: step markers, list bullets,
 gallery tiles, loading states.
 
 The risk is that cheese reads as cheap or childish, which is fatal for something
 a person trusts with the only copy of their wedding photos. The safeguard is that
-cheese supplies exactly two things — the palette and the hole. No cartoon mice,
+cheese supplies exactly two things - the palette and the hole. No cartoon mice,
 no wedge illustrations, no comic lettering. Warmth from colour, seriousness from
 type.
 
@@ -321,15 +347,15 @@ Stated plainly rather than left to be discovered:
   archive will outrun it and belongs in a Lambda or a small Fargate task. Moving
   it is a change of host, not of logic.
 - **`retention=forever` is not applied retroactively** to objects when a host
-  buys The Cellar after the event. Nothing is at risk — those events are excluded
-  from expiry — but the objects sit in Glacier IR rather than Deep Archive, which
+  buys The Cellar after the event. Nothing is at risk - those events are excluded
+  from expiry - but the objects sit in Glacier IR rather than Deep Archive, which
   leaks about a dollar a year per event. Fixing it needs an S3 Batch Operations
   job. See `infra/README.md`.
 - **Rate limits are per instance.** The real controls belong at the CDN edge,
   where they work across every instance; what is in `lib/ratelimit.ts` is a
   second line, not a guarantee.
 - **The transcode worker is written but not deployed.** `workers/transcode`
-  runs anywhere with ffmpeg and has a Dockerfile, but it needs a host — Fargate
+  runs anywhere with ffmpeg and has a Dockerfile, but it needs a host - Fargate
   is the recommendation. Until it runs, HEIC uploaded from a non-Safari browser
   stays unviewable in the gallery and videos are served in whatever format they
   arrived in. Nothing is lost in either case: the originals are intact,
