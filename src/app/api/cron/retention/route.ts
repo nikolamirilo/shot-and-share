@@ -66,7 +66,7 @@ async function run(request: Request) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Uploads that reserved quota and never confirmed — a phone that died halfway,
+ * Uploads that reserved quota and never confirmed - a phone that died halfway,
  * a tab closed mid-batch. The bytes may or may not be in the bucket, so the
  * reservation is returned and any object is removed.
  */

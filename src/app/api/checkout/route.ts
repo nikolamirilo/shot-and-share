@@ -18,7 +18,7 @@ const bodySchema = z.object({
 });
 
 /**
- * Hands back a hosted checkout URL. That is all it does — no entitlement is
+ * Hands back a hosted checkout URL. That is all it does - no entitlement is
  * granted here, and the redirect the customer lands on afterwards grants
  * nothing either. Only the signed webhook moves a tier.
  */

@@ -43,7 +43,7 @@ export interface CoverProps {
 
 export function EventCover(props: CoverProps) {
   // "Just type" is the only variant that works with no photo, so it is also the
-  // fallback for the others before the host has picked one — an empty grey
+  // fallback for the others before the host has picked one - an empty grey
   // rectangle at the top of a wedding page is worse than no photo at all.
   const variant =
     props.variant !== "type" && !props.coverUrl ? "type" : props.variant;

@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Everything except static assets, images, and the guest media endpoints —
+     * Everything except static assets, images, and the guest media endpoints -
      * a guest page load must not pay for a session refresh it will never use.
      */
     "/((?!_next/static|_next/image|favicon.svg|logo.svg|api/media|api/storage|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)$).*)",

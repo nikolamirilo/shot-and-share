@@ -121,7 +121,7 @@ export default async function EventPage({
       {purchase && (
         <Notice>
           Payment received. If the plan below still looks the same, give the
-          provider a few seconds — the upgrade lands when their webhook does,
+          provider a few seconds - the upgrade lands when their webhook does,
           not when your browser comes back.
         </Notice>
       )}
@@ -157,7 +157,7 @@ export default async function EventPage({
             />
             <Stat
               label="Opened then uploaded"
-              value={conversion === null ? "—" : `${conversion}%`}
+              value={conversion === null ? "-" : `${conversion}%`}
               hint={
                 conversion === null
                   ? "No opens yet"

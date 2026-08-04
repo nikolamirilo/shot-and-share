@@ -42,18 +42,19 @@ guest pages need Supabase.
    http://localhost:3000/auth/confirm
    ```
 
-5. Under **Authentication → Emails**, point two templates at `/auth/confirm`.
-   There is no generic type variable, so each template hard-codes its own:
+5. Optional but recommended: under **Authentication → Emails**, point two
+   templates at `/auth/confirm`. There is no generic type variable, so each
+   template hard-codes its own:
 
    ```
    Confirm signup:  {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup
    Reset password:  {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery
    ```
 
-   Without this the default templates send an OAuth-style link, which lands on
-   `/auth/callback` with no code and bounces to `/login?error=missing_code`. The
-   token-hash form also survives a link opened on a different device from the one
-   that started the flow, which the default cannot.
+   `/auth/confirm` accepts the stock templates too, so skipping this costs you
+   one thing only: the stock link carries a code that can be exchanged solely by
+   the browser that started the flow. Sign up on a laptop, open the email on a
+   phone, and the stock link fails where the token-hash form above succeeds.
 
    Supabase's built-in mail server allows only a few messages an hour. For real
    testing, set custom SMTP under **Project Settings → Auth** using the Resend

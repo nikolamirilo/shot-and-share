@@ -2,13 +2,13 @@
  * The mark: a camera taking a picture of cheese.
  *
  * The cheese is the subject and the camera is looking at it. It is a slice, not
- * a wedge — the cheese with holes is Emmental and Emmental is cut in slices.
+ * a wedge - the cheese with holes is Emmental and Emmental is cut in slices.
  * The hole is the whole brand, so putting a generic wedge in the frame would
  * throw away the one idea the system is built on.
  *
  * Three details say "this photo is being taken right now": focus brackets in
  * the corners of the frame, a flash burst off the top left, and the Ember
- * shutter light — the only place that colour ever appears.
+ * shutter light - the only place that colour ever appears.
  */
 
 type Variant = "primary" | "reversed" | "mono";
@@ -77,7 +77,7 @@ export function LogoMark({
       aria-label={title}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Flash burst — three short strokes radiating off the top left */}
+      {/* Flash burst - three short strokes radiating off the top left */}
       <g
         stroke={c.line}
         strokeWidth={5}
@@ -106,7 +106,7 @@ export function LogoMark({
         strokeWidth={mono ? 4 : 0}
       />
 
-      {/* Shutter light — the one flash of Ember */}
+      {/* Shutter light - the one flash of Ember */}
       {!mono && <circle cx={200} cy={66} r={6.5} fill={c.shutter} />}
 
       {/* Lens: a deep barrel, not a flat ring */}
@@ -133,7 +133,7 @@ export function LogoMark({
         </>
       )}
 
-      {/* The frame — what the camera actually sees */}
+      {/* The frame - what the camera actually sees */}
       <circle cx={120} cy={114} r={38} fill={c.frame} />
 
       <g clipPath="url(#sc-frame-clip)">
@@ -172,7 +172,7 @@ export function LogoMark({
         </g>
       </g>
 
-      {/* Focus brackets — the marks a viewfinder puts around its subject */}
+      {/* Focus brackets - the marks a viewfinder puts around its subject */}
       <g
         stroke={mono ? c.line : c.cheeseEdge}
         strokeWidth={3.5}

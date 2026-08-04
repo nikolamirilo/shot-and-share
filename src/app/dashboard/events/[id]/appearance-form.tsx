@@ -338,7 +338,7 @@ function Choice({
  *
  * A host cannot be expected to know about WCAG ratios, and their guests will be
  * reading this on a phone in a dark room. The text colour is corrected
- * automatically when it fails — this panel exists so the host is told rather
+ * automatically when it fails - this panel exists so the host is told rather
  * than quietly overridden.
  */
 interface CustomColours {
@@ -396,7 +396,7 @@ function CustomColours({
         <span className="text-crust">
           {readable
             ? "Comfortable to read on a phone."
-            : "Too low to read comfortably. We will darken or lighten your text colour automatically — pick a stronger one to keep the shade you want."}
+            : "Too low to read comfortably. We will darken or lighten your text colour automatically - pick a stronger one to keep the shade you want."}
         </span>
       </p>
     </div>
@@ -414,7 +414,7 @@ function LockedPanel({ eventId }: { eventId: string }) {
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
         On the free plan your guests see the Say Cheese theme, a fixed cover and
         a fixed gallery, with a small header and footer pointing back to us.
-        Everything works — it just looks like ours rather than yours.
+        Everything works - it just looks like ours rather than yours.
       </p>
 
       <ul className="mt-4 space-y-2">

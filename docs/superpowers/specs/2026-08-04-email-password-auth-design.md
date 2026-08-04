@@ -22,16 +22,16 @@ multi-factor auth are not part of this work.
 
 ## What already exists
 
-- `src/lib/supabase/server.ts` — cookie-backed server client, plus `getSessionUser()`
-- `src/lib/supabase/browser.ts` — browser client, currently used only for OAuth
-- `src/app/auth/callback/route.ts` — exchanges an OAuth `?code=` for a session
-- `src/middleware.ts` — refreshes the session cookie, redirects anonymous
+- `src/lib/supabase/server.ts` - cookie-backed server client, plus `getSessionUser()`
+- `src/lib/supabase/browser.ts` - browser client, currently used only for OAuth
+- `src/app/auth/callback/route.ts` - exchanges an OAuth `?code=` for a session
+- `src/middleware.ts` - refreshes the session cookie, redirects anonymous
   visitors away from `/dashboard`
-- `supabase/migrations/0001_init.sql` — the `on_auth_user_created` trigger inserts
+- `supabase/migrations/0001_init.sql` - the `on_auth_user_created` trigger inserts
   a `public.profiles` row for every new `auth.users` row, reading `full_name` from
   `raw_user_meta_data`
-- `src/lib/ratelimit.ts` — in-process per-key limiter with a `LIMITS` table
-- `src/app/dashboard/actions.ts` — the house pattern for server actions: zod
+- `src/lib/ratelimit.ts` - in-process per-key limiter with a `LIMITS` table
+- `src/app/dashboard/actions.ts` - the house pattern for server actions: zod
   schema, `ActionState { error?, ok? }`, rate limit, redirect
 
 ## Approach
@@ -58,7 +58,7 @@ One panel, two ways in. `LoginPanel` keeps the Google button but demotes it belo
 an email/password form, separated by an "or" rule.
 
 The form carries a **Sign in / Create account** toggle held in local component
-state — no second route, so the marketing column in `src/app/login/page.tsx`
+state - no second route, so the marketing column in `src/app/login/page.tsx`
 stays untouched. Create-account mode adds an optional **Name** field, passed as
 `options.data.full_name` at sign-up so the existing profile trigger populates
 `profiles.full_name` with no application code.
@@ -128,7 +128,7 @@ parameter, so the recovery template needs no extra query string. `next` is only
 honoured when a caller supplies it.
 
 `NEXT_PUBLIC_SITE_URL` is added to `.env.example` because `resetPasswordForEmail`
-needs an absolute `redirectTo` origin — used as the fallback when the templates
+needs an absolute `redirectTo` origin - used as the fallback when the templates
 have not been edited, and it must be allow-listed under Authentication → URL
 Configuration. The current `.env` has no such variable.
 
@@ -152,8 +152,8 @@ session theft becomes a concern.
 `src/lib/auth.ts` holds the schemas so they are testable without a Supabase
 client:
 
-- `emailSchema` — trimmed, lowercased, valid email address
-- `passwordSchema` — minimum 8 characters (Supabase's own default is 6)
+- `emailSchema` - trimmed, lowercased, valid email address
+- `passwordSchema` - minimum 8 characters (Supabase's own default is 6)
 - `signInSchema`, `signUpSchema` (adds optional `full_name`, max 120 to match
   `profiles.full_name` usage), `resetRequestSchema`, `updatePasswordSchema`
 
@@ -184,7 +184,7 @@ cold start. They are a second line of defence, not a guarantee.
 
 ### Testing
 
-`tests/auth.test.ts` follows the existing `tests/*.test.ts` pattern — pure
+`tests/auth.test.ts` follows the existing `tests/*.test.ts` pattern - pure
 functions from `src/lib/auth.ts`, no network:
 
 - valid and invalid email addresses
@@ -204,6 +204,8 @@ round-trip, and Google sign-in still reaching `/auth/callback` unchanged.
   per hour. Confirmation and reset testing will be slow until `RESEND_API_KEY`
   (already in `.env.example`) is wired to Supabase's custom SMTP settings.
 - **Email templates are dashboard state.** `/auth/confirm` only receives a
-  `token_hash` if the templates are edited. Until then, links land on
-  `/auth/callback` with no `code` and redirect to `/login?error=missing_code`.
-  The README step is not optional.
+  `token_hash` if the templates are edited. Rather than make that a silent
+  prerequisite, the route also accepts the `?code=` the stock templates produce
+  and falls back to `exchangeCodeForSession`. Editing the templates is then a
+  recommendation, not a requirement, and buys one thing: a link that still works
+  when opened on a different device from the one that started the flow.

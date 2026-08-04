@@ -7,11 +7,11 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "Say Cheese — every photo from every guest, at any event",
+    default: "Say Cheese - every photo from every guest, at any event",
     template: "%s · Say Cheese",
   },
   description:
-    "Guests scan a code and hand you their photos. No app, no account, nothing to install. Weddings, birthdays, offsites — anything with people and phones.",
+    "Guests scan a code and hand you their photos. No app, no account, nothing to install. Weddings, birthdays, offsites - anything with people and phones.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     apple: "/favicon.svg",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Say Cheese",
-    title: "Say Cheese — every photo from every guest, at any event",
+    title: "Say Cheese - every photo from every guest, at any event",
     description:
       "Guests scan a code and hand you their photos. No app, no account, nothing to install.",
   },

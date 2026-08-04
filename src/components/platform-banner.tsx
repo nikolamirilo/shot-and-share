@@ -6,7 +6,7 @@ import { LogoMark } from "@/components/logo";
  * The Say Cheese header and footer on a free event.
  *
  * This is the free plan's price. Not a watermark stamped across somebody's
- * photographs — a small bar above and a clear invitation below, on the one page
+ * photographs - a small bar above and a clear invitation below, on the one page
  * where the audience is a hundred people who have just watched the product work
  * and are holding phones full of their own events.
  *
@@ -51,7 +51,7 @@ export function PlatformFooter() {
           Having an event of your own?
         </h2>
         <p className="mx-auto mt-3 max-w-md text-[0.9375rem] leading-relaxed text-crust">
-          This is how the host collected every photo here — one code on the
+          This is how the host collected every photo here - one code on the
           table, no app and no accounts. Free to set up and try.
         </p>
         <Link

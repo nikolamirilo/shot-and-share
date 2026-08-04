@@ -13,7 +13,7 @@ import { getTier } from "@/lib/tiers";
 /**
  * The look of a guest's event page.
  *
- * Everything here is a paid feature — it is the "custom event page" the Slice
+ * Everything here is a paid feature - it is the "custom event page" the Slice
  * and Wheel plans already promise. A free event gets the product's own theme,
  * a fixed cover, a fixed gallery, and a small Say Cheese header and footer,
  * which is what makes the free plan a genuinely useful product that also sells
@@ -143,7 +143,7 @@ export function findTheme(id: string | null | undefined): Theme {
 
 /**
  * A host picks four colours. The other five are derived, and the text colours
- * are corrected for contrast rather than taken on trust — see readableInk.
+ * are corrected for contrast rather than taken on trust - see readableInk.
  */
 export interface CustomThemeInput {
   bg?: string;

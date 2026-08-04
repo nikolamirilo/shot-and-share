@@ -21,17 +21,17 @@ export const dynamic = "force-dynamic";
  *
  * The worker handles exactly the two things a browser cannot:
  *
- *   1. Images the browser could not decode — chiefly HEIC anywhere that is not
+ *   1. Images the browser could not decode - chiefly HEIC anywhere that is not
  *      Safari. Without this, an iPhone photo uploaded from a desktop Chrome is
  *      a file most of the guests and half the hosts cannot open.
  *   2. Video. Compressing a clip client-side means MediaRecorder, which
- *      re-encodes in real time — a two-minute video takes two minutes with a
+ *      re-encodes in real time - a two-minute video takes two minutes with a
  *      guest watching a spinner at a party. It has to happen off the phone.
  *
  * The worker never gets AWS credentials. It asks for jobs, receives presigned
  * URLs to read the input and write the outputs, and reports back. That means
  * the thing running ffmpeg on untrusted user input holds nothing worth stealing
- * — which matters, because ffmpeg parsing a hostile file is a real attack
+ * - which matters, because ffmpeg parsing a hostile file is a real attack
  * surface and this is the process most likely to be compromised.
  */
 

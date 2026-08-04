@@ -2,15 +2,15 @@ import QRCode from "qrcode";
 
 /**
  * QR codes are generated server-side as SVG, which prints at any size without
- * pixelation. The code is the actual product — it is the thing that goes on the
- * table — so it gets the same care as the screen does.
+ * pixelation. The code is the actual product - it is the thing that goes on the
+ * table - so it gets the same care as the screen does.
  */
 
 /**
  * The dark modules only, so the code can be composed into the printable card.
  *
  * `qrcode` emits them as a single *stroked* path with half-pixel offsets, not
- * as filled rectangles — so it has to be drawn back with `stroke` and a width
+ * as filled rectangles - so it has to be drawn back with `stroke` and a width
  * of one module, and `shape-rendering="crispEdges"` to stop a printer driver
  * anti-aliasing the edges into something a scanner struggles with.
  */

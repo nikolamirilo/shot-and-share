@@ -11,8 +11,8 @@ import type { StorageDriver } from "@/lib/storage/types";
 /**
  * Filesystem driver for development.
  *
- * It exists so the whole product — guest upload, quota rejection, gallery,
- * ZIP download, retention deletion — can be exercised end to end without an
+ * It exists so the whole product - guest upload, quota rejection, gallery,
+ * ZIP download, retention deletion - can be exercised end to end without an
  * AWS account. It deliberately mirrors the S3 contract rather than shortcutting
  * it: uploads go to a signed, expiring, size-limited endpoint, and reads of
  * originals are signed too. If it worked here but not on S3 the driver would be

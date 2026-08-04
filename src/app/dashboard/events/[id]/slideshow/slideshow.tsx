@@ -13,7 +13,7 @@ const ADVANCE_MS = 7000;
  * Full-screen slideshow for the venue.
  *
  * One Supabase Realtime channel on `media` for this event is the only live
- * query in the whole product — everything else is a plain request. When a photo
+ * query in the whole product - everything else is a plain request. When a photo
  * lands the channel says so and the page fetches the signed URL, then jumps to
  * it: at a wedding the interesting photo is always the one that just arrived.
  */

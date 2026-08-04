@@ -104,7 +104,7 @@ export const env = {
     return opt("RESEND_API_KEY");
   },
   get emailFrom() {
-    return opt("EMAIL_FROM") ?? "Say Cheese <hello@saycheese.app>";
+    return opt("EMAIL_FROM") ?? "Say Cheese <office@reactify-solutions.com>";
   },
 
   get cronSecret() {
@@ -119,7 +119,7 @@ export const env = {
     return process.env.NODE_ENV === "production";
   },
 };
-
+    
 export const hasSupabase = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
     (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??

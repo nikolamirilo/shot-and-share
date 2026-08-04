@@ -116,7 +116,7 @@ export function darken(color: string, amount: number): string {
 /**
  * The text colour to use on a given background.
  *
- * Not "whatever the host picked" — whichever of their ink or its opposite
+ * Not "whatever the host picked" - whichever of their ink or its opposite
  * actually reads. A guest squinting at a phone in a dark venue is the whole
  * reason this function exists rather than a comment asking hosts to be careful.
  */
@@ -135,7 +135,7 @@ export function readableInk(background: string, preferred: string): string {
   /*
    * Last resort: whichever of black or white actually wins, measured rather
    * than guessed from the background's luminance. A mid-grey background is the
-   * case that breaks the guess — around #808080 neither pure white nor the
+   * case that breaks the guess - around #808080 neither pure white nor the
    * "obviously" correct choice reaches 4.5:1, but black does.
    */
   const white = parseHex("#FFFFFF")!;

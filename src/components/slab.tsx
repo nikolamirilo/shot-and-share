@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
  * The slab. The one place on the page where we spend boldness.
  *
  * A cheese hole and a camera aperture are the same shape, so the holes are not
- * decoration — they are viewfinders, and they carry the content. The slab in
+ * decoration - they are viewfinders, and they carry the content. The slab in
  * the hero *is* the photo grid, and the photos live inside the holes.
  *
  * Two behaviours give it life and no more than two:

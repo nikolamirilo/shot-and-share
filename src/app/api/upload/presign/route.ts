@@ -79,7 +79,7 @@ type MediaInsert = Database["public"]["Tables"]["media"]["Insert"];
  * Checking afterwards means the bytes are already in the bucket and already
  * billable. It also decides *what gets stored*, which is the whole compression
  * story: on an `optimised` event the browser's re-encoded copy becomes the
- * archival object and the phone never uploads the 4 MB original at all — which
+ * archival object and the phone never uploads the 4 MB original at all - which
  * is a quarter of the storage and, on venue wifi, a quarter of the wait.
  */
 export async function POST(request: Request) {
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
 
       /*
        * A separate display copy is kept when the archival object is not a good
-       * thing to serve to two hundred guests — either because it is the full
+       * thing to serve to two hundred guests - either because it is the full
        * uploaded original (heavy), or because it is a format half of them
        * cannot open (HEIC). When the archival object *is* the optimised copy,
        * a second one would be the same file twice.

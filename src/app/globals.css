@@ -21,7 +21,7 @@
 
   /* Display: variable width and weight, slightly awkward, physically heavy.
      Body: friendly geometric sans with more character than Inter.
-     Mono: labels the machine-readable parts — tokens, short links, prices per
+     Mono: labels the machine-readable parts - tokens, short links, prices per
      unit. It is not styling; scanning a QR code is a technical act. */
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;

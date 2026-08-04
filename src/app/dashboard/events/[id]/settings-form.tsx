@@ -107,7 +107,7 @@ function Save() {
  *
  * "Optimised" re-encodes each photo to roughly a quarter of the size at a
  * resolution nobody can tell apart on a screen, and throws the uploaded file
- * away. For almost every host that is the better trade — it is the difference
+ * away. For almost every host that is the better trade - it is the difference
  * between a free event holding 250 photos and holding a thousand. For anyone
  * printing large or handing files to an editor, it is the wrong one.
  */

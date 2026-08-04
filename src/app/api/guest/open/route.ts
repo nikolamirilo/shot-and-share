@@ -17,7 +17,7 @@ const bodySchema = z.object({ token: z.string().min(20).max(64) });
  * to one count per visitor, and counting every render would fold in prefetches
  * and link previews. The client only fires this once per browser per event.
  *
- * The number this feeds — opened the link, then uploaded — is the clearest
+ * The number this feeds - opened the link, then uploaded - is the clearest
  * signal we have that the guest experience is broken, so it is worth getting
  * approximately right rather than precisely wrong.
  */

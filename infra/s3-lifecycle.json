@@ -33,7 +33,7 @@
       "Status": "Enabled",
       "_comment": [
         "Filters on the object TAG, not the prefix. S3 prefix filters are",
-        "literal — there is no way to write events/*/archive/ — so a prefix",
+        "literal - there is no way to write events/*/archive/ - so a prefix",
         "rule here would expire every photo in the bucket after 30 days.",
         "The ZIP is derived data and can always be rebuilt."
       ],

@@ -68,7 +68,7 @@ export interface Thumbnail {
 }
 
 /**
- * Returns null when the browser cannot decode the file — HEIC in some contexts,
+ * Returns null when the browser cannot decode the file - HEIC in some contexts,
  * video in all of them. That is not an upload failure: the original still goes
  * up, and the gallery falls back. A Lambda on object-create is the place to
  * generate the missing thumbnails once real upload data shows which formats

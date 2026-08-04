@@ -10,7 +10,7 @@ import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
  *
  * It states what the product actually does with data, which is the part that
  * has to be true, but it is not a lawyer's document and must be reviewed before
- * launch — particularly the GDPR sections, since photos of identifiable people
+ * launch - particularly the GDPR sections, since photos of identifiable people
  * are personal data and the host is the controller.
  */
 const PAGES: Record<
@@ -114,7 +114,7 @@ export default async function LegalPage({
           </div>
 
           <p className="mt-12 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-            Placeholder — review before launch
+            Placeholder - review before launch
           </p>
         </div>
       </main>

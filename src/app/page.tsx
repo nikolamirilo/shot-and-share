@@ -9,7 +9,7 @@ import { getSessionUser } from "@/lib/supabase/server";
 import { hasSupabase } from "@/lib/env";
 
 export const metadata: Metadata = {
-  title: "Say Cheese — every photo from every guest, at any event",
+  title: "Say Cheese - every photo from every guest, at any event",
 };
 
 export default async function LandingPage() {
@@ -121,7 +121,7 @@ function Steps() {
     {
       n: "02",
       title: "Put the code on the tables",
-      body: "Print it, drop it in the group chat, or put it on the order of service. Guests point a camera at it — that is the whole instruction.",
+      body: "Print it, drop it in the group chat, or put it on the order of service. Guests point a camera at it - that is the whole instruction.",
     },
     {
       n: "03",
@@ -240,7 +240,7 @@ function Pricing() {
           <Link href="mailto:hello@saycheese.app" className="underline">
             Talk to us
           </Link>{" "}
-          — a plan for you is next.
+          - a plan for you is next.
         </p>
       </div>
     </section>
@@ -251,7 +251,7 @@ function Faq() {
   const faqs = [
     [
       "Do guests need an account?",
-      "No. They open the link, choose photos and upload. There is no sign-in prompt anywhere on the guest side, on purpose — it is the single biggest reason people fail to hand over their photos.",
+      "No. They open the link, choose photos and upload. There is no sign-in prompt anywhere on the guest side, on purpose - it is the single biggest reason people fail to hand over their photos.",
     ],
     [
       "What happens when the storage window ends?",

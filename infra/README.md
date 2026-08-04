@@ -56,14 +56,14 @@ expire the lot.
 
 Uploads are tagged `tier=<tier>` at upload time by the presigned policy, which
 costs no extra requests. The `retention=forever` tag is **not** applied
-retroactively when a host buys The Cellar after the fact — re-tagging thousands
+retroactively when a host buys The Cellar after the fact - re-tagging thousands
 of existing objects needs an S3 Batch Operations job, which is the right tool and
 is not wired up yet.
 
 Until it is, Keep Forever still works correctly and safely: the retention job
 excludes those events from expiry, so nothing is ever deleted. The only cost is
 that the objects sit in Glacier IR at \$0.004 per GB-month rather than Deep
-Archive at \$0.00099. On 30 GB that is about \$1.44 a year against \$0.36 — a real
+Archive at \$0.00099. On 30 GB that is about \$1.44 a year against \$0.36 - a real
 but small margin leak against a €29 one-time payment, and it does not put a
 single photo at risk.
 
@@ -73,7 +73,7 @@ Serve thumbnails from a hostname that is **separate from the app** from day one,
 for example `media.saycheese.app`, and point `NEXT_PUBLIC_MEDIA_BASE_URL` at it.
 
 This matters more than it looks. AWS is not part of the Cloudflare Bandwidth
-Alliance, so putting Cloudflare in front of S3 does not make egress free — every
+Alliance, so putting Cloudflare in front of S3 does not make egress free - every
 byte Cloudflare pulls is billed at \$0.09 per GB. What Cloudflare buys is cache
 hits, which turns egress from *bytes × viewers* into *bytes × a handful of edge
 locations*. If that stops being enough, S3 to CloudFront transfer **is** free, and
@@ -126,6 +126,6 @@ The application needs exactly this much and no more.
 ```
 
 `ListBucket` is granted because the retention job deletes a whole event prefix at
-the end of its life. The application never uses it to read a gallery — LIST is
+the end of its life. The application never uses it to read a gallery - LIST is
 billed at the expensive request rate, and Postgres is the source of truth for
 what exists.

@@ -288,7 +288,7 @@ export function Uploader({
           htmlFor="guest-name"
           className="block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind"
         >
-          Your name — optional
+          Your name - optional
         </label>
         <input
           id="guest-name"
@@ -356,7 +356,7 @@ export function Uploader({
           <p className="text-[0.9375rem] font-semibold">{error}</p>
           {upgradeHint && (
             <p className="mt-1.5 text-[0.9375rem] text-crust">
-              The host needs to make more room. Let them know — they can raise
+              The host needs to make more room. Let them know - they can raise
               the limit from their phone in under a minute.
             </p>
           )}
@@ -368,8 +368,8 @@ export function Uploader({
 
 /**
  * Everything the browser can do for one file before it leaves the device:
- * decode it, shrink it, re-encode it into a format that opens anywhere, and —
- * for a video — pull a poster frame out of it.
+ * decode it, shrink it, re-encode it into a format that opens anywhere, and -
+ * for a video - pull a poster frame out of it.
  */
 async function prepare(file: File): Promise<Prepared> {
   if (file.type.startsWith("video/")) {

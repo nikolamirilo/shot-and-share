@@ -24,11 +24,37 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
+  const code = url.searchParams.get("code");
   const next = url.searchParams.get("next");
 
   // Only ever redirect within our own site.
   const safeNext =
     next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+
+  const supabase = await createClient();
+
+  /**
+   * Two shapes arrive here, and which one depends on a dashboard setting no
+   * deploy can see. Supabase's stock templates send the reader through its own
+   * /auth/v1/verify, which hands us a `code`; templates edited to use
+   * {{ .TokenHash }} hand us a token hash instead. Accepting only the second
+   * would make editing those templates a silent prerequisite, and the failure
+   * would look like a broken link rather than a missing setup step.
+   */
+  if (!tokenHash && code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      return NextResponse.redirect(
+        new URL("/login?error=expired_link", url.origin),
+      );
+    }
+    return NextResponse.redirect(
+      new URL(
+        type === "recovery" ? "/account/password" : (safeNext ?? "/dashboard"),
+        url.origin,
+      ),
+    );
+  }
 
   if (!tokenHash || !type || !ALLOWED.includes(type)) {
     return NextResponse.redirect(
@@ -36,7 +62,6 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = await createClient();
   const { error } = await supabase.auth.verifyOtp({
     type,
     token_hash: tokenHash,

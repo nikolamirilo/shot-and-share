@@ -205,7 +205,7 @@ const appearanceSchema = z.object({
  *
  * Refused outright on the free plan. resolveAppearance() would render a free
  * event with the house theme regardless of what is stored, so this check is not
- * what protects the paywall — it is what gives the host a clear answer instead
+ * what protects the paywall - it is what gives the host a clear answer instead
  * of a form that appears to save and then changes nothing.
  */
 export async function updateAppearance(
@@ -390,7 +390,7 @@ export async function deleteEvent(eventId: string): Promise<ActionState> {
 
 /**
  * Bring back an event that passed its expiry but is still inside the grace
- * window. Nothing has been removed yet at this point — that is the whole reason
+ * window. Nothing has been removed yet at this point - that is the whole reason
  * the grace window exists.
  */
 export async function restoreEvent(eventId: string): Promise<ActionState> {

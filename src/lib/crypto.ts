@@ -14,7 +14,7 @@ import {
  * Hash-only storage is the stricter design, and it is the wrong one here: a
  * host who loses the tab would have to reissue the link, which invalidates
  * every printed card on every table. Encrypting instead keeps the useful
- * property — a stolen database dump alone yields no working links — while
+ * property - a stolen database dump alone yields no working links - while
  * letting the dashboard render the code on demand.
  */
 

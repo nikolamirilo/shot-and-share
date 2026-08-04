@@ -8,7 +8,7 @@ import { required } from "@/lib/env";
  *
  *  1. Guest traffic, which is unauthenticated by design. The route validates
  *     the link token itself and only then queries.
- *  2. Machine work — payment webhooks and the retention job.
+ *  2. Machine work - payment webhooks and the retention job.
  *
  * It must never be imported into a client component or a page that renders
  * host-owned data without an ownership check of its own.

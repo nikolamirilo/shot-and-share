@@ -122,7 +122,7 @@ async function handleVideo(job, dir) {
   await run(FFMPEG, [
     "-y",
     "-i", input,
-    // Never upscale, and keep dimensions even — H.264 requires it.
+    // Never upscale, and keep dimensions even - H.264 requires it.
     "-vf", `scale='min(${VIDEO_MAX_EDGE},iw)':-2:flags=lanczos`,
     "-c:v", "libx264",
     // Baseline-ish profile: old Android and smart TVs refuse High 10.

@@ -15,9 +15,9 @@
 - **Do not modify `src/app/auth/callback/route.ts`.** The Google sign-in bug is explicitly out of scope for this work.
 - **Do not modify the `config.matcher` in `src/middleware.ts`.** Its existing pattern already covers `/account` and `/login`.
 - Minimum password length is **8** characters. Supabase's own default floor is 6; the app asks for more.
-- Maximum password length is **72** bytes — Supabase hashes with bcrypt, which silently truncates past that.
+- Maximum password length is **72** bytes - Supabase hashes with bcrypt, which silently truncates past that.
 - A failed sign-in **always** reads `That email and password don't match.` Never a message that distinguishes "wrong password" from "no such account".
-- A password-reset request **always** replies `If that address has an account, a reset link is on its way.` — on success, on failure, and when rate-limited.
+- A password-reset request **always** replies `If that address has an account, a reset link is on its way.` - on success, on failure, and when rate-limited.
 - Raw Supabase error strings are never rendered. Everything goes through `authErrorMessage()`.
 - Redirect targets from user input must start with a single `/`, matching the `safeNext` check already in `src/app/auth/callback/route.ts:15`.
 - Follow the house server-action pattern in `src/app/dashboard/actions.ts`: zod `safeParse`, a plain state object return, `redirect()` on success.
@@ -216,7 +216,7 @@ describe("loginErrorMessage", () => {
 npm test -- tests/auth.test.ts
 ```
 
-Expected: FAIL — `Failed to resolve import "@/lib/auth"`.
+Expected: FAIL - `Failed to resolve import "@/lib/auth"`.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -297,7 +297,7 @@ export const RESET_SENT_MESSAGE =
   "If that address has an account, a reset link is on its way.";
 
 export const CHECK_INBOX_MESSAGE =
-  "Check your inbox — we sent a link to confirm your address.";
+  "Check your inbox - we sent a link to confirm your address.";
 
 export const GENERIC_MESSAGE = "Something went wrong. Try again.";
 
@@ -309,7 +309,7 @@ export const GENERIC_MESSAGE = "Something went wrong. Try again.";
 const AUTH_MESSAGES: Record<string, string> = {
   invalid_credentials: CREDENTIALS_MESSAGE,
   email_not_confirmed:
-    "Confirm your email address first — the link is in your inbox.",
+    "Confirm your email address first - the link is in your inbox.",
   over_request_rate_limit: "Too many attempts. Wait a minute and try again.",
   over_email_send_rate_limit:
     "Too many emails sent to that address. Wait a few minutes.",
@@ -551,7 +551,7 @@ export async function updatePassword(
 npm run typecheck && npm run lint
 ```
 
-Expected: no errors. If TypeScript complains that a code path returns `undefined`, confirm `redirect()` is the last statement in that branch — its return type is `never`, which satisfies the signature.
+Expected: no errors. If TypeScript complains that a code path returns `undefined`, confirm `redirect()` is the last statement in that branch - its return type is `never`, which satisfies the signature.
 
 - [ ] **Step 4: Verify the existing test suite still passes**
 
@@ -1136,7 +1136,7 @@ Expected: all three clean. If `SiteHeader`/`SiteFooter` are not the exported nam
 npm run dev
 ```
 
-Open `http://localhost:3000/login`, click **Forgot password?**, submit any address, and confirm the panel switches to "Check your inbox" with the non-committal sentence — including for an address that has no account. Stop the dev server afterwards.
+Open `http://localhost:3000/login`, click **Forgot password?**, submit any address, and confirm the panel switches to "Check your inbox" with the non-committal sentence - including for an address that has no account. Stop the dev server afterwards.
 
 - [ ] **Step 5: Commit**
 
@@ -1336,7 +1336,7 @@ Replace README step 3 (currently "Enable the Google provider…") with:
 
 ````markdown
 3. Under **Authentication → Providers**, enable **Email**. Leave "Confirm email"
-   on or off as you prefer — the sign-up action reads whether a session came
+   on or off as you prefer - the sign-up action reads whether a session came
    back and either lands on the dashboard or asks the host to check their inbox.
    Enable **Google** in the same place if you want the Google button to work.
 
@@ -1373,13 +1373,13 @@ Renumber any following steps in that section.
 On README line 72, change:
 
 ```
-| Auth and database | Supabase — Postgres with Row Level Security, Google sign-in |
+| Auth and database | Supabase - Postgres with Row Level Security, Google sign-in |
 ```
 
 to:
 
 ```
-| Auth and database | Supabase — Postgres with Row Level Security, email/password and Google sign-in |
+| Auth and database | Supabase - Postgres with Row Level Security, email/password and Google sign-in |
 ```
 
 - [ ] **Step 4: Verify the docs match the code**
