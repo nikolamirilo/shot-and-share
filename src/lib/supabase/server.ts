@@ -13,7 +13,7 @@ export async function createClient() {
 
   return createServerClient<Database>(
     required("NEXT_PUBLIC_SUPABASE_URL"),
-    required("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
     {
       cookies: {
         getAll() {

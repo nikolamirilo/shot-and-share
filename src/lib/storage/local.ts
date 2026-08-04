@@ -24,6 +24,7 @@ const ROOT = path.join(process.cwd(), ".storage");
 function secret(): string {
   return (
     process.env.LOCAL_STORAGE_SECRET ??
+    process.env.SUPABASE_SECRET_KEY ??
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
     "say-cheese-development-secret"
   );

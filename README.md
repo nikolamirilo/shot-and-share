@@ -32,7 +32,7 @@ guest pages need Supabase.
    files you apply yourself.
 3. Enable the Google provider under Authentication → Providers, and add
    `http://localhost:3000/auth/callback` to the redirect allow-list.
-4. Copy the project URL, the anon key, and the service role key into
+4. Copy the project URL, the publishable key, and the secret key into
    `.env.local`.
 
 ### Storage

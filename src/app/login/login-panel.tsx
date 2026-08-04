@@ -44,9 +44,9 @@ export function LoginPanel({
         <h2 className="text-h3">Supabase is not configured</h2>
         <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
           Set <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
-          <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>{" "}
+          <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>{" "}
           and{" "}
-          <code className="font-mono text-[0.9375rem]">SUPABASE_SERVICE_ROLE_KEY</code>{" "}
+          <code className="font-mono text-[0.9375rem]">SUPABASE_SECRET_KEY</code>{" "}
           in <code className="font-mono text-[0.9375rem]">.env.local</code>, run
           the migrations in{" "}
           <code className="font-mono text-[0.9375rem]">supabase/migrations</code>

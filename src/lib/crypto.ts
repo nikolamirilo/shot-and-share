@@ -39,9 +39,11 @@ function key(): Buffer {
   }
 
   // Development fallback. Set TOKEN_ENCRYPTION_KEY in production: without it a
-  // leaked service-role key is enough to decrypt tokens as well as read rows.
+  // leaked Supabase secret key is enough to decrypt tokens as well as read rows.
   const fallback =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? "say-cheese-development-secret";
+    process.env.SUPABASE_SECRET_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    "say-cheese-development-secret";
   keyCache = scryptSync(fallback, "say-cheese-token-v1", 32);
   return keyCache;
 }
