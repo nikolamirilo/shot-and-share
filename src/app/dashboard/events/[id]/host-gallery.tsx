@@ -162,8 +162,8 @@ export function HostGallery({
 
       {layout !== eventLayout && (
         <p className="mt-3 text-[0.8125rem] text-rind">
-          You are viewing this your way. Guests still land on the layout set in
-          settings below.
+          You are viewing this your way. Guests still land on the layout set
+          under Event page.
         </p>
       )}
 

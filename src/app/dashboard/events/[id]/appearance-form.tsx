@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 
 import { updateAppearance, type ActionState } from "@/app/dashboard/actions";
 import { EventCover, EventThemeRoot } from "@/components/event-cover";
+import { TabPanel, Tabs, type TabItem } from "@/components/tabs";
 import { Badge, Button, ButtonLink, cx } from "@/components/ui";
 import { UploadPanel } from "@/components/upload-panel";
 import {
@@ -38,7 +39,22 @@ import { getTier } from "@/lib/tiers";
  * standing in for photos - were exactly the parts that stopped agreeing with
  * the page: a hand-drawn panel has no card surface on it, so the "Cards" colour
  * had nothing to colour.
+ *
+ * Six groups of options stacked under that preview is the longest scroll in the
+ * product, and on a phone it put the gallery layout about four screens below
+ * the thing it changes. Below `lg` the groups become tabs directly under the
+ * preview, so every choice is one tap away and the preview it is judged
+ * against stays on screen. On a laptop the column is short enough to read at
+ * once and they all stay open.
  */
+const LOOK_TABS: TabItem[] = [
+  { id: "theme", label: "Colour" },
+  { id: "type", label: "Type" },
+  { id: "cover", label: "Cover" },
+  { id: "uploads", label: "Uploads" },
+  { id: "gallery", label: "Gallery" },
+];
+
 export function AppearanceForm({
   event,
   media,
@@ -171,166 +187,187 @@ export function AppearanceForm({
           <input key={key} type="hidden" name={`custom_${key}`} value={value} />
         ))}
 
-        <Group label="Theme">
-          <div className="flex flex-wrap gap-2">
-            {THEMES.map((theme) => (
-              <Swatch
-                key={theme.id}
-                selected={themeId === theme.id}
-                onClick={() => setThemeId(theme.id)}
-                title={theme.hint}
-                name={theme.name}
-                colors={[
-                  theme.palette.bg,
-                  theme.palette.accent,
-                  theme.palette.ink,
-                ]}
-              />
-            ))}
-            <Swatch
-              selected={themeId === CUSTOM_THEME_ID}
-              onClick={() => setThemeId(CUSTOM_THEME_ID)}
-              title="Pick your own colours"
-              name="Custom"
-              colors={[colors.bg, colors.accent, colors.ink]}
-            />
-          </div>
-        </Group>
-
-        {themeId === CUSTOM_THEME_ID && (
-          <CustomColours colors={colors} onChange={setColors} />
-        )}
-
-        <Group label="Type" hint="Pairs a heading face with a body face.">
-          <div className="grid gap-2 xs:grid-cols-2">
-            {FONT_SETS.map((set) => (
-              <button
-                key={set.id}
-                type="button"
-                onClick={() => setFontId(set.id)}
-                aria-pressed={fontId === set.id}
-                className={cx(
-                  "rounded-xl border-2 border-pepper p-3.5 text-left",
-                  fontId === set.id ? "bg-gouda" : "bg-butter",
-                )}
-              >
-                {/* The name is set in the face it names. Nothing else here
-                    answers "what does Warm look like?" as quickly. */}
-                <span
-                  className="block text-h3 leading-none"
-                  style={{
-                    fontFamily: set.display,
-                    fontWeight: set.displayWeight,
-                    fontStretch: set.displayStretch,
-                    letterSpacing: set.displayTracking,
-                  }}
-                >
-                  {set.name}
-                </span>
-                <span
-                  className="mt-1.5 block text-[0.8125rem] leading-snug text-crust"
-                  style={{ fontFamily: set.body }}
-                >
-                  {set.hint}
-                </span>
-              </button>
-            ))}
-          </div>
-        </Group>
-
-        <Group label="Cover style">
-          <div className="grid gap-2 xs:grid-cols-2">
-            {COVER_VARIANTS.map((option) => (
-              <Choice
-                key={option.id}
-                selected={cover === option.id}
-                onClick={() => setCover(option.id)}
-                name={option.name}
-                hint={option.hint}
-              />
-            ))}
-          </div>
-        </Group>
-
-        <Group label="Asking for photos">
-          <div className="grid gap-2 xs:grid-cols-2">
-            {UPLOAD_VARIANTS.map((option) => (
-              <Choice
-                key={option.id}
-                selected={upload === option.id}
-                onClick={() => setUpload(option.id)}
-                name={option.name}
-                hint={option.hint}
-              />
-            ))}
-          </div>
-        </Group>
-
-        <Group
-          label="Cover photo"
-          hint={
-            media.length === 0
-              ? "Once photos arrive you can pick one for the cover."
-              : "Pick any photo from the event."
-          }
+        <Tabs
+          items={LOOK_TABS}
+          label="Event page settings"
+          idPrefix="look"
+          /* Clear of the console's own strip, which is pinned to the top of a
+             phone screen: a group opened from the bottom of a long one has to
+             land under it, not behind it. */
+          stickyOffset={70}
+          tablistClassName="-mx-5 px-5 sm:-mx-6 sm:px-6"
         >
-          {coverNeedsPhoto && (
-            <p className="mb-2.5 rounded-xl border-2 border-dashed border-rind p-3 text-[0.8125rem] leading-snug text-crust">
-              No cover photo yet. Until you pick one, guests get the{" "}
-              <strong>Just type</strong> cover rather than the one above.
-            </p>
-          )}
+          <TabPanel id="theme" className="mt-5 space-y-6 lg:mt-0">
+            <Group label="Theme">
+              <div className="flex flex-wrap gap-2">
+                {THEMES.map((theme) => (
+                  <Swatch
+                    key={theme.id}
+                    selected={themeId === theme.id}
+                    onClick={() => setThemeId(theme.id)}
+                    title={theme.hint}
+                    name={theme.name}
+                    colors={[
+                      theme.palette.bg,
+                      theme.palette.accent,
+                      theme.palette.ink,
+                    ]}
+                  />
+                ))}
+                <Swatch
+                  selected={themeId === CUSTOM_THEME_ID}
+                  onClick={() => setThemeId(CUSTOM_THEME_ID)}
+                  title="Pick your own colours"
+                  name="Custom"
+                  colors={[colors.bg, colors.accent, colors.ink]}
+                />
+              </div>
+            </Group>
 
-          {media.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setCoverMediaId(null)}
-                className={cx(
-                  "h-16 w-16 rounded-lg border-2 border-pepper font-mono text-[0.6875rem] uppercase sm:h-14 sm:w-14",
-                  coverMediaId === null ? "bg-gouda" : "bg-butter",
-                )}
-              >
-                none
-              </button>
-              {media.slice(0, 24).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setCoverMediaId(item.id)}
-                  aria-pressed={coverMediaId === item.id}
-                  className={cx(
-                    "h-16 w-16 overflow-hidden rounded-lg border-2 border-pepper sm:h-14 sm:w-14",
-                    coverMediaId === item.id &&
-                      "ring-4 ring-pepper ring-offset-2 ring-offset-cream",
-                  )}
-                >
-                  {item.previewUrl && (
-                    <img
-                      src={item.previewUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </Group>
+            {themeId === CUSTOM_THEME_ID && (
+              <CustomColours colors={colors} onChange={setColors} />
+            )}
+          </TabPanel>
 
-        <Group label="Gallery layout">
-          <div className="grid gap-2 xs:grid-cols-2">
-            {GALLERY_LAYOUTS.map((option) => (
-              <Choice
-                key={option.id}
-                selected={layout === option.id}
-                onClick={() => setLayout(option.id)}
-                name={option.name}
-                hint={option.hint}
-              />
-            ))}
-          </div>
-        </Group>
+          <TabPanel id="type" className="mt-5 space-y-6 lg:mt-6">
+            <Group label="Type" hint="Pairs a heading face with a body face.">
+              <div className="grid gap-2 xs:grid-cols-2">
+                {FONT_SETS.map((set) => (
+                  <button
+                    key={set.id}
+                    type="button"
+                    onClick={() => setFontId(set.id)}
+                    aria-pressed={fontId === set.id}
+                    className={cx(
+                      "rounded-xl border-2 border-pepper p-3.5 text-left",
+                      fontId === set.id ? "bg-gouda" : "bg-butter",
+                    )}
+                  >
+                    {/* The name is set in the face it names. Nothing else here
+                        answers "what does Warm look like?" as quickly. */}
+                    <span
+                      className="block text-h3 leading-none"
+                      style={{
+                        fontFamily: set.display,
+                        fontWeight: set.displayWeight,
+                        fontStretch: set.displayStretch,
+                        letterSpacing: set.displayTracking,
+                      }}
+                    >
+                      {set.name}
+                    </span>
+                    <span
+                      className="mt-1.5 block text-[0.8125rem] leading-snug text-crust"
+                      style={{ fontFamily: set.body }}
+                    >
+                      {set.hint}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </Group>
+          </TabPanel>
+
+          <TabPanel id="cover" className="mt-5 space-y-6 lg:mt-6">
+            <Group label="Cover style">
+              <div className="grid gap-2 xs:grid-cols-2">
+                {COVER_VARIANTS.map((option) => (
+                  <Choice
+                    key={option.id}
+                    selected={cover === option.id}
+                    onClick={() => setCover(option.id)}
+                    name={option.name}
+                    hint={option.hint}
+                  />
+                ))}
+              </div>
+            </Group>
+
+            <Group
+              label="Cover photo"
+              hint={
+                media.length === 0
+                  ? "Once photos arrive you can pick one for the cover."
+                  : "Pick any photo from the event."
+              }
+            >
+              {coverNeedsPhoto && (
+                <p className="mb-2.5 rounded-xl border-2 border-dashed border-rind p-3 text-[0.8125rem] leading-snug text-crust">
+                  No cover photo yet. Until you pick one, guests get the{" "}
+                  <strong>Just type</strong> cover rather than the one above.
+                </p>
+              )}
+
+              {media.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCoverMediaId(null)}
+                    className={cx(
+                      "h-16 w-16 rounded-lg border-2 border-pepper font-mono text-[0.6875rem] uppercase sm:h-14 sm:w-14",
+                      coverMediaId === null ? "bg-gouda" : "bg-butter",
+                    )}
+                  >
+                    none
+                  </button>
+                  {media.slice(0, 24).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setCoverMediaId(item.id)}
+                      aria-pressed={coverMediaId === item.id}
+                      className={cx(
+                        "h-16 w-16 overflow-hidden rounded-lg border-2 border-pepper sm:h-14 sm:w-14",
+                        coverMediaId === item.id &&
+                          "ring-4 ring-pepper ring-offset-2 ring-offset-cream",
+                      )}
+                    >
+                      {item.previewUrl && (
+                        <img
+                          src={item.previewUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Group>
+          </TabPanel>
+
+          <TabPanel id="uploads" className="mt-5 space-y-6 lg:mt-6">
+            <Group label="Asking for photos">
+              <div className="grid gap-2 xs:grid-cols-2">
+                {UPLOAD_VARIANTS.map((option) => (
+                  <Choice
+                    key={option.id}
+                    selected={upload === option.id}
+                    onClick={() => setUpload(option.id)}
+                    name={option.name}
+                    hint={option.hint}
+                  />
+                ))}
+              </div>
+            </Group>
+          </TabPanel>
+
+          <TabPanel id="gallery" className="mt-5 space-y-6 lg:mt-6">
+            <Group label="Gallery layout">
+              <div className="grid gap-2 xs:grid-cols-2">
+                {GALLERY_LAYOUTS.map((option) => (
+                  <Choice
+                    key={option.id}
+                    selected={layout === option.id}
+                    onClick={() => setLayout(option.id)}
+                    name={option.name}
+                    hint={option.hint}
+                  />
+                ))}
+              </div>
+            </Group>
+          </TabPanel>
+        </Tabs>
 
         {state.error && (
           <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
