@@ -234,7 +234,16 @@ export async function POST(request: Request) {
         p_event: event.id,
         p_bytes: totalBytes,
       });
-      throw new Error(insertError.message);
+      /*
+       * The guest gets a generic 500, so this log line is the only place the
+       * cause is visible. Naming the migration is not decoration: an insert
+       * that names `media_key` against a database still on 0007 fails here and
+       * nowhere else, and "upload stopped working" is indistinguishable from a
+       * bucket problem until you read this.
+       */
+      throw new Error(
+        `media insert failed (schema must be at migration 0008): ${insertError.message}`,
+      );
     }
 
     // Tagged with the tier so the S3 lifecycle rules can filter on it.
