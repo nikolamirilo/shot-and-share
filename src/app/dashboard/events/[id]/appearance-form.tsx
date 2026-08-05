@@ -82,7 +82,7 @@ export function AppearanceForm({
   const font = findFontSet(fontId);
 
   const coverUrl =
-    media.find((m) => m.id === coverMediaId)?.thumbUrl ?? null;
+    media.find((m) => m.id === coverMediaId)?.previewUrl ?? null;
 
   // A photo cover with no photo falls back to "Just type" on the guest page, so
   // the host is told rather than left to discover it after the invitations go
@@ -305,9 +305,9 @@ export function AppearanceForm({
                       "ring-4 ring-pepper ring-offset-2 ring-offset-cream",
                   )}
                 >
-                  {item.thumbUrl && (
+                  {item.previewUrl && (
                     <img
-                      src={item.thumbUrl}
+                      src={item.previewUrl}
                       alt=""
                       className="h-full w-full object-cover"
                     />

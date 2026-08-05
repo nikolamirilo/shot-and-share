@@ -11,8 +11,6 @@ export type EventStatus = "active" | "expired" | "deleted";
 export type MediaStatus = "pending" | "ready" | "deleted";
 export type MediaKind = "photo" | "video";
 export type MediaProcessing = "done" | "pending" | "failed";
-/** Store the re-encoded copy, or keep exactly what the guest uploaded. */
-export type MediaQuality = "optimised" | "original";
 export type Product = TierId | "keep_forever";
 
 export type ProfileRow = {
@@ -36,7 +34,6 @@ export type EventRow = {
   status: EventStatus;
   gallery_visible: boolean;
   gallery_layout: GalleryLayout;
-  media_quality: MediaQuality;
   theme: string;
   theme_custom: unknown;
   theme_font: string;
@@ -73,20 +70,19 @@ export type MediaRow = {
    * what lets a media row build its own storage keys without a join.
    */
   owner_id: string;
-  original_key: string;
-  thumb_key: string | null;
-  display_key: string | null;
+  /**
+   * The one stored object: the compressed photo, or the video. Its extension
+   * can change when the worker replaces a format the browser could not read,
+   * so it is read from here rather than assumed.
+   */
+  media_key: string;
+  /** A video's poster frame. Always null for a photo. */
   poster_key: string | null;
   size_bytes: number;
-  thumb_size_bytes: number;
-  display_size_bytes: number;
   poster_size_bytes: number;
-  original_format: string | null;
-  display_format: string | null;
-  thumb_format: string | null;
+  media_format: string | null;
   duration_seconds: number | null;
   processing: MediaProcessing;
-  original_replaced: boolean;
   mime_type: string;
   kind: MediaKind;
   width: number | null;
@@ -132,7 +128,6 @@ export interface Database {
           | "archive_builds"
           // Have database defaults, so an insert may leave them out.
           | "gallery_layout"
-          | "media_quality"
           | "theme"
           | "theme_custom"
           | "theme_font"
@@ -145,7 +140,6 @@ export interface Database {
               | "id"
               | "created_at"
               | "gallery_layout"
-              | "media_quality"
               | "theme"
               | "theme_custom"
               | "theme_font"
@@ -168,21 +162,10 @@ export interface Database {
           // Derived by trigger from events.owner_id. Supplying it would be
           // ignored, so the type refuses it outright.
           | "owner_id"
-          | "display_size_bytes"
           | "poster_size_bytes"
           | "processing"
-          | "original_replaced"
         > &
-          Partial<
-            Pick<
-              MediaRow,
-              | "id"
-              | "display_size_bytes"
-              | "poster_size_bytes"
-              | "processing"
-              | "original_replaced"
-            >
-          >
+          Partial<Pick<MediaRow, "id" | "poster_size_bytes" | "processing">>
       >;
       purchases: Table<
         PurchaseRow,

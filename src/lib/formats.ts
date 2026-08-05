@@ -103,7 +103,7 @@ export function normaliseMime(mime: string): string {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Target bytes per megapixel for the optimised copy.
+ * Target bytes per megapixel for the stored copy.
  *
  * Quality is held roughly constant by aiming at a size *budget per pixel*
  * rather than at a fixed encoder quality. A flat quality setting gives a plain
@@ -111,8 +111,8 @@ export function normaliseMime(mime: string): string {
  * pushes the encoder harder exactly where there is more going on, which is what
  * "looks the same, weighs less" actually requires.
  */
-export const DISPLAY_BYTES_PER_MP = 260_000;
-export const THUMB_BYTES_PER_MP = 150_000;
+export const COMPRESSED_BYTES_PER_MP = 260_000;
+export const POSTER_BYTES_PER_MP = 150_000;
 
 /** Never go below this, however busy the photo. Artefacts are not a saving. */
 export const MIN_QUALITY = 0.62;
@@ -120,10 +120,7 @@ export const MAX_QUALITY = 0.9;
 export const START_QUALITY = 0.82;
 
 /** Longest edge of the stored copy. Comfortable on a 4K screen and for A4. */
-export const DISPLAY_MAX_EDGE = 2560;
-
-/** Re-encoding below this saves nothing worth the risk of touching it. */
-export const MIN_COMPRESSIBLE_BYTES = 120_000;
+export const COMPRESSED_MAX_EDGE = 2560;
 
 export function megapixels(width: number, height: number): number {
   return (width * height) / 1_000_000;
@@ -136,18 +133,4 @@ export function sizeBudget(
 ): number {
   // A floor so small images are not squeezed into nothing.
   return Math.max(30_000, Math.round(megapixels(width, height) * bytesPerMp));
-}
-
-/**
- * Only worth keeping the re-encoded copy if it is meaningfully smaller. A
- * 5 percent saving is not worth having re-encoded somebody's photograph.
- */
-export const WORTHWHILE_SAVING = 0.15;
-
-export function isWorthKeeping(
-  originalBytes: number,
-  encodedBytes: number,
-): boolean {
-  if (originalBytes < MIN_COMPRESSIBLE_BYTES) return false;
-  return encodedBytes < originalBytes * (1 - WORTHWHILE_SAVING);
 }

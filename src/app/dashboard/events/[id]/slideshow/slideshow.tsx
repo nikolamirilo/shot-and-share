@@ -123,11 +123,11 @@ export function Slideshow({
               style={{ opacity: i === index ? 1 : 0 }}
               aria-hidden={i !== index}
             >
-              {item.thumbUrl && (
-                // The thumbnail is 720px on its longest edge, which is plenty
-                // for a projector and costs a fraction of the original.
+              {item.previewUrl && (
+                // The stored copy is 2560px on its longest edge, which is what
+                // a projector wants and is already the only copy there is.
                 <img
-                  src={item.thumbUrl}
+                  src={item.previewUrl}
                   alt=""
                   className="max-h-full max-w-full rounded-2xl object-contain shadow-[0_0_0_4px_var(--color-rind)]"
                 />

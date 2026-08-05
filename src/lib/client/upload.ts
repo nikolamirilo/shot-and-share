@@ -1,6 +1,5 @@
 "use client";
 
-import { THUMB_MAX_EDGE, THUMB_QUALITY } from "@/lib/media";
 import type { PresignedUpload } from "@/lib/storage/types";
 
 /**
@@ -58,53 +57,6 @@ export function markOpened(eventId: string): boolean {
     return true;
   } catch {
     return false;
-  }
-}
-
-export interface Thumbnail {
-  blob: Blob;
-  width: number;
-  height: number;
-}
-
-/**
- * Returns null when the browser cannot decode the file - HEIC in some contexts,
- * video in all of them. That is not an upload failure: the original still goes
- * up, and the gallery falls back. A Lambda on object-create is the place to
- * generate the missing thumbnails once real upload data shows which formats
- * actually fail.
- */
-export async function makeThumbnail(file: File): Promise<Thumbnail | null> {
-  if (!file.type.startsWith("image/")) return null;
-
-  try {
-    const bitmap = await createImageBitmap(file);
-    const longest = Math.max(bitmap.width, bitmap.height);
-    const scale = Math.min(1, THUMB_MAX_EDGE / longest);
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      bitmap.close();
-      return null;
-    }
-    ctx.drawImage(bitmap, 0, 0, width, height);
-    const source = { width: bitmap.width, height: bitmap.height };
-    bitmap.close();
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/webp", THUMB_QUALITY),
-    );
-    if (!blob) return null;
-
-    return { blob, width: source.width, height: source.height };
-  } catch {
-    return null;
   }
 }
 

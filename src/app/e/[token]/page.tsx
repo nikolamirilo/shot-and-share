@@ -80,7 +80,7 @@ export default async function GuestPage({
       .maybeSingle();
     if (data) {
       const view = await toMediaView(data as MediaRow);
-      coverUrl = view.thumbUrl;
+      coverUrl = view.previewUrl;
     }
   }
 

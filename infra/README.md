@@ -43,25 +43,42 @@ Three rules are in `s3-lifecycle.json`:
 
 | Rule | What it does | Why |
 |---|---|---|
-| `originals-to-glacier-ir-after-30-days` | Everything under `u/` moves to Glacier IR at 30 days | The whole retention model rests on this |
+| `media-to-glacier-ir-after-30-days` | Everything in the bucket moves to Glacier IR at 30 days | The whole retention model rests on this |
 | `keep-forever-to-deep-archive` | Objects tagged `retention=forever` move to Deep Archive at 400 days | 30 GB costs about \$0.36 a year there, so a €29 one-off covers decades |
 | `expire-generated-archives` | Objects tagged `kind=archive` expire at 30 days | The ZIP is derived data and can be rebuilt |
 
 Two of them filter on **tags**, not prefixes, and that is deliberate: S3 prefix
-filters are literal strings. There is no way to write `u/*/*/archive/`, so a
-prefix rule intended for archives would match every photo in the bucket and
-expire the lot.
+filters are literal strings. There is no way to write `*/*/archive/`, so a prefix
+rule intended for archives would match every photo in the bucket and expire the
+lot.
 
-### Why every key starts with `u/`
+### The key layout
 
-Objects are laid out `u/{owner_id}/{event_id}/…`, so that a host's whole estate
-is one prefix and an event is one prefix inside it. Owner ids are unbounded, so
-the constant first segment is what every rule above and the IAM policy below
-have left to filter on - without it they would have to match the entire bucket.
+Objects are laid out `{owner_id}/{event_id}/…` at the **root of the bucket**, so
+that a host's whole estate is one prefix and an event is one prefix inside it.
+There is deliberately no wrapper prefix above the owner folders: `aws s3 ls
+s3://$BUCKET/` lists hosts and nothing else, and every path a human reads - in
+the console, in a log line, in a signed URL - is one level shorter.
 
-It is also the seam for per-tenant credentials later: an STS session scoped to
-`u/{owner_id}/*` would let S3 enforce the tenant boundary itself, rather than
-trusting the application to keep to it.
+Nothing needs a constant first segment. The transition rule above wants the whole
+bucket anyway, and the IAM policy below scopes per-owner, which is where the
+boundary actually is.
+
+That also makes it the seam for per-tenant credentials later: an STS session
+scoped to `{owner_id}/*` would let S3 enforce the tenant boundary itself, rather
+than trusting the application to keep to it.
+
+### One object per upload
+
+An event folder holds one file per photo - the compressed copy, which is the only
+copy. No original, no thumbnail, no separate display rendition. A video keeps a
+second small object, `{media_id}-poster.jpg`, because a clip has no still of
+itself to show in a grid.
+
+That is a storage decision before it is anything else: three renditions of the
+same picture was three times the bill for a difference nobody can see on a phone,
+and it is the difference between a free event holding 250 photos and holding a
+thousand.
 
 ### One gap, stated plainly
 
@@ -80,8 +97,9 @@ single photo at risk.
 
 ## The media hostname
 
-Serve thumbnails from a hostname that is **separate from the app** from day one,
-for example `media.saycheese.app`, and point `NEXT_PUBLIC_MEDIA_BASE_URL` at it.
+Serve gallery images from a hostname that is **separate from the app** from day
+one, for example `media.saycheese.app`, and point `NEXT_PUBLIC_MEDIA_BASE_URL` at
+it.
 
 This matters more than it looks. AWS is not part of the Cloudflare Bandwidth
 Alliance, so putting Cloudflare in front of S3 does not make egress free - every
@@ -124,13 +142,12 @@ The application needs exactly this much and no more.
         "s3:DeleteObject",
         "s3:AbortMultipartUpload"
       ],
-      "Resource": "arn:aws:s3:::say-cheese-prod/u/*"
+      "Resource": "arn:aws:s3:::say-cheese-prod/*"
     },
     {
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::say-cheese-prod",
-      "Condition": { "StringLike": { "s3:prefix": ["u/*"] } }
+      "Resource": "arn:aws:s3:::say-cheese-prod"
     }
   ]
 }

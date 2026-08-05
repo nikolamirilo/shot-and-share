@@ -2,7 +2,6 @@ import archiver from "archiver";
 import { PassThrough } from "node:stream";
 
 import { ApiError, fail, handle, ok } from "@/lib/api";
-import { type ImageFormat, isUniversallyViewable } from "@/lib/formats";
 import { archiveKey, scopeOfEvent } from "@/lib/media";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
@@ -185,35 +184,12 @@ async function buildArchive(key: string, event: EventRow, media: MediaRow[]) {
 
   for (const [index, row] of media.entries()) {
     try {
-      const stream = await storage.getStream(row.original_key);
+      const stream = await storage.getStream(row.media_key);
       zip.append(stream, { name: entryName(event, row, index) });
     } catch (err) {
       // One unreadable object must not cost the host the other 2,499 photos.
       failures.push(row.id);
       console.error("[archive] skipped", row.id, err);
-    }
-
-    /*
-     * HEIC is the trap here. A host who downloads a ZIP of iPhone photos on a
-     * Windows machine has been handed a folder of files that will not open -
-     * technically a complete delivery, practically nothing. So the converted
-     * copy rides along in an `openable-anywhere/` folder, and the untouched
-     * original stays where it is for anyone who wants it.
-     */
-    const needsOpenableCopy =
-      row.display_key &&
-      row.original_format &&
-      !isUniversallyViewable(row.original_format as ImageFormat);
-
-    if (needsOpenableCopy && row.display_key) {
-      try {
-        const stream = await storage.getStream(row.display_key);
-        zip.append(stream, {
-          name: `${slug(event.name)}/openable-anywhere/${String(index + 1).padStart(4, "0")}.${row.display_format === "webp" ? "webp" : "jpg"}`,
-        });
-      } catch (err) {
-        console.error("[archive] no openable copy for", row.id, err);
-      }
     }
   }
 
@@ -235,17 +211,16 @@ const README_TEXT = `Your photos from Say Cheese
 
 Everything guests uploaded is in this folder, named by the time it was taken.
 
-If there is an "openable-anywhere" folder, it holds converted copies of photos
-that arrived in Apple's HEIC format. HEIC is excellent and about half the size
-of a JPEG, but Windows, Chrome and Firefox often cannot open it. The originals
-are still here alongside them, untouched -- the converted copies are there so
-you can actually see them today.
+Photos are stored compressed: full resolution for any screen and for printing
+up to A4, at about a quarter of the size a phone would have produced. Anything
+that arrived in Apple's HEIC format has been converted to JPEG, so every file
+here opens on Windows, Chrome and Firefox as well as on an iPhone.
 
 Videos have been converted to MP4 so they play on anything.
 `;
 
 function entryName(event: EventRow, row: MediaRow, index: number): string {
-  const ext = row.original_key.split(".").pop() ?? "jpg";
+  const ext = row.media_key.split(".").pop() ?? "jpg";
   const stamp = row.created_at.slice(0, 19).replace(/[:T]/g, "-");
   const who = row.uploader_name ? `-${slug(row.uploader_name)}` : "";
   return `${slug(event.name)}/${String(index + 1).padStart(4, "0")}-${stamp}${who}.${ext}`;

@@ -188,9 +188,9 @@ function Tile({
         className,
       )}
     >
-      {item.thumbUrl ? (
+      {item.previewUrl ? (
         <img
-          src={item.thumbUrl}
+          src={item.previewUrl}
           alt=""
           loading="lazy"
           className={cx(

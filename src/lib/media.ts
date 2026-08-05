@@ -6,23 +6,24 @@ import { MB } from "@/lib/tiers";
  * event, which is what makes deletion, lifecycle tagging and the ZIP build a
  * single prefix operation.
  *
- *   u/{owner_id}/{event_id}/originals/{media_id}.{ext}
- *   u/{owner_id}/{event_id}/display/{media_id}.{ext}
- *   u/{owner_id}/{event_id}/thumbs/{media_id}.{ext}
- *   u/{owner_id}/{event_id}/posters/{media_id}.{ext}
- *   u/{owner_id}/{event_id}/archive/{event_id}.zip
+ *   {owner_id}/{event_id}/{media_id}.{ext}
+ *   {owner_id}/{event_id}/{media_id}-poster.{ext}
+ *   {owner_id}/{event_id}/archive/{event_id}.zip
+ *
+ * Owner folders sit at the root of the bucket: there is no wrapper prefix above
+ * them, so `aws s3 ls s3://bucket/` lists hosts and nothing else.
+ *
+ * One object per upload. The compressed copy *is* the photo - there is no
+ * separate original and no separate thumbnail, because storing three renditions
+ * of the same picture is three times the bill for a difference nobody looking at
+ * a phone can see. The only second object in an event folder is a video's poster
+ * frame, which is not a copy of anything: a video has no still of itself.
  *
  * S3 has no row level security, so this layout is the tenant boundary in the
  * bucket and application code is what keeps to it. It is enforced a second time
- * as a CHECK constraint in migration 0007 - a key built for the wrong owner
+ * as a CHECK constraint in migration 0008 - a key built for the wrong owner
  * fails the insert rather than landing in somebody else's folder.
- *
- * The leading `u/` is not decoration. Owner ids are unbounded, so without it the
- * bucket has no common prefix, and both the S3 lifecycle rules and the
- * application's IAM policy filter on exactly that (see infra/).
  */
-
-const STORAGE_ROOT = "u";
 
 /**
  * Who an object belongs to. Passed as an object rather than two positional
@@ -53,36 +54,26 @@ export function scopeOfMedia(row: {
 
 /** Everything one host has ever stored. Used when an account is removed. */
 export function ownerPrefix(ownerId: string): string {
-  return `${STORAGE_ROOT}/${ownerId}/`;
+  return `${ownerId}/`;
 }
 
 export function eventPrefix({ ownerId, eventId }: EventScope): string {
-  return `${STORAGE_ROOT}/${ownerId}/${eventId}/`;
+  return `${ownerId}/${eventId}/`;
 }
 
-export function originalKey(
+/**
+ * The one object an upload keeps: the compressed photo, or the video itself.
+ *
+ * The extension can change over the life of a row - a HEIC the browser could
+ * not read is uploaded as-is and replaced by the worker's JPEG - so callers
+ * rebuild this key rather than assuming the one they wrote first.
+ */
+export function mediaKey(
   scope: EventScope,
   mediaId: string,
   ext: string,
 ): string {
-  return `${eventPrefix(scope)}originals/${mediaId}.${ext}`;
-}
-
-export function thumbKey(
-  scope: EventScope,
-  mediaId: string,
-  ext = "webp",
-): string {
-  return `${eventPrefix(scope)}thumbs/${mediaId}.${ext}`;
-}
-
-/** The optimised full-size copy. This is what a lightbox actually loads. */
-export function displayKey(
-  scope: EventScope,
-  mediaId: string,
-  ext: string,
-): string {
-  return `${eventPrefix(scope)}display/${mediaId}.${ext}`;
+  return `${eventPrefix(scope)}${mediaId}.${ext}`;
 }
 
 /** First usable frame of a video, so a gallery never shows a grey box. */
@@ -91,7 +82,7 @@ export function posterKey(
   mediaId: string,
   ext = "webp",
 ): string {
-  return `${eventPrefix(scope)}posters/${mediaId}.${ext}`;
+  return `${eventPrefix(scope)}${mediaId}-poster.${ext}`;
 }
 
 export function archiveKey(scope: EventScope): string {
@@ -139,10 +130,9 @@ export function classify(
 /** Guests upload from a phone. One batch, not one photo at a time. */
 export const MAX_FILES_PER_REQUEST = 30;
 
-/** The generated thumbnail. Small enough that the CDN carries the gallery. */
-export const THUMB_MAX_EDGE = 720;
-export const THUMB_QUALITY = 0.72;
-export const MAX_THUMB_BYTES = 2 * MB;
+/** The poster frame pulled out of a video. Small enough for a grid. */
+export const POSTER_MAX_EDGE = 720;
+export const MAX_POSTER_BYTES = 2 * MB;
 
 export function displayName(mime: string): string {
   return classify(mime)?.kind === "video" ? "video" : "photo";
@@ -151,35 +141,24 @@ export function displayName(mime: string): string {
 /**
  * Every object belonging to one upload.
  *
- * A media row can own up to four objects now. Enumerating them by hand at each
- * delete site is how you end up paying to store the renditions of photos that
- * were removed months ago, so every caller goes through here.
+ * Two at most now - the media itself and, for a video, its poster. Enumerating
+ * them by hand at each delete site is how you end up paying to store the poster
+ * frames of videos that were removed months ago, so every caller goes through
+ * here.
  */
 export function mediaKeys(row: {
-  original_key: string;
-  thumb_key?: string | null;
-  display_key?: string | null;
+  media_key: string;
   poster_key?: string | null;
 }): string[] {
-  return [
-    row.original_key,
-    row.thumb_key,
-    row.display_key,
-    row.poster_key,
-  ].filter((key): key is string => Boolean(key));
+  return [row.media_key, row.poster_key].filter((key): key is string =>
+    Boolean(key),
+  );
 }
 
-/** Total bytes a media row is charged for, across every rendition. */
+/** Total bytes a media row is charged for. */
 export function mediaBytes(row: {
   size_bytes: number;
-  thumb_size_bytes?: number | null;
-  display_size_bytes?: number | null;
   poster_size_bytes?: number | null;
 }): number {
-  return (
-    Number(row.size_bytes) +
-    Number(row.thumb_size_bytes ?? 0) +
-    Number(row.display_size_bytes ?? 0) +
-    Number(row.poster_size_bytes ?? 0)
-  );
+  return Number(row.size_bytes) + Number(row.poster_size_bytes ?? 0);
 }

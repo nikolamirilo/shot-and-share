@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DISPLAY_MAX_EDGE,
+  COMPRESSED_MAX_EDGE,
   MIN_QUALITY,
   PREFERRED_IMAGE_FORMATS,
   UNIVERSAL_VIDEO_FORMAT,
   imageFormatFromMime,
   isUniversallyViewable,
-  isWorthKeeping,
   megapixels,
   normaliseMime,
   sizeBudget,
@@ -82,52 +81,33 @@ describe("size budgeting", () => {
     expect(MIN_QUALITY).toBeGreaterThanOrEqual(0.6);
   });
 
-  it("keeps a display copy big enough to be worth having", () => {
-    expect(DISPLAY_MAX_EDGE).toBeGreaterThanOrEqual(2048);
+  it("keeps the stored copy big enough to be the only copy", () => {
+    // It is what a lightbox loads, what a projector shows and what the host
+    // prints from, so it cannot be sized like a thumbnail.
+    expect(COMPRESSED_MAX_EDGE).toBeGreaterThanOrEqual(2048);
   });
 });
 
-describe("deciding whether to keep the re-encode", () => {
-  it("keeps it only when the saving is real", () => {
-    // Re-encoding somebody's photograph to save five percent is not a trade
-    // worth making.
-    expect(isWorthKeeping(4_000_000, 1_000_000)).toBe(true);
-    expect(isWorthKeeping(4_000_000, 3_900_000)).toBe(false);
-  });
-
-  it("leaves already-small files alone", () => {
-    expect(isWorthKeeping(50_000, 10_000)).toBe(false);
-  });
-});
-
-describe("rendition bookkeeping", () => {
-  const row = {
-    original_key: "u/o/e/originals/m.jpg",
-    thumb_key: "u/o/e/thumbs/m.webp",
-    display_key: "u/o/e/display/m.webp",
-    poster_key: null,
+describe("object bookkeeping", () => {
+  const video = {
+    media_key: "o/e/m.mp4",
+    poster_key: "o/e/m-poster.webp",
     size_bytes: 4_000_000,
-    thumb_size_bytes: 40_000,
-    display_size_bytes: 900_000,
-    poster_size_bytes: 0,
+    poster_size_bytes: 40_000,
   };
 
   it("enumerates every object a row owns", () => {
-    // Missing one here means paying to store renditions of photos that were
-    // deleted months ago.
-    expect(mediaKeys(row)).toEqual([
-      "u/o/e/originals/m.jpg",
-      "u/o/e/thumbs/m.webp",
-      "u/o/e/display/m.webp",
-    ]);
+    // Missing one here means paying to store the poster frames of videos that
+    // were deleted months ago.
+    expect(mediaKeys(video)).toEqual(["o/e/m.mp4", "o/e/m-poster.webp"]);
   });
 
-  it("skips renditions that were never created", () => {
-    expect(mediaKeys({ original_key: "a.jpg" })).toEqual(["a.jpg"]);
+  it("is a single object for a photo", () => {
+    expect(mediaKeys({ media_key: "o/e/m.webp" })).toEqual(["o/e/m.webp"]);
   });
 
-  it("charges the event for every rendition, not just the original", () => {
-    expect(mediaBytes(row)).toBe(4_940_000);
+  it("charges the event for the poster as well as the video", () => {
+    expect(mediaBytes(video)).toBe(4_040_000);
     expect(mediaBytes({ size_bytes: 100 })).toBe(100);
   });
 });
