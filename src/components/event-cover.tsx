@@ -1,29 +1,44 @@
 import type { CoverVariant, Palette } from "@/lib/appearance";
 import { paletteToCssVars } from "@/lib/appearance";
 import { isDark } from "@/lib/color";
+import type { FontSet } from "@/lib/fonts";
+import { fontToCssVars } from "@/lib/fonts";
 import { formatEventDate } from "@/lib/format";
 import { Hole, cx } from "@/components/ui";
 
 /**
  * Re-skins everything inside it.
  *
- * The palette is applied as the same CSS custom properties the design system
- * already defines, so every existing component underneath picks up the theme
- * without knowing that themes exist. No component takes a `theme` prop.
+ * The palette and the type pairing are applied as the same CSS custom
+ * properties the design system already defines, so every existing component
+ * underneath picks them up without knowing that themes exist. No component
+ * takes a `theme` or a `font` prop.
+ *
+ * `font-sans` on the root matters: body copy inherits its family from <body>,
+ * and an inherited declaration is not re-evaluated against a variable that this
+ * element redefines. Naming the variable here is what makes the override apply
+ * to the whole subtree.
  */
 export function EventThemeRoot({
   palette,
+  font,
   className,
   children,
 }: {
   palette: Palette;
+  font?: FontSet;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
     <div
-      style={paletteToCssVars(palette) as React.CSSProperties}
-      className={cx("bg-butter text-pepper", className)}
+      style={
+        {
+          ...paletteToCssVars(palette),
+          ...(font ? fontToCssVars(font) : {}),
+        } as React.CSSProperties
+      }
+      className={cx("bg-butter font-sans text-pepper", className)}
     >
       {children}
     </div>
@@ -45,8 +60,16 @@ export function EventCover(props: CoverProps) {
   // "Just type" is the only variant that works with no photo, so it is also the
   // fallback for the others before the host has picked one - an empty grey
   // rectangle at the top of a wedding page is worse than no photo at all.
+  //
+  // The host's preview is the exception. Falling back there would render all
+  // four choices identically until a cover photo existed, which reads as four
+  // broken buttons rather than as a considered fallback. The preview shows the
+  // shape that was picked with its photo slot marked empty, and the form says
+  // in words what guests get until a photo is chosen.
   const variant =
-    props.variant !== "type" && !props.coverUrl ? "type" : props.variant;
+    props.variant !== "type" && !props.coverUrl && !props.preview
+      ? "type"
+      : props.variant;
 
   switch (variant) {
     case "band":
@@ -91,6 +114,42 @@ function Title({
   );
 }
 
+/**
+ * The photo, or the space it will occupy.
+ *
+ * The empty state only ever renders in the host's preview - a guest page with
+ * no cover photo has already fallen back to "Just type" - so it is a label
+ * rather than a placeholder image: it is telling the host what is missing.
+ */
+function CoverPhoto({
+  url,
+  className,
+}: {
+  url?: string | null;
+  className?: string;
+}) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt=""
+        className={cx("h-full w-full object-cover", className)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={cx(
+        "recess flex h-full w-full items-center justify-center rounded-none",
+        className,
+      )}
+    >
+      <span className="eyebrow text-gouda">your photo</span>
+    </div>
+  );
+}
+
 /** Photo across the top with the name over it. */
 function ClassicCover({
   name,
@@ -107,13 +166,9 @@ function ClassicCover({
   return (
     <header className="relative overflow-hidden border-b-2 border-pepper">
       <div className={cx("relative w-full", preview ? "h-28" : "h-64 sm:h-96")}>
-        {coverUrl && (
-          <img
-            src={coverUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        )}
+        <div className="absolute inset-0">
+          <CoverPhoto url={coverUrl} />
+        </div>
         <div
           className="absolute inset-0"
           style={{
@@ -159,13 +214,7 @@ function BandCover({
           preview ? "h-20" : "h-52 sm:h-72",
         )}
       >
-        {coverUrl && (
-          <img
-            src={coverUrl}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        )}
+        <CoverPhoto url={coverUrl} />
       </div>
       <div className="bg-gouda">
         <div
@@ -205,21 +254,10 @@ function FramedCover({
         <div
           className={cx(
             "overflow-hidden rounded-[1.25rem] border-2 border-pepper bg-cream",
-            preview
-              ? "shadow-[4px_4px_0_var(--color-pepper)]"
-              : "shadow-[7px_7px_0_var(--color-pepper)]",
+            preview ? "h-20 shadow-hard" : "h-56 shadow-hard-lg sm:h-72",
           )}
         >
-          {coverUrl && (
-            <img
-              src={coverUrl}
-              alt=""
-              className={cx(
-                "w-full object-cover",
-                preview ? "h-20" : "h-56 sm:h-72",
-              )}
-            />
-          )}
+          <CoverPhoto url={coverUrl} />
         </div>
         <Title name={name} date={date} message={message} preview={preview} />
       </div>

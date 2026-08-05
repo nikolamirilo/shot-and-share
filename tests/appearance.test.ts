@@ -5,13 +5,24 @@ import {
   CUSTOM_THEME_ID,
   DEFAULT_COVER,
   DEFAULT_THEME_ID,
+  DEFAULT_UPLOAD,
   THEMES,
+  UPLOAD_VARIANTS,
   buildCustomPalette,
   coerceCover,
+  coerceUpload,
   findTheme,
   paletteToCssVars,
   resolveAppearance,
 } from "@/lib/appearance";
+import {
+  DEFAULT_FONT_ID,
+  FONT_SETS,
+  coerceFont,
+  findFontSet,
+  fontToCssVars,
+  googleFontsHref,
+} from "@/lib/fonts";
 import {
   AA_CONTRAST,
   AA_LARGE_CONTRAST,
@@ -170,7 +181,9 @@ describe("plan gating", () => {
   const customised = {
     theme: "midnight",
     theme_custom: { bg: "#000000" },
+    theme_font: "loud",
     cover_variant: "framed",
+    upload_variant: "panel",
     gallery_layout: "masonry",
   };
 
@@ -180,7 +193,9 @@ describe("plan gating", () => {
     const appearance = resolveAppearance({ tier: "free", ...customised });
     expect(appearance.themeId).toBe(DEFAULT_THEME_ID);
     expect(appearance.palette).toEqual(THEMES[0].palette);
+    expect(appearance.font.id).toBe(DEFAULT_FONT_ID);
     expect(appearance.cover).toBe(DEFAULT_COVER);
+    expect(appearance.upload).toBe(DEFAULT_UPLOAD);
     expect(appearance.layout).toBe("grid");
     expect(appearance.customisable).toBe(false);
   });
@@ -203,7 +218,9 @@ describe("plan gating", () => {
   it("honours everything on a paid event", () => {
     const appearance = resolveAppearance({ tier: "wedding", ...customised });
     expect(appearance.themeId).toBe("midnight");
+    expect(appearance.font.id).toBe("loud");
     expect(appearance.cover).toBe("framed");
+    expect(appearance.upload).toBe("panel");
     expect(appearance.layout).toBe("masonry");
     expect(appearance.customisable).toBe(true);
   });
@@ -234,6 +251,59 @@ describe("cover variants", () => {
     const noImage = COVER_VARIANTS.filter((v) => !v.needsImage);
     expect(noImage).toHaveLength(1);
     expect(noImage[0].id).toBe("type");
+  });
+});
+
+describe("upload variants", () => {
+  it("coerces anything unknown to the default", () => {
+    expect(coerceUpload("panel")).toBe("panel");
+    expect(coerceUpload("carousel")).toBe(DEFAULT_UPLOAD);
+    expect(coerceUpload(null)).toBe(DEFAULT_UPLOAD);
+  });
+
+  it("matches the ids the database constraint allows", () => {
+    // 0006 constrains this column, so a new variant needs a migration as well
+    // as a component. Drifting apart means a save that fails at the database.
+    expect(UPLOAD_VARIANTS.map((v) => v.id)).toEqual([
+      "button",
+      "panel",
+      "bar",
+      "split",
+    ]);
+  });
+});
+
+describe("type pairings", () => {
+  it("falls back to the house pairing rather than rejecting", () => {
+    // `theme_font` is unconstrained in the database on purpose: a removed
+    // pairing has to degrade, not break the page.
+    expect(coerceFont("warm")).toBe("warm");
+    expect(coerceFont("papyrus")).toBe(DEFAULT_FONT_ID);
+    expect(findFontSet("papyrus").id).toBe(DEFAULT_FONT_ID);
+  });
+
+  it("only asks the browser for a pairing the root layout lacks", () => {
+    // The house pairing is already loaded for every page; a guest on hotel
+    // wifi should not fetch it twice.
+    expect(googleFontsHref(findFontSet(DEFAULT_FONT_ID))).toBeNull();
+
+    const href = googleFontsHref(findFontSet("classic"));
+    expect(href).toContain("family=Playfair+Display");
+    expect(href).toContain("display=swap");
+  });
+
+  it("carries the display settings the stylesheet cannot assume", () => {
+    // 86% width is right for Bricolage, which has a width axis, and wrong for
+    // a serif that does not - so weight, width and tracking travel with the
+    // face rather than living in globals.css.
+    for (const set of FONT_SETS) {
+      const vars = fontToCssVars(set);
+      expect(vars["--font-display"]).toBe(set.display);
+      expect(vars["--font-sans"]).toBe(set.body);
+      expect(vars["--font-display-weight"]).toBe(String(set.displayWeight));
+      expect(vars["--font-display-stretch"]).toMatch(/%$/);
+      expect(vars["--font-display-tracking"]).toMatch(/em$/);
+    }
   });
 });
 

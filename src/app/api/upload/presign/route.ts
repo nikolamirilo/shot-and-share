@@ -20,6 +20,7 @@ import {
   displayKey,
   originalKey,
   posterKey,
+  scopeOfEvent,
   thumbKey,
 } from "@/lib/media";
 import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
@@ -102,6 +103,9 @@ export async function POST(request: Request) {
 
     const { event } = await requireGuestEvent(body.token);
     const tier = getTier(event.tier);
+    // Every key this request signs is anchored to the host who owns the event,
+    // never to anything the guest sent.
+    const scope = scopeOfEvent(event);
 
     const prepared = body.files.map((file) => {
       const classified = classify(file.type);
@@ -177,7 +181,7 @@ export async function POST(request: Request) {
         mime,
         sourceFormat,
         originalSource,
-        archivalKey: originalKey(event.id, mediaId, archivalExt),
+        archivalKey: originalKey(scope, mediaId, archivalExt),
         archivalFormat,
         archivalBytes,
         archivalMime,
@@ -185,7 +189,7 @@ export async function POST(request: Request) {
           keepSeparateDisplay && file.display
             ? {
                 key: displayKey(
-                  event.id,
+                  scope,
                   mediaId,
                   IMAGE_EXT[file.display.format as ImageFormat],
                 ),
@@ -197,7 +201,7 @@ export async function POST(request: Request) {
         thumb: file.thumb
           ? {
               key: thumbKey(
-                event.id,
+                scope,
                 mediaId,
                 IMAGE_EXT[file.thumb.format as ImageFormat],
               ),
@@ -209,7 +213,7 @@ export async function POST(request: Request) {
         poster: file.poster
           ? {
               key: posterKey(
-                event.id,
+                scope,
                 mediaId,
                 IMAGE_EXT[file.poster.format as ImageFormat],
               ),

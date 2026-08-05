@@ -2,52 +2,100 @@ import type { MediaKind } from "@/lib/db/types";
 import { MB } from "@/lib/tiers";
 
 /**
- * Key layout. Every object lives under its event, which is what makes deletion,
- * lifecycle tagging and the ZIP build a single prefix operation.
+ * Key layout. Every object lives under the host who owns it, and then under the
+ * event, which is what makes deletion, lifecycle tagging and the ZIP build a
+ * single prefix operation.
  *
- *   events/{event_id}/originals/{media_id}.{ext}
- *   events/{event_id}/display/{media_id}.{ext}
- *   events/{event_id}/thumbs/{media_id}.{ext}
- *   events/{event_id}/posters/{media_id}.{ext}
- *   events/{event_id}/archive/{event_id}.zip
+ *   u/{owner_id}/{event_id}/originals/{media_id}.{ext}
+ *   u/{owner_id}/{event_id}/display/{media_id}.{ext}
+ *   u/{owner_id}/{event_id}/thumbs/{media_id}.{ext}
+ *   u/{owner_id}/{event_id}/posters/{media_id}.{ext}
+ *   u/{owner_id}/{event_id}/archive/{event_id}.zip
+ *
+ * S3 has no row level security, so this layout is the tenant boundary in the
+ * bucket and application code is what keeps to it. It is enforced a second time
+ * as a CHECK constraint in migration 0007 - a key built for the wrong owner
+ * fails the insert rather than landing in somebody else's folder.
+ *
+ * The leading `u/` is not decoration. Owner ids are unbounded, so without it the
+ * bucket has no common prefix, and both the S3 lifecycle rules and the
+ * application's IAM policy filter on exactly that (see infra/).
  */
 
+const STORAGE_ROOT = "u";
+
+/**
+ * Who an object belongs to. Passed as an object rather than two positional
+ * arguments because an owner id and an event id are both uuids: transposing
+ * them would produce a perfectly well-formed key pointing at nothing, and no
+ * type checker would notice.
+ */
+export interface EventScope {
+  ownerId: string;
+  eventId: string;
+}
+
+/** Scope from an event row. */
+export function scopeOfEvent(event: {
+  id: string;
+  owner_id: string;
+}): EventScope {
+  return { ownerId: event.owner_id, eventId: event.id };
+}
+
+/** Scope from a media row, which carries its owner denormalised. */
+export function scopeOfMedia(row: {
+  event_id: string;
+  owner_id: string;
+}): EventScope {
+  return { ownerId: row.owner_id, eventId: row.event_id };
+}
+
+/** Everything one host has ever stored. Used when an account is removed. */
+export function ownerPrefix(ownerId: string): string {
+  return `${STORAGE_ROOT}/${ownerId}/`;
+}
+
+export function eventPrefix({ ownerId, eventId }: EventScope): string {
+  return `${STORAGE_ROOT}/${ownerId}/${eventId}/`;
+}
+
 export function originalKey(
-  eventId: string,
+  scope: EventScope,
   mediaId: string,
   ext: string,
 ): string {
-  return `events/${eventId}/originals/${mediaId}.${ext}`;
+  return `${eventPrefix(scope)}originals/${mediaId}.${ext}`;
 }
 
-export function thumbKey(eventId: string, mediaId: string, ext = "webp"): string {
-  return `events/${eventId}/thumbs/${mediaId}.${ext}`;
+export function thumbKey(
+  scope: EventScope,
+  mediaId: string,
+  ext = "webp",
+): string {
+  return `${eventPrefix(scope)}thumbs/${mediaId}.${ext}`;
 }
 
 /** The optimised full-size copy. This is what a lightbox actually loads. */
 export function displayKey(
-  eventId: string,
+  scope: EventScope,
   mediaId: string,
   ext: string,
 ): string {
-  return `events/${eventId}/display/${mediaId}.${ext}`;
+  return `${eventPrefix(scope)}display/${mediaId}.${ext}`;
 }
 
 /** First usable frame of a video, so a gallery never shows a grey box. */
 export function posterKey(
-  eventId: string,
+  scope: EventScope,
   mediaId: string,
   ext = "webp",
 ): string {
-  return `events/${eventId}/posters/${mediaId}.${ext}`;
+  return `${eventPrefix(scope)}posters/${mediaId}.${ext}`;
 }
 
-export function archiveKey(eventId: string): string {
-  return `events/${eventId}/archive/${eventId}.zip`;
-}
-
-export function eventPrefix(eventId: string): string {
-  return `events/${eventId}/`;
+export function archiveKey(scope: EventScope): string {
+  return `${eventPrefix(scope)}archive/${scope.eventId}.zip`;
 }
 
 /**

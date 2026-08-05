@@ -3,7 +3,7 @@ import { PassThrough } from "node:stream";
 
 import { ApiError, fail, handle, ok } from "@/lib/api";
 import { type ImageFormat, isUniversallyViewable } from "@/lib/formats";
-import { archiveKey } from "@/lib/media";
+import { archiveKey, scopeOfEvent } from "@/lib/media";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -127,7 +127,7 @@ export async function POST(
       });
     }
 
-    const key = archiveKey(event.id);
+    const key = archiveKey(scopeOfEvent(event));
     await buildArchive(key, event, media);
 
     const head = await storage.head(key);

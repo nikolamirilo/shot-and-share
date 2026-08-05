@@ -39,7 +39,9 @@ export type EventRow = {
   media_quality: MediaQuality;
   theme: string;
   theme_custom: unknown;
+  theme_font: string;
   cover_variant: string;
+  upload_variant: string;
   welcome_message: string | null;
   cover_media_id: string | null;
   link_opens: number;
@@ -65,6 +67,12 @@ export type EventTokenRow = {
 export type MediaRow = {
   id: string;
   event_id: string;
+  /**
+   * Denormalised from events.owner_id and filled by a trigger, so it is never
+   * part of an insert. It is what the host RLS policies compare against, and
+   * what lets a media row build its own storage keys without a join.
+   */
+  owner_id: string;
   original_key: string;
   thumb_key: string | null;
   display_key: string | null;
@@ -127,7 +135,9 @@ export interface Database {
           | "media_quality"
           | "theme"
           | "theme_custom"
+          | "theme_font"
           | "cover_variant"
+          | "upload_variant"
         > &
           Partial<
             Pick<
@@ -138,7 +148,9 @@ export interface Database {
               | "media_quality"
               | "theme"
               | "theme_custom"
+              | "theme_font"
               | "cover_variant"
+              | "upload_variant"
             >
           >
       >;
@@ -153,6 +165,9 @@ export interface Database {
           MediaRow,
           | "id"
           | "created_at"
+          // Derived by trigger from events.owner_id. Supplying it would be
+          // ignored, so the type refuses it outright.
+          | "owner_id"
           | "display_size_bytes"
           | "poster_size_bytes"
           | "processing"

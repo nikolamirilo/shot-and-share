@@ -6,7 +6,7 @@ import {
   sendEmail,
 } from "@/lib/email";
 import { env } from "@/lib/env";
-import { eventPrefix, mediaBytes, mediaKeys } from "@/lib/media";
+import { eventPrefix, mediaBytes, mediaKeys, scopeOfEvent } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { HARD_DELETE_GRACE_DAYS, RETENTION_WARNING_DAYS } from "@/lib/tiers";
@@ -205,7 +205,8 @@ async function hardDelete(summary: {
 
   const { data: events } = await admin
     .from("events")
-    .select("id")
+    // owner_id is part of the storage prefix, so it is not optional here.
+    .select("id, owner_id")
     .eq("status", "expired")
     .eq("keep_forever", false)
     .not("deleted_at", "is", null)
@@ -213,7 +214,9 @@ async function hardDelete(summary: {
     .limit(50);
 
   for (const event of events ?? []) {
-    summary.objectsRemoved += await storage.removePrefix(eventPrefix(event.id));
+    summary.objectsRemoved += await storage.removePrefix(
+      eventPrefix(scopeOfEvent(event)),
+    );
     // media and event_tokens cascade. Purchase rows survive with a null event,
     // because the accounting record of a payment must outlive the photos.
     await admin.from("events").delete().eq("id", event.id);

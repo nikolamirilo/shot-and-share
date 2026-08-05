@@ -219,7 +219,9 @@ event page" the Slice and Wheel tiers already promise.
 | | Free | Slice / Wheel |
 |---|---|---|
 | Theme | House palette | 5 presets, or pick your own colours |
+| Type | House pairing | 5 pairings, heading face and body face |
 | Cover | Fixed | 4 styles, using any photo from the event |
+| Asking for photos | Fixed button | 4 shapes, from a big button to a slim bar |
 | Gallery layout | Fixed grid | Host picks; guests may switch |
 | Say Cheese header and footer | Yes | No |
 
@@ -237,7 +239,22 @@ not for the paywall.
 
 Themes work by setting the design system's own CSS custom properties on a
 wrapper element, so a theme re-skins every existing component underneath it and
-**no component takes a `theme` prop**.
+**no component takes a `theme` prop**. Type works the same way: a pairing sets
+`--font-display` and `--font-sans` on the same wrapper, along with the display
+weight, width and tracking, because 86% width is right for Bricolage — which has
+a width axis — and meaningless for a serif that does not.
+
+A guest page requests only the pairing it uses. The house pairing is already in
+the root layout, so the default costs a guest nothing; the host's editor loads
+all five, because switching between them is the whole point of that screen and a
+font that arrives late reads as a broken preview.
+
+**The host's preview renders the real components**, inside a real theme root —
+the same `EventCover` and the same `UploadPanel` a guest gets. It used to draw
+its own approximation, which is how a preview ends up disagreeing with the page:
+a mock-up made of dark rectangles has no surface on it, so choosing a card
+colour appeared to do nothing, and every cover style collapsed into the same
+picture until a cover photo existed.
 
 ### Host colours are not trusted
 
