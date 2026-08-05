@@ -1,19 +1,18 @@
 "use client";
 
 import {
-  DISPLAY_BYTES_PER_MP,
-  DISPLAY_MAX_EDGE,
+  COMPRESSED_BYTES_PER_MP,
+  COMPRESSED_MAX_EDGE,
   type ImageFormat,
   IMAGE_MIME,
   MAX_QUALITY,
   MIN_QUALITY,
+  POSTER_BYTES_PER_MP,
   PREFERRED_IMAGE_FORMATS,
   START_QUALITY,
-  THUMB_BYTES_PER_MP,
-  isWorthKeeping,
   sizeBudget,
 } from "@/lib/formats";
-import { THUMB_MAX_EDGE } from "@/lib/media";
+import { POSTER_MAX_EDGE } from "@/lib/media";
 
 /**
  * The compression layer, running on the device that took the photo.
@@ -161,10 +160,13 @@ async function encodeToBudget(
   return best;
 }
 
-export interface Renditions {
-  /** Full-size optimised copy. Null when the browser could not decode. */
-  display: Encoded | null;
-  thumb: Encoded | null;
+export interface Compression {
+  /**
+   * The copy that gets stored, and the only one. Null when the browser could
+   * not decode the file, in which case the source goes up untouched and the
+   * worker compresses it server-side.
+   */
+  compressed: Encoded | null;
   /** True pixel dimensions of the source, whatever we managed to encode. */
   sourceWidth: number | null;
   sourceHeight: number | null;
@@ -172,10 +174,9 @@ export interface Renditions {
   needsServer: boolean;
 }
 
-export async function makeImageRenditions(file: File): Promise<Renditions> {
-  const empty: Renditions = {
-    display: null,
-    thumb: null,
+export async function compressImage(file: File): Promise<Compression> {
+  const empty: Compression = {
+    compressed: null,
     sourceWidth: null,
     sourceHeight: null,
     needsServer: true,
@@ -195,48 +196,31 @@ export async function makeImageRenditions(file: File): Promise<Renditions> {
     const sourceWidth = bitmap.width;
     const sourceHeight = bitmap.height;
 
-    const displaySurface = draw(bitmap, DISPLAY_MAX_EDGE);
-    const thumbSurface = draw(bitmap, THUMB_MAX_EDGE);
+    const surface = draw(bitmap, COMPRESSED_MAX_EDGE);
     bitmap.close();
 
-    if (!displaySurface || !thumbSurface) {
-      return { ...empty, sourceWidth, sourceHeight };
-    }
+    if (!surface) return { ...empty, sourceWidth, sourceHeight };
 
-    const displayEncoded = await encodeToBudget(
-      displaySurface.canvas,
+    const encoded = await encodeToBudget(
+      surface.canvas,
       format,
-      displaySurface.width,
-      displaySurface.height,
-      DISPLAY_BYTES_PER_MP,
+      surface.width,
+      surface.height,
+      COMPRESSED_BYTES_PER_MP,
     );
-    const thumbEncoded = await encodeToBudget(
-      thumbSurface.canvas,
-      format,
-      thumbSurface.width,
-      thumbSurface.height,
-      THUMB_BYTES_PER_MP,
-    );
+
+    // An encode that came back empty is not a compressed photo, so the source
+    // has to go up and the worker has to finish the job.
+    if (!encoded) return { ...empty, sourceWidth, sourceHeight };
 
     return {
-      display: displayEncoded
-        ? {
-            blob: displayEncoded.blob,
-            format,
-            width: displaySurface.width,
-            height: displaySurface.height,
-            quality: displayEncoded.quality,
-          }
-        : null,
-      thumb: thumbEncoded
-        ? {
-            blob: thumbEncoded.blob,
-            format,
-            width: thumbSurface.width,
-            height: thumbSurface.height,
-            quality: thumbEncoded.quality,
-          }
-        : null,
+      compressed: {
+        blob: encoded.blob,
+        format,
+        width: surface.width,
+        height: surface.height,
+        quality: encoded.quality,
+      },
       sourceWidth,
       sourceHeight,
       needsServer: false,
@@ -249,18 +233,6 @@ export async function makeImageRenditions(file: File): Promise<Renditions> {
     }
     return empty;
   }
-}
-
-/**
- * Whether the optimised copy is worth storing in place of the original, or
- * whether we would be re-encoding a photograph for nothing.
- */
-export function optimisationWorthwhile(
-  originalBytes: number,
-  encoded: Encoded | null,
-): boolean {
-  if (!encoded) return false;
-  return isWorthKeeping(originalBytes, encoded.blob.size);
 }
 
 /* --- video ----------------------------------------------------------------- */
@@ -339,7 +311,7 @@ export async function probeVideo(file: File): Promise<VideoProbe> {
 
     const format = await bestEncodableFormat();
     const longest = Math.max(width, height);
-    const scale = Math.min(1, THUMB_MAX_EDGE / longest);
+    const scale = Math.min(1, POSTER_MAX_EDGE / longest);
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(width * scale));
     canvas.height = Math.max(1, Math.round(height * scale));
@@ -353,7 +325,7 @@ export async function probeVideo(file: File): Promise<VideoProbe> {
       format,
       canvas.width,
       canvas.height,
-      THUMB_BYTES_PER_MP,
+      POSTER_BYTES_PER_MP,
     );
 
     return {

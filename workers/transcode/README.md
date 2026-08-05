@@ -7,10 +7,13 @@ here and runs anywhere with ffmpeg, but it needs a host.
 
 | Input | Output | Why |
 |---|---|---|
-| HEIC photo the browser could not decode | JPEG display + thumbnail | An iPhone photo uploaded from desktop Chrome is otherwise a file most guests and half the hosts cannot open |
-| Any video | H.264 / AAC MP4, faststart, max 1080p | The one combination that plays everywhere, and usually about half the size of what a phone produces |
+| HEIC photo the browser could not decode | A compressed JPEG that **replaces** it | An iPhone photo uploaded from desktop Chrome is otherwise a file most guests and half the hosts cannot open |
+| Any video | H.264 / AAC MP4, faststart, max 1080p, **replacing** the upload | The one combination that plays everywhere, and usually about half the size of what a phone produces |
+| Any video without a poster | A single JPEG frame | So a grid never shows a grey box |
 
-Everything else - the overwhelming majority of uploads - is already handled in
+Outputs replace the object in the bucket rather than sitting beside it: an event
+folder holds one file per upload, and the app deletes what the guest sent once
+the row points at the converted file. Everything else - the overwhelming majority of uploads - is already handled in
 the browser before it leaves the phone and never reaches this queue.
 
 ## Running it
@@ -58,10 +61,10 @@ the claim endpoint is the right place to put SQS behind.
 
 ## Failure is not data loss
 
-If ffmpeg cannot read a file, the row is marked `failed` and the original is
-left completely untouched - still stored, still in the ZIP, still downloadable.
-The guest sees the photo they uploaded. Nothing is ever deleted because a
-conversion did not work.
+If ffmpeg cannot read a file, the row is marked `failed` and what the guest
+uploaded is left completely untouched - still stored, still in the ZIP, still
+downloadable. Nothing is ever deleted because a conversion did not work; the
+delete only happens after the row has been moved onto the new object.
 
 If the event has filled its quota between upload and conversion, the app throws
 away what the worker wrote rather than pushing the host over their limit.

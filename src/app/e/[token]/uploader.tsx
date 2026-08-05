@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { Hole, ProgressBar, cx } from "@/components/ui";
 import { UploadPanel } from "@/components/upload-panel";
 import type { UploadVariant } from "@/lib/appearance";
-import { makeImageRenditions, probeVideo } from "@/lib/client/codec";
+import { compressImage, probeVideo } from "@/lib/client/codec";
 import {
   getFingerprint,
   getSavedName,
@@ -34,11 +34,9 @@ interface Item {
 interface PresignResponse {
   uploads: Array<{
     mediaId: string;
-    /** "display" means the server wants the optimised copy as the archive. */
-    originalSource: "file" | "display";
-    original: PresignedUpload;
-    display: PresignedUpload | null;
-    thumb: PresignedUpload | null;
+    /** "compressed" means send the re-encoded copy, not the file off the disk. */
+    source: "file" | "compressed";
+    media: PresignedUpload;
     poster: PresignedUpload | null;
   }>;
 }
@@ -46,8 +44,7 @@ interface PresignResponse {
 /** Everything the browser managed to produce for one selected file. */
 interface Prepared {
   file: File;
-  display: Blob | null;
-  thumb: Blob | null;
+  compressed: Blob | null;
   poster: Blob | null;
   sourceWidth: number | null;
   sourceHeight: number | null;
@@ -140,7 +137,7 @@ export function Uploader({
         to:
           prev.to +
           prepared.reduce(
-            (sum, p) => sum + (p.display ? p.display.size : p.file.size),
+            (sum, p) => sum + (p.compressed ? p.compressed.size : p.file.size),
             0,
           ),
       }));
@@ -174,44 +171,36 @@ export function Uploader({
         mediaId: u.mediaId,
         width: null as number | null,
         height: null as number | null,
-        originalUploaded: false,
-        displayUploaded: false,
-        thumbUploaded: false,
+        mediaUploaded: false,
         posterUploaded: false,
         failed: false,
       }));
 
-      // 3. Straight to storage, three at a time.
+      // 3. Straight to storage, three at a time. One object per file.
       await pool(next, 3, async (item, index) => {
         const upload = uploads[index];
         const source = prepared[index];
         update(item.key, { status: "uploading" });
 
-        const archival =
-          upload.originalSource === "display" && source.display
-            ? source.display
+        const body =
+          upload.source === "compressed" && source.compressed
+            ? source.compressed
             : item.file;
 
         try {
-          await uploadToPresigned(upload.original, archival, (fraction) =>
+          await uploadToPresigned(upload.media, body, (fraction) =>
             update(item.key, { progress: Math.round(fraction * 100) }),
           );
-          results[index].originalUploaded = true;
+          results[index].mediaUploaded = true;
           results[index].width = source.sourceWidth;
           results[index].height = source.sourceHeight;
 
-          // Secondary copies are cosmetic. One failing must never cost the
-          // photo, so each is attempted on its own and forgiven on its own.
-          const extras: Array<[PresignedUpload | null, Blob | null, "displayUploaded" | "thumbUploaded" | "posterUploaded"]> = [
-            [upload.display, source.display, "displayUploaded"],
-            [upload.thumb, source.thumb, "thumbUploaded"],
-            [upload.poster, source.poster, "posterUploaded"],
-          ];
-          for (const [presigned, blob, flag] of extras) {
-            if (!presigned || !blob) continue;
+          // A video's poster is cosmetic and the worker can cut another one.
+          // It failing must never cost the clip.
+          if (upload.poster && source.poster) {
             try {
-              await uploadToPresigned(presigned, blob);
-              results[index][flag] = true;
+              await uploadToPresigned(upload.poster, source.poster);
+              results[index].posterUploaded = true;
             } catch {
               /* the server hands the reserved bytes back on confirm */
             }
@@ -385,8 +374,7 @@ async function prepare(file: File): Promise<Prepared> {
     const probe = await probeVideo(file);
     return {
       file,
-      display: null,
-      thumb: null,
+      compressed: null,
       poster: probe.poster?.blob ?? null,
       sourceWidth: probe.width,
       sourceHeight: probe.height,
@@ -411,38 +399,29 @@ async function prepare(file: File): Promise<Prepared> {
     };
   }
 
-  const renditions = await makeImageRenditions(file);
+  const result = await compressImage(file);
   return {
     file,
-    display: renditions.display?.blob ?? null,
-    thumb: renditions.thumb?.blob ?? null,
+    compressed: result.compressed?.blob ?? null,
     poster: null,
-    sourceWidth: renditions.sourceWidth,
-    sourceHeight: renditions.sourceHeight,
+    sourceWidth: result.sourceWidth,
+    sourceHeight: result.sourceHeight,
     durationSeconds: null,
-    needsServer: renditions.needsServer,
+    needsServer: result.needsServer,
     descriptor: {
       size: file.size,
       type: file.type,
-      display: renditions.display
+      compressed: result.compressed
         ? {
-            size: renditions.display.blob.size,
-            format: renditions.display.format,
-            width: renditions.display.width,
-            height: renditions.display.height,
+            size: result.compressed.blob.size,
+            format: result.compressed.format,
+            width: result.compressed.width,
+            height: result.compressed.height,
           }
         : null,
-      thumb: renditions.thumb
-        ? {
-            size: renditions.thumb.blob.size,
-            format: renditions.thumb.format,
-            width: renditions.thumb.width,
-            height: renditions.thumb.height,
-          }
-        : null,
-      sourceWidth: renditions.sourceWidth,
-      sourceHeight: renditions.sourceHeight,
-      needsServer: renditions.needsServer,
+      sourceWidth: result.sourceWidth,
+      sourceHeight: result.sourceHeight,
+      needsServer: result.needsServer,
     },
   };
 }

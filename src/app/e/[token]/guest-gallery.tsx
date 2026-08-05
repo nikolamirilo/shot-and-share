@@ -209,10 +209,12 @@ function Lightbox({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // The optimised copy is what gets shown. It is a quarter of the bytes and,
-  // for a HEIC upload, the difference between the photo appearing at all and a
-  // broken image icon on anything that is not an iPhone.
-  const viewUrl = full?.displayUrl;
+  /*
+   * A photo shows the copy the grid already loaded - it is the full stored
+   * image, so opening one is instant rather than a second download. A video
+   * has to wait for the signed URL, because the poster is not the clip.
+   */
+  const viewUrl = item.kind === "video" ? full?.url : item.previewUrl;
 
   return (
     <div
@@ -256,9 +258,9 @@ function Lightbox({
           <Button onClick={onClose} variant="onDark" size="sm">
             Close
           </Button>
-          {full?.originalUrl && (
+          {full?.url && (
             <a
-              href={full.originalUrl}
+              href={full.url}
               download
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border-2 border-pepper bg-gouda px-3.5 py-2 text-[0.9375rem] font-semibold leading-tight text-pepper shadow-[4px_4px_0_var(--color-crust)]"
             >

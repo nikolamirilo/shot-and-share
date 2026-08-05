@@ -1,10 +1,13 @@
 /**
- * One-shot: delete everything left under the pre-0007 `events/` prefix.
+ * One-shot: delete everything left under a superseded key prefix.
  *
- * Migration 0007 moved objects to `u/{owner_id}/{event_id}/...` and dropped the
- * media rows that pointed at the old layout. Postgres is the source of truth
- * for what exists, so those objects are now unreferenced - but S3 bills for
- * them all the same, and nothing else will ever go looking.
+ * Migration 0008 moved objects out of `u/{owner_id}/…` to `{owner_id}/…` at the
+ * root of the bucket, and dropped the media rows that pointed at the old layout
+ * along with the separate originals, thumbs and display renditions. Postgres is
+ * the source of truth for what exists, so everything still under `u/` is now
+ * unreferenced - but S3 bills for it all the same, and nothing else will ever go
+ * looking. (0007 did the same thing to the older `events/` prefix; pass
+ * --prefix=events/ if a bucket predates it.)
  *
  * Deliberately standalone rather than importing the storage driver: it is a
  * destructive maintenance job that runs once, and it should not be able to
@@ -20,7 +23,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 
-const PREFIX = "events/";
+const PREFIX = process.argv.find((a) => a.startsWith("--prefix="))?.slice(9) ?? "u/";
 
 const confirm = process.argv.includes("--confirm");
 const bucket = process.env.S3_BUCKET;

@@ -1,9 +1,15 @@
 {
   "Rules": [
     {
-      "ID": "originals-to-glacier-ir-after-30-days",
+      "ID": "media-to-glacier-ir-after-30-days",
       "Status": "Enabled",
-      "Filter": { "Prefix": "u/" },
+      "_comment": [
+        "No prefix filter, because there is nothing above the owner folders to",
+        "filter on: objects are laid out {owner_id}/{event_id}/… at the root of",
+        "the bucket. An empty filter is the whole bucket, which is exactly the",
+        "intent - every object in here is somebody's photo."
+      ],
+      "Filter": {},
       "Transitions": [
         {
           "Days": 30,
@@ -15,12 +21,7 @@
     {
       "ID": "keep-forever-to-deep-archive",
       "Status": "Enabled",
-      "Filter": {
-        "And": {
-          "Prefix": "u/",
-          "Tags": [{ "Key": "retention", "Value": "forever" }]
-        }
-      },
+      "Filter": { "Tag": { "Key": "retention", "Value": "forever" } },
       "Transitions": [
         {
           "Days": 400,
@@ -33,16 +34,11 @@
       "Status": "Enabled",
       "_comment": [
         "Filters on the object TAG, not the prefix. S3 prefix filters are",
-        "literal - there is no way to write u/*/*/archive/ - so a prefix",
-        "rule here would expire every photo in the bucket after 30 days.",
+        "literal - there is no way to write */*/archive/ - so a prefix rule",
+        "here would expire every photo in the bucket after 30 days.",
         "The ZIP is derived data and can always be rebuilt."
       ],
-      "Filter": {
-        "And": {
-          "Prefix": "u/",
-          "Tags": [{ "Key": "kind", "Value": "archive" }]
-        }
-      },
+      "Filter": { "Tag": { "Key": "kind", "Value": "archive" } },
       "Expiration": { "Days": 30 }
     }
   ]

@@ -119,15 +119,18 @@ This is the path two hundred guests hit at the same time on a Saturday night.
 
 1. Guest opens `/e/{token}`. The token is hashed and matched against
    `event_tokens`; there is no session anywhere on the guest side.
-2. The browser re-encodes each photo into an optimised full-size copy and a
-   thumbnail, and pulls a poster frame out of any video. See Compression below.
+2. The browser re-encodes each photo into a single compressed copy, and pulls a
+   poster frame out of any video. See Compression below.
 3. `POST /api/upload/presign` - **the quota is checked and reserved here, before
    a single URL is issued.** Checking afterwards means the bytes are already in
    the bucket and already billable.
-4. The browser POSTs each copy straight to storage, three files at a time, with
-   a progress bar. Renditions upload independently - a failed thumbnail is
-   cosmetic and never costs the photo.
+4. The browser POSTs that one file straight to storage, three uploads at a time,
+   with a progress bar. A video's poster goes up separately - it is cosmetic and
+   the worker can cut another one, so it never costs the clip.
 5. `POST /api/upload/confirm` flips the rows from `pending` to `ready`.
+
+Every object lands at `{owner_id}/{event_id}/{media_id}.{ext}` - owner folders at
+the root of the bucket, one file per upload. See `infra/README.md`.
 
 A row that never gets confirmed - a phone that died halfway - stays `pending`,
 and the nightly job sweeps it and hands the reserved quota back.
@@ -174,9 +177,9 @@ wrong bytes under the wrong extension.
 |---|---|
 | Normal photo | Re-encoded to WebP, or JPEG where WebP encoding is unavailable. Both open anywhere |
 | HEIC from an iPhone, uploaded via Safari | Browser decodes it and stores an openable copy |
-| HEIC uploaded from desktop Chrome | Browser cannot decode it. The original uploads untouched and the worker converts it |
+| HEIC uploaded from desktop Chrome | Browser cannot decode it. The file uploads untouched, the worker replaces it with a compressed JPEG, and the HEIC is deleted |
 | Any video | Poster frame extracted in-browser immediately; the worker converts the clip to H.264/AAC MP4 with faststart |
-| ZIP download | Originals, plus an `openable-anywhere/` folder holding converted copies of anything HEIC, so a host on Windows is not handed files that will not open |
+| ZIP download | One file per photo, every one of them a format that opens on Windows as readily as on an iPhone |
 
 HEIC is the one that actually strands people: iPhones produce it by default, it
 is half the size of the equivalent JPEG, and Chrome, Firefox and Windows Photo
@@ -200,16 +203,22 @@ presigned URLs for the input and each permitted output. A process running ffmpeg
 over files uploaded by strangers is the most likely thing here to be
 compromised, so it is given nothing worth stealing.
 
-### Optimised or original
+### One copy, always compressed
 
-A per-event setting, defaulting to **optimised**: the re-encoded copy becomes the
-stored file and the uploaded original is discarded. Four times as many photos fit
-in the same quota, and on a screen nobody can tell.
+An upload keeps exactly one object: the compressed photo. There is no stored
+original, no thumbnail and no separate display rendition, and there is no setting
+to change that - not for the host and not for an operator.
 
-Hosts who will print large, or hand files to an editor, can switch to **exactly
-as uploaded**. The setting says plainly that re-encoding cannot be undone. This
-is the one genuinely irreversible choice in the product, so it is a visible
-decision rather than a silent default.
+The setting used to exist, and removing it was the point. "Keep every original
+byte" filled an event four times faster to buy something nobody could see on a
+screen, and it had to be chosen *before* the event, when a host had no way to
+judge it. Storing three renditions of the same picture had the same shape: three
+times the bill, and an event folder no human could read at a glance.
+
+What is stored is full resolution for any screen and for printing up to A4
+(2560px on the longest edge), so the gallery, the projector, the ZIP and the
+lightbox all read the same file. A video keeps a second small object for its
+poster frame, because a clip has no still of itself to show in a grid.
 
 ### The custom event page
 

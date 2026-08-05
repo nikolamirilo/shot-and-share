@@ -140,11 +140,13 @@ async function handleVideo(job, dir) {
     outputPath,
   ]);
 
-  const outputs = { displayBytes: 0, posterBytes: 0, thumbBytes: 0 };
-  outputs.displayBytes = await upload(
-    job.outputs.display,
+  // This replaces the clip in the bucket rather than sitting beside it: the
+  // app drops the object the guest uploaded once the row points here.
+  const outputs = { mediaBytes: 0, posterBytes: 0 };
+  outputs.mediaBytes = await upload(
+    job.outputs.media,
     outputPath,
-    job.outputs.display.contentType,
+    job.outputs.media.contentType,
   );
 
   if (job.outputs.poster) {
@@ -174,7 +176,7 @@ async function handleImage(job, dir) {
   await download(job.input, input);
 
   const info = await probe(input);
-  const displayPath = path.join(dir, "display.jpg");
+  const outputPath = path.join(dir, "out.jpg");
 
   // ffmpeg decodes HEIC where it was built with libheif, which is the case for
   // every current build. One codec toolchain instead of two.
@@ -183,31 +185,17 @@ async function handleImage(job, dir) {
     "-i", input,
     "-vf", "scale='min(2560,iw)':-2:flags=lanczos",
     "-q:v", "3",
-    displayPath,
+    outputPath,
   ]);
 
-  const outputs = { displayBytes: 0, thumbBytes: 0, posterBytes: 0 };
-  outputs.displayBytes = await upload(
-    job.outputs.display,
-    displayPath,
-    job.outputs.display.contentType,
+  // The compressed JPEG replaces the file the guest uploaded. There is no
+  // second rendition to write: the app deletes the HEIC once the row moves.
+  const outputs = { mediaBytes: 0, posterBytes: 0 };
+  outputs.mediaBytes = await upload(
+    job.outputs.media,
+    outputPath,
+    job.outputs.media.contentType,
   );
-
-  if (job.outputs.thumb) {
-    const thumbPath = path.join(dir, "thumb.jpg");
-    await run(FFMPEG, [
-      "-y",
-      "-i", input,
-      "-vf", "scale='min(720,iw)':-2:flags=lanczos",
-      "-q:v", "5",
-      thumbPath,
-    ]);
-    outputs.thumbBytes = await upload(
-      job.outputs.thumb,
-      thumbPath,
-      job.outputs.thumb.contentType,
-    );
-  }
 
   return { ...outputs, ...info };
 }

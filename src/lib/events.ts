@@ -89,35 +89,36 @@ export interface MediaView {
   uploaderName: string | null;
   uploaderFingerprint: string | null;
   sizeBytes: number;
-  thumbUrl: string | null;
+  /**
+   * What a grid shows. For a photo this is the stored image itself - there is
+   * no separate thumbnail any more, because a compressed photo is already
+   * small enough that a second copy of it was costing storage to save nothing.
+   * For a video it is the poster frame.
+   */
+  previewUrl: string | null;
   /** Poster frame for a video, so a grid never shows a grey box. */
   posterUrl: string | null;
   durationSeconds: number | null;
   /** True while the worker still owes this file a viewable copy. */
   processing: boolean;
   /**
-   * Resolved only when a photo is actually opened.
-   *
-   * `displayUrl` is the optimised full-size copy and is what the lightbox
-   * should load - typically a quarter of the bytes and, for a HEIC upload, the
-   * difference between the photo appearing and a broken image icon. The
-   * untouched `originalUrl` is offered alongside it for downloading.
+   * The stored object behind a short-lived signature, resolved only when
+   * something is actually opened. It is what a video plays from and what the
+   * Download button points at.
    */
-  displayUrl?: string;
-  originalUrl?: string;
-  /** Format of whatever `originalUrl` points at, so the UI can warn about HEIC. */
-  originalFormat: string | null;
-  universallyViewable: boolean;
+  url?: string;
+  /** Format of the stored object. */
+  format: string | null;
 }
 
 /**
- * Thumbnails go out through the CDN with a long cache: the id is unguessable
- * and the event link is already the access control. Originals are always
- * signed and short-lived, so a leaked image link stops working.
+ * Images go out through the CDN with a long cache: the id is unguessable and
+ * the event link is already the access control. The signed URL is kept for
+ * downloads and for video playback, so a leaked link stops working.
  */
 export async function toMediaView(
   row: MediaRow,
-  opts: { withOriginal?: boolean } = {},
+  opts: { withUrl?: boolean } = {},
 ): Promise<MediaView> {
   const cdn = async (key: string | null) =>
     key
@@ -125,11 +126,25 @@ export async function toMediaView(
         (await storage.presignDownload({ key, expiresInSeconds: 3600 })))
       : null;
 
-  // A video grid shows the poster; a photo grid shows the thumbnail.
-  const thumbUrl = await cdn(row.thumb_key);
   const posterUrl = await cdn(row.poster_key);
 
-  const originalFormat = row.original_format;
+  /*
+   * A video grid shows the poster; a photo grid shows the photo. The one photo
+   * it cannot show is one still waiting on the worker - a HEIC uploaded from
+   * desktop Chrome is in the bucket but is a broken image icon everywhere that
+   * is not Safari, so the grid gets nothing and renders its placeholder until
+   * the JPEG replaces it.
+   */
+  const viewable =
+    !row.media_format ||
+    isUniversallyViewable(row.media_format as ImageFormat);
+  const previewUrl =
+    row.kind === "video"
+      ? posterUrl
+      : viewable
+        ? await cdn(row.media_key)
+        : null;
+
   const view: MediaView = {
     id: row.id,
     kind: row.kind,
@@ -139,32 +154,18 @@ export async function toMediaView(
     uploaderName: row.uploader_name,
     uploaderFingerprint: row.uploader_fingerprint,
     sizeBytes: row.size_bytes,
-    thumbUrl: thumbUrl ?? posterUrl,
+    previewUrl,
     posterUrl,
     durationSeconds: row.duration_seconds,
     processing: row.processing === "pending",
-    originalFormat,
-    universallyViewable: originalFormat
-      ? isUniversallyViewable(originalFormat as ImageFormat)
-      : true,
+    format: row.media_format,
   };
 
-  if (opts.withOriginal) {
-    // Serve the copy meant for viewing, and keep the untouched one for
-    // downloading. When there is no separate display copy the original already
-    // *is* the optimised one, so both point at the same object.
-    const displaySource = row.display_key ?? row.original_key;
-    view.displayUrl = await storage.presignDownload({
-      key: displaySource,
+  if (opts.withUrl) {
+    view.url = await storage.presignDownload({
+      key: row.media_key,
       expiresInSeconds: 900,
     });
-    view.originalUrl =
-      displaySource === row.original_key
-        ? view.displayUrl
-        : await storage.presignDownload({
-            key: row.original_key,
-            expiresInSeconds: 900,
-          });
   }
 
   return view;

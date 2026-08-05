@@ -144,7 +144,6 @@ const settingsSchema = z.object({
   name: z.string().trim().min(1).max(120),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gallery_visible: z.boolean(),
-  media_quality: z.enum(["optimised", "original"]),
   welcome_message: z.string().trim().max(400).nullable(),
 });
 
@@ -161,7 +160,6 @@ export async function updateEventSettings(
     name: formData.get("name"),
     event_date: formData.get("event_date"),
     gallery_visible: formData.get("gallery_visible") === "on",
-    media_quality: formData.get("media_quality") ?? event.media_quality,
     welcome_message: welcome.length > 0 ? welcome : null,
   });
   if (!parsed.success) {
@@ -179,7 +177,6 @@ export async function updateEventSettings(
       name: parsed.data.name,
       event_date: parsed.data.event_date,
       gallery_visible: parsed.data.gallery_visible,
-      media_quality: parsed.data.media_quality,
       welcome_message: parsed.data.welcome_message,
       expires_at: expiresAt,
     })

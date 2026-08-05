@@ -6,11 +6,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Full-resolution originals, one at a time, behind a short-lived signature.
+ * The stored object, one at a time, behind a short-lived signature.
  *
- * Thumbnails are cacheable and public; originals are not. A gallery page never
- * calls this - it resolves only when somebody actually opens a photo, which
- * keeps the expensive bytes off the common path.
+ * A gallery page never calls this - it resolves only when somebody opens a
+ * photo to download it or plays a video, which keeps the signing work and the
+ * expensive bytes off the common path.
  */
 export async function GET(request: Request) {
   return handle(async () => {
@@ -39,6 +39,6 @@ export async function GET(request: Request) {
     if (error) throw new Error(error.message);
     if (!row) throw new ApiError("not_found", "That photo is not here.");
 
-    return ok(await toMediaView(row, { withOriginal: true }));
+    return ok(await toMediaView(row, { withUrl: true }));
   });
 }

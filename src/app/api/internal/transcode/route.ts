@@ -9,7 +9,7 @@ import {
   UNIVERSAL_VIDEO_FORMAT,
   VIDEO_MIME,
 } from "@/lib/formats";
-import { displayKey, posterKey, scopeOfMedia, thumbKey } from "@/lib/media";
+import { mediaKey, posterKey, scopeOfMedia } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -83,10 +83,12 @@ export async function GET(request: Request) {
         // off the row itself, so a worker output can only ever land inside the
         // folder of the host who owns the photo.
         const scope = scopeOfMedia(row);
-        const outDisplayKey = isVideo
-          ? displayKey(scope, row.id, UNIVERSAL_VIDEO_FORMAT)
-          : displayKey(scope, row.id, IMAGE_EXT.jpeg);
-        const outDisplayMime = isVideo
+        const outKey = mediaKey(
+          scope,
+          row.id,
+          isVideo ? UNIVERSAL_VIDEO_FORMAT : IMAGE_EXT.jpeg,
+        );
+        const outMime = isVideo
           ? VIDEO_MIME[UNIVERSAL_VIDEO_FORMAT]
           : IMAGE_MIME.jpeg;
 
@@ -95,35 +97,25 @@ export async function GET(request: Request) {
           kind: row.kind,
           mimeType: row.mime_type,
           sizeBytes: Number(row.size_bytes),
-          hasThumb: Boolean(row.thumb_key),
           hasPoster: Boolean(row.poster_key),
           input: await storage.presignDownload({
-            key: row.original_key,
+            key: row.media_key,
             expiresInSeconds: CLAIM_MINUTES * 60,
           }),
           outputs: {
-            display: {
-              contentType: outDisplayMime,
+            // Not a second rendition: this replaces the object in the bucket,
+            // so the event folder is left holding one compressed file.
+            media: {
+              contentType: outMime,
               upload: await storage.presignUpload({
-                key: outDisplayKey,
-                contentType: outDisplayMime,
+                key: outKey,
+                contentType: outMime,
                 // Generous: the worker's output size is not known in advance,
                 // and the quota is reconciled when it reports back.
                 maxBytes: Math.max(Number(row.size_bytes) * 2, 32 * 1024 * 1024),
                 expiresInSeconds: CLAIM_MINUTES * 60,
               }),
             },
-            thumb: row.thumb_key
-              ? null
-              : {
-                  contentType: IMAGE_MIME.jpeg,
-                  upload: await storage.presignUpload({
-                    key: thumbKey(scope, row.id, IMAGE_EXT.jpeg),
-                    contentType: IMAGE_MIME.jpeg,
-                    maxBytes: 4 * 1024 * 1024,
-                    expiresInSeconds: CLAIM_MINUTES * 60,
-                  }),
-                },
             poster:
               isVideo && !row.poster_key
                 ? {
@@ -151,8 +143,7 @@ const completeSchema = z.object({
   mediaId: z.string().uuid(),
   ok: z.boolean(),
   /** Bytes actually written, so the quota reflects reality. */
-  displayBytes: z.number().int().nonnegative().optional(),
-  thumbBytes: z.number().int().nonnegative().optional(),
+  mediaBytes: z.number().int().nonnegative().optional(),
   posterBytes: z.number().int().nonnegative().optional(),
   width: z.number().int().positive().max(60_000).nullable().optional(),
   height: z.number().int().positive().max(60_000).nullable().optional(),
@@ -177,9 +168,9 @@ export async function POST(request: Request) {
 
     if (!body.ok) {
       /*
-       * A failed conversion is not a lost file. The original is untouched and
-       * still downloadable; the row is marked so it stops being retried
-       * forever and so an operator can see it.
+       * A failed conversion is not a lost file. What the guest uploaded is
+       * untouched and still downloadable; the row is marked so it stops being
+       * retried forever and so an operator can see it.
        */
       console.error("[transcode] failed", body.mediaId, body.error);
       await admin
@@ -193,23 +184,25 @@ export async function POST(request: Request) {
     // Recomputed from the row rather than taken from the worker's report, for
     // the same reason it was computed here when the job was handed out.
     const scope = scopeOfMedia(media);
-    const newDisplayKey = isVideo
-      ? displayKey(scope, media.id, UNIVERSAL_VIDEO_FORMAT)
-      : displayKey(scope, media.id, IMAGE_EXT.jpeg);
+    const newKey = mediaKey(
+      scope,
+      media.id,
+      isVideo ? UNIVERSAL_VIDEO_FORMAT : IMAGE_EXT.jpeg,
+    );
 
-    const displayBytes = body.displayBytes ?? 0;
-    const thumbBytes = body.thumbBytes ?? 0;
+    const mediaBytes = body.mediaBytes ?? 0;
     const posterBytes = body.posterBytes ?? 0;
-
-    const wroteThumb = !media.thumb_key && thumbBytes > 0;
+    const replaced = mediaBytes > 0;
     const wrotePoster = isVideo && !media.poster_key && posterBytes > 0;
 
-    // The worker's output was never reserved at upload time, so it is charged
-    // to the event now. Storage cannot be reserved before its size is known.
+    /*
+     * The converted file replaces what the guest uploaded, so the event folder
+     * never holds both. The delta can be negative - which is the usual case,
+     * since converting is what makes the file smaller - and the quota moves
+     * either way. Reserving cannot happen before the size is known.
+     */
     const added =
-      displayBytes -
-      Number(media.display_size_bytes) +
-      (wroteThumb ? thumbBytes : 0) +
+      (replaced ? mediaBytes - Number(media.size_bytes) : 0) +
       (wrotePoster ? posterBytes : 0);
 
     if (added > 0) {
@@ -219,11 +212,11 @@ export async function POST(request: Request) {
       });
       if (!reserved) {
         /*
-         * The event filled up between upload and conversion. Keep the original,
-         * drop what the worker wrote, and leave the row usable rather than
-         * silently pushing the host over their quota.
+         * The event filled up between upload and conversion. Keep what the
+         * guest uploaded, drop what the worker wrote, and leave the row usable
+         * rather than silently pushing the host over their quota.
          */
-        await storage.remove([newDisplayKey]);
+        if (newKey !== media.media_key) await storage.remove([newKey]);
         await admin
           .from("media")
           .update({ processing: "failed" })
@@ -240,16 +233,18 @@ export async function POST(request: Request) {
     await admin
       .from("media")
       .update({
-        display_key: displayBytes > 0 ? newDisplayKey : media.display_key,
-        display_size_bytes: displayBytes,
-        display_format: displayBytes > 0
-          ? (isVideo ? UNIVERSAL_VIDEO_FORMAT : "jpeg")
-          : media.display_format,
-        thumb_key: wroteThumb
-          ? thumbKey(scope, media.id, IMAGE_EXT.jpeg)
-          : media.thumb_key,
-        thumb_size_bytes: wroteThumb ? thumbBytes : media.thumb_size_bytes,
-        thumb_format: wroteThumb ? "jpeg" : media.thumb_format,
+        media_key: replaced ? newKey : media.media_key,
+        size_bytes: replaced ? mediaBytes : media.size_bytes,
+        media_format: replaced
+          ? isVideo
+            ? UNIVERSAL_VIDEO_FORMAT
+            : "jpeg"
+          : media.media_format,
+        mime_type: replaced
+          ? isVideo
+            ? VIDEO_MIME[UNIVERSAL_VIDEO_FORMAT]
+            : IMAGE_MIME.jpeg
+          : media.mime_type,
         poster_key: wrotePoster
           ? posterKey(scope, media.id, IMAGE_EXT.jpeg)
           : media.poster_key,
@@ -260,6 +255,17 @@ export async function POST(request: Request) {
         processing: "done",
       })
       .eq("id", media.id);
+
+    /*
+     * Last, and only once the row points at the new object: the file the guest
+     * uploaded. A HEIC becomes a JPEG and a MOV becomes an MP4, so the key
+     * changes and the old object would otherwise sit in the bucket for the life
+     * of the event, being paid for and never read. Dropped after the update so
+     * a failure here leaves a stray object rather than a broken photo.
+     */
+    if (replaced && newKey !== media.media_key) {
+      await storage.remove([media.media_key]);
+    }
 
     return ok({ recorded: true });
   });

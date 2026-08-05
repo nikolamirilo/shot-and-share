@@ -4,14 +4,12 @@ import {
   ACCEPTED_MIME,
   archiveKey,
   classify,
-  displayKey,
   eventPrefix,
-  originalKey,
+  mediaKey,
   ownerPrefix,
   posterKey,
   scopeOfEvent,
   scopeOfMedia,
-  thumbKey,
 } from "@/lib/media";
 import { formatBytes, describeRetention, pluralise } from "@/lib/format";
 
@@ -49,9 +47,7 @@ describe("key layout", () => {
   const scope = { ownerId: owner, eventId: event };
 
   const everyKind = [
-    originalKey(scope, media, "jpg"),
-    displayKey(scope, media, "webp"),
-    thumbKey(scope, media),
+    mediaKey(scope, media, "jpg"),
     posterKey(scope, media),
     archiveKey(scope),
   ];
@@ -77,22 +73,47 @@ describe("key layout", () => {
     }
   });
 
-  it("starts every key with the constant segment the infra filters on", () => {
-    // s3-lifecycle.json and the IAM policy both match on `u/`. Owner ids are
-    // unbounded, so this is the only common prefix the bucket has.
+  it("puts owner folders at the root of the bucket", () => {
+    // No wrapper prefix above them: `aws s3 ls s3://bucket/` lists hosts and
+    // nothing else, and a host's own path is one level shorter everywhere it
+    // is read by a person.
     for (const key of everyKind) {
-      expect(key.startsWith("u/")).toBe(true);
+      expect(key.startsWith(`${owner}/`)).toBe(true);
     }
   });
 
-  it("puts thumbnails in their own prefix as webp", () => {
-    expect(thumbKey(scope, media)).toBe(
-      `u/${owner}/${event}/thumbs/${media}.webp`,
+  it("keeps one object per upload, directly in the event folder", () => {
+    // No originals/ or thumbs/ subfolder, because there is no original and no
+    // thumbnail - the compressed photo is the photo.
+    expect(mediaKey(scope, media, "jpg")).toBe(
+      `${owner}/${event}/${media}.jpg`,
     );
-    expect(originalKey(scope, media, "heic")).toBe(
-      `u/${owner}/${event}/originals/${media}.heic`,
+    expect(archiveKey(scope)).toBe(`${owner}/${event}/archive/${event}.zip`);
+  });
+
+  it("names a video's poster after the video it belongs to", () => {
+    expect(posterKey(scope, media)).toBe(
+      `${owner}/${event}/${media}-poster.webp`,
     );
-    expect(archiveKey(scope)).toBe(`u/${owner}/${event}/archive/${event}.zip`);
+  });
+
+  it("gives an event folder one level of files and no rendition folders", () => {
+    // The regression this guards: the layout used to nest originals/, display/
+    // and thumbs/ under a `u/` root, so an event was four folders deep and held
+    // three copies of every photo. A host opening their own folder in the
+    // console should see one file per upload.
+    for (const key of [mediaKey(scope, media, "webp"), posterKey(scope, media)]) {
+      expect(key.slice(eventPrefix(scope).length)).not.toContain("/");
+    }
+  });
+
+  it("keeps a replaced extension in the same place", () => {
+    // The worker rewrites a HEIC as a JPEG and a MOV as an MP4. Only the
+    // extension moves, so the old object is one key away and gets deleted.
+    const heic = mediaKey(scope, media, "heic");
+    const jpg = mediaKey(scope, media, "jpg");
+    expect(heic).not.toBe(jpg);
+    expect(heic.replace(/\.heic$/, ".jpg")).toBe(jpg);
   });
 
   it("reads a scope off either row shape", () => {

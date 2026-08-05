@@ -10,18 +10,15 @@ import {
   IMAGE_MIME,
   type ImageFormat,
   imageFormatFromMime,
-  isUniversallyViewable,
   videoFormatFromMime,
 } from "@/lib/formats";
 import {
   MAX_FILES_PER_REQUEST,
-  MAX_THUMB_BYTES,
+  MAX_POSTER_BYTES,
   classify,
-  displayKey,
-  originalKey,
+  mediaKey,
   posterKey,
   scopeOfEvent,
-  thumbKey,
 } from "@/lib/media";
 import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
@@ -48,14 +45,10 @@ const bodySchema = z.object({
       z.object({
         size: z.number().int().positive(),
         type: z.string().min(3).max(120),
-        /** Optimised full-size copy the browser produced, if it managed one. */
-        display: renditionSchema.optional().nullable(),
-        thumb: renditionSchema
-          .extend({ size: z.number().int().positive().max(MAX_THUMB_BYTES) })
-          .optional()
-          .nullable(),
+        /** The compressed copy the browser produced, if it managed one. */
+        compressed: renditionSchema.optional().nullable(),
         poster: renditionSchema
-          .extend({ size: z.number().int().positive().max(MAX_THUMB_BYTES) })
+          .extend({ size: z.number().int().positive().max(MAX_POSTER_BYTES) })
           .optional()
           .nullable(),
         sourceWidth: z.number().int().positive().max(60_000).optional().nullable(),
@@ -69,19 +62,23 @@ const bodySchema = z.object({
     .max(MAX_FILES_PER_REQUEST),
 });
 
-/** Where the archival object's bytes come from. */
-type OriginalSource = "file" | "display";
-
 type MediaInsert = Database["public"]["Tables"]["media"]["Insert"];
 
 /**
  * The quota check happens here, before a single presigned URL is issued.
  *
  * Checking afterwards means the bytes are already in the bucket and already
- * billable. It also decides *what gets stored*, which is the whole compression
- * story: on an `optimised` event the browser's re-encoded copy becomes the
- * archival object and the phone never uploads the 4 MB original at all - which
- * is a quarter of the storage and, on venue wifi, a quarter of the wait.
+ * billable. It also decides *what gets stored*, and there is only ever one
+ * answer now: the compressed copy. The phone never uploads the 4 MB original at
+ * all - which is a quarter of the storage and, on venue wifi, a quarter of the
+ * wait. Nobody is asked to choose, because "keep every original byte" is a
+ * setting whose only effect is a bill four times larger for a difference nobody
+ * can see on a screen.
+ *
+ * The one exception is a file the browser could not decode, chiefly HEIC
+ * outside Safari. That goes up as it came off the phone and the worker replaces
+ * the object with a compressed JPEG - so the event folder still ends up holding
+ * compressed images only, just a minute later.
  */
 export async function POST(request: Request) {
   return handle(async () => {
@@ -131,123 +128,64 @@ export async function POST(request: Request) {
 
       const mediaId = randomUUID();
       const mime = file.type.toLowerCase().split(";")[0].trim();
-      const sourceFormat =
-        classified.kind === "photo"
-          ? imageFormatFromMime(mime)
-          : videoFormatFromMime(mime);
 
-      /* --- what do we actually keep? ------------------------------------- */
+      /* --- the one object we keep ---------------------------------------- */
 
-      // A photo can only drop its original if the browser produced a real
-      // replacement. Video never can: the poster is not the video.
-      const canReplaceOriginal =
+      // A photo is stored compressed whenever the browser managed it. A video
+      // is stored as uploaded until the worker replaces it with an MP4: the
+      // poster is not the video, so there is nothing else to send.
+      const useCompressed =
         classified.kind === "photo" &&
-        event.media_quality === "optimised" &&
-        Boolean(file.display) &&
+        Boolean(file.compressed) &&
         !file.needsServer;
 
-      const originalSource: OriginalSource = canReplaceOriginal
-        ? "display"
-        : "file";
-
-      const archivalFormat: string = canReplaceOriginal
-        ? file.display!.format
+      const format: string = useCompressed
+        ? file.compressed!.format
+        : (classified.kind === "photo"
+            ? imageFormatFromMime(mime)
+            : videoFormatFromMime(mime)) ?? classified.ext;
+      const ext = useCompressed
+        ? IMAGE_EXT[file.compressed!.format as ImageFormat]
         : classified.ext;
-      const archivalExt = canReplaceOriginal
-        ? IMAGE_EXT[file.display!.format as ImageFormat]
-        : classified.ext;
-      const archivalBytes = canReplaceOriginal
-        ? file.display!.size
-        : file.size;
-      const archivalMime = canReplaceOriginal
-        ? IMAGE_MIME[file.display!.format as ImageFormat]
+      const bytes = useCompressed ? file.compressed!.size : file.size;
+      const contentType = useCompressed
+        ? IMAGE_MIME[file.compressed!.format as ImageFormat]
         : mime;
-
-      /*
-       * A separate display copy is kept when the archival object is not a good
-       * thing to serve to two hundred guests - either because it is the full
-       * uploaded original (heavy), or because it is a format half of them
-       * cannot open (HEIC). When the archival object *is* the optimised copy,
-       * a second one would be the same file twice.
-       */
-      const keepSeparateDisplay =
-        !canReplaceOriginal &&
-        Boolean(file.display) &&
-        classified.kind === "photo";
 
       return {
         mediaId,
         kind: classified.kind,
-        mime,
-        sourceFormat,
-        originalSource,
-        archivalKey: originalKey(scope, mediaId, archivalExt),
-        archivalFormat,
-        archivalBytes,
-        archivalMime,
-        display:
-          keepSeparateDisplay && file.display
+        source: useCompressed ? ("compressed" as const) : ("file" as const),
+        key: mediaKey(scope, mediaId, ext),
+        format,
+        bytes,
+        contentType,
+        poster:
+          classified.kind === "video" && file.poster
             ? {
-                key: displayKey(
+                key: posterKey(
                   scope,
                   mediaId,
-                  IMAGE_EXT[file.display.format as ImageFormat],
+                  IMAGE_EXT[file.poster.format as ImageFormat],
                 ),
-                bytes: file.display.size,
-                mime: IMAGE_MIME[file.display.format as ImageFormat],
-                format: file.display.format,
+                bytes: file.poster.size,
+                mime: IMAGE_MIME[file.poster.format as ImageFormat],
               }
             : null,
-        thumb: file.thumb
-          ? {
-              key: thumbKey(
-                scope,
-                mediaId,
-                IMAGE_EXT[file.thumb.format as ImageFormat],
-              ),
-              bytes: file.thumb.size,
-              mime: IMAGE_MIME[file.thumb.format as ImageFormat],
-              format: file.thumb.format,
-            }
-          : null,
-        poster: file.poster
-          ? {
-              key: posterKey(
-                scope,
-                mediaId,
-                IMAGE_EXT[file.poster.format as ImageFormat],
-              ),
-              bytes: file.poster.size,
-              mime: IMAGE_MIME[file.poster.format as ImageFormat],
-              format: file.poster.format,
-            }
-          : null,
         width: file.sourceWidth ?? null,
         height: file.sourceHeight ?? null,
         durationSeconds: file.durationSeconds ?? null,
-        originalReplaced: canReplaceOriginal,
         /*
-         * The worker still owes us something when the browser could not decode
-         * the file, or when it is a video that has not been transcoded to
-         * something universally playable.
+         * The worker still owes us something whenever the object in the bucket
+         * is not already a compressed, universally viewable file: an image the
+         * browser could not decode, or any video.
          */
-        needsServer:
-          file.needsServer ||
-          classified.kind === "video" ||
-          (classified.kind === "photo" &&
-            !file.display &&
-            sourceFormat !== null &&
-            !isUniversallyViewable(sourceFormat as ImageFormat)),
+        needsServer: !useCompressed,
       };
     });
 
     const totalBytes = prepared.reduce(
-      (sum, f) =>
-        sum +
-        f.archivalBytes +
-        (f.display?.bytes ?? 0) +
-        (f.thumb?.bytes ?? 0) +
-        (f.poster?.bytes ?? 0),
+      (sum, f) => sum + f.bytes + (f.poster?.bytes ?? 0),
       0,
     );
 
@@ -274,21 +212,14 @@ export async function POST(request: Request) {
     const rows: MediaInsert[] = prepared.map((f) => ({
       id: f.mediaId,
       event_id: event.id,
-      original_key: f.archivalKey,
-      display_key: f.display?.key ?? null,
-      thumb_key: f.thumb?.key ?? null,
+      media_key: f.key,
       poster_key: f.poster?.key ?? null,
-      size_bytes: f.archivalBytes,
-      display_size_bytes: f.display?.bytes ?? 0,
-      thumb_size_bytes: f.thumb?.bytes ?? 0,
+      size_bytes: f.bytes,
       poster_size_bytes: f.poster?.bytes ?? 0,
-      original_format: f.archivalFormat,
-      display_format: f.display?.format ?? null,
-      thumb_format: f.thumb?.format ?? null,
+      media_format: f.format,
       duration_seconds: f.durationSeconds,
-      original_replaced: f.originalReplaced,
       processing: f.needsServer ? "pending" : "done",
-      mime_type: f.archivalMime,
+      mime_type: f.contentType,
       kind: f.kind,
       width: f.width,
       height: f.height,
@@ -325,17 +256,11 @@ export async function POST(request: Request) {
     const uploads = await Promise.all(
       prepared.map(async (f) => ({
         mediaId: f.mediaId,
-        /** Which blob the client should send to `original`. */
-        originalSource: f.originalSource,
-        original: await sign(f.archivalKey, f.archivalMime, f.archivalBytes),
-        display: f.display
-          ? await sign(f.display.key, f.display.mime, f.display.bytes)
-          : null,
+        /** Which blob the client should send: the compressed copy, or the file. */
+        source: f.source,
+        media: await sign(f.key, f.contentType, f.bytes),
         // Browser encoders are not byte-deterministic between the measuring
         // encode and the upload, so the signed ceiling carries some slack.
-        thumb: f.thumb
-          ? await sign(f.thumb.key, f.thumb.mime, f.thumb.bytes, 32 * 1024)
-          : null,
         poster: f.poster
           ? await sign(f.poster.key, f.poster.mime, f.poster.bytes, 32 * 1024)
           : null,
