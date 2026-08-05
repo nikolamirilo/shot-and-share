@@ -49,7 +49,7 @@ export function UploadPanel(props: UploadPanelProps) {
 
   return (
     <section
-      className={preview ? undefined : "mt-8"}
+      className={preview ? undefined : "mt-6 sm:mt-8"}
       aria-hidden={preview}
       inert={preview}
     >
@@ -80,20 +80,23 @@ function BigButton({
   children,
 }: UploadPanelProps) {
   return (
-    <div className={cx("card", preview ? "p-3" : "p-6")}>
+    <div className={cx("card", preview ? "p-3" : "p-5 sm:p-6")}>
       <Action
         label={label}
         busy={busy}
         onClick={onPick}
         preview={preview}
-        className={cx("w-full", preview ? "py-2" : "py-5 text-[1.3rem]")}
+        className={cx(
+          "w-full",
+          preview ? "py-2" : "min-h-16 py-4 text-[1.15rem] sm:py-5 sm:text-[1.3rem]",
+        )}
       />
       <Hint text={hint} preview={preview} className="text-center" />
       <NameField
         name={name}
         onNameChange={onNameChange}
         preview={preview}
-        className={preview ? "mt-3" : "mt-5"}
+        className={preview ? "mt-3" : "mt-4 sm:mt-5"}
       />
       {children}
     </div>
@@ -127,7 +130,7 @@ function DropPanel({
       </span>
       <span
         className={cx(
-          "mt-3 block font-semibold",
+          "mt-3 block font-semibold leading-tight",
           preview ? "text-label" : "text-lead",
         )}
       >
@@ -147,7 +150,7 @@ function DropPanel({
   const shell = cx(
     "block w-full rounded-[1.25rem] border-2 border-dashed border-pepper text-center transition-colors",
     over ? "bg-gouda-light" : "bg-cream",
-    preview ? "p-3" : "p-8",
+    preview ? "p-3" : "px-5 py-7 sm:p-8",
   );
 
   return (
@@ -198,13 +201,22 @@ function SlimBar({
 }: UploadPanelProps) {
   return (
     <div className={cx("card", preview ? "p-2.5" : "p-4")}>
-      <div className={cx("flex items-center", preview ? "gap-2" : "gap-3")}>
+      {/* Side by side leaves the name field about sixty pixels wide on a small
+          phone. Below 480 the two stack; it is still far shorter than the
+          panel variants, which is the whole point of this one. */}
+      <div
+        className={cx(
+          preview
+            ? "flex items-center gap-2"
+            : "flex flex-col gap-2.5 xs:flex-row xs:items-center xs:gap-3",
+        )}
+      >
         <Action
           label={label}
           busy={busy}
           onClick={onPick}
           preview={preview}
-          className="shrink-0"
+          className={preview ? "shrink-0" : "w-full shrink-0 xs:w-auto"}
         />
         <NameField
           name={name}
@@ -236,8 +248,20 @@ function SplitButtons({
   children,
 }: UploadPanelProps) {
   return (
-    <div className={cx("card", preview ? "p-3" : "p-6")}>
-      <div className={cx("grid grid-cols-2", preview ? "gap-2" : "gap-3")}>
+    <div className={cx("card", preview ? "p-3" : "p-5 sm:p-6")}>
+      {/* Half a phone's width does not hold "Choose photos" at 17px next to
+          the large button's padding: both labels wrapped, and a two-line
+          button beside a one-line one is the worst thing on the guest page.
+          Below 480 they stack full width, which is a better shape for a thumb
+          anyway; side by side returns as soon as there is room for it. */}
+      <div
+        className={cx(
+          "grid",
+          preview
+            ? "grid-cols-2 gap-2"
+            : "grid-cols-1 gap-2.5 xs:grid-cols-2 sm:gap-3",
+        )}
+      >
         <Action
           label={busy ? label : "Take a photo"}
           busy={busy}
@@ -259,7 +283,7 @@ function SplitButtons({
         name={name}
         onNameChange={onNameChange}
         preview={preview}
-        className={preview ? "mt-3" : "mt-5"}
+        className={preview ? "mt-3" : "mt-4 sm:mt-5"}
       />
       {children}
     </div>
@@ -388,7 +412,9 @@ function NameField({
         aria-label={inline ? label : undefined}
         placeholder={inline ? "Your name — optional" : "So the host knows who to thank"}
         className={cx(
-          "w-full rounded-xl border-2 border-pepper bg-butter px-3.5 py-2.5",
+          // 17px, like every other field: under 16px Safari zooms the page in
+          // on focus and the guest has to pinch back out to find the button.
+          "w-full min-h-11 rounded-xl border-2 border-pepper bg-butter px-3.5 py-2.5 text-body",
           inline ? undefined : "mt-1.5",
         )}
       />

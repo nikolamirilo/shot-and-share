@@ -98,20 +98,22 @@ export default async function EventPage({
       : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
       <Link
         href="/dashboard"
-        className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind hover:underline"
+        className="inline-block py-1 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind hover:underline"
       >
         ← All events
       </Link>
 
-      <header className="mt-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <header className="mt-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 sm:mt-6">
+        <div className="min-w-0">
           <Eyebrow>{formatEventDate(event.event_date)}</Eyebrow>
-          <h1 className="mt-2 text-h1">{event.name}</h1>
+          <h1 className="mt-2 text-[2.125rem] xs:text-[2.5rem] sm:text-h1">
+            {event.name}
+          </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge tone="gouda">{tier.name}</Badge>
           {event.keep_forever && <Badge tone="dark">Kept forever</Badge>}
           {event.status === "expired" && <Badge tone="outline">Paused</Badge>}
@@ -134,7 +136,7 @@ export default async function EventPage({
         </Notice>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+      <div className="mt-7 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-[1.1fr_1fr]">
         <SharePanel
           eventId={event.id}
           link={link}
@@ -142,10 +144,10 @@ export default async function EventPage({
           revoked={!active}
         />
 
-        <section className="card p-6">
+        <section className="card p-5 sm:p-6">
           <h2 className="text-h3">How it is going</h2>
 
-          <dl className="mt-5 grid grid-cols-2 gap-5">
+          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
             <Stat label="Photos" value={total.toLocaleString("en-GB")} />
             <Stat
               label="People who uploaded"
@@ -169,7 +171,7 @@ export default async function EventPage({
           </dl>
 
           <div className="mt-7">
-            <div className="flex items-baseline justify-between gap-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
               <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
                 Storage
               </span>
@@ -183,8 +185,8 @@ export default async function EventPage({
                 tone={summary.percent >= 85 ? "warn" : "dark"}
               />
             </div>
-            <p className="mt-2 flex items-center gap-2 text-[0.8125rem] text-crust">
-              <Hole size={8} />
+            <p className="mt-2 flex items-start gap-2 text-[0.8125rem] leading-snug text-crust">
+              <Hole size={8} className="mt-1.5" />
               {event.keep_forever
                 ? "Kept forever. This event is never deleted."
                 : describeRetention(event.expires_at)}
@@ -203,7 +205,7 @@ export default async function EventPage({
         </section>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+      <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1.1fr_1fr]">
         <ArchivePanel eventId={event.id} photoCount={total} />
         <div id="upgrade">
           <UpgradePanel
@@ -214,11 +216,11 @@ export default async function EventPage({
         </div>
       </div>
 
-      <section className="mt-10">
+      <section className="mt-9 sm:mt-10">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <Eyebrow>Gallery</Eyebrow>
-            <h2 className="mt-2 text-h2">
+            <h2 className="mt-2 text-[1.625rem] sm:text-h2">
               {total === 0 ? "Waiting for the first photo" : "Everything so far"}
             </h2>
           </div>
@@ -239,7 +241,7 @@ export default async function EventPage({
         </div>
       </section>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-2">
+      <div className="mt-9 grid gap-4 sm:mt-10 sm:gap-6 lg:grid-cols-2">
         <AppearanceForm
           event={event}
           media={media}
@@ -248,7 +250,7 @@ export default async function EventPage({
         <SettingsForm event={event} />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <DangerZone event={event} />
       </div>
     </div>
@@ -270,7 +272,7 @@ function Stat({
         {label}
       </dt>
       <dd
-        className="mt-1 font-display text-[1.9375rem] font-extrabold leading-none tracking-[-0.04em]"
+        className="mt-1 font-display text-[1.75rem] font-extrabold leading-none tracking-[-0.04em] sm:text-[1.9375rem]"
         style={{ fontStretch: "86%" }}
       >
         {value}
@@ -282,7 +284,7 @@ function Stat({
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 rounded-[1.25rem] border-2 border-pepper bg-gouda p-5">
+    <div className="mt-5 rounded-[1.25rem] border-2 border-pepper bg-gouda p-4 sm:mt-6 sm:p-5">
       <p className="text-[0.9375rem] leading-relaxed">{children}</p>
     </div>
   );

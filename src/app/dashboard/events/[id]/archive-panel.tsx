@@ -68,7 +68,7 @@ export function ArchivePanel({
   const buildsLeft = MAX_ARCHIVE_BUILDS - (state?.builds ?? 0);
 
   return (
-    <section className="card p-6">
+    <section className="card p-5 sm:p-6">
       <h2 className="text-h3">Download everything</h2>
 
       {photoCount === 0 ? (
@@ -90,12 +90,16 @@ export function ArchivePanel({
             </p>
           )}
 
-          <div className="mt-5 flex flex-wrap gap-3">
+          {/* "Rebuild with the newest photos" is five words. Side by side on a
+              phone both buttons wrap; stacked and full width they read as the
+              two choices they are. */}
+          <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-3">
             {state?.ready && state.url && (
               <Button
                 onClick={() => {
                   window.location.href = state.url!;
                 }}
+                className="w-full sm:w-auto"
               >
                 Download the ZIP
               </Button>
@@ -104,6 +108,7 @@ export function ArchivePanel({
               onClick={build}
               variant={state?.ready ? "secondary" : "primary"}
               disabled={building || buildsLeft <= 0}
+              className="w-full sm:w-auto"
             >
               {building
                 ? "Packaging…"

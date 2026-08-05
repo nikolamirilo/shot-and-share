@@ -41,16 +41,16 @@ export function LoginPanel({
 
   if (!configured) {
     return (
-      <div className="card p-7">
+      <div className="card p-5 sm:p-7">
         <h2 className="text-h3">Supabase is not configured</h2>
         <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
-          Set <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
-          <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>{" "}
+          Set <code className="break-all font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
+          <code className="break-all font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>{" "}
           and{" "}
-          <code className="font-mono text-[0.9375rem]">SUPABASE_SECRET_KEY</code>{" "}
-          in <code className="font-mono text-[0.9375rem]">.env.local</code>, run
+          <code className="break-all font-mono text-[0.9375rem]">SUPABASE_SECRET_KEY</code>{" "}
+          in <code className="break-all font-mono text-[0.9375rem]">.env.local</code>, run
           the migrations in{" "}
-          <code className="font-mono text-[0.9375rem]">supabase/migrations</code>
+          <code className="break-all font-mono text-[0.9375rem]">supabase/migrations</code>
           , then enable the Email and Google providers in Supabase Auth.
         </p>
         <p className="mt-3 text-[0.9375rem] text-crust">
@@ -61,7 +61,7 @@ export function LoginPanel({
   }
 
   return (
-    <div className="card p-7">
+    <div className="card p-5 sm:p-7">
       <h2 className="text-h3">Sign in</h2>
       <p className="mt-2 text-[0.9375rem] text-crust">
         Use an email address and password, or continue with Google.

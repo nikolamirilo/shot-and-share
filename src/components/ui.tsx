@@ -16,8 +16,18 @@ export function cx(...parts: Array<string | false | null | undefined>) {
 type Variant = "primary" | "secondary" | "ghost" | "onDark";
 type Size = "sm" | "md" | "lg";
 
+/**
+ * `leading-tight` is load-bearing rather than cosmetic. Body copy runs at 1.65
+ * and a button inherits it, which puts 11px of empty line box above and below a
+ * single word - a 17px label in a 56px box. On a phone, where labels are long
+ * relative to the width, that reads as a button of roughly double the height it
+ * should be. Buttons set their own leading and reach their height through
+ * padding and a minimum, so a two-word label and a six-word one look related.
+ *
+ * `min-h` is the tap target. Anything a thumb has to hit is at least 44px.
+ */
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-transform transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-xl text-center font-semibold leading-tight touch-manipulation transition-transform transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
@@ -31,9 +41,9 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "px-3.5 py-2 text-[0.9375rem]",
-  md: "px-5 py-2.5 text-[1.0625rem]",
-  lg: "px-7 py-3.5 text-[1.0625rem]",
+  sm: "min-h-10 px-3.5 py-2 text-[0.9375rem]",
+  md: "min-h-11 px-4.5 py-2.5 text-[1.0625rem] sm:px-5",
+  lg: "min-h-12 px-5 py-3 text-[1.0625rem] sm:px-7 sm:py-3.5",
 };
 
 export function Button({
@@ -47,7 +57,7 @@ export function Button({
       className={cx(
         BASE,
         VARIANTS[variant],
-        variant === "ghost" ? "px-1 py-1" : SIZES[size],
+        variant === "ghost" ? "min-h-10 px-1 py-2" : SIZES[size],
         className,
       )}
       {...props}
@@ -66,7 +76,7 @@ export function ButtonLink({
       className={cx(
         BASE,
         VARIANTS[variant],
-        variant === "ghost" ? "px-1 py-1" : SIZES[size],
+        variant === "ghost" ? "min-h-10 px-1 py-2" : SIZES[size],
         className,
       )}
       {...props}
@@ -93,7 +103,7 @@ export function Card({
   className?: string;
   as?: "div" | "li" | "article" | "section";
 }) {
-  return <Tag className={cx("card p-6", className)}>{children}</Tag>;
+  return <Tag className={cx("card p-5 sm:p-6", className)}>{children}</Tag>;
 }
 
 /**
@@ -173,8 +183,14 @@ export function Field({
   );
 }
 
+/**
+ * `text-body` is 17px, and that is not a typographic preference: Safari zooms
+ * the whole page in when a focused field is under 16px, and a guest who has to
+ * pinch back out to reach the upload button is a guest who does not upload.
+ * Every field in the product goes through this class or matches it.
+ */
 export const inputClass =
-  "w-full rounded-xl border-2 border-pepper bg-cream px-3.5 py-2.5 text-body placeholder:text-rind/60 focus:outline-none focus-visible:outline-3 focus-visible:outline-pepper";
+  "w-full min-h-11 rounded-xl border-2 border-pepper bg-cream px-3.5 py-2.5 text-body placeholder:text-rind/60 focus:outline-none focus-visible:outline-3 focus-visible:outline-pepper";
 
 export function ProgressBar({
   percent,

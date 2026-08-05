@@ -29,8 +29,8 @@ export default async function SlideshowPage({
 
   if (!getTier(event.tier).slideshow) {
     return (
-      <div className="mx-auto max-w-xl px-5 py-20 text-center">
-        <h1 className="text-h1">The slideshow is on Wheel</h1>
+      <div className="mx-auto max-w-xl px-4 py-16 text-center sm:px-5 sm:py-20">
+        <h1 className="text-[2.25rem] sm:text-h1">The slideshow is on Wheel</h1>
         <p className="mt-4 text-body text-crust">
           It runs full screen on a laptop plugged into a projector and adds each
           photo as it arrives. No venue software, no special hardware.

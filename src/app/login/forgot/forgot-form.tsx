@@ -14,7 +14,7 @@ export function ForgotForm() {
 
   if (state.notice) {
     return (
-      <div className="card p-7">
+      <div className="card p-5 sm:p-7">
         <h2 className="text-h3">Check your inbox</h2>
         <p className="mt-3 text-[0.9375rem] text-crust">{state.notice}</p>
       </div>
@@ -22,7 +22,7 @@ export function ForgotForm() {
   }
 
   return (
-    <form action={formAction} className="card space-y-5 p-7">
+    <form action={formAction} className="card space-y-5 p-5 sm:p-7">
       <Field
         label="Email"
         htmlFor="email"

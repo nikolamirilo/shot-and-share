@@ -109,9 +109,9 @@ export function GuestGallery({
   }
 
   return (
-    <section className="mt-12">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-h2">Everyone&apos;s photos</h2>
+    <section className="mt-10 sm:mt-12">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 className="text-[1.625rem] sm:text-h2">Everyone&apos;s photos</h2>
         {items.length > 0 && (
           <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
             {items.length} so far
@@ -120,7 +120,7 @@ export function GuestGallery({
       </div>
 
       {items.length === 0 && !loading ? (
-        <div className="mt-6 rounded-[1.25rem] border-2 border-dashed border-rind p-8 text-center">
+        <div className="mt-6 rounded-[1.25rem] border-2 border-dashed border-rind px-5 py-8 text-center sm:p-8">
           <div className="mx-auto flex w-fit gap-2">
             <Hole size={16} />
             <Hole size={24} />
@@ -136,8 +136,13 @@ export function GuestGallery({
           {/* Only worth offering once there is enough on screen for the choice
               to make any visible difference. */}
           {allowLayoutChoice && items.length >= 4 && (
-            <div className="mt-4 flex justify-end overflow-x-auto">
-              <LayoutSwitcher value={layout} onChange={chooseLayout} />
+            /* The switcher is wider than the smallest phone. It scrolls to the
+               screen edge rather than being squashed, and starts at the right
+               where it sits on every larger screen. */
+            <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <div className="flex min-w-max justify-end">
+                <LayoutSwitcher value={layout} onChange={chooseLayout} />
+              </div>
             </div>
           )}
 
@@ -211,13 +216,15 @@ function Lightbox({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-pepper/92 p-4"
+      /* Safe-area padding at the bottom: on a phone the home indicator sits
+         exactly where the Close button lands. */
+      className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-pepper/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="max-h-full w-full max-w-2xl overflow-auto"
+        className="max-h-full w-full max-w-2xl overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {item.kind === "video" ? (
@@ -245,7 +252,7 @@ function Lightbox({
           </p>
         )}
 
-        <div className="mt-4 flex flex-wrap justify-center gap-3">
+        <div className="mt-4 flex flex-wrap justify-center gap-2.5 sm:gap-3">
           <Button onClick={onClose} variant="onDark" size="sm">
             Close
           </Button>
@@ -253,7 +260,7 @@ function Lightbox({
             <a
               href={full.originalUrl}
               download
-              className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-pepper bg-gouda px-3.5 py-2 text-[0.9375rem] font-semibold text-pepper shadow-[4px_4px_0_var(--color-crust)]"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border-2 border-pepper bg-gouda px-3.5 py-2 text-[0.9375rem] font-semibold leading-tight text-pepper shadow-[4px_4px_0_var(--color-crust)]"
             >
               Download
             </a>

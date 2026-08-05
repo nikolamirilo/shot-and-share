@@ -12,7 +12,7 @@ export function SettingsForm({ event }: { event: EventRow }) {
   const [state, formAction] = useActionState<ActionState, FormData>(action, {});
 
   return (
-    <form action={formAction} className="card space-y-5 p-6">
+    <form action={formAction} className="card space-y-5 p-5 sm:p-6">
       <h2 className="text-h3">Settings</h2>
 
       <Field label="Event name" htmlFor="name">
@@ -62,7 +62,7 @@ export function SettingsForm({ event }: { event: EventRow }) {
           type="checkbox"
           name="gallery_visible"
           defaultChecked={event.gallery_visible}
-          className="mt-1 h-5 w-5 shrink-0 accent-[#1F1607]"
+          className="mt-0.5 h-5 w-5 shrink-0 accent-[#1F1607]"
         />
         <span>
           <span className="block font-semibold">
@@ -96,7 +96,7 @@ export function SettingsForm({ event }: { event: EventRow }) {
 function Save() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
       {pending ? "Saving…" : "Save settings"}
     </Button>
   );
@@ -143,14 +143,14 @@ function QualityChooser({ defaultValue }: { defaultValue: MediaQuality }) {
         {options.map((option) => (
           <label
             key={option.id}
-            className="flex cursor-pointer items-start gap-2.5 rounded-xl border-2 border-pepper bg-butter p-3 has-[:checked]:bg-gouda"
+            className="flex cursor-pointer items-start gap-2.5 rounded-xl border-2 border-pepper bg-butter p-3.5 has-[:checked]:bg-gouda"
           >
             <input
               type="radio"
               name="media_quality"
               value={option.id}
               defaultChecked={option.id === defaultValue}
-              className="mt-1 h-4 w-4 shrink-0 accent-[#1F1607]"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[#1F1607]"
             />
             <span>
               <span className="block font-bold">{option.name}</span>

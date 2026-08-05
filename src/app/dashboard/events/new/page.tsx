@@ -13,25 +13,27 @@ export default function NewEventPage() {
   const free = TIERS.free;
 
   return (
-    <div className="mx-auto max-w-4xl px-5 py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-5 sm:py-10">
       <Link
         href="/dashboard"
-        className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind hover:underline"
+        className="inline-block py-1 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind hover:underline"
       >
         ← All events
       </Link>
 
       <Eyebrow className="mt-6">New event</Eyebrow>
-      <h1 className="mt-3 text-h1">What are we collecting photos from?</h1>
+      <h1 className="mt-3 text-[2.25rem] sm:text-h1">
+        What are we collecting photos from?
+      </h1>
       <p className="mt-3 max-w-xl text-body text-crust">
         Two fields. You get a link and a printable QR code straight after, and
         you can change any of this later.
       </p>
 
-      <div className="mt-9 grid gap-8 md:grid-cols-[1.2fr_1fr]">
+      <div className="mt-8 grid gap-5 sm:mt-9 sm:gap-8 md:grid-cols-[1.2fr_1fr]">
         <NewEventForm />
 
-        <aside className="card h-fit p-6">
+        <aside className="card h-fit p-5 sm:p-6">
           <h2 className="text-h3">Starts on {free.name}</h2>
           <p className="mt-1 text-[0.9375rem] text-crust">{free.meaning}</p>
           <ul className="mt-5 space-y-2.5">

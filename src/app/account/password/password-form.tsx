@@ -14,7 +14,7 @@ export function PasswordForm() {
   );
 
   return (
-    <form action={formAction} className="card space-y-5 p-7">
+    <form action={formAction} className="card space-y-5 p-5 sm:p-7">
       <Field
         label="New password"
         htmlFor="password"

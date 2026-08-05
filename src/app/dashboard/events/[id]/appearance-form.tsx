@@ -92,7 +92,7 @@ export function AppearanceForm({
   if (locked) return <LockedPanel eventId={event.id} />;
 
   return (
-    <section className="card p-6">
+    <section className="card p-5 sm:p-6">
       {/* Every pairing, not just the chosen one: the host is comparing them,
           and a font that arrives half a second after the click reads as the
           preview being broken. A guest page loads only its own. */}
@@ -129,7 +129,7 @@ export function AppearanceForm({
             palette={palette}
             preview
           />
-          <div className="px-4 py-4">
+          <div className="px-3 py-3 sm:px-4 sm:py-4">
             <UploadPanel
               variant={upload}
               label="Add your photos"
@@ -202,7 +202,7 @@ export function AppearanceForm({
         )}
 
         <Group label="Type" hint="Pairs a heading face with a body face.">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 xs:grid-cols-2">
             {FONT_SETS.map((set) => (
               <button
                 key={set.id}
@@ -210,7 +210,7 @@ export function AppearanceForm({
                 onClick={() => setFontId(set.id)}
                 aria-pressed={fontId === set.id}
                 className={cx(
-                  "rounded-xl border-2 border-pepper p-3 text-left",
+                  "rounded-xl border-2 border-pepper p-3.5 text-left",
                   fontId === set.id ? "bg-gouda" : "bg-butter",
                 )}
               >
@@ -239,7 +239,7 @@ export function AppearanceForm({
         </Group>
 
         <Group label="Cover style">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 xs:grid-cols-2">
             {COVER_VARIANTS.map((option) => (
               <Choice
                 key={option.id}
@@ -253,7 +253,7 @@ export function AppearanceForm({
         </Group>
 
         <Group label="Asking for photos">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 xs:grid-cols-2">
             {UPLOAD_VARIANTS.map((option) => (
               <Choice
                 key={option.id}
@@ -287,7 +287,7 @@ export function AppearanceForm({
                 type="button"
                 onClick={() => setCoverMediaId(null)}
                 className={cx(
-                  "h-14 w-14 rounded-lg border-2 border-pepper text-[0.6875rem] font-mono uppercase",
+                  "h-16 w-16 rounded-lg border-2 border-pepper font-mono text-[0.6875rem] uppercase sm:h-14 sm:w-14",
                   coverMediaId === null ? "bg-gouda" : "bg-butter",
                 )}
               >
@@ -300,7 +300,7 @@ export function AppearanceForm({
                   onClick={() => setCoverMediaId(item.id)}
                   aria-pressed={coverMediaId === item.id}
                   className={cx(
-                    "h-14 w-14 overflow-hidden rounded-lg border-2 border-pepper",
+                    "h-16 w-16 overflow-hidden rounded-lg border-2 border-pepper sm:h-14 sm:w-14",
                     coverMediaId === item.id &&
                       "ring-4 ring-pepper ring-offset-2 ring-offset-cream",
                   )}
@@ -319,7 +319,7 @@ export function AppearanceForm({
         </Group>
 
         <Group label="Gallery layout">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 xs:grid-cols-2">
             {GALLERY_LAYOUTS.map((option) => (
               <Choice
                 key={option.id}
@@ -352,7 +352,7 @@ export function AppearanceForm({
 function Save() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
       {pending ? "Saving…" : "Save the page"}
     </Button>
   );
@@ -398,7 +398,7 @@ function Swatch({
       title={title}
       aria-pressed={selected}
       className={cx(
-        "rounded-xl border-2 border-pepper px-2.5 py-2 text-left transition-transform",
+        "min-h-16 flex-1 rounded-xl border-2 border-pepper px-2.5 py-2 text-left transition-transform xs:flex-none",
         selected ? "bg-gouda shadow-[3px_3px_0_var(--color-pepper)]" : "bg-butter",
       )}
     >
@@ -433,11 +433,11 @@ function Choice({
       onClick={onClick}
       aria-pressed={selected}
       className={cx(
-        "rounded-xl border-2 border-pepper p-3 text-left",
+        "rounded-xl border-2 border-pepper p-3.5 text-left",
         selected ? "bg-gouda" : "bg-butter",
       )}
     >
-      <span className="block font-bold">{name}</span>
+      <span className="block font-bold leading-snug">{name}</span>
       <span className="mt-0.5 block text-[0.8125rem] leading-snug text-crust">
         {hint}
       </span>
@@ -481,7 +481,7 @@ function CustomColours({
 
   return (
     <div className="rounded-xl border-2 border-dashed border-rind p-4">
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {fields.map(([key, label]) => (
           <label key={key} className="block">
             <span className="block text-[0.8125rem] font-semibold">{label}</span>
@@ -490,7 +490,7 @@ function CustomColours({
                 type="color"
                 value={colors[key]}
                 onChange={(e) => onChange({ ...colors, [key]: e.target.value })}
-                className="h-9 w-9 cursor-pointer rounded border-2 border-pepper bg-transparent p-0"
+                className="h-10 w-10 shrink-0 cursor-pointer rounded border-2 border-pepper bg-transparent p-0"
                 aria-label={label}
               />
               <span className="font-mono text-[0.6875rem] uppercase tracking-wider">

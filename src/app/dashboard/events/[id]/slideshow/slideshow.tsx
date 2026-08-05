@@ -99,14 +99,14 @@ export function Slideshow({
 
   return (
     <div className="fixed inset-0 flex flex-col bg-pepper text-butter">
-      <div className="flex items-center justify-between px-6 py-4">
-        <span className="inline-flex items-center gap-2.5">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+        <span className="inline-flex min-w-0 items-center gap-2.5">
           <LogoMark variant="reversed" className="h-7 w-auto" />
-          <span className="font-display text-[1.3rem] font-extrabold tracking-[-0.03em]">
+          <span className="truncate font-display text-[1.15rem] font-extrabold tracking-[-0.03em] sm:text-[1.3rem]">
             {eventName}
           </span>
         </span>
-        <span className="flex items-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-butter/60">
+        <span className="flex shrink-0 items-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-butter/60">
           <span
             className={`inline-block h-2 w-2 rounded-full ${live ? "bg-gouda" : "bg-butter/30"}`}
           />
@@ -119,7 +119,7 @@ export function Slideshow({
           items.map((item, i) => (
             <div
               key={item.id}
-              className="absolute inset-0 flex items-center justify-center p-6 transition-opacity duration-700"
+              className="absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-700 sm:p-6"
               style={{ opacity: i === index ? 1 : 0 }}
               aria-hidden={i !== index}
             >
@@ -149,7 +149,7 @@ export function Slideshow({
       </div>
 
       {current?.uploaderName && (
-        <p className="px-6 pb-5 text-center font-mono text-[0.8125rem] uppercase tracking-[0.16em] text-butter/60">
+        <p className="px-4 pb-5 text-center font-mono text-[0.8125rem] uppercase tracking-[0.16em] text-butter/60 sm:px-6">
           {current.uploaderName}
         </p>
       )}

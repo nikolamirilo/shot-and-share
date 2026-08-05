@@ -99,16 +99,24 @@ function Title({
   return (
     <div className={className}>
       <p className="eyebrow">{formatEventDate(date)}</p>
+      {/* An event name is arbitrary text the host typed, so it has to survive
+          "Ana and Marko" and "The Thirtieth Birthday of Someone" alike. It
+          starts smaller on a phone and steps up, rather than starting at the
+          size that only works for two first names. */}
       <h1
         className={cx(
           "mt-2 leading-[0.98]",
-          preview ? "text-[1.5rem]" : "text-[2.75rem] sm:text-[4rem]",
+          preview
+            ? "text-[1.5rem]"
+            : "text-[2.125rem] xs:text-[2.5rem] sm:text-[3.25rem] lg:text-[4rem]",
         )}
       >
         {name}
       </h1>
       {message && !preview && (
-        <p className="mt-4 max-w-xl text-lead text-crust">{message}</p>
+        <p className="mt-3 max-w-xl text-body text-crust sm:mt-4 sm:text-lead">
+          {message}
+        </p>
       )}
     </div>
   );
@@ -165,7 +173,12 @@ function ClassicCover({
 
   return (
     <header className="relative overflow-hidden border-b-2 border-pepper">
-      <div className={cx("relative w-full", preview ? "h-28" : "h-64 sm:h-96")}>
+      <div
+        className={cx(
+          "relative w-full",
+          preview ? "h-28" : "h-52 xs:h-64 sm:h-80 lg:h-96",
+        )}
+      >
         <div className="absolute inset-0">
           <CoverPhoto url={coverUrl} />
         </div>
@@ -180,7 +193,7 @@ function ClassicCover({
         <div
           className={cx(
             "absolute inset-x-0 bottom-0 mx-auto max-w-3xl",
-            preview ? "px-4 pb-3" : "px-5 pb-7",
+            preview ? "px-4 pb-3" : "px-4 pb-6 sm:px-5 sm:pb-7",
           )}
         >
           {/* Fixed light text: it sits on a photograph, not on the theme. */}
@@ -190,8 +203,8 @@ function ClassicCover({
         </div>
       </div>
       {message && !preview && (
-        <div className="mx-auto max-w-3xl px-5 py-5">
-          <p className="max-w-xl text-lead text-crust">{message}</p>
+        <div className="mx-auto max-w-3xl px-4 py-5 sm:px-5">
+          <p className="max-w-xl text-body text-crust sm:text-lead">{message}</p>
         </div>
       )}
     </header>
@@ -211,7 +224,7 @@ function BandCover({
       <div
         className={cx(
           "relative w-full overflow-hidden border-b-2 border-pepper",
-          preview ? "h-20" : "h-52 sm:h-72",
+          preview ? "h-20" : "h-44 xs:h-52 sm:h-72",
         )}
       >
         <CoverPhoto url={coverUrl} />
@@ -220,7 +233,7 @@ function BandCover({
         <div
           className={cx(
             "mx-auto max-w-3xl",
-            preview ? "px-4 py-3" : "px-5 py-8",
+            preview ? "px-4 py-3" : "px-4 py-7 sm:px-5 sm:py-8",
           )}
         >
           <Title
@@ -247,14 +260,18 @@ function FramedCover({
     <header className="border-b-2 border-pepper bg-butter">
       <div
         className={cx(
-          "mx-auto grid max-w-3xl items-center gap-6",
-          preview ? "px-4 py-4 grid-cols-[1fr_1.1fr]" : "px-5 py-10 sm:grid-cols-[1fr_1.1fr]",
+          "mx-auto grid max-w-3xl items-center",
+          preview
+            ? "grid-cols-[1fr_1.1fr] gap-6 px-4 py-4"
+            : "gap-5 px-4 py-8 sm:grid-cols-[1fr_1.1fr] sm:gap-6 sm:px-5 sm:py-10",
         )}
       >
         <div
           className={cx(
             "overflow-hidden rounded-[1.25rem] border-2 border-pepper bg-cream",
-            preview ? "h-20 shadow-hard" : "h-56 shadow-hard-lg sm:h-72",
+            preview
+              ? "h-20 shadow-hard"
+              : "h-48 shadow-hard sm:h-72 sm:shadow-hard-lg",
           )}
         >
           <CoverPhoto url={coverUrl} />
@@ -270,7 +287,10 @@ function TypeCover({ name, date, message, preview }: CoverProps) {
   return (
     <header className="border-b-2 border-pepper bg-gouda">
       <div
-        className={cx("mx-auto max-w-3xl", preview ? "px-4 py-5" : "px-5 py-14")}
+        className={cx(
+          "mx-auto max-w-3xl",
+          preview ? "px-4 py-5" : "px-4 py-11 sm:px-5 sm:py-14",
+        )}
       >
         <div className={cx("flex items-end", preview ? "gap-1.5" : "gap-3")}>
           <Hole size={preview ? 8 : 18} />
@@ -282,7 +302,7 @@ function TypeCover({ name, date, message, preview }: CoverProps) {
           date={date}
           message={message}
           preview={preview}
-          className={preview ? "mt-2" : "mt-6"}
+          className={preview ? "mt-2" : "mt-5 sm:mt-6"}
         />
       </div>
     </header>

@@ -17,7 +17,7 @@ import { LogoMark } from "@/components/logo";
 export function PlatformHeader() {
   return (
     <div className="border-b-2 border-pepper bg-pepper">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-5 py-2">
+      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 sm:px-5">
         <Link
           href="/"
           className="inline-flex items-center gap-2"
@@ -45,11 +45,9 @@ export function PlatformHeader() {
 export function PlatformFooter() {
   return (
     <section className="border-t-2 border-pepper bg-gouda">
-      <div className="mx-auto max-w-3xl px-5 py-10 text-center">
+      <div className="mx-auto max-w-3xl px-4 py-9 text-center sm:px-5 sm:py-10">
         <p className="eyebrow text-crust">Made with Say Cheese</p>
-        <h2 className="mt-3 text-h2">
-          Having an event of your own?
-        </h2>
+        <h2 className="mt-3 text-[1.625rem] sm:text-h2">Having an event of your own?</h2>
         <p className="mx-auto mt-3 max-w-md text-[0.9375rem] leading-relaxed text-crust">
           This is how the host collected every photo here - one code on the
           table, no app and no accounts. Free to set up and try.
@@ -58,7 +56,7 @@ export function PlatformFooter() {
           href="/"
           target="_blank"
           rel="noopener"
-          className="mt-6 inline-flex items-center justify-center rounded-xl bg-pepper px-7 py-3.5 font-semibold text-butter shadow-[4px_4px_0_var(--color-crust)] transition-transform hover:-translate-y-0.5"
+          className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-pepper px-6 py-3 font-semibold leading-tight text-butter shadow-[4px_4px_0_var(--color-crust)] transition-transform hover:-translate-y-0.5 sm:w-auto sm:px-7 sm:py-3.5"
         >
           Create your own event
         </Link>

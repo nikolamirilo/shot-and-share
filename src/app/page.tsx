@@ -37,33 +37,42 @@ export default async function LandingPage() {
 function Hero({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="bg-butter">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-14 lg:grid-cols-[1.05fr_1fr] lg:gap-8 lg:py-20">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 sm:gap-12 sm:px-5 sm:py-14 lg:grid-cols-[1.05fr_1fr] lg:gap-8 lg:py-20">
         <div className="rise">
           <Eyebrow>Photo collection for events</Eyebrow>
 
           {/* A fact, not a slogan. Most hosts genuinely see a tiny fraction of
               the photos taken at their own event, and saying so plainly does
               more work than any tagline would. */}
-          <h1 className="mt-4 text-[2.75rem] leading-[0.98] sm:text-[4rem] lg:text-[5.5rem]">
+          <h1 className="mt-4 text-[2.375rem] leading-[0.98] xs:text-[2.75rem] sm:text-[4rem] lg:text-[5.5rem]">
             Two hundred guests took two thousand photos.
             <br />
             <span className="text-rind">You saw fifty.</span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-lead">
+          <p className="mt-5 max-w-xl text-body sm:mt-6 sm:text-lead">
             Guests scan a code on the table and hand you their photos. No app, no
             account, nothing to install. It takes them about twenty seconds.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          {/* Stacked and full-width on a phone. Two large buttons side by side
+              at this width either wrap onto two lines each or leave a thumb
+              hunting for a 40px gap between them. */}
+          <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <ButtonLink
               href={signedIn ? "/dashboard" : "/login"}
               size="lg"
               variant="primary"
+              className="w-full sm:w-auto"
             >
               Create an event
             </ButtonLink>
-            <ButtonLink href="/pricing" size="lg" variant="secondary">
+            <ButtonLink
+              href="/pricing"
+              size="lg"
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
               See pricing
             </ButtonLink>
           </div>
@@ -94,7 +103,7 @@ function Strip() {
 
   return (
     <section className="border-y-2 border-pepper bg-pepper text-butter">
-      <div className="mx-auto grid max-w-6xl gap-6 px-5 py-8 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-6xl gap-5 px-4 py-7 sm:grid-cols-3 sm:gap-6 sm:px-5 sm:py-8">
         {facts.map(([title, detail]) => (
           <div key={title} className="flex items-start gap-3">
             <Hole size={14} className="mt-1.5" />
@@ -132,19 +141,19 @@ function Steps() {
 
   return (
     <section id="how" className="border-b-2 border-pepper bg-gouda">
-      <div className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16 lg:py-24">
         <Eyebrow className="text-crust">How it works</Eyebrow>
-        <h2 className="mt-3 max-w-2xl text-h1 sm:text-[4rem]">
+        <h2 className="mt-3 max-w-2xl text-[2.25rem] sm:text-[4rem]">
           Three things to do, and one of them is printing.
         </h2>
 
-        <ol className="mt-12 grid gap-6 md:grid-cols-3">
+        <ol className="mt-9 grid gap-4 sm:mt-12 sm:gap-6 md:grid-cols-3">
           {steps.map((step) => (
             <li
               key={step.n}
-              className="rounded-[1.25rem] border-2 border-pepper bg-cream p-6"
+              className="rounded-[1.25rem] border-2 border-pepper bg-cream p-5 sm:p-6"
             >
-              <span className="hole inline-flex h-12 w-12 items-center justify-center font-mono text-[0.8125rem] tracking-[0.1em] text-gouda-light">
+              <span className="hole inline-flex h-11 w-11 items-center justify-center font-mono text-[0.8125rem] tracking-[0.1em] text-gouda-light sm:h-12 sm:w-12">
                 {step.n}
               </span>
               <h3 className="mt-4 text-h3">{step.title}</h3>
@@ -189,13 +198,13 @@ function Why() {
 
   return (
     <section className="border-b-2 border-pepper bg-butter">
-      <div className="mx-auto max-w-6xl px-5 py-16 lg:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16 lg:py-24">
         <Eyebrow>Why this one</Eyebrow>
-        <h2 className="mt-3 max-w-2xl text-h1">
+        <h2 className="mt-3 max-w-2xl text-[2.25rem] sm:text-h1">
           Built for the person who has to collect them afterwards.
         </h2>
 
-        <div className="mt-12 grid gap-x-10 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-9 grid gap-x-10 gap-y-8 sm:mt-12 sm:grid-cols-2 sm:gap-y-9 lg:grid-cols-3">
           {items.map((item) => (
             <div key={item.title}>
               <div className="flex items-center gap-3">
@@ -218,11 +227,13 @@ function Why() {
 function Pricing() {
   return (
     <section id="pricing" className="border-b-2 border-pepper bg-butter">
-      <div className="mx-auto max-w-6xl px-5 pb-20">
+      <div className="mx-auto max-w-6xl px-4 pb-14 sm:px-5 sm:pb-20">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Eyebrow>Pricing</Eyebrow>
-            <h2 className="mt-3 text-h1">Paid once, per event.</h2>
+            <h2 className="mt-3 text-[2.25rem] sm:text-h1">
+              Paid once, per event.
+            </h2>
             <p className="mt-3 max-w-xl text-body text-crust">
               No subscription. Buy the size you need for the day, and add The
               Cellar later if you want the photos kept permanently.
@@ -231,7 +242,7 @@ function Pricing() {
           <Badge tone="outline">VAT handled at checkout</Badge>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-8 sm:mt-10">
           <PricingTable />
         </div>
 
@@ -277,21 +288,23 @@ function Faq() {
 
   return (
     <section id="faq" className="border-b-2 border-pepper bg-butter">
-      <div className="mx-auto max-w-3xl px-5 pb-20">
+      <div className="mx-auto max-w-3xl px-4 pb-14 sm:px-5 sm:pb-20">
         <Eyebrow>Questions</Eyebrow>
-        <h2 className="mt-3 text-h1">Before you ask.</h2>
+        <h2 className="mt-3 text-[2.25rem] sm:text-h1">Before you ask.</h2>
 
-        <div className="mt-10 divide-y-2 divide-pepper/15 border-y-2 border-pepper/15">
+        <div className="mt-8 divide-y-2 divide-pepper/15 border-y-2 border-pepper/15 sm:mt-10">
           {faqs.map(([q, a]) => (
-            <details key={q} className="group py-5">
-              <summary className="flex cursor-pointer list-none items-start gap-3 text-[1.3rem] font-extrabold tracking-[-0.03em] marker:hidden">
+            <details key={q} className="group py-1">
+              {/* The padding is on the summary, not the details, so the whole
+                  strip is the tap target rather than the words alone. */}
+              <summary className="flex cursor-pointer list-none items-start gap-3 py-4 text-[1.15rem] font-extrabold leading-snug tracking-[-0.03em] marker:hidden sm:text-[1.3rem]">
                 <Hole
                   size={13}
-                  className="mt-2 transition-transform group-open:scale-150"
+                  className="mt-1.5 transition-transform group-open:scale-150"
                 />
                 {q}
               </summary>
-              <p className="mt-3 pl-6 text-[0.9375rem] leading-relaxed text-crust">
+              <p className="pb-4 pl-6 text-[0.9375rem] leading-relaxed text-crust">
                 {a}
               </p>
             </details>
@@ -305,23 +318,29 @@ function Faq() {
 function Close({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="bg-gouda">
-      <div className="mx-auto max-w-3xl px-5 py-20 text-center lg:py-28">
-        <h2 className="text-h1 sm:text-[4rem]">
+      <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5 sm:py-20 lg:py-28">
+        <h2 className="text-[2.25rem] sm:text-[4rem]">
           Set it up tonight. It costs nothing to try.
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-lead text-crust">
+        <p className="mx-auto mt-4 max-w-xl text-body text-crust sm:text-lead">
           Make the event, print the code, send the link to one friend and watch
           a photo arrive. Then decide whether to pay.
         </p>
-        <div className="mt-9 flex flex-wrap justify-center gap-4">
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:gap-4">
           <ButtonLink
             href={signedIn ? "/dashboard" : "/login"}
             size="lg"
             variant="primary"
+            className="w-full sm:w-auto"
           >
             Create an event
           </ButtonLink>
-          <ButtonLink href="/pricing" size="lg" variant="secondary">
+          <ButtonLink
+            href="/pricing"
+            size="lg"
+            variant="secondary"
+            className="w-full sm:w-auto"
+          >
             Compare the plans
           </ButtonLink>
         </div>
