@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { cx } from "@/components/ui";
@@ -53,6 +54,8 @@ export function PhotoGallery({
                 selectable={Boolean(isSelected)}
                 shape="hole"
                 style={{ width: size, height: size }}
+                // Largest hole in the sequence is 188px; doubled for retina.
+                sizes="384px"
               />
             </li>
           );
@@ -87,6 +90,8 @@ export function PhotoGallery({
                 aspectRatio: aspectRatio(item.width, item.height),
                 width: "100%",
               }}
+              // columns-2 / sm:columns-3 / lg:columns-4
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           </li>
         ))}
@@ -113,11 +118,13 @@ export function PhotoGallery({
                * actual thumbnail - an EXIF rotation we did not account for -
                * and letterbox the photo in dark bars.
                *
-               * Full-resolution originals would be the obvious choice at this
+               * Full-resolution objects would be the obvious choice at this
                * size and the wrong one: a 4 MB photo per row, fifty rows, on
-               * venue wifi. The 720px thumbnail holds up.
+               * venue wifi. A resize to the column width holds up.
                */
               natural
+              // mx-auto max-w-2xl, so 672px once there is room for it.
+              sizes="(max-width: 704px) 100vw, 672px"
             />
           </li>
         ))}
@@ -141,6 +148,8 @@ export function PhotoGallery({
             selectable={Boolean(isSelected)}
             shape="recess"
             className="aspect-square w-full"
+            // grid-cols-3 / sm:grid-cols-4 / lg:grid-cols-6
+            sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 17vw"
           />
         </li>
       ))}
@@ -156,6 +165,7 @@ function Tile({
   shape,
   style,
   className,
+  sizes,
   natural = false,
 }: {
   item: MediaView;
@@ -165,6 +175,12 @@ function Tile({
   shape: "hole" | "recess";
   style?: React.CSSProperties;
   className?: string;
+  /**
+   * How wide this tile renders, per breakpoint. The optimiser picks which
+   * resize to serve from it, so a wrong value here is either a blurry photo or
+   * a phone downloading four times what it needs.
+   */
+  sizes: string;
   /** Let the image set the tile's height instead of cropping into a box. */
   natural?: boolean;
 }) {
@@ -189,14 +205,28 @@ function Tile({
       )}
     >
       {item.previewUrl ? (
-        <img
+        /*
+         * The stored object is full size - there is no thumbnail in the bucket
+         * any more - so the tile asks the optimiser for something tile-sized.
+         * `sizes` is what decides that, and it is passed in per layout rather
+         * than guessed here: a 96px hole and a full-width stack row want very
+         * different files out of the same photo.
+         */
+        <Image
           src={item.previewUrl}
           alt=""
+          {...(natural
+            ? {
+                // Stack takes the photo's own height. Real dimensions when we
+                // have them, a 4:3 placeholder when we do not - it only has to
+                // hold space until the image lands.
+                width: item.width ?? 1200,
+                height: item.height ?? 900,
+                className: "h-auto w-full align-top",
+              }
+            : { fill: true, className: "object-cover" })}
+          sizes={sizes}
           loading="lazy"
-          className={cx(
-            "w-full",
-            natural ? "h-auto align-top" : "h-full object-cover",
-          )}
         />
       ) : (
         <span

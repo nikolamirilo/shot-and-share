@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LogoMark } from "@/components/logo";
@@ -116,24 +117,42 @@ export function Slideshow({
 
       <div className="relative flex-1 overflow-hidden">
         {current ? (
-          items.map((item, i) => (
-            <div
-              key={item.id}
-              className="absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-700 sm:p-6"
-              style={{ opacity: i === index ? 1 : 0 }}
-              aria-hidden={i !== index}
-            >
-              {item.previewUrl && (
-                // The stored copy is 2560px on its longest edge, which is what
-                // a projector wants and is already the only copy there is.
-                <img
-                  src={item.previewUrl}
-                  alt=""
-                  className="max-h-full max-w-full rounded-2xl object-contain shadow-[0_0_0_4px_var(--color-rind)]"
-                />
-              )}
-            </div>
-          ))
+          items.map((item, i) => {
+            /*
+             * Only the current slide and its neighbours are mounted. Every
+             * item used to be in the DOM at once, which was affordable when
+             * the gallery had 720px thumbnails and is not now that the stored
+             * object is the full photo: sixty of them is tens of megabytes on
+             * a venue's wifi, and fifty-eight are invisible. The neighbours
+             * stay so the crossfade has something to fade from, and so the
+             * next photo is decoded before its turn.
+             */
+            const gap = Math.abs(i - index);
+            if (gap > 1 && gap < items.length - 1) return null;
+
+            return (
+              <div
+                key={item.id}
+                className="absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-700 sm:p-6"
+                style={{ opacity: i === index ? 1 : 0 }}
+                aria-hidden={i !== index}
+              >
+                {item.previewUrl && (
+                  // Resized to the screen rather than the stored 2560px: a
+                  // projector is 1080p and the optimiser caches the result.
+                  <Image
+                    src={item.previewUrl}
+                    alt=""
+                    width={item.width ?? 1600}
+                    height={item.height ?? 1200}
+                    sizes="100vw"
+                    priority={i === index}
+                    className="h-auto max-h-full w-auto max-w-full rounded-2xl object-contain shadow-[0_0_0_4px_var(--color-rind)]"
+                  />
+                )}
+              </div>
+            );
+          })
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-6">
             <div className="flex gap-3">

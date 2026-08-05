@@ -139,6 +139,29 @@ export function displayName(mime: string): string {
 }
 
 /**
+ * Whether a key may be served unauthenticated by /api/media, and as what.
+ *
+ * The gallery needs a stable, cacheable address for each photo so the image
+ * optimiser has something to key on. That address is public - the key is three
+ * uuids and the event link is the access control, the same posture a CDN in
+ * front of the bucket would have.
+ *
+ * What it must never serve is anything that is not a gallery image. Exactly
+ * three segments is the load-bearing part: `{owner}/{event}/archive/{id}.zip`
+ * has four, so a 30 GB archive cannot be pulled through the app process by
+ * guessing a URL. Video is excluded too - it stays behind a signed URL, where
+ * an expiring link is worth the cost because the bytes are.
+ *
+ * Returns the Content-Type to serve, or null to refuse.
+ */
+export function publicImageType(key: string): string | null {
+  const match = /^[^/]+\/[^/]+\/[^/]+\.(webp|jpe?g|png|gif|avif)$/i.exec(key);
+  if (!match) return null;
+  const ext = match[1].toLowerCase();
+  return ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
+}
+
+/**
  * Every object belonging to one upload.
  *
  * Two at most now - the media itself and, for a video, its poster. Enumerating

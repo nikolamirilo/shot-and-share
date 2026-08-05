@@ -8,6 +8,7 @@ import {
   mediaKey,
   ownerPrefix,
   posterKey,
+  publicImageType,
   scopeOfEvent,
   scopeOfMedia,
 } from "@/lib/media";
@@ -114,6 +115,37 @@ describe("key layout", () => {
     const jpg = mediaKey(scope, media, "jpg");
     expect(heic).not.toBe(jpg);
     expect(heic.replace(/\.heic$/, ".jpg")).toBe(jpg);
+  });
+
+  it("serves gallery images publicly and nothing else", () => {
+    // /api/media is unauthenticated by design - the key is three uuids and the
+    // event link is the access control. What it must never hand out is
+    // anything that is not a gallery image.
+    expect(publicImageType(mediaKey(scope, media, "webp"))).toBe("image/webp");
+    expect(publicImageType(mediaKey(scope, media, "jpg"))).toBe("image/jpeg");
+    expect(publicImageType(posterKey(scope, media))).toBe("image/webp");
+  });
+
+  it("refuses the archive, however the URL is spelled", () => {
+    // Four segments, not three. Getting this wrong means a stranger can pull a
+    // 30 GB ZIP through the app process by guessing two uuids.
+    expect(publicImageType(archiveKey(scope))).toBeNull();
+    expect(publicImageType(`${owner}/${event}/archive/${event}.zip`)).toBeNull();
+    expect(publicImageType(`${owner}/${event}/archive/x.jpg`)).toBeNull();
+  });
+
+  it("refuses video, which stays behind a signed URL", () => {
+    expect(publicImageType(mediaKey(scope, media, "mp4"))).toBeNull();
+    expect(publicImageType(mediaKey(scope, media, "mov"))).toBeNull();
+  });
+
+  it("refuses anything that is not shaped like an owner-scoped key", () => {
+    expect(publicImageType(`${media}.webp`)).toBeNull();
+    expect(publicImageType(`${owner}/${media}.webp`)).toBeNull();
+    expect(publicImageType(`${owner}/${event}/${media}`)).toBeNull();
+    expect(publicImageType("../../etc/passwd")).toBeNull();
+    expect(publicImageType(`${owner}/${event}/x.html`)).toBeNull();
+    expect(publicImageType(`${owner}/${event}/x.svg`)).toBeNull();
   });
 
   it("reads a scope off either row shape", () => {
