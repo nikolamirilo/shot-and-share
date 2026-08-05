@@ -6,6 +6,8 @@ import {
   readableInk,
   safeHex,
 } from "@/lib/color";
+import type { FontSet } from "@/lib/fonts";
+import { DEFAULT_FONT_ID, coerceFont, findFontSet } from "@/lib/fonts";
 import type { GalleryLayout } from "@/lib/gallery";
 import { DEFAULT_LAYOUT, coerceLayout } from "@/lib/gallery";
 import { getTier } from "@/lib/tiers";
@@ -13,7 +15,7 @@ import { getTier } from "@/lib/tiers";
 /**
  * The look of a guest's event page.
  *
- * Everything here is a paid feature — it is the "custom event page" the Slice
+ * Everything here is a paid feature - it is the "custom event page" the Slice
  * and Wheel plans already promise. A free event gets the product's own theme,
  * a fixed cover, a fixed gallery, and a small Say Cheese header and footer,
  * which is what makes the free plan a genuinely useful product that also sells
@@ -143,7 +145,7 @@ export function findTheme(id: string | null | undefined): Theme {
 
 /**
  * A host picks four colours. The other five are derived, and the text colours
- * are corrected for contrast rather than taken on trust — see readableInk.
+ * are corrected for contrast rather than taken on trust - see readableInk.
  */
 export interface CustomThemeInput {
   bg?: string;
@@ -237,10 +239,54 @@ export function coerceCover(value: unknown): CoverVariant {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * How the guest is asked for their photos.
+ *
+ * This is the one component on the page that has a job to do, so the variants
+ * differ in shape and prominence rather than in decoration. Every one of them
+ * keeps the same three things: one obvious action, the optional name field, and
+ * the line saying what may be sent.
+ */
+export const UPLOAD_VARIANTS = [
+  {
+    id: "button",
+    name: "Big button",
+    hint: "One wide button on a card. Impossible to miss, and the safe one.",
+  },
+  {
+    id: "panel",
+    name: "Drop panel",
+    hint: "A large dashed panel. Tap it on a phone, or drop files on it from a laptop.",
+  },
+  {
+    id: "bar",
+    name: "Slim bar",
+    hint: "A compact row. Takes little height, so the gallery starts higher up.",
+  },
+  {
+    id: "split",
+    name: "Camera or library",
+    hint: "Two buttons: take one now, or pick from the camera roll.",
+  },
+] as const;
+
+export type UploadVariant = (typeof UPLOAD_VARIANTS)[number]["id"];
+export const DEFAULT_UPLOAD: UploadVariant = "button";
+
+export function coerceUpload(value: unknown): UploadVariant {
+  return UPLOAD_VARIANTS.some((v) => v.id === value)
+    ? (value as UploadVariant)
+    : DEFAULT_UPLOAD;
+}
+
+/* -------------------------------------------------------------------------- */
+
 export interface Appearance {
   palette: Palette;
   themeId: string;
+  font: FontSet;
   cover: CoverVariant;
+  upload: UploadVariant;
   layout: GalleryLayout;
   /** Free events carry the Say Cheese header and footer. */
   platformBranding: boolean;
@@ -254,7 +300,9 @@ interface AppearanceSource {
   tier: string;
   theme?: string | null;
   theme_custom?: unknown;
+  theme_font?: string | null;
   cover_variant?: string | null;
+  upload_variant?: string | null;
   gallery_layout?: string | null;
 }
 
@@ -273,7 +321,9 @@ export function resolveAppearance(event: AppearanceSource): Appearance {
     return {
       palette: THEMES[0].palette,
       themeId: DEFAULT_THEME_ID,
+      font: findFontSet(DEFAULT_FONT_ID),
       cover: DEFAULT_COVER,
+      upload: DEFAULT_UPLOAD,
       layout: DEFAULT_LAYOUT,
       platformBranding: true,
       customisable: false,
@@ -290,7 +340,9 @@ export function resolveAppearance(event: AppearanceSource): Appearance {
   return {
     palette,
     themeId,
+    font: findFontSet(coerceFont(event.theme_font)),
     cover: coerceCover(event.cover_variant),
+    upload: coerceUpload(event.upload_variant),
     layout: coerceLayout(event.gallery_layout),
     platformBranding: false,
     customisable: true,

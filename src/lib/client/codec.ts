@@ -20,7 +20,7 @@ import { THUMB_MAX_EDGE } from "@/lib/media";
  *
  * Doing this in the browser is not a shortcut. The phone has the pixels already
  * decoded, it has spare cycles while the guest is looking at the screen, and it
- * means a 4 MB photo becomes a 900 KB upload — which on venue wifi is the
+ * means a 4 MB photo becomes a 900 KB upload - which on venue wifi is the
  * difference between a guest finishing and a guest giving up. It also removes
  * an entire asynchronous server pipeline from the common path.
  */
@@ -34,7 +34,7 @@ const probeCache = new Map<string, Promise<boolean>>();
  *
  * The check has to inspect `blob.type`, not just whether a blob came back.
  * `canvas.toBlob` silently falls back to PNG when asked for a type it does not
- * support — so a naive check succeeds everywhere and quietly ships PNG bytes
+ * support - so a naive check succeeds everywhere and quietly ships PNG bytes
  * labelled as WebP, which is both much larger and wrong.
  */
 export function canEncode(format: ImageFormat): Promise<boolean> {
@@ -277,7 +277,7 @@ export interface VideoProbe {
  * Pull a poster frame and the real dimensions out of a video, in the browser.
  *
  * Transcoding the video itself is deliberately *not* attempted here. The only
- * client-side route is MediaRecorder, which re-encodes in real time — a
+ * client-side route is MediaRecorder, which re-encodes in real time - a
  * two-minute clip takes two minutes, with the guest watching a spinner at a
  * party. That is worse than useless. Video compression belongs in the worker;
  * see workers/transcode. What the browser can usefully do is this: a poster

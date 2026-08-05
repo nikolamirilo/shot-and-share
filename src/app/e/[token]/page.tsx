@@ -8,6 +8,7 @@ import { PlatformFooter, PlatformHeader } from "@/components/platform-banner";
 import { Hole } from "@/components/ui";
 import { resolveAppearance } from "@/lib/appearance";
 import type { MediaRow } from "@/lib/db/types";
+import { googleFontsHref } from "@/lib/fonts";
 import {
   gateGuest,
   resolveGuestToken,
@@ -83,8 +84,22 @@ export default async function GuestPage({
     }
   }
 
+  // Only the pairing this event actually uses. Loading all five would put eight
+  // font families on a phone on hotel wifi in order to render one of them, and
+  // the house pairing is already in the root layout, so the default costs
+  // nothing at all.
+  const fontsHref = googleFontsHref(appearance.font);
+
   return (
-    <EventThemeRoot palette={appearance.palette} className="min-h-dvh">
+    <EventThemeRoot
+      palette={appearance.palette}
+      font={appearance.font}
+      className="min-h-dvh"
+    >
+      {fontsHref && (
+        <link rel="stylesheet" href={fontsHref} precedence="default" />
+      )}
+
       {appearance.platformBranding ? (
         <PlatformHeader />
       ) : (
@@ -111,6 +126,7 @@ export default async function GuestPage({
           galleryVisible={event.gallery_visible}
           galleryLayout={appearance.layout}
           allowLayoutChoice={appearance.allowViewerLayoutChoice}
+          uploadVariant={appearance.upload}
           allowVideo={tier.video}
           maxFileBytes={tier.maxFileBytes}
           remainingBytes={summary.remaining}

@@ -98,7 +98,7 @@ export function Card({
 
 /**
  * A punched hole. Where a circle appears in the interface it is this object at
- * a different size — list bullets, step markers, loading states, avatars.
+ * a different size - list bullets, step markers, loading states, avatars.
  */
 export function Hole({
   size = 16,

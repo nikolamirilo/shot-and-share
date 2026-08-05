@@ -7,7 +7,7 @@
 --
 -- Note that nothing here is enforced by a constraint tied to the tier. The gate
 -- lives in resolveAppearance() and is applied every time an event is rendered,
--- not only when these columns are written — so a row that somehow holds paid
+-- not only when these columns are written - so a row that somehow holds paid
 -- values on a free event still renders as free.
 -- ---------------------------------------------------------------------------
 

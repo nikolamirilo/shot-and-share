@@ -16,7 +16,7 @@ import {
  *
  * The host selects and deletes; the guest opens a lightbox. Rather than two
  * components drifting apart, the difference is one callback and an optional
- * selected set — everything about how a photo is *presented* stays in one place.
+ * selected set - everything about how a photo is *presented* stays in one place.
  */
 export function PhotoGallery({
   items,
@@ -56,7 +56,7 @@ export function PhotoGallery({
       /**
        * CSS columns rather than a JS masonry library: no measuring pass, no
        * layout thrash when a photo loads, and it reflows for free. The known
-       * cost is that reading order runs down each column instead of across —
+       * cost is that reading order runs down each column instead of across -
        * acceptable for a photo wall where nothing depends on sequence.
        */
       <ul
@@ -100,7 +100,7 @@ export function PhotoGallery({
                * photo's own height. Masonry needs the stored ratio to reserve
                * column space before the image loads, but Stack is one column,
                * so the only thing a declared ratio can do is disagree with the
-               * actual thumbnail — an EXIF rotation we did not account for —
+               * actual thumbnail - an EXIF rotation we did not account for -
                * and letterbox the photo in dark bars.
                *
                * Full-resolution originals would be the obvious choice at this
@@ -209,7 +209,7 @@ function Tile({
 }
 
 /**
- * The viewer's switch. Deliberately small and out of the way — it is a
+ * The viewer's switch. Deliberately small and out of the way - it is a
  * preference, not a call to action, and the photos are the point of the page.
  */
 export function LayoutSwitcher({

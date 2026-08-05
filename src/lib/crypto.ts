@@ -14,7 +14,7 @@ import {
  * Hash-only storage is the stricter design, and it is the wrong one here: a
  * host who loses the tab would have to reissue the link, which invalidates
  * every printed card on every table. Encrypting instead keeps the useful
- * property — a stolen database dump alone yields no working links — while
+ * property - a stolen database dump alone yields no working links - while
  * letting the dashboard render the code on demand.
  */
 
@@ -39,9 +39,11 @@ function key(): Buffer {
   }
 
   // Development fallback. Set TOKEN_ENCRYPTION_KEY in production: without it a
-  // leaked service-role key is enough to decrypt tokens as well as read rows.
+  // leaked Supabase secret key is enough to decrypt tokens as well as read rows.
   const fallback =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? "say-cheese-development-secret";
+    process.env.SUPABASE_SECRET_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    "say-cheese-development-secret";
   keyCache = scryptSync(fallback, "say-cheese-token-v1", 32);
   return keyCache;
 }

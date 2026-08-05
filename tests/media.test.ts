@@ -4,8 +4,13 @@ import {
   ACCEPTED_MIME,
   archiveKey,
   classify,
+  displayKey,
   eventPrefix,
   originalKey,
+  ownerPrefix,
+  posterKey,
+  scopeOfEvent,
+  scopeOfMedia,
   thumbKey,
 } from "@/lib/media";
 import { formatBytes, describeRetention, pluralise } from "@/lib/format";
@@ -38,25 +43,62 @@ describe("media types", () => {
 });
 
 describe("key layout", () => {
+  const owner = "00000000-1111-2222-3333-444444444444";
   const event = "11111111-2222-3333-4444-555555555555";
   const media = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+  const scope = { ownerId: owner, eventId: event };
+
+  const everyKind = [
+    originalKey(scope, media, "jpg"),
+    displayKey(scope, media, "webp"),
+    thumbKey(scope, media),
+    posterKey(scope, media),
+    archiveKey(scope),
+  ];
 
   it("keeps every object under its event prefix", () => {
     // Deletion, lifecycle tagging and the ZIP build all rely on this.
-    for (const key of [
-      originalKey(event, media, "jpg"),
-      thumbKey(event, media),
-      archiveKey(event),
-    ]) {
-      expect(key.startsWith(eventPrefix(event))).toBe(true);
+    for (const key of everyKind) {
+      expect(key.startsWith(eventPrefix(scope))).toBe(true);
+    }
+  });
+
+  it("keeps every object under its owner prefix", () => {
+    // The tenant boundary in the bucket, and what the IAM policy scopes to.
+    for (const key of everyKind) {
+      expect(key.startsWith(ownerPrefix(owner))).toBe(true);
+    }
+  });
+
+  it("never puts one host's object inside another host's prefix", () => {
+    const other = "99999999-8888-7777-6666-555555555555";
+    for (const key of everyKind) {
+      expect(key.startsWith(ownerPrefix(other))).toBe(false);
+    }
+  });
+
+  it("starts every key with the constant segment the infra filters on", () => {
+    // s3-lifecycle.json and the IAM policy both match on `u/`. Owner ids are
+    // unbounded, so this is the only common prefix the bucket has.
+    for (const key of everyKind) {
+      expect(key.startsWith("u/")).toBe(true);
     }
   });
 
   it("puts thumbnails in their own prefix as webp", () => {
-    expect(thumbKey(event, media)).toBe(`events/${event}/thumbs/${media}.webp`);
-    expect(originalKey(event, media, "heic")).toBe(
-      `events/${event}/originals/${media}.heic`,
+    expect(thumbKey(scope, media)).toBe(
+      `u/${owner}/${event}/thumbs/${media}.webp`,
     );
+    expect(originalKey(scope, media, "heic")).toBe(
+      `u/${owner}/${event}/originals/${media}.heic`,
+    );
+    expect(archiveKey(scope)).toBe(`u/${owner}/${event}/archive/${event}.zip`);
+  });
+
+  it("reads a scope off either row shape", () => {
+    // events name the columns id/owner_id; media name them event_id/owner_id.
+    expect(scopeOfEvent({ id: event, owner_id: owner })).toEqual(scope);
+    expect(scopeOfMedia({ event_id: event, owner_id: owner })).toEqual(scope);
   });
 });
 

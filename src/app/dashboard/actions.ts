@@ -8,7 +8,13 @@ import { z } from "zod";
 import type { EventRow } from "@/lib/db/types";
 import { encryptToken } from "@/lib/crypto";
 import { env } from "@/lib/env";
-import { archiveKey, eventPrefix, mediaBytes, mediaKeys } from "@/lib/media";
+import {
+  archiveKey,
+  eventPrefix,
+  mediaBytes,
+  mediaKeys,
+  scopeOfEvent,
+} from "@/lib/media";
 import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -191,7 +197,11 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 
 const appearanceSchema = z.object({
   theme: z.string().trim().min(1).max(32),
+  // Not an enum, for the same reason `theme` is not: pairings are defined in
+  // the application and an unknown one falls back when it is read.
+  theme_font: z.string().trim().min(1).max(32),
   cover_variant: z.enum(["classic", "band", "framed", "type"]),
+  upload_variant: z.enum(["button", "panel", "bar", "split"]),
   gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
   cover_media_id: z.string().uuid().nullable(),
   custom_bg: z.string().regex(HEX).optional(),
@@ -205,7 +215,7 @@ const appearanceSchema = z.object({
  *
  * Refused outright on the free plan. resolveAppearance() would render a free
  * event with the house theme regardless of what is stored, so this check is not
- * what protects the paywall — it is what gives the host a clear answer instead
+ * what protects the paywall - it is what gives the host a clear answer instead
  * of a form that appears to save and then changes nothing.
  */
 export async function updateAppearance(
@@ -226,7 +236,9 @@ export async function updateAppearance(
   const coverMediaId = String(formData.get("cover_media_id") ?? "").trim();
   const parsed = appearanceSchema.safeParse({
     theme: formData.get("theme"),
+    theme_font: formData.get("theme_font"),
     cover_variant: formData.get("cover_variant"),
+    upload_variant: formData.get("upload_variant"),
     gallery_layout: formData.get("gallery_layout"),
     cover_media_id: coverMediaId.length > 0 ? coverMediaId : null,
     custom_bg: formData.get("custom_bg") ?? undefined,
@@ -254,7 +266,9 @@ export async function updateAppearance(
     .from("events")
     .update({
       theme: parsed.data.theme,
+      theme_font: parsed.data.theme_font,
       cover_variant: parsed.data.cover_variant,
+      upload_variant: parsed.data.upload_variant,
       gallery_layout: parsed.data.gallery_layout,
       cover_media_id: parsed.data.cover_media_id,
       theme_custom: {
@@ -378,7 +392,7 @@ export async function deleteEvent(eventId: string): Promise<ActionState> {
   const event = await requireOwnedEvent(eventId);
   const admin = createAdminClient();
 
-  await storage.removePrefix(eventPrefix(eventId));
+  await storage.removePrefix(eventPrefix(scopeOfEvent(event)));
   const { error } = await admin.from("events").delete().eq("id", event.id);
   if (error) return { error: error.message };
 
@@ -390,7 +404,7 @@ export async function deleteEvent(eventId: string): Promise<ActionState> {
 
 /**
  * Bring back an event that passed its expiry but is still inside the grace
- * window. Nothing has been removed yet at this point — that is the whole reason
+ * window. Nothing has been removed yet at this point - that is the whole reason
  * the grace window exists.
  */
 export async function restoreEvent(eventId: string): Promise<ActionState> {
@@ -421,10 +435,10 @@ export async function restoreEvent(eventId: string): Promise<ActionState> {
 
 /** Throws away a stale ZIP so the next download rebuilds it. */
 export async function invalidateArchive(eventId: string): Promise<ActionState> {
-  await requireOwnedEvent(eventId);
+  const event = await requireOwnedEvent(eventId);
   const admin = createAdminClient();
 
-  await storage.remove([archiveKey(eventId)]);
+  await storage.remove([archiveKey(scopeOfEvent(event))]);
   await admin
     .from("events")
     .update({

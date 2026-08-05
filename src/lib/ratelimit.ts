@@ -3,8 +3,8 @@
  *
  * This is the second line, not the first. The architecture puts per-token and
  * per-IP limits at the CDN edge, where they work across every instance and cost
- * nothing to run. What lives here catches the obvious cases — a script hammering
- * the presign endpoint on one warm instance — and keeps the development server
+ * nothing to run. What lives here catches the obvious cases - a script hammering
+ * the presign endpoint on one warm instance - and keeps the development server
  * honest. On serverless, counters are per instance and reset on cold start, so
  * do not treat these numbers as a guarantee.
  */
@@ -64,6 +64,15 @@ export const LIMITS = {
   archive: { limit: 5, window: 3600 },
   /** Event creation per host, per hour. */
   createEvent: { limit: 20, window: 3600 },
+  /** Sign-in attempts per IP. Low enough to blunt credential stuffing. */
+  signIn: { limit: 10, window: 300 },
+  /** Sign-ups per IP, per hour. */
+  signUp: { limit: 5, window: 3600 },
+  /**
+   * Reset emails per IP, per hour. Supabase throttles per address; this
+   * throttles the sender, which is the part an attacker controls.
+   */
+  passwordReset: { limit: 5, window: 3600 },
 } as const;
 
 export function clientIp(headers: Headers): string {

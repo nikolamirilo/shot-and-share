@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * The QR code is the actual product — the thing that goes on the table — so it
+ * The QR code is the actual product - the thing that goes on the table - so it
  * is generated as SVG and prints at any size without pixelation.
  *
  * `format=code` is the bare code for a host who wants to place it themselves.

@@ -6,26 +6,38 @@ import { useFormStatus } from "react-dom";
 import { updateAppearance, type ActionState } from "@/app/dashboard/actions";
 import { EventCover, EventThemeRoot } from "@/components/event-cover";
 import { Badge, Button, ButtonLink, cx } from "@/components/ui";
+import { UploadPanel } from "@/components/upload-panel";
 import {
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
   type CoverVariant,
   THEMES,
+  UPLOAD_VARIANTS,
+  type UploadVariant,
   buildCustomPalette,
   findTheme,
 } from "@/lib/appearance";
 import { AA_CONTRAST, contrastRatio, parseHex } from "@/lib/color";
 import type { EventRow } from "@/lib/db/types";
 import type { MediaView } from "@/lib/events";
+import { FONT_SETS, findFontSet, googleFontsHref } from "@/lib/fonts";
 import { GALLERY_LAYOUTS, type GalleryLayout } from "@/lib/gallery";
+import { MAX_FILES_PER_REQUEST } from "@/lib/media";
+import { getTier } from "@/lib/tiers";
 
 /**
  * The custom event page editor.
  *
  * Everything is previewed live against the host's own cover photo, because the
  * only useful answer to "what does Midnight look like?" is to show it. The
- * preview renders the real EventCover inside a real EventThemeRoot rather than
- * a mock-up, so what a host approves here is what a guest gets.
+ * preview renders the real EventCover and the real UploadPanel inside a real
+ * EventThemeRoot, so what a host approves here is what a guest gets.
+ *
+ * That is a rule rather than a detail. The parts of this preview that were once
+ * drawn by hand - a dark bar standing in for the uploader, four dark tiles
+ * standing in for photos - were exactly the parts that stopped agreeing with
+ * the page: a hand-drawn panel has no card surface on it, so the "Cards" colour
+ * had nothing to colour.
  */
 export function AppearanceForm({
   event,
@@ -44,8 +56,12 @@ export function AppearanceForm({
 
   const custom = (event.theme_custom ?? {}) as Record<string, string>;
   const [themeId, setThemeId] = useState(event.theme ?? "cheese");
+  const [fontId, setFontId] = useState(event.theme_font ?? "cheese");
   const [cover, setCover] = useState<CoverVariant>(
     (event.cover_variant as CoverVariant) ?? "classic",
+  );
+  const [upload, setUpload] = useState<UploadVariant>(
+    (event.upload_variant as UploadVariant) ?? "button",
   );
   const [layout, setLayout] = useState<GalleryLayout>(event.gallery_layout);
   const [coverMediaId, setCoverMediaId] = useState<string | null>(
@@ -63,22 +79,48 @@ export function AppearanceForm({
       ? buildCustomPalette(colors)
       : findTheme(themeId).palette;
 
+  const font = findFontSet(fontId);
+
   const coverUrl =
     media.find((m) => m.id === coverMediaId)?.thumbUrl ?? null;
+
+  // A photo cover with no photo falls back to "Just type" on the guest page, so
+  // the host is told rather than left to discover it after the invitations go
+  // out. The preview above still shows the shape they picked.
+  const coverNeedsPhoto = cover !== "type" && !coverUrl;
 
   if (locked) return <LockedPanel eventId={event.id} />;
 
   return (
     <section className="card p-6">
+      {/* Every pairing, not just the chosen one: the host is comparing them,
+          and a font that arrives half a second after the click reads as the
+          preview being broken. A guest page loads only its own. */}
+      {FONT_SETS.map((set) => {
+        const href = googleFontsHref(set);
+        return href ? (
+          <link
+            key={set.id}
+            rel="stylesheet"
+            href={href}
+            precedence="default"
+          />
+        ) : null;
+      })}
+
       <h2 className="text-h3">The event page</h2>
       <p className="mt-2 text-[0.9375rem] text-crust">
         What guests see when they scan the code. Everything here is previewed
         with your own photo.
       </p>
 
-      {/* --- live preview ------------------------------------------------- */}
+      {/* --- live preview -------------------------------------------------
+          The real components, in a real theme root. A mock-up here is how a
+          setting ends up looking dead: the panels below are the same ones the
+          guest gets, so a colour that does nothing visible in this box does
+          nothing on the page either. */}
       <div className="mt-5 overflow-hidden rounded-xl border-2 border-pepper">
-        <EventThemeRoot palette={palette}>
+        <EventThemeRoot palette={palette} font={font}>
           <EventCover
             variant={cover}
             name={event.name || "Your event"}
@@ -87,9 +129,19 @@ export function AppearanceForm({
             palette={palette}
             preview
           />
-          <div className="px-4 py-3">
-            <div className="h-7 rounded-lg border-2 border-pepper bg-pepper" />
-            <div className="mt-2.5 grid grid-cols-4 gap-1.5">
+          <div className="px-4 py-4">
+            <UploadPanel
+              variant={upload}
+              label="Add your photos"
+              hint={
+                getTier(event.tier).video
+                  ? `Photos and video, up to ${MAX_FILES_PER_REQUEST} at a time.`
+                  : `Photos, up to ${MAX_FILES_PER_REQUEST} at a time.`
+              }
+              name=""
+              preview
+            />
+            <div className="mt-3 grid grid-cols-4 gap-1.5">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
@@ -106,7 +158,9 @@ export function AppearanceForm({
 
       <form action={formAction} className="mt-6 space-y-6">
         <input type="hidden" name="theme" value={themeId} />
+        <input type="hidden" name="theme_font" value={fontId} />
         <input type="hidden" name="cover_variant" value={cover} />
+        <input type="hidden" name="upload_variant" value={upload} />
         <input type="hidden" name="gallery_layout" value={layout} />
         <input
           type="hidden"
@@ -147,6 +201,43 @@ export function AppearanceForm({
           <CustomColours colors={colors} onChange={setColors} />
         )}
 
+        <Group label="Type" hint="Pairs a heading face with a body face.">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {FONT_SETS.map((set) => (
+              <button
+                key={set.id}
+                type="button"
+                onClick={() => setFontId(set.id)}
+                aria-pressed={fontId === set.id}
+                className={cx(
+                  "rounded-xl border-2 border-pepper p-3 text-left",
+                  fontId === set.id ? "bg-gouda" : "bg-butter",
+                )}
+              >
+                {/* The name is set in the face it names. Nothing else here
+                    answers "what does Warm look like?" as quickly. */}
+                <span
+                  className="block text-h3 leading-none"
+                  style={{
+                    fontFamily: set.display,
+                    fontWeight: set.displayWeight,
+                    fontStretch: set.displayStretch,
+                    letterSpacing: set.displayTracking,
+                  }}
+                >
+                  {set.name}
+                </span>
+                <span
+                  className="mt-1.5 block text-[0.8125rem] leading-snug text-crust"
+                  style={{ fontFamily: set.body }}
+                >
+                  {set.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+        </Group>
+
         <Group label="Cover style">
           <div className="grid gap-2 sm:grid-cols-2">
             {COVER_VARIANTS.map((option) => (
@@ -154,6 +245,20 @@ export function AppearanceForm({
                 key={option.id}
                 selected={cover === option.id}
                 onClick={() => setCover(option.id)}
+                name={option.name}
+                hint={option.hint}
+              />
+            ))}
+          </div>
+        </Group>
+
+        <Group label="Asking for photos">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {UPLOAD_VARIANTS.map((option) => (
+              <Choice
+                key={option.id}
+                selected={upload === option.id}
+                onClick={() => setUpload(option.id)}
                 name={option.name}
                 hint={option.hint}
               />
@@ -169,6 +274,13 @@ export function AppearanceForm({
               : "Pick any photo from the event."
           }
         >
+          {coverNeedsPhoto && (
+            <p className="mb-2.5 rounded-xl border-2 border-dashed border-rind p-3 text-[0.8125rem] leading-snug text-crust">
+              No cover photo yet. Until you pick one, guests get the{" "}
+              <strong>Just type</strong> cover rather than the one above.
+            </p>
+          )}
+
           {media.length > 0 && (
             <div className="flex flex-wrap gap-2">
               <button
@@ -338,7 +450,7 @@ function Choice({
  *
  * A host cannot be expected to know about WCAG ratios, and their guests will be
  * reading this on a phone in a dark room. The text colour is corrected
- * automatically when it fails — this panel exists so the host is told rather
+ * automatically when it fails - this panel exists so the host is told rather
  * than quietly overridden.
  */
 interface CustomColours {
@@ -396,7 +508,7 @@ function CustomColours({
         <span className="text-crust">
           {readable
             ? "Comfortable to read on a phone."
-            : "Too low to read comfortably. We will darken or lighten your text colour automatically — pick a stronger one to keep the shade you want."}
+            : "Too low to read comfortably. We will darken or lighten your text colour automatically - pick a stronger one to keep the shade you want."}
         </span>
       </p>
     </div>
@@ -414,13 +526,15 @@ function LockedPanel({ eventId }: { eventId: string }) {
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
         On the free plan your guests see the Say Cheese theme, a fixed cover and
         a fixed gallery, with a small header and footer pointing back to us.
-        Everything works — it just looks like ours rather than yours.
+        Everything works - it just looks like ours rather than yours.
       </p>
 
       <ul className="mt-4 space-y-2">
         {[
           "Five themes, or pick your own colours",
+          "Five type pairings, from formal to loud",
           "Four cover styles, using any photo from the event",
+          "Four ways to ask your guests for photos",
           "Choose how the gallery is laid out",
           "No Say Cheese header or footer",
         ].map((line) => (

@@ -1,7 +1,7 @@
 {
   "CORSRules": [
     {
-      "_comment": "Guests POST directly to the bucket with a presigned policy. Replace the origins with the real hostnames before going live — a wildcard here is an invitation to have your upload policy used from somebody else's page.",
+      "_comment": "Guests POST directly to the bucket with a presigned policy. Replace the origins with the real hostnames before going live - a wildcard here is an invitation to have your upload policy used from somebody else's page.",
       "AllowedOrigins": [
         "https://saycheese.app",
         "https://www.saycheese.app",

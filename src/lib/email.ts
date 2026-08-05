@@ -77,7 +77,7 @@ export function retentionWarningEmail(args: {
   const body = `
     <h1 style="font-size:27px;margin:14px 0 12px;line-height:1.15">Your photos come down ${when}</h1>
     <p style="font-size:16px;line-height:1.6">You collected <strong>${args.photoCount}</strong> ${args.photoCount === 1 ? "photo" : "photos"} at <strong>${escapeHtml(args.eventName)}</strong>. The storage window for this event ends ${when}.</p>
-    <p style="font-size:16px;line-height:1.6">Download everything as a ZIP now, or add <strong>The Cellar</strong> and keep them permanently for a single €29 payment. Not per year — once.</p>`;
+    <p style="font-size:16px;line-height:1.6">Download everything as a ZIP now, or add <strong>The Cellar</strong> and keep them permanently for a single €29 payment. Not per year - once.</p>`;
 
   const text = `Your photos for ${args.eventName} are deleted ${when}. Download them: ${args.downloadUrl}`;
   return { to: args.to, subject, html: layout(body, { label: "Download my photos", url: args.downloadUrl }), text };

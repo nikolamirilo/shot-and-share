@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { EmailForm } from "@/app/login/email-form";
 import { Button } from "@/components/ui";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -17,7 +18,7 @@ export function LoginPanel({
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<string | null>(error ?? null);
 
-  async function signIn() {
+  async function signInWithGoogle() {
     setPending(true);
     setFailure(null);
     try {
@@ -44,13 +45,13 @@ export function LoginPanel({
         <h2 className="text-h3">Supabase is not configured</h2>
         <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
           Set <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
-          <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>{" "}
+          <code className="font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>{" "}
           and{" "}
-          <code className="font-mono text-[0.9375rem]">SUPABASE_SERVICE_ROLE_KEY</code>{" "}
+          <code className="font-mono text-[0.9375rem]">SUPABASE_SECRET_KEY</code>{" "}
           in <code className="font-mono text-[0.9375rem]">.env.local</code>, run
           the migrations in{" "}
           <code className="font-mono text-[0.9375rem]">supabase/migrations</code>
-          , then enable the Google provider in Supabase Auth.
+          , then enable the Email and Google providers in Supabase Auth.
         </p>
         <p className="mt-3 text-[0.9375rem] text-crust">
           Full steps are in the README.
@@ -61,18 +62,31 @@ export function LoginPanel({
 
   return (
     <div className="card p-7">
-      <h2 className="text-h3">Continue with Google</h2>
+      <h2 className="text-h3">Sign in</h2>
       <p className="mt-2 text-[0.9375rem] text-crust">
-        One click. We ask Google for your name and email address, nothing else.
+        Use an email address and password, or continue with Google.
       </p>
 
+      <div className="mt-6">
+        <EmailForm next={next} />
+      </div>
+
+      <div className="my-6 flex items-center gap-3" aria-hidden="true">
+        <span className="h-0.5 flex-1 bg-pepper/20" />
+        <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+          or
+        </span>
+        <span className="h-0.5 flex-1 bg-pepper/20" />
+      </div>
+
       <Button
-        onClick={signIn}
+        onClick={signInWithGoogle}
         disabled={pending}
+        variant="secondary"
         size="lg"
-        className="mt-6 w-full"
+        className="w-full"
       >
-        {pending ? "Opening Google…" : "Sign in with Google"}
+        {pending ? "Opening Google…" : "Continue with Google"}
       </Button>
 
       {failure && (

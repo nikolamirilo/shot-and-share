@@ -3,7 +3,7 @@ import type { Readable } from "node:stream";
 /**
  * Presigned upload, expressed as a POST rather than a PUT.
  *
- * A presigned PUT cannot enforce a maximum size — the signature covers the key
+ * A presigned PUT cannot enforce a maximum size - the signature covers the key
  * and the method, not the body length, so a guest who ignores our numbers can
  * push a gigabyte into the bucket and we find out when the bill arrives. A
  * presigned POST carries a `content-length-range` condition that S3 itself

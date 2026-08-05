@@ -25,7 +25,7 @@ export default function GlobalError({
 
       <h1 className="mt-9 text-h1">That did not work.</h1>
       <p className="mt-3 max-w-md text-body text-crust">
-        Something broke on our side. Nothing you have uploaded is affected —
+        Something broke on our side. Nothing you have uploaded is affected -
         photos are stored the moment they arrive, not when the page finishes
         loading.
       </p>

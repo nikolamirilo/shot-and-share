@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- Say Cheese — initial schema
+-- Say Cheese - initial schema
 --
 -- Five tables carry the whole product. Postgres is the source of truth for what
 -- exists; the bucket is only where the bytes live. The application never calls

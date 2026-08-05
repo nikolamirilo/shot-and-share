@@ -99,7 +99,7 @@ export interface MediaView {
    * Resolved only when a photo is actually opened.
    *
    * `displayUrl` is the optimised full-size copy and is what the lightbox
-   * should load — typically a quarter of the bytes and, for a HEIC upload, the
+   * should load - typically a quarter of the bytes and, for a HEIC upload, the
    * difference between the photo appearing and a broken image icon. The
    * untouched `originalUrl` is offered alongside it for downloading.
    */
@@ -192,7 +192,7 @@ export const GALLERY_PAGE_SIZE = 48;
 
 /**
  * The live share link for an event, decrypted so the dashboard can render the
- * QR code. Returns null when the host has revoked every link — which is the
+ * QR code. Returns null when the host has revoked every link - which is the
  * point of revoking, so callers must handle it rather than reissue silently.
  */
 export async function getActiveShareToken(

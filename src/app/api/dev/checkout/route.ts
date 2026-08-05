@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 /**
  * Development stand-in for the hosted checkout.
  *
- * It exists so the upgrade path — quota rejection, upgrade prompt, tier change,
- * new expiry — can be exercised without a payment provider account. It refuses
+ * It exists so the upgrade path - quota rejection, upgrade prompt, tier change,
+ * new expiry - can be exercised without a payment provider account. It refuses
  * to run in production, and it goes through the same grant function the real
  * webhook uses, so it cannot drift from the code that handles actual money.
  */

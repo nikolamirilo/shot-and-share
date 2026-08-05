@@ -114,7 +114,7 @@ export function PricingTable({
           </div>
           <p className="mt-1 max-w-lg text-[0.9375rem] text-crust">
             {KEEP_FOREVER.meaning} Add it to any event and the photos stay
-            permanently. Paid once, never again — not every year.
+            permanently. Paid once, never again - not every year.
           </p>
         </div>
         <p

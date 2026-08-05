@@ -27,8 +27,9 @@ export async function GET(
   const { key: segments } = await params;
   const key = segments.join("/");
 
-  // Only ever the thumbnail prefix. Originals stay behind signed URLs.
-  if (!/^events\/[^/]+\/thumbs\/[^/]+$/.test(key)) {
+  // Only ever the thumbnail prefix, and only inside the owner-scoped layout.
+  // Originals stay behind signed URLs.
+  if (!/^u\/[^/]+\/[^/]+\/thumbs\/[^/]+$/.test(key)) {
     return fail("forbidden", "Not a public object.");
   }
 

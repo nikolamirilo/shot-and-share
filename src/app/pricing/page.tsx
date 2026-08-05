@@ -39,7 +39,7 @@ export default async function PricingPage() {
             </div>
 
             <p className="mt-6 text-[0.9375rem] text-crust">
-              Prices include EU VAT handling — our payment provider is the
+              Prices include EU VAT handling - our payment provider is the
               merchant of record, so the VAT on your invoice is already sorted.
             </p>
           </div>
@@ -136,7 +136,7 @@ function Detail() {
   const points: Array<[string, string]> = [
     [
       "Why gigabytes and not a photo count",
-      "A count limit punishes anyone with a recent phone and rewards nobody. Storage is what actually costs money, so that is what we count — and it lets us be far more generous for the same spend.",
+      "A count limit punishes anyone with a recent phone and rewards nobody. Storage is what actually costs money, so that is what we count - and it lets us be far more generous for the same spend.",
     ],
     [
       "Why the free plan is properly usable",

@@ -11,7 +11,7 @@ import { env, hasLemonSqueezy } from "@/lib/env";
  * Stripe does not operate for a Serbian entity, and a merchant of record also
  * takes EU VAT registration and filing off the table entirely. It costs about
  * 5% + $0.50 against Stripe's 2.9% + $0.30, which is roughly a euro more on a
- * €39 sale — cheap next to running VAT returns in every member state you sell
+ * €39 sale - cheap next to running VAT returns in every member state you sell
  * into. The unit economics are modelled on this fee, not the cheaper one.
  */
 

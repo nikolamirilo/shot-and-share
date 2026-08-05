@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LoginPanel } from "@/app/login/login-panel";
 import { SiteFooter, SiteHeader } from "@/components/site";
 import { Eyebrow, Hole } from "@/components/ui";
+import { loginErrorMessage } from "@/lib/auth";
 import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";
 
@@ -33,7 +34,7 @@ export default async function LoginPage({
             </h1>
             <p className="mt-4 max-w-md text-body text-crust">
               The only account in this product is yours. Guests open a link and
-              upload — no sign-in, no app, nothing to remember.
+              upload - no sign-in, no app, nothing to remember.
             </p>
 
             <ul className="mt-8 space-y-3">
@@ -50,7 +51,11 @@ export default async function LoginPage({
             </ul>
           </div>
 
-          <LoginPanel next={next} error={error} configured={hasSupabase} />
+          <LoginPanel
+            next={next}
+            error={loginErrorMessage(error)}
+            configured={hasSupabase}
+          />
         </div>
       </main>
       <SiteFooter />

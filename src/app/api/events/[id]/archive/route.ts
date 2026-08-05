@@ -3,7 +3,7 @@ import { PassThrough } from "node:stream";
 
 import { ApiError, fail, handle, ok } from "@/lib/api";
 import { type ImageFormat, isUniversallyViewable } from "@/lib/formats";
-import { archiveKey } from "@/lib/media";
+import { archiveKey, scopeOfEvent } from "@/lib/media";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -127,7 +127,7 @@ export async function POST(
       });
     }
 
-    const key = archiveKey(event.id);
+    const key = archiveKey(scopeOfEvent(event));
     await buildArchive(key, event, media);
 
     const head = await storage.head(key);
@@ -175,7 +175,7 @@ async function buildArchive(key: string, event: EventRow, media: MediaRow[]) {
     contentType: "application/zip",
     // The lifecycle rule expires archives on this tag. It cannot use a prefix,
     // because S3 prefix filters are literal and events/*/archive/ is not a
-    // thing you can express. The ZIP is derived data — losing it costs a
+    // thing you can express. The ZIP is derived data - losing it costs a
     // rebuild, not a photo.
     tags: { kind: "archive" },
   });
@@ -195,7 +195,7 @@ async function buildArchive(key: string, event: EventRow, media: MediaRow[]) {
 
     /*
      * HEIC is the trap here. A host who downloads a ZIP of iPhone photos on a
-     * Windows machine has been handed a folder of files that will not open —
+     * Windows machine has been handed a folder of files that will not open -
      * technically a complete delivery, practically nothing. So the converted
      * copy rides along in an `openable-anywhere/` folder, and the untouched
      * original stays where it is for anyone who wants it.

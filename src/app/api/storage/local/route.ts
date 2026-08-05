@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Stands in for S3 in development. It enforces the same three things a
- * presigned POST does — expiry, key, and a maximum body size — so code that
+ * presigned POST does - expiry, key, and a maximum body size - so code that
  * works against this driver works against the real bucket.
  */
 

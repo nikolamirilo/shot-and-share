@@ -37,11 +37,17 @@ export const env = {
     get url() {
       return opt("NEXT_PUBLIC_SUPABASE_URL");
     },
-    get anonKey() {
-      return opt("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    get publishableKey() {
+      return (
+        opt("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ??
+        opt("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+      );
     },
-    get serviceRoleKey() {
-      return opt("SUPABASE_SERVICE_ROLE_KEY");
+    get secretKey() {
+      return (
+        opt("SUPABASE_SECRET_KEY") ??
+        opt("SUPABASE_SERVICE_ROLE_KEY")
+      );
     },
   },
 
@@ -98,7 +104,7 @@ export const env = {
     return opt("RESEND_API_KEY");
   },
   get emailFrom() {
-    return opt("EMAIL_FROM") ?? "Say Cheese <hello@saycheese.app>";
+    return opt("EMAIL_FROM") ?? "Say Cheese <office@reactify-solutions.com>";
   },
 
   get cronSecret() {
@@ -113,10 +119,11 @@ export const env = {
     return process.env.NODE_ENV === "production";
   },
 };
-
+    
 export const hasSupabase = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
 );
 
 /**

@@ -39,7 +39,7 @@ const bodySchema = z.object({
  * uploads that never happened.
  *
  * A row that is never confirmed at all stays `pending` and the nightly job
- * sweeps it — a guest whose phone dies mid-upload costs the host nothing.
+ * sweeps it - a guest whose phone dies mid-upload costs the host nothing.
  */
 export async function POST(request: Request) {
   return handle(async () => {

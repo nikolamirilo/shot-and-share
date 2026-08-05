@@ -9,7 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * a client-side success redirect for entitlement.
  *
  * Idempotent on the provider transaction id, because webhooks are delivered
- * more than once — the unique constraint does the work, not a read-then-write.
+ * more than once - the unique constraint does the work, not a read-then-write.
  */
 export async function grantPurchase(args: {
   eventId: string;

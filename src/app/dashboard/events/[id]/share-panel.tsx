@@ -112,7 +112,7 @@ export function SharePanel({
 
           <p className="mt-5 text-[0.8125rem] leading-relaxed text-rind">
             Print the card and put one on every table. Guests point a camera at
-            it — that is the whole instruction, and it is worth resisting the urge
+            it - that is the whole instruction, and it is worth resisting the urge
             to add more.
           </p>
 

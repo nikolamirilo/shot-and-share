@@ -54,7 +54,7 @@ export function UpgradePanel({
     options.push({
       product: "keep_forever",
       title: `Add ${KEEP_FOREVER.name}`,
-      body: "Photos stay permanently. Paid once and never again — not every year.",
+      body: "Photos stay permanently. Paid once and never again - not every year.",
       price: KEEP_FOREVER.priceEur,
     });
   }
@@ -76,7 +76,7 @@ export function UpgradePanel({
     <section className="card p-6">
       <h2 className="text-h3">More room, or more time</h2>
       <p className="mt-2 text-[0.9375rem] text-crust">
-        One payment per event. Upgrading during the night works fine — the limit
+        One payment per event. Upgrading during the night works fine - the limit
         lifts the moment the payment clears.
       </p>
 

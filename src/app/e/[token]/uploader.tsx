@@ -2,7 +2,9 @@
 
 import { useRef, useState } from "react";
 
-import { Button, Hole, ProgressBar, cx } from "@/components/ui";
+import { Hole, ProgressBar, cx } from "@/components/ui";
+import { UploadPanel } from "@/components/upload-panel";
+import type { UploadVariant } from "@/lib/appearance";
 import { makeImageRenditions, probeVideo } from "@/lib/client/codec";
 import {
   getFingerprint,
@@ -64,18 +66,22 @@ interface Prepared {
  */
 export function Uploader({
   token,
+  variant,
   allowVideo,
   maxFileBytes,
   remainingBytes,
   onUploaded,
 }: {
   token: string;
+  /** The shape the host picked for this event. */
+  variant: UploadVariant;
   allowVideo: boolean;
   maxFileBytes: number;
   remainingBytes: number;
   onUploaded: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -255,121 +261,124 @@ export function Uploader({
           ) / items.length,
         );
 
+  const accept = allowVideo ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO;
+
   return (
-    <section className="card mt-8 p-6">
+    <>
       <input
         ref={inputRef}
         type="file"
         multiple
-        accept={allowVideo ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO}
+        accept={accept}
         onChange={(e) => handleFiles(e.target.files)}
         className="sr-only"
         id="guest-files"
       />
-
-      <Button
-        size="lg"
-        className="w-full py-5 text-[1.3rem]"
-        disabled={busy}
-        onClick={() => inputRef.current?.click()}
-      >
-        {busy ? `${stage}… ${stage === "Uploading" ? `${overall}%` : ""}` : "Add your photos"}
-      </Button>
-
-      <p className="mt-3 text-center text-[0.9375rem] text-crust">
-        {allowVideo
-          ? `Photos and video, up to ${MAX_FILES_PER_REQUEST} at a time.`
-          : `Photos, up to ${MAX_FILES_PER_REQUEST} at a time.`}{" "}
-        {formatBytes(remainingBytes)} of room left.
-      </p>
-
-      <div className="mt-5">
-        <label
-          htmlFor="guest-name"
-          className="block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind"
-        >
-          Your name — optional
-        </label>
+      {/* The camera is a second input rather than an attribute on the first:
+          `capture` turns the picker into a viewfinder for every use of it, and
+          the library button has to keep working. */}
+      {variant === "split" && (
         <input
-          id="guest-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={60}
-          placeholder="So the host knows who to thank"
-          className="mt-1.5 w-full rounded-xl border-2 border-pepper bg-butter px-3.5 py-2.5"
+          ref={cameraRef}
+          type="file"
+          accept={accept}
+          capture="environment"
+          onChange={(e) => handleFiles(e.target.files)}
+          className="sr-only"
+          id="guest-camera"
         />
-      </div>
-
-      {items.length > 0 && (
-        <div className="mt-6">
-          <ProgressBar percent={overall} />
-          <ul className="mt-4 space-y-2">
-            {items.map((item) => (
-              <li
-                key={item.key}
-                className="flex items-center gap-3 text-[0.9375rem]"
-              >
-                <Hole
-                  size={11}
-                  className={cx(
-                    item.status === "done" && "bg-pepper",
-                    item.status === "failed" && "opacity-40",
-                  )}
-                />
-                <span className="min-w-0 flex-1 truncate">
-                  {item.file.name}
-                </span>
-                <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-rind">
-                  {item.status === "done"
-                    ? "added"
-                    : item.status === "failed"
-                      ? "failed"
-                      : item.status === "uploading"
-                        ? `${item.progress}%`
-                        : item.status === "prepared"
-                          ? "ready"
-                          : "shrinking"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
-      {completed > 0 && inFlight === 0 && !busy && (
-        <p className="mt-5 rounded-xl border-2 border-pepper bg-gouda p-4 text-center">
-          <strong>Thank you.</strong>{" "}
-          {completed === 1
-            ? "Your photo is with the host."
-            : `All ${completed} are with the host.`}{" "}
-          Add more any time tonight.
-          {saved.from > saved.to && saved.to > 0 && (
-            <span className="mt-1 block font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-crust">
-              sent {formatBytes(saved.to)} instead of {formatBytes(saved.from)}
-            </span>
-          )}
-        </p>
-      )}
-
-      {error && (
-        <div className="mt-5 rounded-xl border-2 border-pepper bg-butter p-4">
-          <p className="text-[0.9375rem] font-semibold">{error}</p>
-          {upgradeHint && (
-            <p className="mt-1.5 text-[0.9375rem] text-crust">
-              The host needs to make more room. Let them know — they can raise
-              the limit from their phone in under a minute.
-            </p>
-          )}
-        </div>
-      )}
-    </section>
+      <UploadPanel
+        variant={variant}
+        busy={busy}
+        label={
+          busy
+            ? `${stage}… ${stage === "Uploading" ? `${overall}%` : ""}`
+            : "Add your photos"
+        }
+        hint={`${
+          allowVideo
+            ? `Photos and video, up to ${MAX_FILES_PER_REQUEST} at a time.`
+            : `Photos, up to ${MAX_FILES_PER_REQUEST} at a time.`
+        } ${formatBytes(remainingBytes)} of room left.`}
+        name={name}
+        onNameChange={setName}
+        onPick={() => inputRef.current?.click()}
+        onCapture={() => cameraRef.current?.click()}
+        onDropFiles={handleFiles}
+      >
+        {items.length > 0 && (
+          <div className="mt-6">
+            <ProgressBar percent={overall} />
+            <ul className="mt-4 space-y-2">
+              {items.map((item) => (
+                <li
+                  key={item.key}
+                  className="flex items-center gap-3 text-[0.9375rem]"
+                >
+                  <Hole
+                    size={11}
+                    className={cx(
+                      item.status === "done" && "bg-pepper",
+                      item.status === "failed" && "opacity-40",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate">
+                    {item.file.name}
+                  </span>
+                  <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-rind">
+                    {item.status === "done"
+                      ? "added"
+                      : item.status === "failed"
+                        ? "failed"
+                        : item.status === "uploading"
+                          ? `${item.progress}%`
+                          : item.status === "prepared"
+                            ? "ready"
+                            : "shrinking"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+  
+        {completed > 0 && inFlight === 0 && !busy && (
+          <p className="mt-5 rounded-xl border-2 border-pepper bg-gouda p-4 text-center">
+            <strong>Thank you.</strong>{" "}
+            {completed === 1
+              ? "Your photo is with the host."
+              : `All ${completed} are with the host.`}{" "}
+            Add more any time tonight.
+            {saved.from > saved.to && saved.to > 0 && (
+              <span className="mt-1 block font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-crust">
+                sent {formatBytes(saved.to)} instead of {formatBytes(saved.from)}
+              </span>
+            )}
+          </p>
+        )}
+  
+        {error && (
+          <div className="mt-5 rounded-xl border-2 border-pepper bg-butter p-4">
+            <p className="text-[0.9375rem] font-semibold">{error}</p>
+            {upgradeHint && (
+              <p className="mt-1.5 text-[0.9375rem] text-crust">
+                The host needs to make more room. Let them know - they can raise
+                the limit from their phone in under a minute.
+              </p>
+            )}
+          </div>
+        )}
+      </UploadPanel>
+    </>
   );
 }
 
 /**
  * Everything the browser can do for one file before it leaves the device:
- * decode it, shrink it, re-encode it into a format that opens anywhere, and —
- * for a video — pull a poster frame out of it.
+ * decode it, shrink it, re-encode it into a format that opens anywhere, and -
+ * for a video - pull a poster frame out of it.
  */
 async function prepare(file: File): Promise<Prepared> {
   if (file.type.startsWith("video/")) {

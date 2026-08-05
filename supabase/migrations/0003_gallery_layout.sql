@@ -3,7 +3,7 @@
 --
 -- The host picks how the shared gallery looks when a guest arrives. It is part
 -- of what the paid tiers call the custom event page, though it is available on
--- every tier — charging for the difference between a square and a circle would
+-- every tier - charging for the difference between a square and a circle would
 -- be a poor use of the paywall.
 --
 -- A guest can still switch the layout for themselves; that preference lives in

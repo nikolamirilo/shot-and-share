@@ -1,6 +1,6 @@
 # Transcode worker
 
-Finishes the two jobs a browser cannot do. **It is not deployed** — the code is
+Finishes the two jobs a browser cannot do. **It is not deployed** - the code is
 here and runs anywhere with ffmpeg, but it needs a host.
 
 ## What it does
@@ -10,7 +10,7 @@ here and runs anywhere with ffmpeg, but it needs a host.
 | HEIC photo the browser could not decode | JPEG display + thumbnail | An iPhone photo uploaded from desktop Chrome is otherwise a file most guests and half the hosts cannot open |
 | Any video | H.264 / AAC MP4, faststart, max 1080p | The one combination that plays everywhere, and usually about half the size of what a phone produces |
 
-Everything else — the overwhelming majority of uploads — is already handled in
+Everything else - the overwhelming majority of uploads - is already handled in
 the browser before it leaves the phone and never reaches this queue.
 
 ## Running it
@@ -35,7 +35,7 @@ rejects everything.
 
 ## It holds no AWS credentials
 
-The worker asks the app for jobs and receives presigned URLs — one to read the
+The worker asks the app for jobs and receives presigned URLs - one to read the
 input, one for each output it is allowed to write. It cannot choose where in the
 bucket it writes, cannot list the bucket, and cannot touch another event.
 
@@ -59,7 +59,7 @@ the claim endpoint is the right place to put SQS behind.
 ## Failure is not data loss
 
 If ffmpeg cannot read a file, the row is marked `failed` and the original is
-left completely untouched — still stored, still in the ZIP, still downloadable.
+left completely untouched - still stored, still in the ZIP, still downloadable.
 The guest sees the photo they uploaded. Nothing is ever deleted because a
 conversion did not work.
 
@@ -75,5 +75,5 @@ away what the worker wrote rather than pushing the host over their limit.
 | `FFMPEG_PATH` / `FFPROBE_PATH` | `ffmpeg` / `ffprobe` | For layer-based deployments |
 
 `VIDEO_CRF` is 23 in the source. Raising it to 26 roughly halves the output
-again and starts to show on a projector — which is exactly where wedding videos
+again and starts to show on a projector - which is exactly where wedding videos
 get played, so it was left alone.

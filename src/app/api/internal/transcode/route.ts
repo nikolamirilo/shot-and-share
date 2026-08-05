@@ -9,7 +9,7 @@ import {
   UNIVERSAL_VIDEO_FORMAT,
   VIDEO_MIME,
 } from "@/lib/formats";
-import { displayKey, posterKey, thumbKey } from "@/lib/media";
+import { displayKey, posterKey, scopeOfMedia, thumbKey } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -21,17 +21,17 @@ export const dynamic = "force-dynamic";
  *
  * The worker handles exactly the two things a browser cannot:
  *
- *   1. Images the browser could not decode — chiefly HEIC anywhere that is not
+ *   1. Images the browser could not decode - chiefly HEIC anywhere that is not
  *      Safari. Without this, an iPhone photo uploaded from a desktop Chrome is
  *      a file most of the guests and half the hosts cannot open.
  *   2. Video. Compressing a clip client-side means MediaRecorder, which
- *      re-encodes in real time — a two-minute video takes two minutes with a
+ *      re-encodes in real time - a two-minute video takes two minutes with a
  *      guest watching a spinner at a party. It has to happen off the phone.
  *
  * The worker never gets AWS credentials. It asks for jobs, receives presigned
  * URLs to read the input and write the outputs, and reports back. That means
  * the thing running ffmpeg on untrusted user input holds nothing worth stealing
- * — which matters, because ffmpeg parsing a hostile file is a real attack
+ * - which matters, because ffmpeg parsing a hostile file is a real attack
  * surface and this is the process most likely to be compromised.
  */
 
@@ -79,10 +79,13 @@ export async function GET(request: Request) {
         const isVideo = row.kind === "video";
 
         // Output keys are decided here, not by the worker: the worker should
-        // not be able to choose where in the bucket it writes.
+        // not be able to choose where in the bucket it writes. The scope comes
+        // off the row itself, so a worker output can only ever land inside the
+        // folder of the host who owns the photo.
+        const scope = scopeOfMedia(row);
         const outDisplayKey = isVideo
-          ? displayKey(row.event_id, row.id, UNIVERSAL_VIDEO_FORMAT)
-          : displayKey(row.event_id, row.id, IMAGE_EXT.jpeg);
+          ? displayKey(scope, row.id, UNIVERSAL_VIDEO_FORMAT)
+          : displayKey(scope, row.id, IMAGE_EXT.jpeg);
         const outDisplayMime = isVideo
           ? VIDEO_MIME[UNIVERSAL_VIDEO_FORMAT]
           : IMAGE_MIME.jpeg;
@@ -115,7 +118,7 @@ export async function GET(request: Request) {
               : {
                   contentType: IMAGE_MIME.jpeg,
                   upload: await storage.presignUpload({
-                    key: thumbKey(row.event_id, row.id, IMAGE_EXT.jpeg),
+                    key: thumbKey(scope, row.id, IMAGE_EXT.jpeg),
                     contentType: IMAGE_MIME.jpeg,
                     maxBytes: 4 * 1024 * 1024,
                     expiresInSeconds: CLAIM_MINUTES * 60,
@@ -126,7 +129,7 @@ export async function GET(request: Request) {
                 ? {
                     contentType: IMAGE_MIME.jpeg,
                     upload: await storage.presignUpload({
-                      key: posterKey(row.event_id, row.id, IMAGE_EXT.jpeg),
+                      key: posterKey(scope, row.id, IMAGE_EXT.jpeg),
                       contentType: IMAGE_MIME.jpeg,
                       maxBytes: 4 * 1024 * 1024,
                       expiresInSeconds: CLAIM_MINUTES * 60,
@@ -187,9 +190,12 @@ export async function POST(request: Request) {
     }
 
     const isVideo = media.kind === "video";
+    // Recomputed from the row rather than taken from the worker's report, for
+    // the same reason it was computed here when the job was handed out.
+    const scope = scopeOfMedia(media);
     const newDisplayKey = isVideo
-      ? displayKey(media.event_id, media.id, UNIVERSAL_VIDEO_FORMAT)
-      : displayKey(media.event_id, media.id, IMAGE_EXT.jpeg);
+      ? displayKey(scope, media.id, UNIVERSAL_VIDEO_FORMAT)
+      : displayKey(scope, media.id, IMAGE_EXT.jpeg);
 
     const displayBytes = body.displayBytes ?? 0;
     const thumbBytes = body.thumbBytes ?? 0;
@@ -240,12 +246,12 @@ export async function POST(request: Request) {
           ? (isVideo ? UNIVERSAL_VIDEO_FORMAT : "jpeg")
           : media.display_format,
         thumb_key: wroteThumb
-          ? thumbKey(media.event_id, media.id, IMAGE_EXT.jpeg)
+          ? thumbKey(scope, media.id, IMAGE_EXT.jpeg)
           : media.thumb_key,
         thumb_size_bytes: wroteThumb ? thumbBytes : media.thumb_size_bytes,
         thumb_format: wroteThumb ? "jpeg" : media.thumb_format,
         poster_key: wrotePoster
-          ? posterKey(media.event_id, media.id, IMAGE_EXT.jpeg)
+          ? posterKey(scope, media.id, IMAGE_EXT.jpeg)
           : media.poster_key,
         poster_size_bytes: wrotePoster ? posterBytes : media.poster_size_bytes,
         width: body.width ?? media.width,

@@ -102,9 +102,9 @@ describe("deciding whether to keep the re-encode", () => {
 
 describe("rendition bookkeeping", () => {
   const row = {
-    original_key: "events/e/originals/m.jpg",
-    thumb_key: "events/e/thumbs/m.webp",
-    display_key: "events/e/display/m.webp",
+    original_key: "u/o/e/originals/m.jpg",
+    thumb_key: "u/o/e/thumbs/m.webp",
+    display_key: "u/o/e/display/m.webp",
     poster_key: null,
     size_bytes: 4_000_000,
     thumb_size_bytes: 40_000,
@@ -116,9 +116,9 @@ describe("rendition bookkeeping", () => {
     // Missing one here means paying to store renditions of photos that were
     // deleted months ago.
     expect(mediaKeys(row)).toEqual([
-      "events/e/originals/m.jpg",
-      "events/e/thumbs/m.webp",
-      "events/e/display/m.webp",
+      "u/o/e/originals/m.jpg",
+      "u/o/e/thumbs/m.webp",
+      "u/o/e/display/m.webp",
     ]);
   });
 

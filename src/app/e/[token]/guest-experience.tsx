@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { GuestGallery } from "@/app/e/[token]/guest-gallery";
 import { Uploader } from "@/app/e/[token]/uploader";
+import type { UploadVariant } from "@/lib/appearance";
 import { markOpened } from "@/lib/client/upload";
 import type { GalleryLayout } from "@/lib/gallery";
 
@@ -13,6 +14,7 @@ export function GuestExperience({
   galleryVisible,
   galleryLayout,
   allowLayoutChoice,
+  uploadVariant,
   allowVideo,
   maxFileBytes,
   remainingBytes,
@@ -22,6 +24,7 @@ export function GuestExperience({
   galleryVisible: boolean;
   galleryLayout: GalleryLayout;
   allowLayoutChoice: boolean;
+  uploadVariant: UploadVariant;
   allowVideo: boolean;
   maxFileBytes: number;
   remainingBytes: number;
@@ -44,6 +47,7 @@ export function GuestExperience({
     <>
       <Uploader
         token={token}
+        variant={uploadVariant}
         allowVideo={allowVideo}
         maxFileBytes={maxFileBytes}
         remainingBytes={remainingBytes}

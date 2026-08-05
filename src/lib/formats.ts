@@ -34,8 +34,8 @@ export const IMAGE_EXT: Record<ImageFormat, string> = {
 };
 
 /**
- * Formats a host can hand to anybody — open it on a ten-year-old Windows
- * laptop, attach it to an email, put it in a print order — and it works.
+ * Formats a host can hand to anybody - open it on a ten-year-old Windows
+ * laptop, attach it to an email, put it in a print order - and it works.
  *
  * HEIC is the one that matters here. iPhones produce it by default, it is
  * roughly half the size of the equivalent JPEG, and Chrome, Firefox and

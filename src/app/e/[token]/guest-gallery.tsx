@@ -14,7 +14,7 @@ import {
 
 /**
  * What everyone else has uploaded. Guests genuinely like seeing the night from
- * other people's phones, which is why this is on by default — but it is the
+ * other people's phones, which is why this is on by default - but it is the
  * host's switch, and when they turn it off the page is upload-only.
  *
  * The host chooses which layout a guest lands on. The guest can then change it
@@ -128,7 +128,7 @@ export function GuestGallery({
           </div>
           <p className="mt-5 text-lead">Nothing here yet.</p>
           <p className="mt-1 text-[0.9375rem] text-crust">
-            Be the first — yours will appear right here.
+            Be the first - yours will appear right here.
           </p>
         </div>
       ) : (

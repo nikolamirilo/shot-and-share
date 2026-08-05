@@ -21,7 +21,7 @@
 
   /* Display: variable width and weight, slightly awkward, physically heavy.
      Body: friendly geometric sans with more character than Inter.
-     Mono: labels the machine-readable parts — tokens, short links, prices per
+     Mono: labels the machine-readable parts - tokens, short links, prices per
      unit. It is not styling; scanning a QR code is a technical act. */
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
@@ -65,14 +65,18 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Weight, width and tracking are variables because they belong to the face,
+     not to the heading: 86% width is right for Bricolage, which has a width
+     axis, and meaningless for a serif that does not. An event page overrides
+     all three together when its host picks a different pairing. */
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    font-weight: 800;
+    font-weight: var(--font-display-weight, 800);
     line-height: 1.02;
-    letter-spacing: -0.035em;
-    font-stretch: 86%;
+    letter-spacing: var(--font-display-tracking, -0.035em);
+    font-stretch: var(--font-display-stretch, 86%);
     text-wrap: balance;
   }
 

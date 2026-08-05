@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Full-resolution originals, one at a time, behind a short-lived signature.
  *
  * Thumbnails are cacheable and public; originals are not. A gallery page never
- * calls this — it resolves only when somebody actually opens a photo, which
+ * calls this - it resolves only when somebody actually opens a photo, which
  * keeps the expensive bytes off the common path.
  */
 export async function GET(request: Request) {

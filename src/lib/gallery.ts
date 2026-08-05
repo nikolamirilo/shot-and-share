@@ -52,7 +52,7 @@ export function coerceLayout(value: unknown): GalleryLayout {
 /**
  * The Holes layout cycles through these diameters rather than randomising, so
  * a photo does not change size when the gallery re-renders or a new upload
- * lands. The sequence is uneven on purpose — evenly varied reads as a mistake.
+ * lands. The sequence is uneven on purpose - evenly varied reads as a mistake.
  */
 export const HOLE_SIZES = [148, 96, 188, 120, 84, 164, 108, 132] as const;
 

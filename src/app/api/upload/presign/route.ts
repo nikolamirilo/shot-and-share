@@ -20,6 +20,7 @@ import {
   displayKey,
   originalKey,
   posterKey,
+  scopeOfEvent,
   thumbKey,
 } from "@/lib/media";
 import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
@@ -79,7 +80,7 @@ type MediaInsert = Database["public"]["Tables"]["media"]["Insert"];
  * Checking afterwards means the bytes are already in the bucket and already
  * billable. It also decides *what gets stored*, which is the whole compression
  * story: on an `optimised` event the browser's re-encoded copy becomes the
- * archival object and the phone never uploads the 4 MB original at all — which
+ * archival object and the phone never uploads the 4 MB original at all - which
  * is a quarter of the storage and, on venue wifi, a quarter of the wait.
  */
 export async function POST(request: Request) {
@@ -102,6 +103,9 @@ export async function POST(request: Request) {
 
     const { event } = await requireGuestEvent(body.token);
     const tier = getTier(event.tier);
+    // Every key this request signs is anchored to the host who owns the event,
+    // never to anything the guest sent.
+    const scope = scopeOfEvent(event);
 
     const prepared = body.files.map((file) => {
       const classified = classify(file.type);
@@ -161,7 +165,7 @@ export async function POST(request: Request) {
 
       /*
        * A separate display copy is kept when the archival object is not a good
-       * thing to serve to two hundred guests — either because it is the full
+       * thing to serve to two hundred guests - either because it is the full
        * uploaded original (heavy), or because it is a format half of them
        * cannot open (HEIC). When the archival object *is* the optimised copy,
        * a second one would be the same file twice.
@@ -177,7 +181,7 @@ export async function POST(request: Request) {
         mime,
         sourceFormat,
         originalSource,
-        archivalKey: originalKey(event.id, mediaId, archivalExt),
+        archivalKey: originalKey(scope, mediaId, archivalExt),
         archivalFormat,
         archivalBytes,
         archivalMime,
@@ -185,7 +189,7 @@ export async function POST(request: Request) {
           keepSeparateDisplay && file.display
             ? {
                 key: displayKey(
-                  event.id,
+                  scope,
                   mediaId,
                   IMAGE_EXT[file.display.format as ImageFormat],
                 ),
@@ -197,7 +201,7 @@ export async function POST(request: Request) {
         thumb: file.thumb
           ? {
               key: thumbKey(
-                event.id,
+                scope,
                 mediaId,
                 IMAGE_EXT[file.thumb.format as ImageFormat],
               ),
@@ -209,7 +213,7 @@ export async function POST(request: Request) {
         poster: file.poster
           ? {
               key: posterKey(
-                event.id,
+                scope,
                 mediaId,
                 IMAGE_EXT[file.poster.format as ImageFormat],
               ),
