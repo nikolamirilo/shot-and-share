@@ -86,9 +86,10 @@ export const localDriver: StorageDriver = {
   },
 
   publicUrl(key) {
-    // No CDN in development. Thumbnails are served by the app, which is fine
-    // at development volumes and would not be in production.
-    return `${env.siteUrl.replace(/\/$/, "")}/api/media/${key}`;
+    // Relative, like the S3 driver's fallback: same-origin means next/image
+    // needs no remotePatterns entry, and it keeps development and production
+    // rendering the identical markup.
+    return `/api/media/${key}`;
   },
 
   async put({ key, body }) {

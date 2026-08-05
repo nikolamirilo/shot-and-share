@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -323,9 +324,14 @@ export function AppearanceForm({
                       )}
                     >
                       {item.previewUrl && (
-                        <img
+                        // A 64px swatch off a 2560px photo. Without the resize
+                        // this picker pulls the whole gallery at full size.
+                        <Image
                           src={item.previewUrl}
                           alt=""
+                          width={128}
+                          height={128}
+                          sizes="128px"
                           className="h-full w-full object-cover"
                         />
                       )}

@@ -102,8 +102,17 @@ export const s3Driver: StorageDriver = {
     );
   },
 
+  /**
+   * A CDN in front of the bucket when one is configured, and the app's own
+   * media route when it is not.
+   *
+   * Never null, and that is the point: the caller's fallback is a signed URL
+   * that expires in an hour, which is correct for a download and useless as the
+   * input to an image optimiser - the URL changes, so every page load
+   * re-transcodes the same photo. Both branches here are stable and cacheable.
+   */
   publicUrl(key) {
-    if (!env.mediaBaseUrl) return null;
+    if (!env.mediaBaseUrl) return `/api/media/${key}`;
     return `${env.mediaBaseUrl.replace(/\/$/, "")}/${key}`;
   },
 
