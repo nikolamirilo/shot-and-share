@@ -79,7 +79,7 @@ export function HostGallery({
 
   if (media.length === 0) {
     return (
-      <div className="card p-8 text-center">
+      <div className="card px-5 py-8 text-center sm:p-8">
         <div className="mx-auto flex w-fit gap-2">
           <Hole size={18} />
           <Hole size={26} />
@@ -101,8 +101,8 @@ export function HostGallery({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <p className="text-[0.9375rem] text-crust">
             {selected.size === 0
               ? "Tap a photo to select it."
@@ -139,7 +139,18 @@ export function HostGallery({
           )}
         </div>
 
-        <LayoutSwitcher value={layout} onChange={chooseLayout} label="View" />
+        {/* Four layout names plus a label do not fit beside the selection
+            controls on a phone, so they take their own row and scroll if even
+            that is not enough. */}
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 lg:overflow-visible">
+          <div className="flex min-w-max lg:justify-end">
+            <LayoutSwitcher
+              value={layout}
+              onChange={chooseLayout}
+              label="View"
+            />
+          </div>
+        </div>
       </div>
 
       <PhotoGallery

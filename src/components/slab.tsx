@@ -203,8 +203,17 @@ export function Slab({ qrHref }: { qrHref?: string }) {
 
         {/* The QR code is the actual product. A visitor should see the thing
             they are going to print before they read a word about it. */}
+        {/* Held well clear of the right edge until the hero splits into two
+            columns and there is page margin to spend.
+
+            Six degrees of rotation and 60px of translateZ under a perspective
+            put the card's painted corner about thirty pixels outside its own
+            layout box. At `right-0` that lands past the viewport on every
+            phone and tablet, and the code - the one element on the page whose
+            job is to show people what they are going to print - was sliced in
+            half by the screen edge. */}
         <div
-          className="absolute -bottom-2 right-0 w-[38%] max-w-[190px] rotate-[6deg] rounded-2xl border-2 border-pepper bg-cream p-3 shadow-[7px_7px_0_var(--color-pepper)] sm:-bottom-4 sm:right-2"
+          className="absolute -bottom-2 right-6 w-[44%] max-w-[190px] rotate-[6deg] rounded-2xl border-2 border-pepper bg-cream p-2.5 shadow-[7px_7px_0_var(--color-pepper)] sm:-bottom-4 sm:right-10 sm:w-[38%] sm:p-3 lg:right-4"
           style={{ transform: "rotate(6deg) translateZ(60px)" }}
         >
           <QrGlyph />

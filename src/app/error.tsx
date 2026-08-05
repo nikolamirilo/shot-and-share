@@ -16,23 +16,25 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-butter px-5 text-center">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-butter px-5 py-16 text-center">
       <div className="flex items-end gap-3">
         <Hole size={16} />
         <Hole size={30} />
         <Hole size={22} />
       </div>
 
-      <h1 className="mt-9 text-h1">That did not work.</h1>
+      <h1 className="mt-9 text-[2.25rem] sm:text-h1">That did not work.</h1>
       <p className="mt-3 max-w-md text-body text-crust">
         Something broke on our side. Nothing you have uploaded is affected -
         photos are stored the moment they arrive, not when the page finishes
         loading.
       </p>
 
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Button onClick={reset}>Try again</Button>
-        <ButtonLink href="/" variant="secondary">
+      <div className="mt-8 flex w-full max-w-xs flex-col justify-center gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:flex-wrap">
+        <Button onClick={reset} className="w-full sm:w-auto">
+          Try again
+        </Button>
+        <ButtonLink href="/" variant="secondary" className="w-full sm:w-auto">
           Back to the start
         </ButtonLink>
       </div>

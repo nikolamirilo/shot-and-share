@@ -188,20 +188,31 @@ export function LogoMark({
   );
 }
 
+/**
+ * The mark plus the name.
+ *
+ * On a narrow phone the name is the first thing to go. A header is a row of
+ * competing claims on about 300 usable pixels, and losing four hundredths of
+ * the brand costs less than pushing "New event" into wrapping onto two lines -
+ * the mark on its own is still unmistakably this product. Pass
+ * `labelClassName="hidden xs:inline"` anywhere that row is tight.
+ */
 export function Wordmark({
   variant = "primary",
   className = "",
-  markClassName = "h-9 w-auto",
+  markClassName = "h-8 w-auto sm:h-9",
+  labelClassName = "",
 }: {
   variant?: Variant;
   className?: string;
   markClassName?: string;
+  labelClassName?: string;
 }) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+    <span className={`inline-flex items-center gap-2 sm:gap-2.5 ${className}`}>
       <LogoMark variant={variant} className={markClassName} />
       <span
-        className="font-display text-[1.35rem] font-extrabold tracking-[-0.04em]"
+        className={`font-display text-[1.2rem] font-extrabold tracking-[-0.04em] sm:text-[1.35rem] ${labelClassName}`}
         style={{ fontStretch: "86%" }}
       >
         Say Cheese

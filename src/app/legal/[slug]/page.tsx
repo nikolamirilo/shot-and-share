@@ -99,12 +99,12 @@ export default async function LegalPage({
     <>
       <SiteHeader />
       <main className="bg-butter">
-        <div className="mx-auto max-w-2xl px-5 py-16">
+        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-5 sm:py-16">
           <Eyebrow>Legal</Eyebrow>
-          <h1 className="mt-3 text-h1">{page.title}</h1>
+          <h1 className="mt-3 text-[2.25rem] sm:text-h1">{page.title}</h1>
           <p className="mt-4 text-body text-crust">{page.intro}</p>
 
-          <div className="mt-10 space-y-8">
+          <div className="mt-8 space-y-7 sm:mt-10 sm:space-y-8">
             {page.sections.map(([heading, body]) => (
               <section key={heading}>
                 <h2 className="text-h3">{heading}</h2>

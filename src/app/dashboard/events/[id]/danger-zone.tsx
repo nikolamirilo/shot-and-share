@@ -37,7 +37,7 @@ export function DangerZone({ event }: { event: EventRow }) {
   }
 
   return (
-    <section className="rounded-[1.25rem] border-2 border-dashed border-rind bg-cream/70 p-6">
+    <section className="rounded-[1.25rem] border-2 border-dashed border-rind bg-cream/70 p-5 sm:p-6">
       <h2 className="text-h3">Ending things</h2>
 
       {event.status === "expired" && (
@@ -53,7 +53,7 @@ export function DangerZone({ event }: { event: EventRow }) {
             onClick={restore}
             size="sm"
             disabled={pending}
-            className="mt-3"
+            className="mt-3 w-full sm:w-auto"
           >
             {pending ? "Restoring…" : "Restore this event"}
           </Button>
@@ -66,19 +66,22 @@ export function DangerZone({ event }: { event: EventRow }) {
         it directly. Type the event name to confirm.
       </p>
 
+      {/* 17px rather than 15: Safari zooms the page in on a focused field
+          under 16px, and this is the one field where what you typed has to be
+          readable while you type it. */}
       <input
         value={confirmText}
         onChange={(e) => setConfirmText(e.target.value)}
         placeholder={event.name}
         aria-label={`Type "${event.name}" to confirm deletion`}
-        className="mt-4 w-full rounded-xl border-2 border-pepper bg-butter px-3.5 py-2.5 font-mono text-[0.9375rem]"
+        className="mt-4 min-h-11 w-full rounded-xl border-2 border-pepper bg-butter px-3.5 py-2.5 font-mono text-body"
       />
 
       <Button
         onClick={remove}
         variant="secondary"
         disabled={pending || confirmText.trim() !== event.name}
-        className="mt-3"
+        className="mt-3 w-full sm:w-auto"
       >
         {pending ? "Deleting…" : "Delete this event and everything in it"}
       </Button>

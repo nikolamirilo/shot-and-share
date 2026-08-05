@@ -48,7 +48,7 @@ export function PricingTable({
 }) {
   return (
     <div>
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-4 sm:gap-5 md:grid-cols-3">
         {TIER_ORDER.map((id) => {
           const tier = TIERS[id];
           const highlighted = id === "event";
@@ -57,7 +57,7 @@ export function PricingTable({
             <article
               key={id}
               className={cx(
-                "flex flex-col rounded-[1.25rem] border-2 border-pepper p-6",
+                "flex flex-col rounded-[1.25rem] border-2 border-pepper p-5 sm:p-6",
                 highlighted
                   ? "bg-gouda shadow-[7px_7px_0_var(--color-pepper)] md:-mt-3 md:mb-3"
                   : "bg-cream",
@@ -104,9 +104,9 @@ export function PricingTable({
         })}
       </div>
 
-      <div className="mt-5 rounded-[1.25rem] border-2 border-dashed border-rind bg-cream/70 p-6 sm:flex sm:items-center sm:justify-between sm:gap-8">
+      <div className="mt-4 rounded-[1.25rem] border-2 border-dashed border-rind bg-cream/70 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
         <div>
-          <div className="flex items-baseline gap-3">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h3 className="text-h3">{KEEP_FOREVER.name}</h3>
             <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
               add-on
@@ -118,7 +118,7 @@ export function PricingTable({
           </p>
         </div>
         <p
-          className="mt-4 font-display text-[2.75rem] font-extrabold leading-none tracking-[-0.045em] sm:mt-0"
+          className="mt-4 font-display text-[2.25rem] font-extrabold leading-none tracking-[-0.045em] sm:mt-0 sm:text-[2.75rem]"
           style={{ fontStretch: "86%" }}
         >
           €{KEEP_FOREVER.priceEur}

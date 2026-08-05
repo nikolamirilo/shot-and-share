@@ -21,18 +21,18 @@ export default async function PricingPage() {
 
       <main>
         <section className="border-b-2 border-pepper bg-butter">
-          <div className="mx-auto max-w-6xl px-5 py-14 lg:py-20">
+          <div className="mx-auto max-w-6xl px-4 py-11 sm:px-5 sm:py-14 lg:py-20">
             <Eyebrow>Pricing</Eyebrow>
-            <h1 className="mt-3 max-w-3xl text-h1 sm:text-[4rem]">
+            <h1 className="mt-3 max-w-3xl text-[2.375rem] xs:text-[2.75rem] sm:text-[4rem]">
               One payment, per event. Then nothing.
             </h1>
-            <p className="mt-5 max-w-2xl text-lead text-crust">
+            <p className="mt-5 max-w-2xl text-body text-crust sm:text-lead">
               People plan one wedding, not twelve. Asking someone to remember to
               cancel a subscription afterwards is a bad experience and we are not
               going to build one.
             </p>
 
-            <div className="mt-12">
+            <div className="mt-9 sm:mt-12">
               <PricingTable
                 ctaHref={user ? "/dashboard/events/new" : "/login"}
               />
@@ -49,16 +49,18 @@ export default async function PricingPage() {
         <Detail />
 
         <section className="bg-gouda">
-          <div className="mx-auto max-w-3xl px-5 py-20 text-center">
-            <h2 className="text-h1">Try it before you pay for it.</h2>
-            <p className="mx-auto mt-4 max-w-xl text-lead text-crust">
+          <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5 sm:py-20">
+            <h2 className="text-[2.25rem] sm:text-h1">
+              Try it before you pay for it.
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-body text-crust sm:text-lead">
               The free plan is a working product, not a demo. Clean QR code, bulk
               download, unlimited guests. Upgrade when you know it works.
             </p>
             <ButtonLink
               href={user ? "/dashboard/events/new" : "/login"}
               size="lg"
-              className="mt-8"
+              className="mt-8 w-full sm:w-auto"
             >
               Create an event
             </ButtonLink>
@@ -87,9 +89,9 @@ function Comparison() {
 
   return (
     <section className="border-b-2 border-pepper bg-pepper text-butter">
-      <div className="mx-auto max-w-4xl px-5 py-16">
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
         <Eyebrow className="text-gouda">Side by side</Eyebrow>
-        <h2 className="mt-3 text-h1">
+        <h2 className="mt-3 text-[2.25rem] sm:text-h1">
           Slightly cheaper. Dramatically more generous.
         </h2>
         <p className="mt-4 max-w-xl text-[0.9375rem] text-butter/70">
@@ -97,7 +99,10 @@ function Comparison() {
           their published prices.
         </p>
 
-        <div className="mt-9 overflow-x-auto">
+        {/* The table is wider than a phone and always will be - three columns
+            of prose. It scrolls edge to edge rather than inside a boxed-in
+            window, so the cut-off row is visibly cut off. */}
+        <div className="-mx-4 mt-8 overflow-x-auto px-4 sm:mx-0 sm:mt-9 sm:px-0">
           <table className="w-full min-w-[520px] border-collapse text-left">
             <thead>
               <tr className="border-b-2 border-butter/25">
@@ -154,13 +159,13 @@ function Detail() {
 
   return (
     <section className="border-b-2 border-pepper bg-butter">
-      <div className="mx-auto max-w-4xl px-5 py-16">
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
         <div className="flex flex-wrap items-center gap-3">
           <Eyebrow>The reasoning</Eyebrow>
           <Badge tone="outline">No subscription anywhere</Badge>
         </div>
 
-        <div className="mt-9 grid gap-x-10 gap-y-8 sm:grid-cols-2">
+        <div className="mt-8 grid gap-x-10 gap-y-8 sm:mt-9 sm:grid-cols-2">
           {points.map(([title, body]) => (
             <div key={title}>
               <h3 className="text-[1.3rem] font-extrabold tracking-[-0.03em]">

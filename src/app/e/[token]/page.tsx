@@ -104,7 +104,7 @@ export default async function GuestPage({
         <PlatformHeader />
       ) : (
         <header className="border-b-2 border-pepper">
-          <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-5 py-3">
+          <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-4 py-3 sm:px-5">
             <LogoMark className="h-7 w-auto" />
           </div>
         </header>
@@ -119,7 +119,7 @@ export default async function GuestPage({
         palette={appearance.palette}
       />
 
-      <main className="mx-auto max-w-3xl px-5 pb-20 pt-8">
+      <main className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-5 sm:pb-20 sm:pt-8">
         <GuestExperience
           token={token}
           eventId={event.id}
@@ -134,7 +134,7 @@ export default async function GuestPage({
       </main>
 
       <div className="border-t-2 border-pepper">
-        <p className="mx-auto max-w-3xl px-5 py-6 text-[0.8125rem] leading-relaxed text-rind">
+        <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-rind sm:px-5">
           Photos you add here go to the host of this event. Uploaded something by
           mistake? Tap it in the gallery above to remove it, within the hour.
         </p>
@@ -147,13 +147,13 @@ export default async function GuestPage({
 
 function ClosedPage({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-butter px-5 text-center">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-butter px-5 py-16 text-center">
       <div className="flex gap-3">
         <Hole size={22} />
         <Hole size={34} />
         <Hole size={16} />
       </div>
-      <h1 className="mt-8 max-w-lg text-h1">{title}</h1>
+      <h1 className="mt-8 max-w-lg text-[2.25rem] sm:text-h1">{title}</h1>
       <p className="mt-4 max-w-md text-body text-crust">{body}</p>
       <Link
         href="/"

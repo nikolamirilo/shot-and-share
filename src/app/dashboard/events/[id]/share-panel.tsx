@@ -57,7 +57,7 @@ export function SharePanel({
   }
 
   return (
-    <section className="card p-6">
+    <section className="card p-5 sm:p-6">
       <h2 className="text-h3">Share it</h2>
 
       {revoked ? (
@@ -66,16 +66,21 @@ export function SharePanel({
             There is no active link for this event. Guests who scan an old code
             see a page telling them the link has closed.
           </p>
-          <Button onClick={rotate} disabled={pending} className="mt-5 w-full">
+          <Button onClick={rotate} disabled={pending} className="mt-5 w-full sm:w-auto">
             {pending ? "Issuing…" : "Issue a new link"}
           </Button>
         </>
       ) : (
         <>
-          <div className="mt-5 grid gap-5 sm:grid-cols-[150px_1fr] sm:items-start">
+          <div className="mt-5 grid gap-4 sm:grid-cols-[150px_1fr] sm:items-start sm:gap-5">
             {/* Same SVG the printable card embeds, so what is on screen is
-                exactly what comes out of the printer. */}
-            <div className="rounded-xl border-2 border-pepper bg-cream p-2">
+                exactly what comes out of the printer.
+
+                Capped and centred on a phone. Stretched across the full width
+                of a stacked column it is a 340px square that pushes the link
+                and both buttons below the fold, and nobody scans a code off
+                the screen it was generated on. */}
+            <div className="mx-auto w-full max-w-[168px] rounded-xl border-2 border-pepper bg-cream p-2 sm:mx-0 sm:max-w-none">
               <img
                 src={`/api/events/${eventId}/qr?format=code`}
                 alt="QR code for this event"
@@ -93,7 +98,7 @@ export function SharePanel({
                 {link}
               </p>
 
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 xs:flex xs:flex-wrap">
                 <Button onClick={copy} size="sm">
                   {copied ? "Copied" : "Copy link"}
                 </Button>
@@ -116,7 +121,7 @@ export function SharePanel({
             to add more.
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-3 border-t-2 border-pepper/12 pt-5">
+          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t-2 border-pepper/12 pt-5">
             <Button
               onClick={rotate}
               variant="secondary"

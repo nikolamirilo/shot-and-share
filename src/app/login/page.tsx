@@ -26,10 +26,14 @@ export default async function LoginPage({
     <>
       <SiteHeader />
       <main className="bg-butter">
-        <div className="mx-auto grid max-w-5xl items-center gap-12 px-5 py-16 lg:grid-cols-2 lg:py-24">
-          <div>
+        {/* `min-w-0` on both columns: a grid track sizes to its content's
+            minimum, and an environment variable name with no spaces in it is
+            wider than a small phone. Without this the whole page scrolls
+            sideways to accommodate one word. */}
+        <div className="mx-auto grid max-w-5xl items-center gap-9 px-4 py-11 sm:gap-12 sm:px-5 sm:py-16 lg:grid-cols-2 lg:py-24">
+          <div className="min-w-0">
             <Eyebrow>Hosts only</Eyebrow>
-            <h1 className="mt-3 text-h1">
+            <h1 className="mt-3 text-[2.25rem] sm:text-h1">
               Sign in once. Your guests never have to.
             </h1>
             <p className="mt-4 max-w-md text-body text-crust">
@@ -37,7 +41,7 @@ export default async function LoginPage({
               upload - no sign-in, no app, nothing to remember.
             </p>
 
-            <ul className="mt-8 space-y-3">
+            <ul className="mt-7 space-y-3 sm:mt-8">
               {[
                 "Create an event in under a minute",
                 "Free plan holds about 250 photos",
@@ -51,11 +55,13 @@ export default async function LoginPage({
             </ul>
           </div>
 
-          <LoginPanel
-            next={next}
-            error={loginErrorMessage(error)}
-            configured={hasSupabase}
-          />
+          <div className="min-w-0">
+            <LoginPanel
+              next={next}
+              error={loginErrorMessage(error)}
+              configured={hasSupabase}
+            />
+          </div>
         </div>
       </main>
       <SiteFooter />

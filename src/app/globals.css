@@ -8,6 +8,11 @@
    --------------------------------------------------------------------------- */
 
 @theme {
+  /* One step below Tailwind's `sm`. The header, the split upload buttons and
+     the wordmark all need a decision somewhere between a 320px phone and a
+     tablet, and `sm` at 640px is far too late to make it. */
+  --breakpoint-xs: 30rem; /* 480 */
+
   --color-butter: #fff6dc;
   --color-cream: #fffdf4;
   --color-gouda: #ffc02e;
@@ -54,6 +59,9 @@
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    /* iOS paints its own grey box over anything tappable, which fights the
+       hard-shadow buttons. The interface already answers a tap by lifting. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -63,6 +71,15 @@
     font-size: var(--text-body);
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    /* An event called "Ana-and-Marko-September" or a share link with no spaces
+       in it is wider than a phone. Breaking it is better than a page that
+       scrolls sideways. */
+    overflow-wrap: break-word;
+  }
+
+  /* Anything the page can jump to sits under the sticky header otherwise. */
+  :target {
+    scroll-margin-top: 5.5rem;
   }
 
   /* Weight, width and tracking are variables because they belong to the face,
@@ -133,6 +150,27 @@
     background-color: var(--color-cream);
     border: 2px solid var(--color-pepper);
     border-radius: var(--radius-card);
+  }
+
+  /* The Holes gallery is drawn at fixed diameters, up to 188px, because the
+     uneven sequence is what gives it its rhythm - randomising it makes photos
+     jump when a new upload lands. On a 360px phone that largest hole is half
+     the screen and two of them will not sit side by side, so the sequence is
+     scaled as a whole rather than rewritten per breakpoint. */
+  .hole-wall {
+    --hole-scale: 0.58;
+  }
+
+  @media (min-width: 30rem) {
+    .hole-wall {
+      --hole-scale: 0.76;
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .hole-wall {
+      --hole-scale: 1;
+    }
   }
 }
 

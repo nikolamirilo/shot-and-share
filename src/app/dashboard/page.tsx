@@ -32,9 +32,9 @@ export default async function DashboardPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
       <Eyebrow>Your events</Eyebrow>
-      <h1 className="mt-3 text-h1">
+      <h1 className="mt-3 text-[2.25rem] sm:text-h1">
         {events.length === 0
           ? "Nothing here yet."
           : `${events.length} ${events.length === 1 ? "event" : "events"}`}
@@ -43,7 +43,7 @@ export default async function DashboardPage() {
       {events.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-7 grid gap-4 sm:mt-9 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {events.map((event, i) => (
             <EventCard key={event.id} event={event} photoCount={counts[i]} />
           ))}
@@ -61,7 +61,11 @@ function EmptyState() {
         Make an event, print the code, and send the link to one friend. Watch a
         photo arrive before you decide anything else.
       </p>
-      <ButtonLink href="/dashboard/events/new" size="lg" className="mt-7">
+      <ButtonLink
+        href="/dashboard/events/new"
+        size="lg"
+        className="mt-7 w-full sm:w-auto"
+      >
         Create an event
       </ButtonLink>
     </div>
@@ -79,49 +83,56 @@ function EventCard({
   const expired = event.status === "expired";
 
   return (
-    <li className="card flex flex-col p-5 transition-transform hover:-translate-y-0.5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href={`/dashboard/events/${event.id}`}
-            className="block truncate text-[1.3rem] font-extrabold tracking-[-0.03em] hover:underline"
-          >
-            {event.name}
-          </Link>
-          <p className="mt-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-            {formatEventDate(event.event_date)}
+    /**
+     * The whole card is the link, not the event's name inside it. There is
+     * nothing else interactive in here, and on a phone a 20px line of text is
+     * a target you have to aim at - the card is one you cannot miss.
+     */
+    <li>
+      <Link
+        href={`/dashboard/events/${event.id}`}
+        className="card flex h-full flex-col p-5 transition-transform hover:-translate-y-0.5"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="block truncate text-[1.3rem] font-extrabold tracking-[-0.03em]">
+              {event.name}
+            </span>
+            <span className="mt-0.5 block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+              {formatEventDate(event.event_date)}
+            </span>
+          </div>
+          <Badge tone={expired ? "outline" : "gouda"}>
+            {expired ? "Paused" : summary.tier.name}
+          </Badge>
+        </div>
+
+        <div className="mt-5 flex items-center gap-2.5">
+          <Hole size={11} />
+          <span className="text-[0.9375rem]">
+            {photoCount === 0
+              ? "No photos yet"
+              : `${photoCount.toLocaleString("en-GB")} ${photoCount === 1 ? "photo" : "photos"}`}
+          </span>
+        </div>
+
+        <div className="mt-4">
+          <ProgressBar
+            percent={summary.percent}
+            tone={summary.percent >= 85 ? "warn" : "dark"}
+          />
+          <p className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[0.8125rem] text-crust">
+            <span>
+              {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
+            </span>
+            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-rind">
+              {event.keep_forever
+                ? "Kept forever"
+                : describeRetention(event.expires_at)}
+            </span>
           </p>
         </div>
-        <Badge tone={expired ? "outline" : "gouda"}>
-          {expired ? "Paused" : summary.tier.name}
-        </Badge>
-      </div>
-
-      <div className="mt-5 flex items-center gap-2.5">
-        <Hole size={11} />
-        <span className="text-[0.9375rem]">
-          {photoCount === 0
-            ? "No photos yet"
-            : `${photoCount.toLocaleString("en-GB")} ${photoCount === 1 ? "photo" : "photos"}`}
-        </span>
-      </div>
-
-      <div className="mt-4">
-        <ProgressBar
-          percent={summary.percent}
-          tone={summary.percent >= 85 ? "warn" : "dark"}
-        />
-        <p className="mt-2 flex items-baseline justify-between gap-2 text-[0.8125rem] text-crust">
-          <span>
-            {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
-          </span>
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-rind">
-            {event.keep_forever
-              ? "Kept forever"
-              : describeRetention(event.expires_at)}
-          </span>
-        </p>
-      </div>
+      </Link>
     </li>
   );
 }

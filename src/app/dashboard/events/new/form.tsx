@@ -17,7 +17,7 @@ export function NewEventForm() {
   );
 
   return (
-    <form action={formAction} className="card space-y-5 p-6">
+    <form action={formAction} className="card space-y-5 p-5 sm:p-6">
       <Field
         label="Event name"
         htmlFor="name"

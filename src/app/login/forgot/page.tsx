@@ -12,9 +12,9 @@ export default function ForgotPage() {
     <>
       <SiteHeader />
       <main className="bg-butter">
-        <div className="mx-auto max-w-md px-5 py-16 lg:py-24">
+        <div className="mx-auto max-w-md px-4 py-11 sm:px-5 sm:py-16 lg:py-24">
           <Eyebrow>Hosts only</Eyebrow>
-          <h1 className="mt-3 text-h1">Reset your password</h1>
+          <h1 className="mt-3 text-[2.25rem] sm:text-h1">Reset your password</h1>
           <p className="mt-4 text-body text-crust">
             Type the address you signed up with and we will send a link.
           </p>

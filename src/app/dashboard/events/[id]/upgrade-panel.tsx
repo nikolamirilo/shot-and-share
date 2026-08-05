@@ -61,7 +61,7 @@ export function UpgradePanel({
 
   if (options.length === 0) {
     return (
-      <section className="card p-6">
+      <section className="card p-5 sm:p-6">
         <h2 className="text-h3">Nothing left to buy</h2>
         <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
           This event is on {TIERS.wedding.name} with {KEEP_FOREVER.name} added.
@@ -73,7 +73,7 @@ export function UpgradePanel({
   }
 
   return (
-    <section className="card p-6">
+    <section className="card p-5 sm:p-6">
       <h2 className="text-h3">More room, or more time</h2>
       <p className="mt-2 text-[0.9375rem] text-crust">
         One payment per event. Upgrading during the night works fine - the limit
@@ -86,11 +86,13 @@ export function UpgradePanel({
             key={option.product}
             className="rounded-xl border-2 border-pepper bg-butter p-4"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <Hole size={10} />
-                  <h3 className="text-[1.0625rem] font-bold">{option.title}</h3>
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <div className="min-w-0">
+                <div className="flex items-start gap-2.5">
+                  <Hole size={10} className="mt-2" />
+                  <h3 className="text-[1.0625rem] font-bold leading-snug">
+                    {option.title}
+                  </h3>
                 </div>
                 <p className="mt-1.5 text-[0.9375rem] leading-snug text-crust">
                   {option.body}

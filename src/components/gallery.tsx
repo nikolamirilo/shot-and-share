@@ -34,19 +34,29 @@ export function PhotoGallery({
 }) {
   if (layout === "holes") {
     return (
-      <ul className={cx("flex flex-wrap items-center gap-3", className)}>
-        {items.map((item, index) => (
-          <li key={item.id}>
-            <Tile
-              item={item}
-              onActivate={onActivate}
-              selected={isSelected?.(item) ?? false}
-              selectable={Boolean(isSelected)}
-              shape="hole"
-              style={{ width: holeSize(index), height: holeSize(index) }}
-            />
-          </li>
-        ))}
+      <ul
+        className={cx(
+          "hole-wall flex flex-wrap items-center gap-2.5 sm:gap-3",
+          className,
+        )}
+      >
+        {items.map((item, index) => {
+          // `--hole-scale` comes from .hole-wall and shrinks the whole
+          // sequence on a phone, keeping the rhythm between sizes intact.
+          const size = `calc(${holeSize(index)}px * var(--hole-scale, 1))`;
+          return (
+            <li key={item.id}>
+              <Tile
+                item={item}
+                onActivate={onActivate}
+                selected={isSelected?.(item) ?? false}
+                selectable={Boolean(isSelected)}
+                shape="hole"
+                style={{ width: size, height: size }}
+              />
+            </li>
+          );
+        })}
       </ul>
     );
   }
@@ -61,7 +71,7 @@ export function PhotoGallery({
        */
       <ul
         className={cx(
-          "columns-2 gap-2.5 sm:columns-3 lg:columns-4 [&>li]:mb-2.5",
+          "columns-2 gap-2 sm:columns-3 sm:gap-2.5 lg:columns-4 [&>li]:mb-2 sm:[&>li]:mb-2.5",
           className,
         )}
       >
@@ -118,7 +128,7 @@ export function PhotoGallery({
   return (
     <ul
       className={cx(
-        "grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6",
+        "grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:grid-cols-6",
         className,
       )}
     >
@@ -222,7 +232,7 @@ export function LayoutSwitcher({
   label?: string;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
         {label}
       </span>
@@ -240,7 +250,7 @@ export function LayoutSwitcher({
             title={option.hint}
             onClick={() => onChange(option.id)}
             className={cx(
-              "px-3 py-1 text-[0.8125rem] font-semibold transition-colors",
+              "min-h-9 px-3 py-1.5 text-[0.8125rem] font-semibold leading-tight transition-colors",
               value === option.id
                 ? "bg-pepper text-butter"
                 : "bg-cream text-pepper hover:bg-gouda-light",
@@ -276,14 +286,14 @@ export function LayoutChooser({
         {GALLERY_LAYOUTS.map((option) => (
           <label
             key={option.id}
-            className="flex cursor-pointer items-start gap-2.5 rounded-xl border-2 border-pepper bg-butter p-3 has-[:checked]:bg-gouda"
+            className="flex cursor-pointer items-start gap-2.5 rounded-xl border-2 border-pepper bg-butter p-3.5 has-[:checked]:bg-gouda"
           >
             <input
               type="radio"
               name={name}
               value={option.id}
               defaultChecked={option.id === defaultValue}
-              className="mt-1 h-4 w-4 shrink-0 accent-[#1F1607]"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[#1F1607]"
             />
             <span>
               <span className="block font-bold">{option.name}</span>
