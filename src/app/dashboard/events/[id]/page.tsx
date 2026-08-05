@@ -9,6 +9,7 @@ import { HostGallery } from "@/app/dashboard/events/[id]/host-gallery";
 import { SettingsForm } from "@/app/dashboard/events/[id]/settings-form";
 import { SharePanel } from "@/app/dashboard/events/[id]/share-panel";
 import { UpgradePanel } from "@/app/dashboard/events/[id]/upgrade-panel";
+import { TabPanel, Tabs, type TabItem } from "@/components/tabs";
 import { Badge, ButtonLink, Eyebrow, Hole, ProgressBar } from "@/components/ui";
 import type { EventRow, MediaRow } from "@/lib/db/types";
 import { env } from "@/lib/env";
@@ -25,6 +26,23 @@ import { getTier } from "@/lib/tiers";
 import { shareUrl } from "@/lib/tokens";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * The console, in the order a host meets it: get the code onto a table, buy
+ * more room if the night needs it, look at what arrived, dress the page up,
+ * then the settings and the ending.
+ *
+ * Each id is the id of its panel, so `#upgrade` still lands on the plan even
+ * though that panel is now behind a tab on a phone. The strip itself is only
+ * on phones and tablets - see `Tabs`.
+ */
+const TABS: TabItem[] = [
+  { id: "share", label: "Share" },
+  { id: "upgrade", label: "Plan" },
+  { id: "photos", label: "Photos" },
+  { id: "page", label: "Event page" },
+  { id: "settings", label: "Settings" },
+];
 
 export async function generateMetadata({
   params,
@@ -120,139 +138,168 @@ export default async function EventPage({
         </div>
       </header>
 
+      {/* Both notices used to say "below", which was true when the page was
+          one column of everything. A phone now shows one tab at a time, so
+          they name the tab instead. */}
       {purchase && (
         <Notice>
-          Payment received. If the plan below still looks the same, give the
-          provider a few seconds - the upgrade lands when their webhook does,
-          not when your browser comes back.
+          Payment received. If the plan still looks the same, give the provider
+          a few seconds - the upgrade lands when their webhook does, not when
+          your browser comes back.
         </Notice>
       )}
 
       {event.status === "expired" && (
         <Notice>
           The storage window for this event has ended.{" "}
-          <strong>Nothing has been deleted.</strong> Restore it below, or add The
-          Cellar to keep the photos permanently.
+          <strong>Nothing has been deleted.</strong> Restore it under Settings,
+          or add The Cellar to keep the photos permanently.
         </Notice>
       )}
 
-      <div className="mt-7 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <SharePanel
-          eventId={event.id}
-          link={link}
-          brandedQr={tier.brandedQr}
-          revoked={!active}
-        />
+      <Tabs
+        items={TABS}
+        label="Event sections"
+        sticky
+        className="mt-6 sm:mt-7"
+        tablistClassName="-mx-4 px-4 sm:-mx-5 sm:px-5"
+      >
+        <TabPanel
+          id="share"
+          display="grid"
+          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1.1fr_1fr]"
+        >
+          <SharePanel
+            eventId={event.id}
+            link={link}
+            brandedQr={tier.brandedQr}
+            revoked={!active}
+          />
 
-        <section className="card p-5 sm:p-6">
-          <h2 className="text-h3">How it is going</h2>
+          <section className="card p-5 sm:p-6">
+            <h2 className="text-h3">How it is going</h2>
 
-          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
-            <Stat label="Photos" value={total.toLocaleString("en-GB")} />
-            <Stat
-              label="People who uploaded"
-              value={Number(counts.uploader_count).toLocaleString("en-GB")}
-            />
-            <Stat
-              label="Link opened"
-              value={pluralise(event.link_opens, "time")}
-            />
-            <Stat
-              label="Opened then uploaded"
-              value={conversion === null ? "-" : `${conversion}%`}
-              hint={
-                conversion === null
-                  ? "No opens yet"
-                  : conversion < 40
-                    ? "Low. Check the code is easy to reach."
-                    : "Healthy"
-              }
-            />
-          </dl>
-
-          <div className="mt-7">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-              <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-                Storage
-              </span>
-              <span className="text-[0.8125rem] text-crust">
-                {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
-              </span>
-            </div>
-            <div className="mt-2">
-              <ProgressBar
-                percent={summary.percent}
-                tone={summary.percent >= 85 ? "warn" : "dark"}
+            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
+              <Stat label="Photos" value={total.toLocaleString("en-GB")} />
+              <Stat
+                label="People who uploaded"
+                value={Number(counts.uploader_count).toLocaleString("en-GB")}
               />
+              <Stat
+                label="Link opened"
+                value={pluralise(event.link_opens, "time")}
+              />
+              <Stat
+                label="Opened then uploaded"
+                value={conversion === null ? "-" : `${conversion}%`}
+                hint={
+                  conversion === null
+                    ? "No opens yet"
+                    : conversion < 40
+                      ? "Low. Check the code is easy to reach."
+                      : "Healthy"
+                }
+              />
+            </dl>
+
+            <div className="mt-7">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+                  Storage
+                </span>
+                <span className="text-[0.8125rem] text-crust">
+                  {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
+                </span>
+              </div>
+              <div className="mt-2">
+                <ProgressBar
+                  percent={summary.percent}
+                  tone={summary.percent >= 85 ? "warn" : "dark"}
+                />
+              </div>
+              <p className="mt-2 flex items-start gap-2 text-[0.8125rem] leading-snug text-crust">
+                <Hole size={8} className="mt-1.5" />
+                {event.keep_forever
+                  ? "Kept forever. This event is never deleted."
+                  : describeRetention(event.expires_at)}
+              </p>
             </div>
-            <p className="mt-2 flex items-start gap-2 text-[0.8125rem] leading-snug text-crust">
-              <Hole size={8} className="mt-1.5" />
-              {event.keep_forever
-                ? "Kept forever. This event is never deleted."
-                : describeRetention(event.expires_at)}
-            </p>
-          </div>
 
-          {tier.slideshow && (
-            <ButtonLink
-              href={`/dashboard/events/${event.id}/slideshow`}
-              variant="secondary"
-              className="mt-6 w-full"
-            >
-              Open the live slideshow
-            </ButtonLink>
-          )}
-        </section>
-      </div>
+            {tier.slideshow && (
+              <ButtonLink
+                href={`/dashboard/events/${event.id}/slideshow`}
+                variant="secondary"
+                className="mt-6 w-full"
+              >
+                Open the live slideshow
+              </ButtonLink>
+            )}
+          </section>
+        </TabPanel>
 
-      <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <ArchivePanel eventId={event.id} photoCount={total} />
-        <div id="upgrade">
+        <TabPanel
+          id="upgrade"
+          display="grid"
+          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:mt-6 lg:grid-cols-[1.1fr_1fr]"
+        >
+          <ArchivePanel eventId={event.id} photoCount={total} />
           <UpgradePanel
             eventId={event.id}
             tier={event.tier}
             keepForever={event.keep_forever}
           />
-        </div>
-      </div>
+        </TabPanel>
 
-      <section className="mt-9 sm:mt-10">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <Eyebrow>Gallery</Eyebrow>
-            <h2 className="mt-2 text-[1.625rem] sm:text-h2">
-              {total === 0 ? "Waiting for the first photo" : "Everything so far"}
-            </h2>
+        <TabPanel id="photos" className="mt-5 sm:mt-6 lg:mt-10">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <Eyebrow>Gallery</Eyebrow>
+              <h2 className="mt-2 text-[1.625rem] sm:text-h2">
+                {total === 0
+                  ? "Waiting for the first photo"
+                  : "Everything so far"}
+              </h2>
+            </div>
+            {media.length < total && (
+              <p className="text-[0.8125rem] text-crust">
+                Showing the {media.length} most recent of {total}.
+              </p>
+            )}
           </div>
-          {media.length < total && (
-            <p className="text-[0.8125rem] text-crust">
-              Showing the {media.length} most recent of {total}.
-            </p>
-          )}
+
+          <div className="mt-6">
+            <HostGallery
+              eventId={event.id}
+              media={media}
+              shareLink={link}
+              eventLayout={coerceLayout(event.gallery_layout)}
+            />
+          </div>
+        </TabPanel>
+
+        {/* The last two tabs are the two columns of the same row on a laptop, so
+            the grid lives out here and the panels are its items. It carries no
+            margin of its own: on a phone both children can be closed at once,
+            and a wrapper with a top margin and nothing in it is a gap nobody
+            can explain. */}
+        <div className="lg:mt-10 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+          <TabPanel id="page" className="mt-5 sm:mt-6 lg:mt-0">
+            <AppearanceForm
+              event={event}
+              media={media}
+              locked={!tier.customPage}
+            />
+          </TabPanel>
+
+          <TabPanel
+            id="settings"
+            className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
+          >
+            <SettingsForm event={event} />
+            <DangerZone event={event} />
+          </TabPanel>
         </div>
-
-        <div className="mt-6">
-          <HostGallery
-            eventId={event.id}
-            media={media}
-            shareLink={link}
-            eventLayout={coerceLayout(event.gallery_layout)}
-          />
-        </div>
-      </section>
-
-      <div className="mt-9 grid gap-4 sm:mt-10 sm:gap-6 lg:grid-cols-2">
-        <AppearanceForm
-          event={event}
-          media={media}
-          locked={!tier.customPage}
-        />
-        <SettingsForm event={event} />
-      </div>
-
-      <div className="mt-4 sm:mt-6">
-        <DangerZone event={event} />
-      </div>
+      </Tabs>
     </div>
   );
 }
