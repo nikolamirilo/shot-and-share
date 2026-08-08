@@ -5,10 +5,9 @@ import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { updateAppearance, type ActionState } from "@/app/dashboard/actions";
-import { EventCover, EventThemeRoot } from "@/components/event-cover";
+import { EventPreview } from "@/components/event-preview";
 import { TabPanel, Tabs, type TabItem } from "@/components/tabs";
 import { Badge, Button, ButtonLink, cx } from "@/components/ui";
-import { UploadPanel } from "@/components/upload-panel";
 import {
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
@@ -30,16 +29,18 @@ import { getTier } from "@/lib/tiers";
 /**
  * The custom event page editor.
  *
- * Everything is previewed live against the host's own cover photo, because the
- * only useful answer to "what does Midnight look like?" is to show it. The
- * preview renders the real EventCover and the real UploadPanel inside a real
- * EventThemeRoot, so what a host approves here is what a guest gets.
+ * Every choice is judged against a drawing of the whole guest page - browser
+ * frame, header, cover, ask, gallery, small print - because the only useful
+ * answer to "what does Midnight look like?" is a page, and a swatch of a page
+ * cannot give it. See EventPreview: it is the real components inside the real
+ * EventThemeRoot, with the photographs left as empty frames.
  *
  * That is a rule rather than a detail. The parts of this preview that were once
  * drawn by hand - a dark bar standing in for the uploader, four dark tiles
- * standing in for photos - were exactly the parts that stopped agreeing with
+ * standing in for a gallery - were exactly the parts that stopped agreeing with
  * the page: a hand-drawn panel has no card surface on it, so the "Cards" colour
- * had nothing to colour.
+ * had nothing to colour, and four identical squares said the same thing about
+ * all four gallery layouts.
  *
  * Six groups of options stacked under that preview is the longest scroll in the
  * product, and on a phone it put the gallery layout about four screens below
@@ -60,11 +61,14 @@ export function AppearanceForm({
   event,
   media,
   locked,
+  shareLink,
 }: {
   event: EventRow;
   media: MediaView[];
   /** Free plan: the whole thing is an upsell rather than a form. */
   locked: boolean;
+  /** Drawn into the preview's address bar. */
+  shareLink?: string | null;
 }) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     updateAppearance.bind(null, event.id),
@@ -98,13 +102,10 @@ export function AppearanceForm({
 
   const font = findFontSet(fontId);
 
-  const coverUrl =
-    media.find((m) => m.id === coverMediaId)?.previewUrl ?? null;
-
   // A photo cover with no photo falls back to "Just type" on the guest page, so
   // the host is told rather than left to discover it after the invitations go
   // out. The preview above still shows the shape they picked.
-  const coverNeedsPhoto = cover !== "type" && !coverUrl;
+  const coverNeedsPhoto = cover !== "type" && coverMediaId === null;
 
   if (locked) return <LockedPanel eventId={event.id} />;
 
@@ -127,8 +128,9 @@ export function AppearanceForm({
 
       <h2 className="text-h3">The event page</h2>
       <p className="mt-2 text-[0.9375rem] text-crust">
-        What guests see when they scan the code. Everything here is previewed
-        with your own photo.
+        A drawing of what guests see when they scan the code. The photographs
+        are left as empty frames, so what you are judging is the page rather
+        than the pictures.
       </p>
 
       {/* --- live preview -------------------------------------------------
@@ -136,41 +138,25 @@ export function AppearanceForm({
           setting ends up looking dead: the panels below are the same ones the
           guest gets, so a colour that does nothing visible in this box does
           nothing on the page either. */}
-      <div className="mt-5 overflow-hidden rounded-xl border-2 border-pepper">
-        <EventThemeRoot palette={palette} font={font}>
-          <EventCover
-            variant={cover}
-            name={event.name || "Your event"}
-            date={event.event_date}
-            coverUrl={coverUrl}
-            palette={palette}
-            preview
-          />
-          <div className="px-3 py-3 sm:px-4 sm:py-4">
-            <UploadPanel
-              variant={upload}
-              label="Add your photos"
-              hint={
-                getTier(event.tier).video
-                  ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
-                  : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
-              }
-              name=""
-              preview
-            />
-            <div className="mt-3 grid grid-cols-4 gap-1.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={cx(
-                    "aspect-square",
-                    layout === "holes" ? "hole" : "recess",
-                  )}
-                />
-              ))}
-            </div>
-          </div>
-        </EventThemeRoot>
+      <div className="mt-5">
+        <EventPreview
+          name={event.name || "Your event"}
+          date={event.event_date}
+          message={event.welcome_message}
+          palette={palette}
+          font={font}
+          cover={cover}
+          upload={upload}
+          layout={layout}
+          galleryVisible={event.gallery_visible}
+          coverChosen={coverMediaId !== null}
+          shareLink={shareLink}
+          uploadHint={
+            getTier(event.tier).video
+              ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
+              : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
+          }
+        />
       </div>
 
       <form action={formAction} className="mt-6 space-y-6">

@@ -4,7 +4,7 @@ import { isDark } from "@/lib/color";
 import type { FontSet } from "@/lib/fonts";
 import { fontToCssVars } from "@/lib/fonts";
 import { formatEventDate } from "@/lib/format";
-import { Hole, cx } from "@/components/ui";
+import { Hole, PhotoPlaceholder, cx } from "@/components/ui";
 
 /**
  * Re-skins everything inside it.
@@ -54,6 +54,12 @@ export interface CoverProps {
   palette: Palette;
   /** Compact rendering for the dashboard preview. */
   preview?: boolean;
+  /**
+   * What the empty photo slot says. Preview only - a guest never sees an empty
+   * cover - and it is how the host is told a cover photo is still missing
+   * without the drawing having to pretend it has one.
+   */
+  photoLabel?: string;
 }
 
 export function EventCover(props: CoverProps) {
@@ -113,8 +119,18 @@ function Title({
       >
         {name}
       </h1>
-      {message && !preview && (
-        <p className="mt-3 max-w-xl text-body text-crust sm:mt-4 sm:text-lead">
+      {/* The welcome message is page content, so the drawing carries it too -
+          clamped, because a host who wrote four sentences is owed a preview
+          that still fits on the screen they are editing it on. */}
+      {message && (
+        <p
+          className={cx(
+            "text-crust",
+            preview
+              ? "mt-1.5 line-clamp-2 text-micro leading-snug"
+              : "mt-3 max-w-xl text-body sm:mt-4 sm:text-lead",
+          )}
+        >
           {message}
         </p>
       )}
@@ -126,15 +142,21 @@ function Title({
  * The photo, or the space it will occupy.
  *
  * The empty state only ever renders in the host's preview - a guest page with
- * no cover photo has already fallen back to "Just type" - so it is a label
- * rather than a placeholder image: it is telling the host what is missing.
+ * no cover photo has already fallen back to "Just type" - so it is a marked
+ * frame rather than an attempt at a photograph: it is telling the host what
+ * will sit there, in the same recess the real one will sit in.
  */
 function CoverPhoto({
   url,
+  label = "your photo",
   className,
+  emptyClassName,
 }: {
   url?: string | null;
+  label?: string;
   className?: string;
+  /** Only the empty frame: a photo must not be padded or it stops covering. */
+  emptyClassName?: string;
 }) {
   if (url) {
     return (
@@ -147,14 +169,10 @@ function CoverPhoto({
   }
 
   return (
-    <div
-      className={cx(
-        "recess flex h-full w-full items-center justify-center rounded-none",
-        className,
-      )}
-    >
-      <span className="eyebrow text-gouda">your photo</span>
-    </div>
+    <PhotoPlaceholder
+      label={label}
+      className={cx("h-full w-full rounded-none", className, emptyClassName)}
+    />
   );
 }
 
@@ -166,6 +184,7 @@ function ClassicCover({
   coverUrl,
   palette,
   preview,
+  photoLabel,
 }: CoverProps) {
   // The scrim direction follows the theme: light text needs a dark wash under
   // it, and on a light theme the opposite reads as a mistake.
@@ -176,11 +195,20 @@ function ClassicCover({
       <div
         className={cx(
           "relative w-full",
-          preview ? "h-28" : "h-52 xs:h-64 sm:h-80 lg:h-96",
+          // The drawing is compressed, but not by a fixed amount: the console's
+          // column is three times wider on a laptop than on a phone, and a
+          // cover that stays 128px tall inside it stops looking like a cover.
+          preview ? "h-32 sm:h-36 lg:h-44" : "h-52 xs:h-64 sm:h-80 lg:h-96",
         )}
       >
         <div className="absolute inset-0">
-          <CoverPhoto url={coverUrl} />
+          {/* The name sits along the bottom of this one, so the empty frame's
+              mark is pushed clear of it rather than printed underneath. */}
+          <CoverPhoto
+            url={coverUrl}
+            label={photoLabel}
+            emptyClassName={preview ? "pb-12" : "pb-16"}
+          />
         </div>
         <div
           className="absolute inset-0"
@@ -202,9 +230,23 @@ function ClassicCover({
           </div>
         </div>
       </div>
-      {message && !preview && (
-        <div className="mx-auto max-w-3xl px-4 py-5 sm:px-5">
-          <p className="max-w-xl text-body text-crust sm:text-lead">{message}</p>
+      {message && (
+        <div
+          className={cx(
+            "mx-auto max-w-3xl",
+            preview ? "px-4 py-2" : "px-4 py-5 sm:px-5",
+          )}
+        >
+          <p
+            className={cx(
+              "text-crust",
+              preview
+                ? "line-clamp-2 text-micro leading-snug"
+                : "max-w-xl text-body sm:text-lead",
+            )}
+          >
+            {message}
+          </p>
         </div>
       )}
     </header>
@@ -218,16 +260,17 @@ function BandCover({
   message,
   coverUrl,
   preview,
+  photoLabel,
 }: CoverProps) {
   return (
     <header className="border-b-2 border-pepper">
       <div
         className={cx(
           "relative w-full overflow-hidden border-b-2 border-pepper",
-          preview ? "h-20" : "h-44 xs:h-52 sm:h-72",
+          preview ? "h-20 sm:h-24 lg:h-32" : "h-44 xs:h-52 sm:h-72",
         )}
       >
-        <CoverPhoto url={coverUrl} />
+        <CoverPhoto url={coverUrl} label={photoLabel} />
       </div>
       <div className="bg-gouda">
         <div
@@ -255,6 +298,7 @@ function FramedCover({
   message,
   coverUrl,
   preview,
+  photoLabel,
 }: CoverProps) {
   return (
     <header className="border-b-2 border-pepper bg-butter">
@@ -270,11 +314,11 @@ function FramedCover({
           className={cx(
             "overflow-hidden rounded-[1.25rem] border-2 border-pepper bg-cream",
             preview
-              ? "h-20 shadow-hard"
+              ? "h-20 shadow-hard sm:h-24 lg:h-32"
               : "h-48 shadow-hard sm:h-72 sm:shadow-hard-lg",
           )}
         >
-          <CoverPhoto url={coverUrl} />
+          <CoverPhoto url={coverUrl} label={photoLabel} />
         </div>
         <Title name={name} date={date} message={message} preview={preview} />
       </div>

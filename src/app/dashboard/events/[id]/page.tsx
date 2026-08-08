@@ -293,6 +293,7 @@ export default async function EventPage({
             event={event}
             media={media}
             locked={!tier.customPage}
+            shareLink={link}
           />
         </TabPanel>
 

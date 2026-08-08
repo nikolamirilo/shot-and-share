@@ -2,9 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { EventCover, EventThemeRoot } from "@/components/event-cover";
+import { EventPreview } from "@/components/event-preview";
 import { UploadPanel } from "@/components/upload-panel";
 import { THEMES, buildCustomPalette } from "@/lib/appearance";
 import { findFontSet } from "@/lib/fonts";
+import { GALLERY_LAYOUTS, type GalleryLayout } from "@/lib/gallery";
 
 /**
  * The host's preview, which is the one screen where a setting can look broken
@@ -165,5 +167,107 @@ describe("the upload panel", () => {
     );
     expect(html).toContain("<button");
     expect(html).toContain("<input");
+  });
+});
+
+/**
+ * The drawing of the whole page. It replaced a cover, a panel and four squares
+ * in a row, which said the same thing about all four gallery layouts and left
+ * the host to imagine the rest of the page around it.
+ */
+function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
+  return renderToStaticMarkup(
+    <EventPreview
+      name="Ana and Marko"
+      date="2026-09-12"
+      palette={palette}
+      font={findFontSet("cheese")}
+      cover="classic"
+      upload="button"
+      layout="grid"
+      uploadHint="Photos, up to 20 at a time."
+      galleryVisible
+      coverChosen
+      {...props}
+    />,
+  );
+}
+
+describe("the drawing of the guest page", () => {
+  it("draws the page a guest actually lands on", () => {
+    // Each of these is a part of the guest page that the old preview left out,
+    // and every one of them carries a colour the host is choosing.
+    const html = preview({ message: "Send us the ones you took." });
+
+    expect(html).toContain("Say Cheese"); // the header mark
+    expect(html).toContain("Ana and Marko");
+    expect(html).toContain("Send us the ones you took.");
+    expect(html).toContain("Add your photos");
+    expect(html).toContain("Photos, up to 20 at a time.");
+    expect(html).toContain("Everyone&#x27;s photos");
+    expect(html).toContain("go to the host of this event");
+  });
+
+  it("loads no photograph at all", () => {
+    // Every frame is drawn. A host clicking through five themes and four
+    // layouts is not worth one image request, and their guests' faces answer
+    // none of the questions this panel is asking.
+    for (const layout of GALLERY_LAYOUTS) {
+      const html = preview({ layout: layout.id });
+      expect(html).not.toContain("<img");
+      expect(html).not.toContain("background-image");
+    }
+  });
+
+  it("gives every gallery layout its own shape", () => {
+    // The whole point of the layout buttons. Four identical rows of squares is
+    // what this used to draw, whichever one was selected.
+    const drawn = new Map<GalleryLayout, string>();
+    for (const layout of GALLERY_LAYOUTS) {
+      drawn.set(layout.id, preview({ layout: layout.id }));
+    }
+
+    expect(new Set(drawn.values()).size).toBe(GALLERY_LAYOUTS.length);
+    expect(drawn.get("grid")).toContain("grid-cols-3");
+    expect(drawn.get("masonry")).toContain("columns-2");
+    // The uneven circle sequence, scaled to the frame rather than re-invented.
+    expect(drawn.get("holes")).toContain("hole");
+    expect(drawn.get("holes")).toMatch(/width:\d+px/);
+    expect(drawn.get("stack")).toContain("aspect-ratio:1.75");
+  });
+
+  it("hides the gallery when the event hides it", () => {
+    expect(preview({ galleryVisible: false })).not.toContain(
+      "Everyone&#x27;s photos",
+    );
+  });
+
+  it("says whether a cover photo has been chosen", () => {
+    expect(preview({ coverChosen: false })).toContain("no photo yet");
+    expect(preview({ coverChosen: true })).toContain("your photo");
+  });
+
+  it("carries the chosen colours across the whole drawing", () => {
+    const wheat = buildCustomPalette({
+      bg: "#FFF6DC",
+      surface: "#F5DEB3",
+      accent: "#FFC02E",
+      ink: "#1F1607",
+    });
+    const html = preview({ palette: wheat, upload: "bar" });
+
+    expect(html).toContain("--color-cream:#F5DEB3");
+    expect(html).toContain("card");
+    // The recesses the photos sit in are the theme's void, not a fixed grey.
+    expect(html).toContain("--color-hole:");
+  });
+
+  it("puts nothing focusable inside the host's form", () => {
+    for (const layout of GALLERY_LAYOUTS) {
+      const html = preview({ layout: layout.id, upload: "panel" });
+      expect(html).not.toContain("<button");
+      expect(html).not.toContain("<input");
+      expect(html).not.toContain("<a ");
+    }
   });
 });
