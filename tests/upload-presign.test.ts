@@ -1,16 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createStore } from "./stubs/supabase";
+
 /**
  * The presign endpoint, end to end with the database and the bucket mocked.
  *
  * It is the one route where a mistake is invisible until a guest is standing in
- * a venue: it decides what gets stored, reserves the quota, writes the rows and
- * signs the URLs, and every one of those steps can fail in a way the browser
- * reports as "could not start the upload".
+ * a venue: it decides what gets stored, reserves the quota, writes the
+ * reservation and signs the URLs, and every one of those steps can fail in a
+ * way the browser reports as "could not start the upload".
+ *
+ * What it must never do any more is touch `media`. A media row means a photo
+ * that exists; until the bytes are in the bucket there is only a promise of
+ * space, and the point of migration 0010 is that the two are different things.
  */
 
-const rows: Record<string, unknown>[] = [];
-let insertError: { message: string } | null = null;
+const store = createStore();
+let signThrows = false;
 
 const EVENT = {
   id: "11111111-2222-3333-4444-555555555555",
@@ -32,38 +38,38 @@ vi.mock("@/lib/events", async () => {
 });
 
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({
-    rpc: vi.fn(async () => ({ data: true, error: null })),
-    from: () => ({
-      insert: vi.fn(async (values: Record<string, unknown>[]) => {
-        rows.push(...values);
-        return { error: insertError };
-      }),
-    }),
-  }),
+  createAdminClient: () => store.client,
 }));
 
 vi.mock("@/lib/storage", () => ({
   storage: {
-    presignUpload: vi.fn(async ({ key }: { key: string }) => ({
-      url: "https://bucket.example/",
-      fields: { key },
-      fileField: "file",
-    })),
+    presignUpload: vi.fn(async ({ key }: { key: string }) => {
+      if (signThrows) throw new Error("bucket credentials expired");
+      return {
+        url: "https://bucket.example/",
+        fields: { key },
+        fileField: "file",
+      };
+    }),
   },
 }));
 
 const { POST } = await import("@/app/api/upload/presign/route");
 
-function request(files: unknown[]) {
+let requests = 0;
+
+function request(file: unknown) {
+  // A fresh token per call: the rate limiter is per link and this file makes
+  // more than a handful of requests.
+  requests += 1;
   return new Request("http://localhost/api/upload/presign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      token: "a".repeat(32),
+      token: `${requests}`.padStart(32, "a"),
       fingerprint: "f".repeat(16),
       uploaderName: "Guest",
-      files,
+      file,
     }),
   });
 }
@@ -78,161 +84,169 @@ const compressedPhoto = {
   needsServer: false,
 };
 
+const video = {
+  size: 8_000_000,
+  type: "video/quicktime",
+  poster: { size: 40_000, format: "webp", width: 720, height: 405 },
+  sourceWidth: 1920,
+  sourceHeight: 1080,
+  durationSeconds: 12,
+  needsServer: true,
+};
+
+const reservations = () => store.rows("upload_reservations");
+
 beforeEach(() => {
-  rows.length = 0;
-  insertError = null;
+  store.reset();
+  signThrows = false;
+  EVENT.tier = "free";
 });
 
 describe("presigning an upload", () => {
   it("signs exactly one object for a photo", async () => {
-    const res = await POST(request([compressedPhoto]));
+    const res = await POST(request(compressedPhoto));
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.uploads).toHaveLength(1);
 
-    const upload = body.uploads[0];
+    const { upload } = body;
     // One object, and the browser is told to send the compressed blob.
     expect(upload.source).toBe("compressed");
     expect(upload.media).toBeTruthy();
     expect(upload.poster).toBeNull();
-    expect(Object.keys(upload).sort()).toEqual([
-      "mediaId",
-      "media",
-      "poster",
-      "source",
-    ].sort());
-  });
-
-  it("keys that object inside the owner's event folder, at the root", async () => {
-    const res = await POST(request([compressedPhoto]));
-    const { uploads } = await res.json();
-
-    expect(uploads[0].media.fields.key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/${uploads[0].mediaId}.webp`,
+    expect(Object.keys(upload).sort()).toEqual(
+      ["mediaId", "media", "poster", "source"].sort(),
     );
   });
 
-  it("writes a row the CHECK constraint in 0008 will accept", async () => {
-    await POST(request([compressedPhoto]));
+  it("keys that object inside the owner's event folder, at the root", async () => {
+    const res = await POST(request(compressedPhoto));
+    const { upload } = await res.json();
 
-    expect(rows).toHaveLength(1);
-    const row = rows[0] as Record<string, unknown>;
+    expect(upload.media.fields.key).toBe(
+      `${EVENT.owner_id}/${EVENT.id}/${upload.mediaId}.webp`,
+    );
+  });
+
+  it("writes no media row at all - only a reservation", async () => {
+    await POST(request(compressedPhoto));
+
+    expect(store.rows("media")).toHaveLength(0);
+    expect(reservations()).toHaveLength(1);
+  });
+
+  it("writes a reservation the CHECK constraint in 0010 will accept", async () => {
+    await POST(request(compressedPhoto));
+    const row = reservations()[0];
 
     // The constraint is `media_key like owner_id || '/' || event_id || '/%'`.
-    expect(String(row.media_key).startsWith(`${EVENT.owner_id}/${EVENT.id}/`))
-      .toBe(true);
+    expect(
+      String(row.media_key).startsWith(`${EVENT.owner_id}/${EVENT.id}/`),
+    ).toBe(true);
     expect(row.poster_key).toBeNull();
-
-    // Columns 0008 dropped must not be written, or the insert fails outright.
-    for (const gone of [
-      "original_key",
-      "thumb_key",
-      "display_key",
-      "thumb_size_bytes",
-      "display_size_bytes",
-      "thumb_format",
-      "display_format",
-      "original_replaced",
-    ]) {
-      expect(row).not.toHaveProperty(gone);
-    }
+    expect(row.owner_id).toBe(EVENT.owner_id);
   });
 
   it("charges the compressed size, not what came off the phone", async () => {
-    await POST(request([compressedPhoto]));
-    const row = rows[0] as Record<string, unknown>;
+    await POST(request(compressedPhoto));
+    const row = reservations()[0];
 
     expect(row.size_bytes).toBe(900_000);
-    expect(row.media_format).toBe("webp");
-    expect(row.mime_type).toBe("image/webp");
+    expect(store.reserved()).toBe(900_000);
+
+    const media = row.media as Record<string, unknown>;
+    expect(media.media_format).toBe("webp");
+    expect(media.mime_type).toBe("image/webp");
     // Nothing left for the worker: the object in the bucket is already right.
-    expect(row.processing).toBe("done");
+    expect(media.processing).toBe("done");
   });
 
   it("takes a photo the browser could not decode and queues the worker", async () => {
     const res = await POST(
-      request([
-        {
-          size: 3_000_000,
-          type: "image/heic",
-          compressed: null,
-          sourceWidth: null,
-          sourceHeight: null,
-          needsServer: true,
-        },
-      ]),
+      request({
+        size: 3_000_000,
+        type: "image/heic",
+        compressed: null,
+        sourceWidth: null,
+        sourceHeight: null,
+        needsServer: true,
+      }),
     );
-    const { uploads } = await res.json();
-    const row = rows[0] as Record<string, unknown>;
+    const { upload } = await res.json();
+    const row = reservations()[0];
+    const media = row.media as Record<string, unknown>;
 
     // It goes up as it came off the phone; the worker replaces it with a JPEG.
-    expect(uploads[0].source).toBe("file");
+    expect(upload.source).toBe("file");
     expect(String(row.media_key).endsWith(".heic")).toBe(true);
     expect(row.size_bytes).toBe(3_000_000);
-    expect(row.media_format).toBe("heic");
-    expect(row.processing).toBe("pending");
+    expect(media.media_format).toBe("heic");
+    expect(media.processing).toBe("pending");
   });
 
-  it("refuses video on a tier without it, before signing anything", async () => {
-    const res = await POST(
-      request([
-        {
-          size: 8_000_000,
-          type: "video/quicktime",
-          poster: { size: 40_000, format: "webp", width: 720, height: 405 },
-          durationSeconds: 12,
-          needsServer: true,
-        },
-      ]),
-    );
+  it("refuses video on a tier without it, before reserving anything", async () => {
+    const res = await POST(request(video));
 
     expect(res.status).toBe(403);
-    expect(rows).toHaveLength(0);
+    expect(reservations()).toHaveLength(0);
+    expect(store.reserved()).toBe(0);
   });
 
   it("signs a poster beside a video on a tier that allows it", async () => {
     EVENT.tier = "event";
-    try {
-      const res = await POST(
-        request([
-          {
-            size: 8_000_000,
-            type: "video/quicktime",
-            poster: { size: 40_000, format: "webp", width: 720, height: 405 },
-            sourceWidth: 1920,
-            sourceHeight: 1080,
-            durationSeconds: 12,
-            needsServer: true,
-          },
-        ]),
-      );
-      const { uploads } = await res.json();
-      const row = rows[0] as Record<string, unknown>;
+    const res = await POST(request(video));
+    const { upload } = await res.json();
+    const row = reservations()[0];
 
-      expect(res.status).toBe(200);
-      expect(uploads[0].source).toBe("file");
-      expect(uploads[0].poster).toBeTruthy();
+    expect(res.status).toBe(200);
+    expect(upload.source).toBe("file");
+    expect(upload.poster).toBeTruthy();
 
-      // Poster sits beside the clip in the same folder, named after it.
-      expect(row.media_key).toBe(
-        `${EVENT.owner_id}/${EVENT.id}/${uploads[0].mediaId}.mov`,
-      );
-      expect(row.poster_key).toBe(
-        `${EVENT.owner_id}/${EVENT.id}/${uploads[0].mediaId}-poster.webp`,
-      );
-      expect(row.poster_size_bytes).toBe(40_000);
-      expect(row.processing).toBe("pending");
-    } finally {
-      EVENT.tier = "free";
-    }
+    // Poster sits beside the clip in the same folder, named after it.
+    expect(row.media_key).toBe(
+      `${EVENT.owner_id}/${EVENT.id}/${upload.mediaId}.mov`,
+    );
+    expect(row.poster_key).toBe(
+      `${EVENT.owner_id}/${EVENT.id}/${upload.mediaId}-poster.webp`,
+    );
+    expect(row.poster_size_bytes).toBe(40_000);
+    // Both objects are charged for up front, or a guest could send a poster
+    // into an event with no room for it.
+    expect(store.reserved()).toBe(8_040_000);
   });
 
-  it("hands the quota back when the insert fails", async () => {
-    insertError = { message: "column media_key does not exist" };
-    const res = await POST(request([compressedPhoto]));
+  it("hands the quota back when the reservation insert fails", async () => {
+    store.failInsert("upload_reservations", {
+      message: "relation upload_reservations does not exist",
+    });
+    const res = await POST(request(compressedPhoto));
 
     // The guest sees a generic failure; the operator sees the cause in the log.
     expect(res.status).toBe(500);
+    expect(store.released()).toBe(900_000);
+  });
+
+  /**
+   * The regression this route was carrying: the rollback existed only on the
+   * insert path, so a bucket that had lost its credentials ate a host's quota
+   * one upload at a time, and left a row behind for each one.
+   */
+  it("hands the quota back when signing fails, and keeps no reservation", async () => {
+    signThrows = true;
+    const res = await POST(request(compressedPhoto));
+
+    expect(res.status).toBe(500);
+    expect(reservations()).toHaveLength(0);
+    expect(store.released()).toBe(900_000);
+  });
+
+  it("refuses when the event is full, without writing anything", async () => {
+    store.setReserveSucceeds(false);
+    const res = await POST(request(compressedPhoto));
+    const body = await res.json();
+
+    expect(res.status).toBe(413);
+    expect(body.error.upgrade).toBe(true);
+    expect(reservations()).toHaveLength(0);
   });
 });

@@ -116,24 +116,37 @@ every page load.
 ### The upload flow
 
 This is the path two hundred guests hit at the same time on a Saturday night.
+**Every file runs it on its own**, so uploading starts as soon as the first photo
+is ready instead of waiting for the slowest one to finish compressing:
 
 1. Guest opens `/e/{token}`. The token is hashed and matched against
    `event_tokens`; there is no session anywhere on the guest side.
-2. The browser re-encodes each photo into a single compressed copy, and pulls a
-   poster frame out of any video. See Compression below.
+2. The browser re-encodes the photo into a single compressed copy, or pulls a
+   poster frame out of a video. Three at a time. See Compression below.
 3. `POST /api/upload/presign` - **the quota is checked and reserved here, before
    a single URL is issued.** Checking afterwards means the bytes are already in
-   the bucket and already billable.
+   the bucket and already billable. It writes a row to `upload_reservations`,
+   never to `media`.
 4. The browser POSTs that one file straight to storage, three uploads at a time,
-   with a progress bar. A video's poster goes up separately - it is cosmetic and
-   the worker can cut another one, so it never costs the clip.
-5. `POST /api/upload/confirm` flips the rows from `pending` to `ready`.
+   retrying a dropped connection twice. A video's poster goes up separately - it
+   is cosmetic and the worker can cut another one, so it never costs the clip.
+5. `POST /api/upload/confirm` writes the `media` row and deletes the
+   reservation.
+
+Compressing and uploading run behind separate concurrency gates, which is what
+lets them overlap: photo six is being re-encoded while photo three is climbing
+out over the network. They are different machines - the processor and the radio -
+and paying for them one after the other was most of the guest's wait.
 
 Every object lands at `{owner_id}/{event_id}/{media_id}.{ext}` - owner folders at
 the root of the bucket, one file per upload. See `infra/README.md`.
 
-A row that never gets confirmed - a phone that died halfway - stays `pending`,
-and the nightly job sweeps it and hands the reserved quota back.
+**A `media` row means the bytes are in the bucket.** Nothing is written there
+until the object exists, so the table needs no status filter to be read and a
+failed upload is never counted against a host's quota. An upload that never
+confirms - a phone that died halfway - leaves only its reservation, and the
+nightly job hands the quota back and removes any orphaned object. See migration
+`0010`.
 
 ### Compression
 

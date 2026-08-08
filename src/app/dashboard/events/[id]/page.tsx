@@ -33,8 +33,9 @@ export const dynamic = "force-dynamic";
  * then the settings and the ending.
  *
  * Each id is the id of its panel, so `#upgrade` still lands on the plan even
- * though that panel is now behind a tab on a phone. The strip itself is only
- * on phones and tablets - see `Tabs`.
+ * though that panel is now behind a tab. One group is open at a time at every
+ * width: a strip across the top on a phone, a rail down the side of the panel
+ * on a laptop - see `Tabs`.
  */
 const TABS: TabItem[] = [
   { id: "share", label: "Share" },
@@ -139,8 +140,8 @@ export default async function EventPage({
       </header>
 
       {/* Both notices used to say "below", which was true when the page was
-          one column of everything. A phone now shows one tab at a time, so
-          they name the tab instead. */}
+          one column of everything. One tab is open at a time now, so they name
+          the tab instead. */}
       {purchase && (
         <Notice>
           Payment received. If the plan still looks the same, give the provider
@@ -160,14 +161,18 @@ export default async function EventPage({
       <Tabs
         items={TABS}
         label="Event sections"
+        desktop="rail"
         sticky
         className="mt-6 sm:mt-7"
-        tablistClassName="-mx-4 px-4 sm:-mx-5 sm:px-5"
+        /* The strip runs to both edges of a phone, where it is a bar pinned
+           across the screen. The rail is a column inside the page and stops
+           where the page does. */
+        tablistClassName="-mx-4 px-4 sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0"
       >
         <TabPanel
           id="share"
           display="grid"
-          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-[1.1fr_1fr]"
+          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:mt-0 xl:grid-cols-[1.1fr_1fr]"
         >
           <SharePanel
             eventId={event.id}
@@ -237,10 +242,13 @@ export default async function EventPage({
           </section>
         </TabPanel>
 
+        {/* The two-column rows split at `xl`, not `lg`: the rail takes 15rem
+            out of the width, so at exactly `lg` a pair of columns is narrower
+            than either panel reads well at. */}
         <TabPanel
           id="upgrade"
           display="grid"
-          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:mt-6 lg:grid-cols-[1.1fr_1fr]"
+          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:mt-0 xl:grid-cols-[1.1fr_1fr]"
         >
           <ArchivePanel eventId={event.id} photoCount={total} />
           <UpgradePanel
@@ -250,7 +258,7 @@ export default async function EventPage({
           />
         </TabPanel>
 
-        <TabPanel id="photos" className="mt-5 sm:mt-6 lg:mt-10">
+        <TabPanel id="photos" className="mt-5 sm:mt-6 lg:mt-0">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <Eyebrow>Gallery</Eyebrow>
@@ -277,28 +285,24 @@ export default async function EventPage({
           </div>
         </TabPanel>
 
-        {/* The last two tabs are the two columns of the same row on a laptop, so
-            the grid lives out here and the panels are its items. It carries no
-            margin of its own: on a phone both children can be closed at once,
-            and a wrapper with a top margin and nothing in it is a gap nobody
-            can explain. */}
-        <div className="lg:mt-10 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-          <TabPanel id="page" className="mt-5 sm:mt-6 lg:mt-0">
-            <AppearanceForm
-              event={event}
-              media={media}
-              locked={!tier.customPage}
-            />
-          </TabPanel>
+        {/* These two used to be the two columns of one row on a laptop. Only
+            one tab is open at a time now, so there is no row to be columns of
+            and they are ordinary siblings. */}
+        <TabPanel id="page" className="mt-5 sm:mt-6 lg:mt-0">
+          <AppearanceForm
+            event={event}
+            media={media}
+            locked={!tier.customPage}
+          />
+        </TabPanel>
 
-          <TabPanel
-            id="settings"
-            className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
-          >
-            <SettingsForm event={event} />
-            <DangerZone event={event} />
-          </TabPanel>
-        </div>
+        <TabPanel
+          id="settings"
+          className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
+        >
+          <SettingsForm event={event} />
+          <DangerZone event={event} />
+        </TabPanel>
       </Tabs>
     </div>
   );

@@ -56,8 +56,16 @@ export function rateLimit(
 }
 
 export const LIMITS = {
-  /** Presign requests per link, per minute. A guest batch is one request. */
-  presign: { limit: 20, window: 60 },
+  /**
+   * Presign requests per link, per minute.
+   *
+   * One per file now, not one per batch. A guest picking the maximum of 30
+   * photos makes 30 of these, and may reasonably do that twice in a minute -
+   * so the old limit of 20 would have cut them off mid-batch. Still bounded:
+   * the cost of a presign is a signature, and the quota check inside it is what
+   * actually stops anyone filling the bucket.
+   */
+  presign: { limit: 120, window: 60 },
   /** Guest page loads per IP, per minute. */
   guestPage: { limit: 60, window: 60 },
   /** Archive builds are the biggest cost line in the system. */

@@ -93,6 +93,45 @@ export type MediaRow = {
   created_at: string;
 };
 
+/**
+ * The half of a media row that cannot be derived from the reservation's own
+ * columns, parked in jsonb until the bytes actually land.
+ *
+ * It is deliberately not the whole media row: the keys and the byte counts live
+ * in real columns because the nightly sweep reads them without knowing anything
+ * about what is inside here.
+ */
+export type ReservedMedia = {
+  kind: MediaKind;
+  mime_type: string;
+  media_format: string | null;
+  duration_seconds: number | null;
+  width: number | null;
+  height: number | null;
+  processing: MediaProcessing;
+  uploader_fingerprint: string | null;
+  uploader_name: string | null;
+};
+
+/**
+ * Bytes promised to a guest and not yet delivered.
+ *
+ * One row exists for the seconds between "we signed you a URL and charged your
+ * host's quota for it" and "the object is in the bucket". Confirm turns it into
+ * a media row; the nightly sweep turns an abandoned one back into free quota.
+ */
+export type UploadReservationRow = {
+  id: string;
+  event_id: string;
+  owner_id: string;
+  media_key: string;
+  poster_key: string | null;
+  size_bytes: number;
+  poster_size_bytes: number;
+  media: ReservedMedia;
+  created_at: string;
+};
+
 export type PurchaseRow = {
   id: string;
   event_id: string | null;
@@ -166,6 +205,11 @@ export interface Database {
           | "processing"
         > &
           Partial<Pick<MediaRow, "id" | "poster_size_bytes" | "processing">>
+      >;
+      upload_reservations: Table<
+        UploadReservationRow,
+        Omit<UploadReservationRow, "created_at" | "poster_size_bytes"> &
+          Partial<Pick<UploadReservationRow, "poster_size_bytes">>
       >;
       purchases: Table<
         PurchaseRow,

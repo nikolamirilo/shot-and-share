@@ -13,7 +13,6 @@ import {
   videoFormatFromMime,
 } from "@/lib/formats";
 import {
-  MAX_FILES_PER_REQUEST,
   MAX_POSTER_BYTES,
   classify,
   mediaKey,
@@ -40,40 +39,48 @@ const bodySchema = z.object({
   token: z.string().min(20).max(64),
   fingerprint: z.string().min(8).max(64),
   uploaderName: z.string().trim().max(60).optional().nullable(),
-  files: z
-    .array(
-      z.object({
-        size: z.number().int().positive(),
-        type: z.string().min(3).max(120),
-        /** The compressed copy the browser produced, if it managed one. */
-        compressed: renditionSchema.optional().nullable(),
-        poster: renditionSchema
-          .extend({ size: z.number().int().positive().max(MAX_POSTER_BYTES) })
-          .optional()
-          .nullable(),
-        sourceWidth: z.number().int().positive().max(60_000).optional().nullable(),
-        sourceHeight: z.number().int().positive().max(60_000).optional().nullable(),
-        durationSeconds: z.number().nonnegative().max(86_400).optional().nullable(),
-        /** The browser could not decode it; the worker has to finish the job. */
-        needsServer: z.boolean().default(false),
-      }),
-    )
-    .min(1)
-    .max(MAX_FILES_PER_REQUEST),
+  /**
+   * One file. The browser used to send the whole batch at once, which meant no
+   * photo could start uploading until the slowest one had finished compressing;
+   * a file at a time is what lets the two overlap.
+   */
+  file: z.object({
+    size: z.number().int().positive(),
+    type: z.string().min(3).max(120),
+    /** The compressed copy the browser produced, if it managed one. */
+    compressed: renditionSchema.optional().nullable(),
+    poster: renditionSchema
+      .extend({ size: z.number().int().positive().max(MAX_POSTER_BYTES) })
+      .optional()
+      .nullable(),
+    sourceWidth: z.number().int().positive().max(60_000).optional().nullable(),
+    sourceHeight: z.number().int().positive().max(60_000).optional().nullable(),
+    durationSeconds: z.number().nonnegative().max(86_400).optional().nullable(),
+    /** The browser could not decode it; the worker has to finish the job. */
+    needsServer: z.boolean().default(false),
+  }),
 });
 
-type MediaInsert = Database["public"]["Tables"]["media"]["Insert"];
+type ReservationInsert =
+  Database["public"]["Tables"]["upload_reservations"]["Insert"];
 
 /**
- * The quota check happens here, before a single presigned URL is issued.
+ * Reserve the space, sign the URL, and write down what to do when the bytes
+ * arrive. One file per request.
  *
+ * The quota check happens here, before a single presigned URL is issued.
  * Checking afterwards means the bytes are already in the bucket and already
- * billable. It also decides *what gets stored*, and there is only ever one
- * answer now: the compressed copy. The phone never uploads the 4 MB original at
- * all - which is a quarter of the storage and, on venue wifi, a quarter of the
- * wait. Nobody is asked to choose, because "keep every original byte" is a
- * setting whose only effect is a bill four times larger for a difference nobody
- * can see on a screen.
+ * billable. What it does *not* do any more is write to `media`: a media row now
+ * means a photo that exists, and until the object lands there is only a
+ * reservation - the promised bytes, the key they were promised for, and enough
+ * detail to build the real row later. See migration 0010.
+ *
+ * It also decides what gets stored, and there is only ever one answer: the
+ * compressed copy. The phone never uploads the 4 MB original at all - which is
+ * a quarter of the storage and, on venue wifi, a quarter of the wait. Nobody is
+ * asked to choose, because "keep every original byte" is a setting whose only
+ * effect is a bill four times larger for a difference nobody can see on a
+ * screen.
  *
  * The one exception is a file the browser could not decode, chiefly HEIC
  * outside Safari. That goes up as it came off the phone and the worker replaces
@@ -104,90 +111,71 @@ export async function POST(request: Request) {
     // never to anything the guest sent.
     const scope = scopeOfEvent(event);
 
-    const prepared = body.files.map((file) => {
-      const classified = classify(file.type);
-      if (!classified) {
-        throw new ApiError(
-          "bad_request",
-          "That file type is not supported. Photos and videos only.",
-        );
-      }
-      if (classified.kind === "video" && !tier.video) {
-        throw new ApiError(
-          "forbidden",
-          "Video is not included on the free plan. Photos work fine.",
-          { upgrade: true },
-        );
-      }
-      if (file.size > tier.maxFileBytes) {
-        throw new ApiError(
-          "bad_request",
-          `That file is larger than ${formatBytes(tier.maxFileBytes, 0)}, which is the limit for a single upload.`,
-        );
-      }
+    const file = body.file;
+    const classified = classify(file.type);
+    if (!classified) {
+      throw new ApiError(
+        "bad_request",
+        "That file type is not supported. Photos and videos only.",
+      );
+    }
+    if (classified.kind === "video" && !tier.video) {
+      throw new ApiError(
+        "forbidden",
+        "Video is not included on the free plan. Photos work fine.",
+        { upgrade: true },
+      );
+    }
+    if (file.size > tier.maxFileBytes) {
+      throw new ApiError(
+        "bad_request",
+        `That file is larger than ${formatBytes(tier.maxFileBytes, 0)}, which is the limit for a single upload.`,
+      );
+    }
 
-      const mediaId = randomUUID();
-      const mime = file.type.toLowerCase().split(";")[0].trim();
+    const mediaId = randomUUID();
+    const mime = file.type.toLowerCase().split(";")[0].trim();
 
-      /* --- the one object we keep ---------------------------------------- */
+    /* --- the one object we keep ------------------------------------------ */
 
-      // A photo is stored compressed whenever the browser managed it. A video
-      // is stored as uploaded until the worker replaces it with an MP4: the
-      // poster is not the video, so there is nothing else to send.
-      const useCompressed =
-        classified.kind === "photo" &&
-        Boolean(file.compressed) &&
-        !file.needsServer;
+    // A photo is stored compressed whenever the browser managed it. A video is
+    // stored as uploaded until the worker replaces it with an MP4: the poster
+    // is not the video, so there is nothing else to send.
+    const useCompressed =
+      classified.kind === "photo" &&
+      Boolean(file.compressed) &&
+      !file.needsServer;
 
-      const format: string = useCompressed
-        ? file.compressed!.format
-        : (classified.kind === "photo"
-            ? imageFormatFromMime(mime)
-            : videoFormatFromMime(mime)) ?? classified.ext;
-      const ext = useCompressed
-        ? IMAGE_EXT[file.compressed!.format as ImageFormat]
-        : classified.ext;
-      const bytes = useCompressed ? file.compressed!.size : file.size;
-      const contentType = useCompressed
-        ? IMAGE_MIME[file.compressed!.format as ImageFormat]
-        : mime;
+    const format: string = useCompressed
+      ? file.compressed!.format
+      : (classified.kind === "photo"
+          ? imageFormatFromMime(mime)
+          : videoFormatFromMime(mime)) ?? classified.ext;
+    const ext = useCompressed
+      ? IMAGE_EXT[file.compressed!.format as ImageFormat]
+      : classified.ext;
+    const bytes = useCompressed ? file.compressed!.size : file.size;
+    const contentType = useCompressed
+      ? IMAGE_MIME[file.compressed!.format as ImageFormat]
+      : mime;
 
-      return {
-        mediaId,
-        kind: classified.kind,
-        source: useCompressed ? ("compressed" as const) : ("file" as const),
-        key: mediaKey(scope, mediaId, ext),
-        format,
-        bytes,
-        contentType,
-        poster:
-          classified.kind === "video" && file.poster
-            ? {
-                key: posterKey(
-                  scope,
-                  mediaId,
-                  IMAGE_EXT[file.poster.format as ImageFormat],
-                ),
-                bytes: file.poster.size,
-                mime: IMAGE_MIME[file.poster.format as ImageFormat],
-              }
-            : null,
-        width: file.sourceWidth ?? null,
-        height: file.sourceHeight ?? null,
-        durationSeconds: file.durationSeconds ?? null,
-        /*
-         * The worker still owes us something whenever the object in the bucket
-         * is not already a compressed, universally viewable file: an image the
-         * browser could not decode, or any video.
-         */
-        needsServer: !useCompressed,
-      };
-    });
+    const key = mediaKey(scope, mediaId, ext);
+    const poster =
+      classified.kind === "video" && file.poster
+        ? {
+            key: posterKey(
+              scope,
+              mediaId,
+              IMAGE_EXT[file.poster.format as ImageFormat],
+            ),
+            bytes: file.poster.size,
+            mime: IMAGE_MIME[file.poster.format as ImageFormat],
+          }
+        : null;
 
-    const totalBytes = prepared.reduce(
-      (sum, f) => sum + f.bytes + (f.poster?.bytes ?? 0),
-      0,
-    );
+    const totalBytes = bytes + (poster?.bytes ?? 0);
+
+    /* --- the promise ------------------------------------------------------ */
 
     const admin = createAdminClient();
     const { data: reserved, error: reserveError } = await admin.rpc(
@@ -209,73 +197,112 @@ export async function POST(request: Request) {
       );
     }
 
-    const rows: MediaInsert[] = prepared.map((f) => ({
-      id: f.mediaId,
+    const reservation: ReservationInsert = {
+      id: mediaId,
       event_id: event.id,
-      media_key: f.key,
-      poster_key: f.poster?.key ?? null,
-      size_bytes: f.bytes,
-      poster_size_bytes: f.poster?.bytes ?? 0,
-      media_format: f.format,
-      duration_seconds: f.durationSeconds,
-      processing: f.needsServer ? "pending" : "done",
-      mime_type: f.contentType,
-      kind: f.kind,
-      width: f.width,
-      height: f.height,
-      uploader_fingerprint: body.fingerprint,
-      uploader_name: body.uploaderName ?? null,
-      status: "pending",
-    }));
+      owner_id: event.owner_id,
+      media_key: key,
+      poster_key: poster?.key ?? null,
+      size_bytes: bytes,
+      poster_size_bytes: poster?.bytes ?? 0,
+      media: {
+        kind: classified.kind,
+        mime_type: contentType,
+        media_format: format,
+        duration_seconds: file.durationSeconds ?? null,
+        width: file.sourceWidth ?? null,
+        height: file.sourceHeight ?? null,
+        /*
+         * The worker still owes us something whenever the object in the bucket
+         * is not already a compressed, universally viewable file: an image the
+         * browser could not decode, or any video.
+         */
+        processing: useCompressed ? "done" : "pending",
+        uploader_fingerprint: body.fingerprint,
+        uploader_name: body.uploaderName || null,
+      },
+    };
 
-    const { error: insertError } = await admin.from("media").insert(rows);
+    const { error: insertError } = await admin
+      .from("upload_reservations")
+      .insert(reservation);
+
     if (insertError) {
-      await admin.rpc("release_storage", {
-        p_event: event.id,
-        p_bytes: totalBytes,
-      });
+      await release(event.id, totalBytes);
       /*
        * The guest gets a generic 500, so this log line is the only place the
        * cause is visible. Naming the migration is not decoration: an insert
-       * that names `media_key` against a database still on 0007 fails here and
-       * nowhere else, and "upload stopped working" is indistinguishable from a
-       * bucket problem until you read this.
+       * against a database still on 0009 fails here and nowhere else, and
+       * "upload stopped working" is indistinguishable from a bucket problem
+       * until you read this.
        */
       throw new Error(
-        `media insert failed (schema must be at migration 0008): ${insertError.message}`,
+        `reservation insert failed (schema must be at migration 0010): ${insertError.message}`,
       );
     }
+
+    /* --- the signature ---------------------------------------------------- */
 
     // Tagged with the tier so the S3 lifecycle rules can filter on it.
     const tags = { tier: tier.id };
 
     const sign = (
-      key: string,
-      contentType: string,
-      bytes: number,
+      signKey: string,
+      signType: string,
+      signBytes: number,
       slack = 0,
     ): Promise<PresignedUpload> =>
       storage.presignUpload({
-        key,
-        contentType,
-        maxBytes: Math.max(bytes + slack, 32 * 1024),
+        key: signKey,
+        contentType: signType,
+        maxBytes: Math.max(signBytes + slack, 32 * 1024),
         tags,
       });
 
-    const uploads = await Promise.all(
-      prepared.map(async (f) => ({
-        mediaId: f.mediaId,
-        /** Which blob the client should send: the compressed copy, or the file. */
-        source: f.source,
-        media: await sign(f.key, f.contentType, f.bytes),
-        // Browser encoders are not byte-deterministic between the measuring
-        // encode and the upload, so the signed ceiling carries some slack.
-        poster: f.poster
-          ? await sign(f.poster.key, f.poster.mime, f.poster.bytes, 32 * 1024)
-          : null,
-      })),
-    );
+    try {
+      const media = await sign(key, contentType, bytes);
+      // Browser encoders are not byte-deterministic between the measuring
+      // encode and the upload, so the signed ceiling carries some slack.
+      const posterUpload = poster
+        ? await sign(poster.key, poster.mime, poster.bytes, 32 * 1024)
+        : null;
 
-    return ok({ uploads });
+      return ok({
+        upload: {
+          mediaId,
+          /** Which blob to send: the compressed copy, or the file itself. */
+          source: useCompressed ? ("compressed" as const) : ("file" as const),
+          media,
+          poster: posterUpload,
+        },
+      });
+    } catch (error) {
+      /*
+       * A signing failure used to leave both the row and the reserved bytes
+       * behind - the rollback existed only on the insert path, and a bucket
+       * that had lost its credentials would quietly eat a host's quota one
+       * upload at a time. There is nothing for the guest to retry against, so
+       * the promise is withdrawn before the error goes up.
+       */
+      await admin.from("upload_reservations").delete().eq("id", mediaId);
+      await release(event.id, totalBytes);
+      throw error;
+    }
   });
+}
+
+/** Best effort: a refund that fails must not mask the error that caused it. */
+async function release(eventId: string, bytes: number) {
+  try {
+    await createAdminClient().rpc("release_storage", {
+      p_event: eventId,
+      p_bytes: bytes,
+    });
+  } catch (error) {
+    console.error("[presign] could not release reserved bytes", {
+      eventId,
+      bytes,
+      error,
+    });
+  }
 }

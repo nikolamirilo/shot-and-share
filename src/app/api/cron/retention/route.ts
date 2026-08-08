@@ -47,14 +47,14 @@ async function run(request: Request) {
     }
 
     const summary = {
-      pendingSwept: 0,
+      reservationsSwept: 0,
       warned: 0,
       expired: 0,
       hardDeleted: 0,
       objectsRemoved: 0,
     };
 
-    await sweepStalePending(summary);
+    await sweepStaleReservations(summary);
     await sendWarnings(summary);
     await expireEvents(summary);
     await hardDelete(summary);
@@ -66,29 +66,57 @@ async function run(request: Request) {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * How long a promise of storage outlives the guest who was given it.
+ *
+ * Two hours rather than the day the old pending-row sweep waited, because a
+ * reservation is now cheap bookkeeping instead of a media row, and quota held
+ * by an upload that will never happen is quota the host paid for. It still has
+ * to clear the slowest real upload: 200 MB is the largest single file any tier
+ * allows, which is about an hour on genuinely bad wifi, and the client's own
+ * stall watchdog gives up long before that if the connection has actually died.
+ */
+const RESERVATION_TTL_MS = 2 * 3600_000;
+
+/**
  * Uploads that reserved quota and never confirmed - a phone that died halfway,
  * a tab closed mid-batch. The bytes may or may not be in the bucket, so the
  * reservation is returned and any object is removed.
  */
-async function sweepStalePending(summary: { pendingSwept: number }) {
+async function sweepStaleReservations(summary: { reservationsSwept: number }) {
   const admin = createAdminClient();
-  const cutoff = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const cutoff = new Date(Date.now() - RESERVATION_TTL_MS).toISOString();
 
   const { data: rows } = await admin
-    .from("media")
+    .from("upload_reservations")
     .select("*")
-    .eq("status", "pending")
     .lt("created_at", cutoff)
     .limit(500);
 
   for (const row of rows ?? []) {
+    /*
+     * A confirm that wrote the media row and then failed to delete its own
+     * reservation leaves one behind pointing at a photo the host can see. This
+     * check is the difference between tidying up and deleting somebody's
+     * wedding photo, so it happens before anything is removed.
+     */
+    const { data: live } = await admin
+      .from("media")
+      .select("id")
+      .eq("id", row.id)
+      .maybeSingle();
+
+    if (live) {
+      await admin.from("upload_reservations").delete().eq("id", row.id);
+      continue;
+    }
+
     await storage.remove(mediaKeys(row));
-    await admin.from("media").update({ status: "deleted" }).eq("id", row.id);
+    await admin.from("upload_reservations").delete().eq("id", row.id);
     await admin.rpc("release_storage", {
       p_event: row.event_id,
       p_bytes: mediaBytes(row),
     });
-    summary.pendingSwept += 1;
+    summary.reservationsSwept += 1;
   }
 }
 

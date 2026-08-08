@@ -24,7 +24,7 @@ import type { EventRow } from "@/lib/db/types";
 import type { MediaView } from "@/lib/events";
 import { FONT_SETS, findFontSet, googleFontsHref } from "@/lib/fonts";
 import { GALLERY_LAYOUTS, type GalleryLayout } from "@/lib/gallery";
-import { MAX_FILES_PER_REQUEST } from "@/lib/media";
+import { MAX_FILES_PER_PICK } from "@/lib/media";
 import { getTier } from "@/lib/tiers";
 
 /**
@@ -152,8 +152,8 @@ export function AppearanceForm({
               label="Add your photos"
               hint={
                 getTier(event.tier).video
-                  ? `Photos and video, up to ${MAX_FILES_PER_REQUEST} at a time.`
-                  : `Photos, up to ${MAX_FILES_PER_REQUEST} at a time.`
+                  ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
+                  : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
               }
               name=""
               preview
@@ -198,7 +198,7 @@ export function AppearanceForm({
           stickyOffset={70}
           tablistClassName="-mx-5 px-5 sm:-mx-6 sm:px-6"
         >
-          <TabPanel id="theme" className="mt-5 space-y-6 lg:mt-0">
+          <TabPanel id="theme" className="mt-5 space-y-6">
             <Group label="Theme">
               <div className="flex flex-wrap gap-2">
                 {THEMES.map((theme) => (
@@ -230,7 +230,7 @@ export function AppearanceForm({
             )}
           </TabPanel>
 
-          <TabPanel id="type" className="mt-5 space-y-6 lg:mt-6">
+          <TabPanel id="type" className="mt-5 space-y-6">
             <Group label="Type" hint="Pairs a heading face with a body face.">
               <div className="grid gap-2 xs:grid-cols-2">
                 {FONT_SETS.map((set) => (
@@ -269,7 +269,7 @@ export function AppearanceForm({
             </Group>
           </TabPanel>
 
-          <TabPanel id="cover" className="mt-5 space-y-6 lg:mt-6">
+          <TabPanel id="cover" className="mt-5 space-y-6">
             <Group label="Cover style">
               <div className="grid gap-2 xs:grid-cols-2">
                 {COVER_VARIANTS.map((option) => (
@@ -342,7 +342,7 @@ export function AppearanceForm({
             </Group>
           </TabPanel>
 
-          <TabPanel id="uploads" className="mt-5 space-y-6 lg:mt-6">
+          <TabPanel id="uploads" className="mt-5 space-y-6">
             <Group label="Asking for photos">
               <div className="grid gap-2 xs:grid-cols-2">
                 {UPLOAD_VARIANTS.map((option) => (
@@ -358,7 +358,7 @@ export function AppearanceForm({
             </Group>
           </TabPanel>
 
-          <TabPanel id="gallery" className="mt-5 space-y-6 lg:mt-6">
+          <TabPanel id="gallery" className="mt-5 space-y-6">
             <Group label="Gallery layout">
               <div className="grid gap-2 xs:grid-cols-2">
                 {GALLERY_LAYOUTS.map((option) => (

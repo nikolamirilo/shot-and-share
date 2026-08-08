@@ -127,8 +127,14 @@ export function classify(
   return null;
 }
 
-/** Guests upload from a phone. One batch, not one photo at a time. */
-export const MAX_FILES_PER_REQUEST = 30;
+/**
+ * How many files a guest may pick at once.
+ *
+ * Not a request size any more: each file is presigned and confirmed on its own
+ * so that uploading can start before the last one has finished compressing.
+ * This is the cap on one tap of the button.
+ */
+export const MAX_FILES_PER_PICK = 30;
 
 /** The poster frame pulled out of a video. Small enough for a grid. */
 export const POSTER_MAX_EDGE = 720;

@@ -2,26 +2,29 @@
 
 import { useRef, useState } from "react";
 
-import { Hole, ProgressBar, cx } from "@/components/ui";
+import { Button, Hole, ProgressBar, cx } from "@/components/ui";
 import { UploadPanel } from "@/components/upload-panel";
 import type { UploadVariant } from "@/lib/appearance";
 import { compressImage, probeVideo } from "@/lib/client/codec";
 import {
+  UploadError,
+  gate,
   getFingerprint,
   getSavedName,
-  pool,
+  postJson,
   saveName,
   uploadToPresigned,
+  withRetry,
 } from "@/lib/client/upload";
 import { formatBytes } from "@/lib/format";
 import {
   ACCEPT_ATTRIBUTE_ALL,
   ACCEPT_ATTRIBUTE_PHOTO,
-  MAX_FILES_PER_REQUEST,
+  MAX_FILES_PER_PICK,
 } from "@/lib/media";
 import type { PresignedUpload } from "@/lib/storage/types";
 
-type ItemStatus = "preparing" | "prepared" | "uploading" | "done" | "failed";
+type ItemStatus = "waiting" | "preparing" | "uploading" | "done" | "failed";
 
 interface Item {
   key: string;
@@ -32,26 +35,48 @@ interface Item {
 }
 
 interface PresignResponse {
-  uploads: Array<{
+  upload: {
     mediaId: string;
     /** "compressed" means send the re-encoded copy, not the file off the disk. */
     source: "file" | "compressed";
     media: PresignedUpload;
     poster: PresignedUpload | null;
-  }>;
+  };
 }
 
 /** Everything the browser managed to produce for one selected file. */
 interface Prepared {
-  file: File;
   compressed: Blob | null;
   poster: Blob | null;
   sourceWidth: number | null;
   sourceHeight: number | null;
-  durationSeconds: number | null;
-  needsServer: boolean;
   descriptor: Record<string, unknown>;
 }
+
+/**
+ * How many files are compressed, and uploaded, at the same time.
+ *
+ * Two separate gates rather than one queue, because they are two different
+ * machines: compressing is the processor and uploading is the radio. A file
+ * that has finished compressing climbs out over the network while the next one
+ * is still being re-encoded, so the two costs overlap instead of being paid one
+ * after the other. Before this the guest watched every photo shrink before a
+ * single byte left the phone.
+ */
+const COMPRESS_AT_ONCE = 3;
+const UPLOAD_AT_ONCE = 3;
+
+/**
+ * What a photo is expected to shrink to, used only to fail fast.
+ *
+ * A guest who picks two gigabytes into an event with two hundred megabytes left
+ * should hear about it in the half second after tapping, not after thirty
+ * seconds of compressing. It is deliberately optimistic - compression usually
+ * does better than a quarter - because the cost of being wrong in this
+ * direction is one wasted upload attempt, and the cost of being wrong in the
+ * other is refusing a batch that would have fitted.
+ */
+const OPTIMISTIC_COMPRESSION = 4;
 
 /**
  * The guest side is one screen and it stays that way.
@@ -79,6 +104,7 @@ export function Uploader({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const picks = useRef(0);
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +113,6 @@ export function Uploader({
     typeof window === "undefined" ? "" : getSavedName(),
   );
   const [completed, setCompleted] = useState(0);
-  const [stage, setStage] = useState<"Preparing" | "Uploading">("Preparing");
   const [saved, setSaved] = useState({ from: 0, to: 0 });
 
   function update(key: string, patch: Partial<Item>) {
@@ -96,10 +121,172 @@ export function Uploader({
     );
   }
 
-  async function handleFiles(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
+  /**
+   * Everything one file goes through, start to finish, on its own.
+   *
+   * The whole batch used to share a single chain - compress all, presign all,
+   * upload all, confirm all - which meant one unreadable file took twenty
+   * photos down with it and nothing was committed until the last one landed.
+   * Now a file that fails fails alone, and a file that lands is written to the
+   * database immediately, so a guest who closes the tab halfway keeps
+   * everything that already went up.
+   */
+  async function runOne(
+    item: Item,
+    fingerprint: string,
+    uploaderName: string | null,
+    compressing: <T>(task: () => Promise<T>) => Promise<T>,
+    uploading: <T>(task: () => Promise<T>) => Promise<T>,
+  ): Promise<boolean> {
+    try {
+      const prepared = await compressing(async () => {
+        update(item.key, { status: "preparing" });
+        return prepare(item.file);
+      });
 
-    const files = Array.from(fileList).slice(0, MAX_FILES_PER_REQUEST);
+      // What the guest would have sent versus what they are about to send.
+      setSaved((prev) => ({
+        from: prev.from + item.file.size,
+        to: prev.to + (prepared.compressed?.size ?? item.file.size),
+      }));
+
+      await uploading(async () => {
+        update(item.key, { status: "uploading", progress: 0 });
+        await send(item, prepared, fingerprint, uploaderName);
+      });
+
+      update(item.key, { status: "done", progress: 100 });
+      return true;
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "That one did not go through.";
+      if (e instanceof UploadError && e.upgrade) setUpgradeHint(true);
+      update(item.key, { status: "failed", error: message });
+      return false;
+    }
+  }
+
+  /** Ask for a URL, send the bytes, then write the row. */
+  async function send(
+    item: Item,
+    prepared: Prepared,
+    fingerprint: string,
+    uploaderName: string | null,
+  ) {
+    const { upload } = await withRetry(() =>
+      postJson<PresignResponse>("/api/upload/presign", {
+        token,
+        fingerprint,
+        uploaderName,
+        file: prepared.descriptor,
+      }),
+    );
+
+    const body =
+      upload.source === "compressed" && prepared.compressed
+        ? prepared.compressed
+        : item.file;
+
+    let posterUploaded = false;
+
+    try {
+      await withRetry(() =>
+        uploadToPresigned(upload.media, body, (fraction) =>
+          update(item.key, { progress: Math.round(fraction * 100) }),
+        ),
+      );
+
+      // A video's poster is cosmetic and the worker can cut another one. It
+      // failing must never cost the clip.
+      if (upload.poster && prepared.poster) {
+        try {
+          await uploadToPresigned(upload.poster, prepared.poster);
+          posterUploaded = true;
+        } catch (e) {
+          // Logged rather than swallowed: a poster that never uploads at any
+          // event is a bucket problem, and a silent catch is how it stays
+          // invisible for a month.
+          console.error("[upload] poster failed, keeping the clip", e);
+        }
+      }
+    } catch (e) {
+      /*
+       * Hand the reserved space back before giving up, so a failed upload does
+       * not sit on the host's quota until the nightly sweep.
+       */
+      await confirm(fingerprint, upload.mediaId, prepared, false, false).catch(
+        () => {
+          /* the sweep is the backstop */
+        },
+      );
+      throw e;
+    }
+
+    /*
+     * The bytes are in the bucket. Confirming is what turns them into a photo,
+     * so it is worth retrying hard: losing the picture because a four hundred
+     * byte acknowledgement did not get through would be the worst trade in the
+     * system.
+     */
+    const result = await withRetry(() =>
+      confirm(fingerprint, upload.mediaId, prepared, true, posterUploaded),
+    );
+
+    if (!result.confirmed) {
+      throw new UploadError("The host's gallery would not accept it.");
+    }
+  }
+
+  function confirm(
+    fingerprint: string,
+    mediaId: string,
+    prepared: Prepared,
+    mediaUploaded: boolean,
+    posterUploaded: boolean,
+  ) {
+    return postJson<{ confirmed: boolean }>("/api/upload/confirm", {
+      token,
+      fingerprint,
+      mediaId,
+      width: prepared.sourceWidth,
+      height: prepared.sourceHeight,
+      mediaUploaded,
+      posterUploaded,
+      failed: !mediaUploaded,
+    });
+  }
+
+  /** Runs a set of items through both gates and reports what survived. */
+  async function runBatch(batch: Item[]) {
+    setBusy(true);
+    const fingerprint = getFingerprint();
+    const uploaderName = name.trim() || null;
+    saveName(name.trim());
+
+    const compressing = gate(COMPRESS_AT_ONCE);
+    const uploading = gate(UPLOAD_AT_ONCE);
+
+    try {
+      const results = await Promise.all(
+        batch.map((item) =>
+          runOne(item, fingerprint, uploaderName, compressing, uploading),
+        ),
+      );
+
+      const succeeded = results.filter(Boolean).length;
+      setCompleted((prev) => prev + succeeded);
+      if (succeeded > 0) onUploaded();
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+      if (cameraRef.current) cameraRef.current.value = "";
+    }
+  }
+
+  async function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0 || busy) return;
+
+    const files = Array.from(fileList).slice(0, MAX_FILES_PER_PICK);
     setError(null);
     setUpgradeHint(false);
 
@@ -111,135 +298,53 @@ export function Uploader({
       return;
     }
 
-    const next: Item[] = files.map((file, i) => ({
-      key: `${Date.now()}-${i}-${file.name}`,
+    // The server checks this again once it knows the real compressed size, and
+    // its answer is the one that counts. This is only here so a hopeless batch
+    // fails in half a second instead of after a minute of compressing.
+    const room = remainingBytes - saved.to;
+    if (estimate(files) > room) {
+      setError(
+        `There is only ${formatBytes(Math.max(0, room))} of room left at this event, which is not enough for what you picked.`,
+      );
+      setUpgradeHint(true);
+      return;
+    }
+
+    const batch: Item[] = files.map((file, i) => ({
+      key: `${picks.current}-${i}-${file.name}`,
       file,
-      status: "preparing",
+      status: "waiting",
       progress: 0,
     }));
-    setItems(next);
-    setBusy(true);
-    saveName(name.trim());
+    picks.current += 1;
 
-    try {
-      // 1. Compress locally. The phone that took the photo has the pixels
-      //    already decoded and the guest is looking at the screen anyway.
-      setStage("Preparing");
-      const prepared: Prepared[] = [];
-      for (const item of next) {
-        prepared.push(await prepare(item.file));
-        update(item.key, { status: "prepared" });
-      }
-
-      // What the guest would have sent versus what they are about to send.
-      setSaved((prev) => ({
-        from: prev.from + next.reduce((sum, i) => sum + i.file.size, 0),
-        to:
-          prev.to +
-          prepared.reduce(
-            (sum, p) => sum + (p.compressed ? p.compressed.size : p.file.size),
-            0,
-          ),
-      }));
-
-      // 2. Ask for URLs. The quota is checked before a single one is issued,
-      //    and the server decides which copies are worth storing.
-      setStage("Uploading");
-      const fingerprint = getFingerprint();
-      const presignRes = await fetch("/api/upload/presign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          fingerprint,
-          uploaderName: name.trim() || null,
-          files: prepared.map((p) => p.descriptor),
-        }),
-      });
-
-      const presignBody = await presignRes.json();
-      if (!presignRes.ok) {
-        const message =
-          presignBody?.error?.message ?? "Could not start the upload.";
-        setUpgradeHint(Boolean(presignBody?.error?.upgrade));
-        throw new Error(message);
-      }
-
-      const { uploads } = presignBody as PresignResponse;
-
-      const results = uploads.map((u) => ({
-        mediaId: u.mediaId,
-        width: null as number | null,
-        height: null as number | null,
-        mediaUploaded: false,
-        posterUploaded: false,
-        failed: false,
-      }));
-
-      // 3. Straight to storage, three at a time. One object per file.
-      await pool(next, 3, async (item, index) => {
-        const upload = uploads[index];
-        const source = prepared[index];
-        update(item.key, { status: "uploading" });
-
-        const body =
-          upload.source === "compressed" && source.compressed
-            ? source.compressed
-            : item.file;
-
-        try {
-          await uploadToPresigned(upload.media, body, (fraction) =>
-            update(item.key, { progress: Math.round(fraction * 100) }),
-          );
-          results[index].mediaUploaded = true;
-          results[index].width = source.sourceWidth;
-          results[index].height = source.sourceHeight;
-
-          // A video's poster is cosmetic and the worker can cut another one.
-          // It failing must never cost the clip.
-          if (upload.poster && source.poster) {
-            try {
-              await uploadToPresigned(upload.poster, source.poster);
-              results[index].posterUploaded = true;
-            } catch {
-              /* the server hands the reserved bytes back on confirm */
-            }
-          }
-
-          update(item.key, { status: "done", progress: 100 });
-        } catch (e) {
-          results[index].failed = true;
-          update(item.key, {
-            status: "failed",
-            error: e instanceof Error ? e.message : "Upload failed.",
-          });
-        }
-      });
-
-      // 4. Commit. Anything that failed hands its reserved space back.
-      await fetch("/api/upload/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, fingerprint, items: results }),
-      });
-
-      const succeeded = results.filter((r) => !r.failed).length;
-      setCompleted((prev) => prev + succeeded);
-      if (succeeded > 0) onUploaded();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
-      setItems((prev) =>
-        prev.map((item) =>
-          item.status === "done" ? item : { ...item, status: "failed" },
-        ),
-      );
-    } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+    // Appended, not replaced: a guest adding a second handful should still see
+    // the first one sitting there marked "added".
+    setItems((prev) => [...prev, ...batch]);
+    await runBatch(batch);
   }
 
-  const inFlight = items.filter((i) => i.status !== "done").length;
+  async function retryFailed() {
+    const failed = items.filter((i) => i.status === "failed");
+    if (failed.length === 0 || busy) return;
+
+    setError(null);
+    setUpgradeHint(false);
+    setItems((prev) =>
+      prev.map((item) =>
+        item.status === "failed"
+          ? { ...item, status: "waiting", progress: 0, error: undefined }
+          : item,
+      ),
+    );
+
+    await runBatch(failed.map((item) => ({ ...item, status: "waiting" })));
+  }
+
+  const failedCount = items.filter((i) => i.status === "failed").length;
+  const inFlight = items.filter(
+    (i) => i.status !== "done" && i.status !== "failed",
+  ).length;
   const overall =
     items.length === 0
       ? 0
@@ -281,15 +386,11 @@ export function Uploader({
       <UploadPanel
         variant={variant}
         busy={busy}
-        label={
-          busy
-            ? `${stage}… ${stage === "Uploading" ? `${overall}%` : ""}`
-            : "Add your photos"
-        }
+        label={busy ? `Uploading… ${overall}%` : "Add your photos"}
         hint={`${
           allowVideo
-            ? `Photos and video, up to ${MAX_FILES_PER_REQUEST} at a time.`
-            : `Photos, up to ${MAX_FILES_PER_REQUEST} at a time.`
+            ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
+            : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
         } ${formatBytes(remainingBytes)} of room left.`}
         name={name}
         onNameChange={setName}
@@ -323,16 +424,41 @@ export function Uploader({
                         ? "failed"
                         : item.status === "uploading"
                           ? `${item.progress}%`
-                          : item.status === "prepared"
-                            ? "ready"
-                            : "shrinking"}
+                          : item.status === "preparing"
+                            ? "shrinking"
+                            : "waiting"}
                   </span>
                 </li>
               ))}
             </ul>
           </div>
         )}
-  
+
+        {/* A partial failure used to show a thank-you and nothing else, so a
+            guest had no way of knowing three of their ten were missing and no
+            way to send them again without hunting through a camera roll. */}
+        {failedCount > 0 && !busy && (
+          <div className="mt-5 rounded-xl border-2 border-pepper bg-butter p-4">
+            <p className="text-[0.9375rem] font-semibold">
+              {failedCount === 1
+                ? "One did not make it."
+                : `${failedCount} did not make it.`}
+            </p>
+            <p className="mt-1.5 text-[0.9375rem] text-crust">
+              {items.find((i) => i.status === "failed")?.error ??
+                "The connection dropped."}
+            </p>
+            <Button
+              size="md"
+              variant="secondary"
+              onClick={retryFailed}
+              className="mt-3"
+            >
+              {failedCount === 1 ? "Try again" : `Try ${failedCount} again`}
+            </Button>
+          </div>
+        )}
+
         {completed > 0 && inFlight === 0 && !busy && (
           <p className="mt-5 rounded-xl border-2 border-pepper bg-gouda p-4 text-center">
             <strong>Thank you.</strong>{" "}
@@ -347,7 +473,7 @@ export function Uploader({
             )}
           </p>
         )}
-  
+
         {error && (
           <div className="mt-5 rounded-xl border-2 border-pepper bg-butter p-4">
             <p className="text-[0.9375rem] font-semibold">{error}</p>
@@ -365,6 +491,22 @@ export function Uploader({
 }
 
 /**
+ * The smallest these files could plausibly become, for the fail-fast check.
+ * Video is counted whole: the browser cannot compress it, and pretending
+ * otherwise would let a batch through that has no chance of fitting.
+ */
+function estimate(files: File[]): number {
+  return files.reduce(
+    (sum, file) =>
+      sum +
+      (file.type.startsWith("video/")
+        ? file.size
+        : file.size / OPTIMISTIC_COMPRESSION),
+    0,
+  );
+}
+
+/**
  * Everything the browser can do for one file before it leaves the device:
  * decode it, shrink it, re-encode it into a format that opens anywhere, and -
  * for a video - pull a poster frame out of it.
@@ -373,13 +515,10 @@ async function prepare(file: File): Promise<Prepared> {
   if (file.type.startsWith("video/")) {
     const probe = await probeVideo(file);
     return {
-      file,
       compressed: null,
       poster: probe.poster?.blob ?? null,
       sourceWidth: probe.width,
       sourceHeight: probe.height,
-      durationSeconds: probe.durationSeconds,
-      needsServer: true,
       descriptor: {
         size: file.size,
         type: file.type,
@@ -401,13 +540,10 @@ async function prepare(file: File): Promise<Prepared> {
 
   const result = await compressImage(file);
   return {
-    file,
     compressed: result.compressed?.blob ?? null,
     poster: null,
     sourceWidth: result.sourceWidth,
     sourceHeight: result.sourceHeight,
-    durationSeconds: null,
-    needsServer: result.needsServer,
     descriptor: {
       size: file.size,
       type: file.type,

@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { TabPanel, Tabs, type TabItem } from "@/components/tabs";
 
 /**
- * The host's console is one column two thumbs long on a phone, so its groups
- * are tabs there and stay open on a laptop. Both halves of that sentence are
- * load-bearing, and both are done in CSS - which is exactly the kind of thing
- * that gets quietly undone by a later class change.
+ * The host's console shows one group at a time at every width - a strip across
+ * the top of a phone, a rail down the side of a laptop. Both the switching and
+ * the two shapes of the buttons are done in CSS, which is exactly the kind of
+ * thing that gets quietly undone by a later class change.
  */
 
 const ITEMS: TabItem[] = [
@@ -18,7 +18,7 @@ const ITEMS: TabItem[] = [
 
 function render() {
   return renderToStaticMarkup(
-    <Tabs items={ITEMS} label="Event sections" sticky>
+    <Tabs items={ITEMS} label="Event sections" desktop="rail" sticky>
       <TabPanel id="share" display="grid">
         the share panel
       </TabPanel>
@@ -31,22 +31,23 @@ function render() {
 describe("the tabs on the event console", () => {
   it("ships every panel, open or not", () => {
     // Closed is a display rule, not a reason to leave the markup out: a host
-    // switching tabs keeps what they typed, and a laptop gets the whole page
-    // in the first response.
+    // switching tabs keeps what they typed, and the whole console arrives in
+    // the first response.
     const html = render();
     expect(html).toContain("the share panel");
     expect(html).toContain("the plan panel");
     expect(html).toContain("the settings panel");
   });
 
-  it("opens the first tab and closes the rest on a phone only", () => {
-    // `hidden` on its own would hide the panel on a laptop too, where there is
-    // no strip to open it again with.
+  it("opens the first tab and closes the rest at every width", () => {
+    // `hidden lg:block` was right while a laptop showed the whole console at
+    // once. It would now leave every panel stacked behind the rail.
     const html = render();
     expect(html).toContain('id="share"');
     expect(html).not.toMatch(/id="share"[^>]*class="[^"]*hidden/);
-    expect(html).toMatch(/id="upgrade"[^>]*class="hidden lg:block/);
-    expect(html).toMatch(/id="settings"[^>]*class="hidden lg:block/);
+    expect(html).toMatch(/id="upgrade"[^>]*class="hidden/);
+    expect(html).toMatch(/id="settings"[^>]*class="hidden/);
+    expect(html).not.toMatch(/id="(upgrade|settings)"[^>]*lg:(block|grid)/);
   });
 
   it("keeps a closed grid panel a grid when it reopens", () => {
@@ -56,8 +57,29 @@ describe("the tabs on the event console", () => {
     expect(html).toMatch(/id="share"[^>]*class="grid/);
   });
 
-  it("hides the strip itself once the whole console fits", () => {
-    expect(render()).toMatch(/role="tablist"[^>]*class="[^"]*lg:hidden/);
+  it("keeps the strip on the screens that used to hide it", () => {
+    const html = render();
+    expect(html).toMatch(/role="tablist"/);
+    expect(html).not.toMatch(/role="tablist"[^>]*class="[^"]*lg:hidden/);
+  });
+
+  it("stands the rail up beside the panel on a laptop", () => {
+    // The two halves of a rail: a column of buttons, and a grid to put that
+    // column and the open panel in. Either one alone is a broken layout.
+    const html = render();
+    expect(html).toMatch(/role="tablist"[^>]*class="[^"]*lg:flex-col/);
+    expect(html).toMatch(/lg:grid-cols-\[13rem_1fr\]/);
+  });
+
+  it("leaves a strip horizontal on a laptop", () => {
+    const html = renderToStaticMarkup(
+      <Tabs items={ITEMS} label="Event page settings" idPrefix="look">
+        <TabPanel id="share">the share panel</TabPanel>
+      </Tabs>,
+    );
+    expect(html).not.toContain("lg:flex-col");
+    expect(html).not.toContain("lg:grid-cols-[13rem_1fr]");
+    expect(html).toContain('aria-orientation="horizontal"');
   });
 
   it("points each tab at the panel it opens", () => {
