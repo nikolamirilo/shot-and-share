@@ -92,7 +92,7 @@ export function SharePanel({
 
             <div>
 
-              <div className="mt-3 flex flex-col gap-2">
+              <div className="mt-3 flex flex-col items-center gap-2">
                 <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
                   {copied ? "Copied" : "Copy link"}
                 </Button>

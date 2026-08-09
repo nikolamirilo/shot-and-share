@@ -10,7 +10,7 @@ const event: EventRow = {
   owner_id: "o1",
   name: "Ana and Marko",
   event_date: "2026-09-12",
-  tier: "wheel",
+  tier: "wedding",
   keep_forever: false,
   storage_quota_bytes: 1,
   storage_used_bytes: 0,

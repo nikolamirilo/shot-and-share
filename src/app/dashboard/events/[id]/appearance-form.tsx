@@ -1,13 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 
-import { updateAppearance, type ActionState } from "@/app/dashboard/actions";
+import { updateAppearance } from "@/app/dashboard/actions";
 import { EventPreview } from "@/components/event-preview";
 import { TabPanel, Tabs, type TabItem } from "@/components/tabs";
-import { Badge, Button, ButtonLink, cx } from "@/components/ui";
+import { Badge, ButtonLink, cx } from "@/components/ui";
 import {
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
@@ -64,6 +63,19 @@ const LOOK_TABS: TabItem[] = [
   { id: "gallery", label: "Gallery" },
 ];
 
+/**
+ * How long a change sits before it is written.
+ *
+ * Long enough that dragging a colour picker is one write rather than sixty,
+ * short enough that a host who picks a theme and looks away has already saved.
+ */
+const SAVE_DELAY = 700;
+
+interface SaveState {
+  status: "clean" | "saving" | "saved";
+  error?: string;
+}
+
 export function AppearanceForm({
   event,
   media,
@@ -74,11 +86,6 @@ export function AppearanceForm({
   /** Free plan: the whole thing is an upsell rather than a form. */
   locked: boolean;
 }) {
-  const [state, formAction] = useActionState<ActionState, FormData>(
-    updateAppearance.bind(null, event.id),
-    {},
-  );
-
   const custom = (event.theme_custom ?? {}) as Record<string, string>;
   const [themeId, setThemeId] = useState(event.theme ?? "cheese");
   const [fontId, setFontId] = useState(event.theme_font ?? "cheese");
@@ -101,6 +108,19 @@ export function AppearanceForm({
     surface: custom.surface ?? "#FFFDF4",
     accent: custom.accent ?? "#FFC02E",
     ink: custom.ink ?? "#1F1607",
+  });
+
+  const save = useAutoSave(event.id, {
+    theme: themeId,
+    theme_font: fontId,
+    cover_variant: cover,
+    upload_variant: upload,
+    gallery_layout: layout,
+    cover_media_id: coverMediaId ?? "",
+    custom_bg: colors.bg,
+    custom_surface: colors.surface,
+    custom_accent: colors.accent,
+    custom_ink: colors.ink,
   });
 
   const palette =
@@ -149,27 +169,10 @@ export function AppearanceForm({
         there is the shape of the page rather than the pictures.
       </p>
 
-      {/* Two columns on a laptop, one on a phone. The form is the grid rather
-          than something inside it, so the drawing can sit in the second column
-          while the controls that change it stay part of the same submission. */}
-      <form
-        action={formAction}
-        className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_23rem] xl:gap-8"
-      >
-        <input type="hidden" name="theme" value={themeId} />
-        <input type="hidden" name="theme_font" value={fontId} />
-        <input type="hidden" name="cover_variant" value={cover} />
-        <input type="hidden" name="upload_variant" value={upload} />
-        <input type="hidden" name="gallery_layout" value={layout} />
-        <input
-          type="hidden"
-          name="cover_media_id"
-          value={coverMediaId ?? ""}
-        />
-        {Object.entries(colors).map(([key, value]) => (
-          <input key={key} type="hidden" name={`custom_${key}`} value={value} />
-        ))}
-
+      {/* Two columns on a laptop, one on a phone. There is no form element and
+          no submit: every control writes itself (see useAutoSave), so what
+          would have been a form is just the layout. */}
+      <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_23rem] xl:gap-8">
         {/* --- live preview -------------------------------------------------
             The real components, in a real theme root. A mock-up here is how a
             setting ends up looking dead: the panels beside it are the same ones
@@ -200,6 +203,11 @@ export function AppearanceForm({
                 : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
             }
           />
+
+          {/* Under the drawing, which is the thing that just changed, and
+              pinned with it: with no button to press, this line is the only
+              answer to "did that stick?". */}
+          <SaveNote save={save} />
         </div>
 
         {/* A container rather than the viewport decides how the option grids
@@ -396,31 +404,109 @@ export function AppearanceForm({
               </Group>
             </TabPanel>
           </Tabs>
-
-          {state.error && (
-            <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
-              {state.error}
-            </p>
-          )}
-          {state.ok && (
-            <p className="rounded-xl border-2 border-pepper bg-gouda p-3 text-[0.9375rem]">
-              Saved. Guests see this now.
-            </p>
-          )}
-
-          <Save />
         </div>
-      </form>
+      </div>
     </section>
   );
 }
 
-function Save() {
-  const { pending } = useFormStatus();
+/**
+ * Writes every change, by itself, shortly after it is made.
+ *
+ * There was a "Save the page" button under the options. Behind tabs it was
+ * under whichever group happened to be open, which reads as saving that group,
+ * and a host who set a colour, opened Cover and left never saved anything at
+ * all. Nothing here is a form any more: the controls are the save.
+ *
+ * `fields` is the whole payload rather than a diff, because the action writes
+ * the whole row - and comparing its JSON against what the database last took is
+ * both the change detector and the guard against a save on first paint. A row
+ * whose stored variant no longer exists is coerced on the way into state (see
+ * the caller) and is deliberately *not* written back for it: rewriting rows
+ * because someone looked at a page is not saving, it is drift.
+ */
+function useAutoSave(eventId: string, fields: Record<string, string>) {
+  const [save, setSave] = useState<SaveState>({ status: "clean" });
+
+  const wanted = JSON.stringify(fields);
+  // What the database is known to hold. Seeded with the first render, so
+  // arriving on the page is never a change.
+  const stored = useRef(wanted);
+  // Which attempt is the current one. A slower earlier write must not be the
+  // thing that decides what is on screen, or what `stored` believes.
+  const attempt = useRef(0);
+
+  useEffect(() => {
+    if (wanted === stored.current) return;
+
+    const mine = ++attempt.current;
+    setSave({ status: "saving" });
+
+    const timer = setTimeout(async () => {
+      const body = new FormData();
+      for (const [key, value] of Object.entries(
+        JSON.parse(wanted) as Record<string, string>,
+      )) {
+        body.set(key, value);
+      }
+
+      // A rejected action is a lost tunnel or a signed-out session, and with
+      // no button in front of the host the failure has to say so itself -
+      // otherwise "Saving…" sits there forever and they close the tab
+      // believing their page changed.
+      const result = await updateAppearance(eventId, {}, body).catch(() => ({
+        error: "That did not save. Check your connection and try again.",
+      }));
+      if (attempt.current !== mine) return;
+
+      if (result.error) {
+        setSave({ status: "clean", error: result.error });
+        return;
+      }
+      stored.current = wanted;
+      setSave({ status: "saved" });
+    }, SAVE_DELAY);
+
+    return () => clearTimeout(timer);
+  }, [wanted, eventId]);
+
+  return save;
+}
+
+/**
+ * The whole of the feedback, which is one line.
+ *
+ * Polite rather than assertive: it changes on every click, and a screen reader
+ * that interrupts the name of the theme you just picked to say "saving" is
+ * worse than one that waits.
+ */
+function SaveNote({ save }: { save: SaveState }) {
+  if (save.error) {
+    return (
+      <p className="mt-3 rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
+        {save.error}
+      </p>
+    );
+  }
+
   return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-      {pending ? "Saving…" : "Save the page"}
-    </Button>
+    <p
+      aria-live="polite"
+      className="mt-3 flex items-center gap-2 text-[0.8125rem] text-crust"
+    >
+      <span
+        aria-hidden
+        className={cx(
+          "h-2.5 w-2.5 shrink-0 rounded-full border-2 border-pepper",
+          save.status === "saved" ? "bg-gouda" : "bg-transparent",
+        )}
+      />
+      {save.status === "saving"
+        ? "Saving…"
+        : save.status === "saved"
+          ? "Saved. Guests see this now."
+          : "Every change saves itself."}
+    </p>
   );
 }
 
