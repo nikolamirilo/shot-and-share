@@ -5,7 +5,7 @@ import { ButtonLink } from "@/components/ui";
 
 export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
   return (
-    <header className="sticky top-0 z-40 border-b-2 border-pepper bg-butter/92 backdrop-blur">
+    <header className="sticky top-0 z-40 bg-butter/92 shadow-sm backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5">
         <Link href="/" aria-label="Say Cheese, home" className="shrink-0">
           <Wordmark labelClassName="hidden xs:inline" />
@@ -43,7 +43,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t-2 border-pepper bg-pepper text-butter">
+    <footer className="bg-pepper text-butter">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-9 px-4 py-12 sm:grid-cols-[1.3fr_1fr_1fr] sm:gap-10 sm:px-5 sm:py-14">
         {/* Two columns of links side by side on a phone rather than three
             stacked blocks: it halves the scroll and the columns are short. */}
@@ -80,7 +80,9 @@ export function SiteFooter() {
         />
       </div>
 
-      <div className="border-t border-butter/15">
+      {/* A shadow falls on nothing at this end of the page, so the colophon is
+          divided off by sinking a shade rather than by a rule. */}
+      <div className="bg-black/15">
         <p className="mx-auto max-w-6xl px-4 py-5 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-butter/55 sm:px-5">
           © {new Date().getFullYear()} Say Cheese
         </p>

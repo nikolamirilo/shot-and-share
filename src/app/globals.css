@@ -46,21 +46,36 @@
 
   --radius-card: 1.25rem;
 
-  --shadow-hard: 4px 4px 0 var(--color-pepper);
-  --shadow-hard-lg: 7px 7px 0 var(--color-pepper);
-  --shadow-hard-sm: 3px 3px 0 var(--color-pepper);
+  /* Depth is the only edge in the interface. Nothing is outlined, so a card is
+     a card because it floats, an input is an input because it sinks.
+
+     The tint is mixed from --color-pepper rather than written as a fixed brown
+     because an event page overrides that variable with its host's own ink (see
+     themeStyle in lib/appearance.ts). A var() inside a custom property is
+     substituted where the property is *used*, not where it is declared, so a
+     sage page casts a sage shadow without any of this being restated. */
+  --shadow-sm:
+    0 1px 2px color-mix(in srgb, var(--color-pepper) 8%, transparent),
+    0 2px 6px color-mix(in srgb, var(--color-pepper) 7%, transparent);
+  --shadow-md:
+    0 1px 2px color-mix(in srgb, var(--color-pepper) 6%, transparent),
+    0 4px 12px color-mix(in srgb, var(--color-pepper) 10%, transparent);
+  --shadow-lg:
+    0 2px 4px color-mix(in srgb, var(--color-pepper) 6%, transparent),
+    0 12px 28px color-mix(in srgb, var(--color-pepper) 12%, transparent);
+
+  /* The counterpart. Anything the interface receives something into - a field,
+     a drop zone, a progress track - is sunken rather than raised. */
+  --inset-shadow-well:
+    inset 0 1px 3px color-mix(in srgb, var(--color-pepper) 12%, transparent);
 }
 
 @layer base {
-  * {
-    border-color: var(--color-pepper);
-  }
-
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     /* iOS paints its own grey box over anything tappable, which fights the
-       hard-shadow buttons. The interface already answers a tap by lifting. */
+       shadows. The interface already answers a tap by settling. */
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -172,8 +187,17 @@
 
   .card {
     background-color: var(--color-cream);
-    border: 2px solid var(--color-pepper);
     border-radius: var(--radius-card);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* A note inside a card. Cream on cream is nothing without an outline, so the
+     surface steps down to the page colour and the shadow does the separating.
+     Errors and confirmations across the product go through this. */
+  .note {
+    background-color: var(--color-butter);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-sm);
   }
 
   /* The Holes gallery is drawn at fixed diameters, up to 188px, because the

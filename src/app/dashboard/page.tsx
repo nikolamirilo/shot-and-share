@@ -26,7 +26,10 @@ export default async function DashboardPage() {
         .from("media")
         .select("id", { count: "exact", head: true })
         .eq("event_id", event.id)
-        .eq("status", "ready");
+        .eq("status", "ready")
+        // A cover the host uploaded is decoration, not one of the photographs
+        // this number is counting. See migration 0013.
+        .eq("source", "guest");
       return count ?? 0;
     }),
   );

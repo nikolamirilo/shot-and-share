@@ -27,7 +27,7 @@ import { cx } from "@/components/ui";
  * page's settings are a set of tabs inside the console's own tabs, and drawn
  * the same way - separate pills, mono, uppercase - the two rows read as one
  * confused navigation. `segmented` is a single joined control instead: one
- * bordered strip, sentence case, the same shape the gallery's layout switcher
+ * sunken strip, sentence case, the same shape the gallery's layout switcher
  * already uses. Different object, different job.
  *
  * Visibility is done in CSS rather than by mounting and unmounting. A panel
@@ -178,7 +178,7 @@ export function Tabs({
           much height as a panel heading. Standing up as a rail, it has the
           whole column and needs neither.
 
-          A segmented control scrolls the same way, inside its own border: the
+          A segmented control scrolls the same way, inside its own track: the
           five settings groups fit across a laptop column but not across a
           phone, and a joined strip that wraps stops looking like one control. */}
       <div
@@ -188,16 +188,18 @@ export function Tabs({
         className={cx(
           "flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           !segmented && "gap-2 pb-2",
-          segmented && "w-full rounded-full border-2 border-pepper",
+          // A sunken track with the segments sitting in it. The control is one
+          // object because of the trough they share, not because a line is
+          // drawn around them.
+          segmented && "inset-shadow-well w-full gap-1 rounded-full bg-pepper/8 p-1",
           rail && "lg:flex-col lg:gap-1.5 lg:overflow-x-visible lg:pb-0",
           sticky && "sticky top-(--tab-top) z-30",
-          sticky &&
-            "border-b-2 border-pepper/12 bg-butter/95 pt-2 backdrop-blur",
+          sticky && "bg-butter/95 pt-2 shadow-sm backdrop-blur",
           // Beside the panel there is nothing to divide it from, and the bar
           // of colour behind a column of buttons is just a second box.
           sticky &&
             rail &&
-            "lg:top-6 lg:border-b-0 lg:bg-transparent lg:pt-0 lg:backdrop-blur-none",
+            "lg:top-6 lg:bg-transparent lg:pt-0 lg:shadow-none lg:backdrop-blur-none",
           tablistClassName,
         )}
       >
@@ -220,12 +222,15 @@ export function Tabs({
               className={cx(
                 "min-h-11 shrink-0 touch-manipulation whitespace-nowrap",
                 !segmented &&
-                  "rounded-xl border-2 border-pepper px-3.5 font-mono text-micro uppercase tracking-[0.16em]",
+                  "rounded-xl px-3.5 font-mono text-micro uppercase tracking-[0.16em]",
                 !segmented &&
-                  (selected ? "bg-gouda shadow-hard-sm" : "bg-cream text-crust"),
-                // Filled rather than outlined, because the border belongs to
-                // the strip: an outline on the open one would be a box inside
-                // a box, which is the thing the segmented variant is avoiding.
+                  (selected
+                    ? "bg-gouda shadow-md"
+                    : "bg-cream text-crust shadow-sm"),
+                // Both states are raised - a flat pill on a Butter page would
+                // not read as a control at all - but the open one is raised
+                // further and filled with Gouda, so the difference is height
+                // and colour rather than an outline appearing.
                 //
                 // `flex-1` against `shrink-0` is what makes one control out of
                 // five buttons: the segments share whatever width the strip
@@ -237,11 +242,11 @@ export function Tabs({
                 // what decides whether five labels fit across a phone at all,
                 // and everywhere wider than that the growing does the spacing.
                 segmented &&
-                  "flex-1 px-2 text-label font-semibold leading-tight transition-colors",
+                  "flex-1 rounded-full px-2 text-label font-semibold leading-tight transition-colors",
                 segmented &&
                   (selected
-                    ? "bg-pepper text-butter"
-                    : "bg-cream text-pepper hover:bg-gouda-light"),
+                    ? "bg-pepper text-butter shadow-md"
+                    : "text-crust hover:bg-pepper/6"),
                 rail && "lg:w-full lg:px-4 lg:text-left",
               )}
             >

@@ -21,7 +21,7 @@ describe("the cover a host is shown", () => {
   it("shows the variant that was picked before a photo exists", () => {
     // Every photo variant used to collapse into "Just type" here, so all four
     // buttons produced the same picture and the choice looked dead.
-    for (const variant of ["full", "classic", "band"] as const) {
+    for (const variant of ["full", "classic", "half"] as const) {
       const html = renderToStaticMarkup(
         <EventCover
           variant={variant}
@@ -70,10 +70,29 @@ describe("the cover a host is shown", () => {
     expect(html).toContain("h-svh");
   });
 
+  it("lays the name over half a screen of photo", () => {
+    // "Half screen" is the full-screen cover at half the height, which is the
+    // whole of the difference: the name sits on the photograph rather than in a
+    // band under it, and the ask stays on the screen. No scroll cue, because
+    // the thing it points at is already visible.
+    const html = renderToStaticMarkup(
+      <EventCover
+        variant="half"
+        name="Your event"
+        date="2026-09-12"
+        coverUrl="https://example.test/thumb.jpg"
+        palette={palette}
+      />,
+    );
+    expect(html).toContain("h-[50svh]");
+    expect(html).toContain("Your event");
+    expect(html).not.toContain("add your photos");
+  });
+
   it("uses the photo once there is one", () => {
     const html = renderToStaticMarkup(
       <EventCover
-        variant="band"
+        variant="half"
         name="Your event"
         date="2026-09-12"
         coverUrl="https://example.test/thumb.jpg"

@@ -100,7 +100,7 @@ export function Slab({ qrHref }: { qrHref?: string }) {
       >
         <svg
           viewBox="0 0 640 520"
-          className="w-full drop-shadow-[0_18px_0_rgba(31,22,7,0.06)]"
+          className="w-full drop-shadow-[0_18px_28px_rgba(31,22,7,0.14)]"
           role="img"
           aria-label="A slice of cheese with photos from an event inside its holes"
         >
@@ -213,7 +213,7 @@ export function Slab({ qrHref }: { qrHref?: string }) {
             job is to show people what they are going to print - was sliced in
             half by the screen edge. */}
         <div
-          className="absolute -bottom-2 right-6 w-[44%] max-w-[190px] rotate-[6deg] rounded-2xl border-2 border-pepper bg-cream p-2.5 shadow-[7px_7px_0_var(--color-pepper)] sm:-bottom-4 sm:right-10 sm:w-[38%] sm:p-3 lg:right-4"
+          className="absolute -bottom-2 right-6 w-[44%] max-w-[190px] rotate-[6deg] rounded-2xl bg-cream p-2.5 shadow-lg sm:-bottom-4 sm:right-10 sm:w-[38%] sm:p-3 lg:right-4"
           style={{ transform: "rotate(6deg) translateZ(60px)" }}
         >
           <QrGlyph />

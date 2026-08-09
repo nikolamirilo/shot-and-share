@@ -90,7 +90,7 @@ export function LoginPanel({
       </Button>
 
       {failure && (
-        <p className="mt-4 rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem]">
+        <p className="mt-4 note p-3 text-[0.9375rem]">
           {failure}
         </p>
       )}

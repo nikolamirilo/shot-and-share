@@ -197,9 +197,11 @@ function Tile({
       className={cx(
         shape,
         "relative block overflow-hidden transition-transform",
-        selected
-          ? "scale-95 ring-4 ring-pepper ring-offset-2 ring-offset-butter"
-          : "hover:scale-[1.03]",
+        // A ring is a border by another name, and it could not follow this
+        // tile anyway: the same button is a square in Grid and a circle in
+        // Holes. A wash over the photograph and a mark on top of it works at
+        // either shape, and is easier to pick out of a wall of thumbnails.
+        selected ? "scale-95" : "hover:scale-[1.03]",
         className,
       )}
     >
@@ -243,6 +245,25 @@ function Tile({
           video
         </span>
       )}
+
+      {selected && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 grid place-items-center bg-pepper/45"
+        >
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-gouda text-pepper shadow-md">
+            <svg viewBox="0 0 12 12" className="h-4 w-4" fill="none">
+              <path
+                d="M2.5 6.4 4.9 8.8 9.5 3.4"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        </span>
+      )}
     </button>
   );
 }
@@ -273,7 +294,7 @@ export function LayoutSwitcher({
       <div
         role="radiogroup"
         aria-label="Gallery layout"
-        className="flex overflow-hidden rounded-full border-2 border-pepper"
+        className="flex overflow-hidden rounded-full shadow-sm"
       >
         {GALLERY_LAYOUTS.map((option) => (
           <button

@@ -237,7 +237,7 @@ describe("plan gating", () => {
     theme: "sage",
     theme_custom: { bg: "#000000" },
     theme_font: "loud",
-    cover_variant: "band",
+    cover_variant: "half",
     upload_variant: "panel",
     gallery_layout: "masonry",
   };
@@ -276,7 +276,7 @@ describe("plan gating", () => {
     const appearance = resolveAppearance({ tier: "wedding", ...customised });
     expect(appearance.themeId).toBe("sage");
     expect(appearance.font.id).toBe("loud");
-    expect(appearance.cover).toBe("band");
+    expect(appearance.cover).toBe("half");
     expect(appearance.upload).toBe("panel");
     expect(appearance.layout).toBe("masonry");
     expect(appearance.customisable).toBe(true);
@@ -298,15 +298,17 @@ describe("plan gating", () => {
 
 describe("cover variants", () => {
   it("coerces anything unknown to the default", () => {
-    expect(coerceCover("band")).toBe("band");
+    expect(coerceCover("half")).toBe("half");
     expect(coerceCover("carousel")).toBe(DEFAULT_COVER);
     expect(coerceCover(undefined)).toBe(DEFAULT_COVER);
   });
 
   it("sends a removed variant to the default rather than breaking", () => {
-    // 0011 rewrites every 'framed' row, but a restore, a replayed request or a
-    // browser tab left open across the deploy can still present one.
+    // 0011 rewrites every 'framed' row and 0012 every 'band' one, but a
+    // restore, a replayed request or a browser tab left open across the deploy
+    // can still present one.
     expect(coerceCover("framed")).toBe(DEFAULT_COVER);
+    expect(coerceCover("band")).toBe(DEFAULT_COVER);
   });
 
   it("opens on the full-screen photo unless told otherwise", () => {
@@ -315,12 +317,12 @@ describe("cover variants", () => {
   });
 
   it("matches the ids the database constraint allows", () => {
-    // 0011 constrains this column, so a new variant needs a migration as well
+    // 0012 constrains this column, so a new variant needs a migration as well
     // as a component. Drifting apart means a save that fails at the database.
     expect(COVER_VARIANTS.map((v) => v.id)).toEqual([
       "full",
       "classic",
-      "band",
+      "half",
       "type",
     ]);
   });

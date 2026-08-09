@@ -438,7 +438,7 @@ export function Uploader({
             guest had no way of knowing three of their ten were missing and no
             way to send them again without hunting through a camera roll. */}
         {failedCount > 0 && !busy && (
-          <div className="mt-5 rounded-xl border-2 border-pepper bg-butter p-4">
+          <div className="mt-5 note p-4">
             <p className="text-[0.9375rem] font-semibold">
               {failedCount === 1
                 ? "One did not make it."
@@ -460,7 +460,7 @@ export function Uploader({
         )}
 
         {completed > 0 && inFlight === 0 && !busy && (
-          <p className="mt-5 rounded-xl border-2 border-pepper bg-gouda p-4 text-center">
+          <p className="mt-5 rounded-xl bg-gouda shadow-sm p-4 text-center">
             <strong>Thank you.</strong>{" "}
             {completed === 1
               ? "Your photo is with the host."
@@ -475,7 +475,7 @@ export function Uploader({
         )}
 
         {error && (
-          <div className="mt-5 rounded-xl border-2 border-pepper bg-butter p-4">
+          <div className="mt-5 note p-4">
             <p className="text-[0.9375rem] font-semibold">{error}</p>
             {upgradeHint && (
               <p className="mt-1.5 text-[0.9375rem] text-crust">

@@ -35,7 +35,7 @@ export interface Palette {
   accent: string;
   accentSoft: string;
   accentDeep: string;
-  /** Text, borders, buttons. */
+  /** Text, buttons, shadows. */
   ink: string;
   /** Secondary text. */
   muted: string;
@@ -269,15 +269,16 @@ function relativeBrightness(hex: string): number {
 /**
  * How the page opens.
  *
- * Four shapes became three plus a default, because two of the four were the
- * same decision. "Framed" - a photo card with the name beside it - stacked into
- * a small picture above a heading on the phone every guest actually holds,
- * which is "Band" without the colour; it is gone, and the events that had it
- * now open full screen.
+ * Two shapes are gone, and both went for the same reason: they put the name
+ * *beside* the photograph rather than on it, which on the phone every guest
+ * actually holds is a small picture above a heading. "Framed" - a photo card
+ * with the name next to it - went first, to `full`. "Band" - a photo above a
+ * solid stripe of accent carrying the name - follows it, to `half`, which is
+ * the same photograph at the same height with the name laid over it.
  *
- * What is left differs in what the guest sees first, which is the only question
- * a cover answers: the whole photograph, a photograph with the ask under it,
- * or no photograph at all.
+ * What is left differs in how much of the phone the photograph gets before the
+ * ask, which is the only question a cover answers: all of it, half of it, a
+ * strip across the top, or none at all.
  */
 export const COVER_VARIANTS = [
   {
@@ -293,9 +294,9 @@ export const COVER_VARIANTS = [
     needsImage: true,
   },
   {
-    id: "band",
-    name: "Band",
-    hint: "Photo above a solid band of colour carrying the name. Best when the photo is busy.",
+    id: "half",
+    name: "Half screen",
+    hint: "The photo takes half the phone, name over it. Full-screen looks with the ask still in view.",
     needsImage: true,
   },
   {

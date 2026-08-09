@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { deleteEvent, restoreEvent } from "@/app/dashboard/actions";
-import { Button } from "@/components/ui";
+import { Button, cx, inputClass } from "@/components/ui";
 import type { EventRow } from "@/lib/db/types";
 import { HARD_DELETE_GRACE_DAYS } from "@/lib/tiers";
 import { daysUntil } from "@/lib/format";
@@ -37,11 +37,11 @@ export function DangerZone({ event }: { event: EventRow }) {
   }
 
   return (
-    <section className="rounded-[1.25rem] border-2 border-dashed border-rind bg-cream/70 p-5 sm:p-6">
+    <section className="inset-shadow-well rounded-[1.25rem] bg-rind/8 p-5 sm:p-6">
       <h2 className="text-h3">Ending things</h2>
 
       {event.status === "expired" && (
-        <div className="mt-4 rounded-xl border-2 border-pepper bg-butter p-4">
+        <div className="mt-4 note p-4">
           <p className="text-[0.9375rem] leading-relaxed">
             This event is paused. Nothing has been deleted
             {graceLeft !== null && graceLeft > 0
@@ -74,7 +74,7 @@ export function DangerZone({ event }: { event: EventRow }) {
         onChange={(e) => setConfirmText(e.target.value)}
         placeholder={event.name}
         aria-label={`Type "${event.name}" to confirm deletion`}
-        className="mt-4 min-h-11 w-full rounded-xl border-2 border-pepper bg-butter px-3.5 py-2.5 font-mono text-body"
+        className={cx(inputClass, "mt-4 font-mono")}
       />
 
       <Button
@@ -87,7 +87,7 @@ export function DangerZone({ event }: { event: EventRow }) {
       </Button>
 
       {error && (
-        <p className="mt-4 rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem]">
+        <p className="mt-4 note p-3 text-[0.9375rem]">
           {error}
         </p>
       )}

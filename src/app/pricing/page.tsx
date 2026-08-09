@@ -20,7 +20,7 @@ export default async function PricingPage() {
       <SiteHeader signedIn={Boolean(user)} />
 
       <main>
-        <section className="border-b-2 border-pepper bg-butter">
+        <section className="bg-butter">
           <div className="mx-auto max-w-6xl px-4 py-11 sm:px-5 sm:py-14 lg:py-20">
             <Eyebrow>Pricing</Eyebrow>
             <h1 className="mt-3 max-w-3xl text-[2.375rem] xs:text-[2.75rem] sm:text-[4rem]">
@@ -88,7 +88,7 @@ function Comparison() {
   ];
 
   return (
-    <section className="border-b-2 border-pepper bg-pepper text-butter">
+    <section className="bg-pepper text-butter">
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
         <Eyebrow className="text-gouda">Side by side</Eyebrow>
         <h2 className="mt-3 text-[2.25rem] sm:text-h1">
@@ -105,7 +105,7 @@ function Comparison() {
         <div className="-mx-4 mt-8 overflow-x-auto px-4 sm:mx-0 sm:mt-9 sm:px-0">
           <table className="w-full min-w-[520px] border-collapse text-left">
             <thead>
-              <tr className="border-b-2 border-butter/25">
+              <tr className="bg-butter/8">
                 <th className="py-3 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-butter/55">
                   &nbsp;
                 </th>
@@ -119,7 +119,7 @@ function Comparison() {
             </thead>
             <tbody>
               {rows.map(([label, them, us]) => (
-                <tr key={label} className="border-b border-butter/12">
+                <tr key={label} className="odd:bg-butter/4">
                   <td className="py-3.5 pr-4 text-[0.9375rem]">{label}</td>
                   <td className="py-3.5 pr-4 text-[0.9375rem] text-butter/60">
                     {them}
@@ -158,7 +158,7 @@ function Detail() {
   ];
 
   return (
-    <section className="border-b-2 border-pepper bg-butter">
+    <section className="bg-butter">
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
         <div className="flex flex-wrap items-center gap-3">
           <Eyebrow>The reasoning</Eyebrow>

@@ -147,7 +147,10 @@ export function Slideshow({
                     height={item.height ?? 1200}
                     sizes="100vw"
                     priority={i === index}
-                    className="h-auto max-h-full w-auto max-w-full rounded-2xl object-contain shadow-[0_0_0_4px_var(--color-rind)]"
+                    // A Rind ring used to frame this against the near-black
+                    // room. A cast shadow would not show on that background, so
+                    // the frame stays - as a soft halo rather than a hard edge.
+                    className="h-auto max-h-full w-auto max-w-full rounded-2xl object-contain shadow-[0_0_36px_rgba(0,0,0,0.55)]"
                   />
                 )}
               </div>

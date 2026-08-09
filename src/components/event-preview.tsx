@@ -82,7 +82,7 @@ export function EventPreview({
   coverUrl,
 }: EventPreviewProps) {
   return (
-    <div className="@container overflow-hidden rounded-xl border-2 border-pepper">
+    <div className="@container overflow-hidden rounded-xl shadow-md">
       {/* A picture of a page, not a page. Nothing inside can be clicked,
           focused or read out: it would put a second "Add your photos" in the
           host's tab order, inside a form that saves. */}

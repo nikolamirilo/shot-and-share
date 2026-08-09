@@ -22,6 +22,8 @@ type Mode = "select" | "delete" | "update";
 
 class Query {
   private readonly filters: Array<(row: Row) => boolean> = [];
+  private ordering?: { column: string; ascending: boolean };
+  private ceiling?: number;
 
   constructor(
     private readonly rows: Row[],
@@ -55,14 +57,39 @@ class Query {
     return this;
   }
 
-  limit() {
+  order(column: string, options?: { ascending?: boolean }) {
+    this.ordering = { column, ascending: options?.ascending !== false };
+    return this;
+  }
+
+  limit(count?: number) {
+    this.ceiling = count;
     return this;
   }
 
   private run(): { data: Row[]; error: null } {
-    const matched = this.rows.filter((row) =>
+    let matched = this.rows.filter((row) =>
       this.filters.every((test) => test(row)),
     );
+
+    /*
+     * Ordering and the row limit are applied to reads only. A delete or an
+     * update matches whatever the filters matched - which is what Postgres
+     * does, and what stops a `.limit()` left on a builder from silently
+     * sparing rows the caller meant to remove.
+     */
+    if (this.mode === "select") {
+      if (this.ordering) {
+        const { column, ascending } = this.ordering;
+        matched = [...matched].sort((a, b) => {
+          const left = String(a[column]);
+          const right = String(b[column]);
+          if (left === right) return 0;
+          return (left < right ? -1 : 1) * (ascending ? 1 : -1);
+        });
+      }
+      if (this.ceiling !== undefined) matched = matched.slice(0, this.ceiling);
+    }
 
     if (this.mode === "delete") {
       for (const row of matched) {

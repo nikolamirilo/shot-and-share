@@ -32,7 +32,7 @@ export function EmailForm({ next }: { next?: string }) {
   // nothing useful left to type until the link is clicked.
   if (signUpState.notice) {
     return (
-      <div className="rounded-xl border-2 border-pepper bg-cream p-4">
+      <div className="note p-4">
         <p className="text-[0.9375rem] font-semibold">{signUpState.notice}</p>
         <p className="mt-2 text-[0.9375rem] text-crust">
           Nothing there after a minute? Check the spam folder.
@@ -93,7 +93,7 @@ export function EmailForm({ next }: { next?: string }) {
       </Field>
 
       {state.error && (
-        <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
+        <p className="note p-3 text-[0.9375rem] font-semibold">
           {state.error}
         </p>
       )}

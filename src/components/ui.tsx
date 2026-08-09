@@ -6,12 +6,13 @@ export function cx(...parts: Array<string | false | null | undefined>) {
 }
 
 /**
- * Buttons carry a hard offset shadow and lift on hover, which matches the
- * physical, cut-out feel of the slab without introducing a second visual idea.
+ * Buttons sit above the page on a soft shadow and lift further on hover, which
+ * keeps the physical feel of the slab without outlining anything.
  *
- * The primary button's shadow is Rind rather than Pepper: a Pepper shadow under
- * a Pepper button is invisible. Everything lighter keeps the Pepper shadow the
- * brand specifies.
+ * Every variant is a filled shape. That is what carries a button now that there
+ * is no stroke around it: Secondary is Cream on a Butter page and reads as a
+ * button because it is lighter than what it sits on and casts a shadow, not
+ * because it is drawn.
  */
 type Variant = "primary" | "secondary" | "ghost" | "onDark";
 type Size = "sm" | "md" | "lg";
@@ -29,13 +30,15 @@ type Size = "sm" | "md" | "lg";
 const BASE =
   "inline-flex items-center justify-center gap-2 rounded-xl text-center font-semibold leading-tight touch-manipulation transition-transform transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
 
+const LIFT =
+  "shadow-md hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm";
+
 const VARIANTS: Record<Variant, string> = {
-  primary:
-    "bg-pepper text-butter shadow-[4px_4px_0_var(--color-rind)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0_var(--color-rind)] active:translate-y-0 active:shadow-[2px_2px_0_var(--color-rind)]",
-  secondary:
-    "bg-cream text-pepper border-2 border-pepper shadow-[4px_4px_0_var(--color-pepper)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0_var(--color-pepper)] active:translate-y-0 active:shadow-[2px_2px_0_var(--color-pepper)]",
-  onDark:
-    "bg-gouda text-pepper border-2 border-pepper shadow-[4px_4px_0_var(--color-crust)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0_var(--color-crust)]",
+  primary: `bg-pepper text-butter ${LIFT}`,
+  secondary: `bg-cream text-pepper ${LIFT}`,
+  /* On a Pepper or a photographic background a shadow has nothing to fall on,
+     so this one is carried by the Gouda fill alone. */
+  onDark: "bg-gouda text-pepper hover:-translate-y-0.5",
   ghost:
     "text-pepper underline decoration-2 underline-offset-4 decoration-rind hover:decoration-pepper",
 };
@@ -208,10 +211,12 @@ export function Badge({
   children: ReactNode;
   tone?: "dark" | "gouda" | "outline";
 }) {
+  /* All three are fills. `outline` keeps its name and its job - the quietest
+     of the three - but earns it with a wash of ink rather than a stroke. */
   const tones = {
     dark: "bg-pepper text-butter",
-    gouda: "bg-gouda text-pepper border-2 border-pepper",
-    outline: "border-2 border-pepper text-pepper",
+    gouda: "bg-gouda text-pepper",
+    outline: "bg-pepper/8 text-pepper",
   } as const;
   return (
     <span
@@ -260,9 +265,14 @@ export function Field({
  * the whole page in when a focused field is under 16px, and a guest who has to
  * pinch back out to reach the upload button is a guest who does not upload.
  * Every field in the product goes through this class or matches it.
+ *
+ * Butter rather than Cream, and sunken rather than raised. Most fields stand in
+ * a Cream card, so the field steps *down* to the page colour and takes an inner
+ * shadow along its top edge: a place something goes into. Everything the host
+ * can press in the same card is doing the opposite.
  */
 export const inputClass =
-  "w-full min-h-11 rounded-xl border-2 border-pepper bg-cream px-3.5 py-2.5 text-body placeholder:text-rind/60 focus:outline-none focus-visible:outline-3 focus-visible:outline-pepper";
+  "w-full min-h-11 rounded-xl bg-butter inset-shadow-well px-3.5 py-2.5 text-body placeholder:text-rind/60 focus:outline-none focus-visible:outline-3 focus-visible:outline-pepper";
 
 export function ProgressBar({
   percent,
@@ -274,7 +284,7 @@ export function ProgressBar({
   const clamped = Math.max(0, Math.min(100, percent));
   return (
     <div
-      className="h-2.5 w-full overflow-hidden rounded-full border-2 border-pepper bg-butter"
+      className="inset-shadow-well h-2.5 w-full overflow-hidden rounded-full bg-pepper/12"
       role="progressbar"
       aria-valuenow={clamped}
       aria-valuemin={0}

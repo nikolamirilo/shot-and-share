@@ -136,6 +136,16 @@ export function classify(
  */
 export const MAX_FILES_PER_PICK = 30;
 
+/**
+ * How many photographs the cover picker asks for at a time.
+ *
+ * Small on purpose. These are 64px swatches in a narrow column beside a live
+ * preview, and a host is scanning for one picture they already have in mind
+ * rather than reading the gallery - so the cost of another tap is lower than
+ * the cost of pulling a hundred images they will not look at.
+ */
+export const COVER_PAGE_SIZE = 20;
+
 /** The poster frame pulled out of a video. Small enough for a grid. */
 export const POSTER_MAX_EDGE = 720;
 export const MAX_POSTER_BYTES = 2 * MB;

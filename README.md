@@ -31,7 +31,7 @@ guest pages need Supabase.
    order. **No migration tooling is wired up on purpose** - these are plain SQL
    files you apply yourself.
 3. Under **Authentication → Providers**, enable **Email**. Leave "Confirm email"
-   on or off as you prefer — the sign-up action reads whether a session came
+   on or off as you prefer - the sign-up action reads whether a session came
    back and either lands on the dashboard or asks the host to check their inbox.
    Enable **Google** in the same place if you want the Google button to work.
 4. Under **Authentication → URL Configuration**, set the site URL to
@@ -263,15 +263,15 @@ Themes work by setting the design system's own CSS custom properties on a
 wrapper element, so a theme re-skins every existing component underneath it and
 **no component takes a `theme` prop**. Type works the same way: a pairing sets
 `--font-display` and `--font-sans` on the same wrapper, along with the display
-weight, width and tracking, because 86% width is right for Bricolage — which has
-a width axis — and meaningless for a serif that does not.
+weight, width and tracking, because 86% width is right for Bricolage - which has
+a width axis - and meaningless for a serif that does not.
 
 A guest page requests only the pairing it uses. The house pairing is already in
 the root layout, so the default costs a guest nothing; the host's editor loads
 all five, because switching between them is the whole point of that screen and a
 font that arrives late reads as a broken preview.
 
-**The host's preview renders the real components**, inside a real theme root —
+**The host's preview renders the real components**, inside a real theme root -
 the same `EventCover` and the same `UploadPanel` a guest gets. It used to draw
 its own approximation, which is how a preview ends up disagreeing with the page:
 a mock-up made of dark rectangles has no surface on it, so choosing a card

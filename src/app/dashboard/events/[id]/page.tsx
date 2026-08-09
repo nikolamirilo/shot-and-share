@@ -80,17 +80,32 @@ export default async function EventPage({
   if (!data) notFound();
   const event = data as EventRow;
 
-  const [{ data: stats }, { data: mediaRows }, active] = await Promise.all([
-    supabase.rpc("event_stats", { p_event: event.id }),
-    supabase
-      .from("media")
-      .select("*")
-      .eq("event_id", event.id)
-      .eq("status", "ready")
-      .order("created_at", { ascending: false })
-      .limit(120),
-    getActiveShareToken(event.id),
-  ]);
+  const [{ data: stats }, { data: mediaRows }, { data: coverRows }, active] =
+    await Promise.all([
+      supabase.rpc("event_stats", { p_event: event.id }),
+      supabase
+        .from("media")
+        .select("*")
+        .eq("event_id", event.id)
+        .eq("status", "ready")
+        // Guests only. A cover the host uploaded lives in the same table and
+        // the same folder, but it is not a photograph of the party - see
+        // migration 0013 - so it belongs in the picker rather than the gallery.
+        .eq("source", "guest")
+        .order("created_at", { ascending: false })
+        .limit(120),
+      // The host's own covers, all of them. There are only ever a handful, and
+      // they get their own row at the top of the picker so a host can go back
+      // to one they uploaded last week.
+      supabase
+        .from("media")
+        .select("*")
+        .eq("event_id", event.id)
+        .eq("status", "ready")
+        .eq("source", "cover")
+        .order("created_at", { ascending: false }),
+      getActiveShareToken(event.id),
+    ]);
 
   const counts = stats?.[0] ?? {
     photo_count: 0,
@@ -100,6 +115,7 @@ export default async function EventPage({
   };
   const total = Number(counts.photo_count) + Number(counts.video_count);
   const media = await toMediaViews((mediaRows ?? []) as MediaRow[]);
+  const covers = await toMediaViews((coverRows ?? []) as MediaRow[]);
   const summary = storageSummary(event);
   const tier = getTier(event.tier);
   const link = active ? shareUrl(env.siteUrl, active.token) : null;
@@ -128,13 +144,12 @@ export default async function EventPage({
 
       <header className="mt-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 sm:mt-6">
         <div className="min-w-0">
-          <Eyebrow>{formatEventDate(event.event_date)}</Eyebrow>
           <h1 className="mt-2 text-[2.125rem] xs:text-[2.5rem] sm:text-h1">
             {event.name}
           </h1>
+          <Eyebrow>{formatEventDate(event.event_date)}</Eyebrow>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="gouda">{tier.name}</Badge>
           {event.keep_forever && <Badge tone="dark">Kept forever</Badge>}
           {event.status === "expired" && <Badge tone="outline">Paused</Badge>}
         </div>
@@ -293,6 +308,10 @@ export default async function EventPage({
           <AppearanceForm
             event={event}
             media={media}
+            covers={covers}
+            photoCount={total}
+            maxFileBytes={tier.maxFileBytes}
+            remainingBytes={summary.remaining}
             locked={!tier.customPage}
           />
         </TabPanel>
@@ -336,7 +355,7 @@ function Stat({
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-5 rounded-[1.25rem] border-2 border-pepper bg-gouda p-4 sm:mt-6 sm:p-5">
+    <div className="mt-5 rounded-[1.25rem] bg-gouda p-4 shadow-md sm:mt-6 sm:p-5">
       <p className="text-[0.9375rem] leading-relaxed">{children}</p>
     </div>
   );

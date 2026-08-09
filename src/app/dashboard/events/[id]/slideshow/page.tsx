@@ -50,6 +50,9 @@ export default async function SlideshowPage({
     .select("*")
     .eq("event_id", event.id)
     .eq("status", "ready")
+    // The slideshow is the party looking at itself. A cover the host uploaded
+    // is not part of that - see migration 0013.
+    .eq("source", "guest")
     .order("created_at", { ascending: false })
     .limit(60);
 

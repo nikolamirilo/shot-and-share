@@ -57,10 +57,12 @@ export function PricingTable({
             <article
               key={id}
               className={cx(
-                "flex flex-col rounded-[1.25rem] border-2 border-pepper p-5 sm:p-6",
+                "flex flex-col rounded-[1.25rem] p-5 sm:p-6",
+                // The recommended plan is the one that comes furthest off the
+                // page: same trick as before, height instead of a heavier line.
                 highlighted
-                  ? "bg-gouda shadow-[7px_7px_0_var(--color-pepper)] md:-mt-3 md:mb-3"
-                  : "bg-cream",
+                  ? "bg-gouda shadow-lg md:-mt-3 md:mb-3"
+                  : "bg-cream shadow-md",
               )}
             >
               <div className="flex items-baseline justify-between gap-2">
@@ -104,7 +106,10 @@ export function PricingTable({
         })}
       </div>
 
-      <div className="mt-4 rounded-[1.25rem] border-2 border-dashed border-rind bg-cream/70 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
+      {/* The add-on is the one thing here that is not a plan, and it used to
+          say so with a dashed edge. It says it now by sitting *in* the page
+          while the three plans float above it. */}
+      <div className="inset-shadow-well mt-4 rounded-[1.25rem] bg-pepper/5 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
         <div>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h3 className="text-h3">{KEEP_FOREVER.name}</h3>

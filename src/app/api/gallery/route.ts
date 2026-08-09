@@ -53,6 +53,9 @@ export async function GET(request: Request) {
       .select("*")
       .eq("event_id", ctx.event.id)
       .eq("status", "ready")
+      // Guests see each other's photographs. The host's own cover image is
+      // already the top of the page they are looking at - see migration 0013.
+      .eq("source", "guest")
       .order("created_at", { ascending: false })
       .limit(GALLERY_PAGE_SIZE);
 

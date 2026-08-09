@@ -80,7 +80,7 @@ export function SharePanel({
                 of a stacked column it is a 340px square that pushes the link
                 and both buttons below the fold, and nobody scans a code off
                 the screen it was generated on. */}
-            <div className="mx-auto w-full max-w-[168px] rounded-xl border-2 border-pepper bg-cream p-2 sm:mx-0 sm:max-w-none">
+            <div className="mx-auto w-full max-w-[168px] rounded-xl bg-cream p-2 shadow-md sm:mx-0 sm:max-w-none">
               <img
                 src={`/api/events/${eventId}/qr?format=code`}
                 alt="QR code for this event"
@@ -116,7 +116,7 @@ export function SharePanel({
             to add more.
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t-2 border-pepper/12 pt-5">
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
             <Button
               onClick={rotate}
               variant="secondary"
@@ -138,7 +138,7 @@ export function SharePanel({
       )}
 
       {error && (
-        <p className="mt-4 rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem]">
+        <p className="mt-4 note p-3 text-[0.9375rem]">
           {error}
         </p>
       )}

@@ -84,7 +84,7 @@ export function UpgradePanel({
         {options.map((option) => (
           <li
             key={option.product}
-            className="rounded-xl border-2 border-pepper bg-butter p-4"
+            className="note p-4"
           >
             <div className="flex items-start justify-between gap-3 sm:gap-4">
               <div className="min-w-0">
@@ -118,7 +118,7 @@ export function UpgradePanel({
       </ul>
 
       {error && (
-        <p className="mt-4 rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem]">
+        <p className="mt-4 note p-3 text-[0.9375rem]">
           {error}
         </p>
       )}

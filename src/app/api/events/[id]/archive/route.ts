@@ -2,11 +2,11 @@ import archiver from "archiver";
 import { PassThrough } from "node:stream";
 
 import { ApiError, fail, handle, ok } from "@/lib/api";
+import { requireOwnedEvent } from "@/lib/host";
 import { archiveKey, scopeOfEvent } from "@/lib/media";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { MAX_ARCHIVE_BUILDS } from "@/lib/tiers";
 import type { EventRow, MediaRow } from "@/lib/db/types";
 
@@ -19,22 +19,6 @@ export const dynamic = "force-dynamic";
  * stream rather than buffer, so moving it is a change of host, not of logic.
  */
 export const maxDuration = 300;
-
-async function requireOwnedEvent(id: string): Promise<EventRow> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new ApiError("unauthorized", "Sign in first.");
-
-  const { data } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (!data) throw new ApiError("not_found", "Event not found.");
-  return data as EventRow;
-}
 
 /** Is the stored ZIP still an accurate picture of the event? */
 function archiveIsFresh(event: EventRow, newestMediaAt: string | null): boolean {
@@ -82,6 +66,9 @@ export async function POST(
       .select("*")
       .eq("event_id", event.id)
       .eq("status", "ready")
+      // What the host downloads is what their guests sent. A cover image they
+      // uploaded themselves is already on their own disk - see migration 0013.
+      .eq("source", "guest")
       .order("created_at", { ascending: true });
 
     if (error) throw new Error(error.message);

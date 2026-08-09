@@ -71,6 +71,32 @@ export function aspectRatio(
   return Math.min(2.5, Math.max(0.4, width / height));
 }
 
+/**
+ * The photos either side of the one a guest has open, so the lightbox can point
+ * its arrows somewhere - or grey them out.
+ *
+ * It works on the list that has actually loaded, which is not the whole event:
+ * the gallery pages in behind a "Show more" button. So `next: null` means "no
+ * further than this without asking", not "that was the last photo of the
+ * night". Greying out beats fetching on the arrow, which on venue wifi is a
+ * button that sometimes does nothing for four seconds.
+ *
+ * A missing id gives up in both directions rather than guessing at a position.
+ * That is not a defensive check for an impossible case - it is exactly what
+ * happens when a guest deletes their own photo while it is the one on screen.
+ */
+export function neighbours(
+  ids: readonly string[],
+  currentId: string,
+): { prev: string | null; next: string | null } {
+  const at = ids.indexOf(currentId);
+  if (at === -1) return { prev: null, next: null };
+  return {
+    prev: ids[at - 1] ?? null,
+    next: ids[at + 1] ?? null,
+  };
+}
+
 const STORAGE_KEY = "say-cheese:gallery-layout";
 
 /**

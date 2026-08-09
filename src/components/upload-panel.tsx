@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, Hole, cx } from "@/components/ui";
+import { Button, Hole, cx, inputClass } from "@/components/ui";
 import type { UploadVariant } from "@/lib/appearance";
 
 /**
@@ -147,9 +147,14 @@ function DropPanel({
     </>
   );
 
+  // Sunken rather than dashed. The dashed rectangle was the convention for
+  // "drop here", but the same thing is said by making the target a well the
+  // page steps down into - and it says it without a line on a page that has
+  // none. A drag over it fills with Gouda, which is the louder half of the cue
+  // anyway.
   const shell = cx(
-    "block w-full rounded-[1.25rem] border-2 border-dashed border-pepper text-center transition-colors",
-    over ? "bg-gouda-light" : "bg-cream",
+    "inset-shadow-well block w-full rounded-[1.25rem] text-center transition-colors",
+    over ? "bg-gouda-light" : "bg-butter",
     preview ? "p-3" : "px-5 py-7 sm:p-8",
   );
 
@@ -315,8 +320,8 @@ function Action({
         className={cx(
           "inline-flex items-center justify-center rounded-xl px-3 text-label font-semibold",
           variant === "primary"
-            ? "bg-pepper text-butter shadow-[3px_3px_0_var(--color-rind)]"
-            : "border-2 border-pepper bg-cream text-pepper shadow-hard-sm",
+            ? "bg-pepper text-butter shadow-md"
+            : "bg-cream text-pepper shadow-md",
           className,
         )}
       >
@@ -374,7 +379,7 @@ function NameField({
   inline?: boolean;
   className?: string;
 }) {
-  const label = "Your name — optional";
+  const label = "Your name - optional";
 
   if (preview) {
     return (
@@ -386,7 +391,7 @@ function NameField({
         )}
         <div
           className={cx(
-            "rounded-lg border-2 border-pepper bg-butter",
+            "inset-shadow-well rounded-lg bg-butter",
             inline ? "h-6" : "mt-1 h-6",
           )}
         />
@@ -410,13 +415,8 @@ function NameField({
         onChange={(e) => onNameChange?.(e.target.value)}
         maxLength={60}
         aria-label={inline ? label : undefined}
-        placeholder={inline ? "Your name — optional" : "So the host knows who to thank"}
-        className={cx(
-          // 17px, like every other field: under 16px Safari zooms the page in
-          // on focus and the guest has to pinch back out to find the button.
-          "w-full min-h-11 rounded-xl border-2 border-pepper bg-butter px-3.5 py-2.5 text-body",
-          inline ? undefined : "mt-1.5",
-        )}
+        placeholder={inline ? "Your name - optional" : "So the host knows who to thank"}
+        className={cx(inputClass, inline ? undefined : "mt-1.5")}
       />
     </div>
   );

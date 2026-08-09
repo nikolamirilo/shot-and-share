@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LogoMark } from "@/components/logo";
+import { ButtonLink } from "@/components/ui";
 
 /**
  * The Say Cheese header and footer on a free event.
@@ -16,7 +17,7 @@ import { LogoMark } from "@/components/logo";
 
 export function PlatformHeader() {
   return (
-    <div className="border-b-2 border-pepper bg-pepper">
+    <div className="bg-pepper">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 sm:px-5">
         <Link
           href="/"
@@ -44,7 +45,7 @@ export function PlatformHeader() {
 
 export function PlatformFooter() {
   return (
-    <section className="border-t-2 border-pepper bg-gouda">
+    <section className="bg-gouda">
       <div className="mx-auto max-w-3xl px-4 py-9 text-center sm:px-5 sm:py-10">
         <p className="eyebrow text-crust">Made with Say Cheese</p>
         <h2 className="mt-3 text-[1.625rem] sm:text-h2">Having an event of your own?</h2>
@@ -52,14 +53,15 @@ export function PlatformFooter() {
           This is how the host collected every photo here - one code on the
           table, no app and no accounts. Free to set up and try.
         </p>
-        <Link
+        <ButtonLink
           href="/"
           target="_blank"
           rel="noopener"
-          className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-pepper px-6 py-3 font-semibold leading-tight text-butter shadow-[4px_4px_0_var(--color-crust)] transition-transform hover:-translate-y-0.5 sm:w-auto sm:px-7 sm:py-3.5"
+          size="lg"
+          className="mt-6 w-full sm:w-auto"
         >
           Create your own event
-        </Link>
+        </ButtonLink>
       </div>
     </section>
   );

@@ -8,6 +8,7 @@ import {
   coerceLayout,
   holeSize,
   isGalleryLayout,
+  neighbours,
 } from "@/lib/gallery";
 
 describe("gallery layouts", () => {
@@ -82,5 +83,34 @@ describe("masonry aspect ratios", () => {
   it("clamps extremes so one panorama cannot own the column", () => {
     expect(aspectRatio(10000, 500)).toBe(2.5);
     expect(aspectRatio(500, 10000)).toBe(0.4);
+  });
+});
+
+describe("stepping between open photos", () => {
+  const wall = ["a", "b", "c"];
+
+  it("hands back the photo on either side", () => {
+    expect(neighbours(wall, "b")).toEqual({ prev: "a", next: "c" });
+  });
+
+  it("stops at the first photo", () => {
+    expect(neighbours(wall, "a")).toEqual({ prev: null, next: "b" });
+  });
+
+  it("stops at the last one loaded", () => {
+    // The gallery pages in with "Show more", so the end of this list is only
+    // the end of what has arrived. The arrow greys out rather than fetching:
+    // a guest who wants more asks for it.
+    expect(neighbours(wall, "c")).toEqual({ prev: "b", next: null });
+  });
+
+  it("goes nowhere from a photo that is no longer there", () => {
+    // A guest removing their own photo drops it from the list while it is the
+    // one on screen. Both arrows must go dead rather than jump somewhere.
+    expect(neighbours(wall, "gone")).toEqual({ prev: null, next: null });
+  });
+
+  it("goes nowhere when the event has a single photo", () => {
+    expect(neighbours(["only"], "only")).toEqual({ prev: null, next: null });
   });
 });

@@ -11,6 +11,12 @@ export type EventStatus = "active" | "expired" | "deleted";
 export type MediaStatus = "pending" | "ready" | "deleted";
 export type MediaKind = "photo" | "video";
 export type MediaProcessing = "done" | "pending" | "failed";
+/**
+ * Who put the file there. A guest's upload is a photograph of the party; a
+ * cover is decoration the host chose, so it is kept out of the gallery, the
+ * slideshow, the ZIP and the photo counts. See migration 0013.
+ */
+export type MediaSource = "guest" | "cover";
 export type Product = TierId | "keep_forever";
 
 export type ProfileRow = {
@@ -89,6 +95,8 @@ export type MediaRow = {
   height: number | null;
   uploader_fingerprint: string | null;
   uploader_name: string | null;
+  /** Has a database default of 'guest', so an insert may leave it out. */
+  source: MediaSource;
   status: MediaStatus;
   created_at: string;
 };
@@ -203,8 +211,11 @@ export interface Database {
           | "owner_id"
           | "poster_size_bytes"
           | "processing"
+          | "source"
         > &
-          Partial<Pick<MediaRow, "id" | "poster_size_bytes" | "processing">>
+          Partial<
+            Pick<MediaRow, "id" | "poster_size_bytes" | "processing" | "source">
+          >
       >;
       upload_reservations: Table<
         UploadReservationRow,

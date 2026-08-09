@@ -40,7 +40,7 @@ export function ForgotForm() {
       </Field>
 
       {state.error && (
-        <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
+        <p className="note p-3 text-[0.9375rem] font-semibold">
           {state.error}
         </p>
       )}

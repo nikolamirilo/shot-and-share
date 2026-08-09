@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AccountMenu } from "@/components/account-menu";
 import { Wordmark } from "@/components/logo";
 import { ButtonLink } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
@@ -19,18 +20,23 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const name =
-    (user.user_metadata?.full_name as string | undefined) ??
-    user.email ??
-    "Host";
+  const meta = user.user_metadata ?? {};
+  const name = (meta.full_name as string | undefined) ?? null;
+  /* Google sends `picture`; most other providers and our own profiles trigger
+     write `avatar_url`. Either is the same photograph. */
+  const avatarUrl =
+    (meta.avatar_url as string | undefined) ??
+    (meta.picture as string | undefined) ??
+    null;
 
   return (
     <div className="flex min-h-dvh flex-col bg-butter">
       {/* Four things competed for about 300 usable pixels here and the loser
           was "New event", which wrapped onto two lines and doubled in height.
-          The name is already hidden below sm; the wordmark now gives up its
-          word below xs, and the gaps tighten. */}
-      <header className="border-b-2 border-pepper bg-butter">
+          Two of them are now one 40px circle - the name and the sign-out link
+          both live behind the badge - and the wordmark still gives up its word
+          below xs so the row never has to wrap. */}
+      <header className="relative z-10 bg-butter shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5">
           <Link
             href="/dashboard"
@@ -41,9 +47,6 @@ export default async function DashboardLayout({
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            <span className="hidden max-w-40 truncate font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind lg:block">
-              {name}
-            </span>
             <ButtonLink
               href="/dashboard/events/new"
               size="sm"
@@ -51,21 +54,18 @@ export default async function DashboardLayout({
             >
               New event
             </ButtonLink>
-            <form action="/auth/signout" method="post">
-              <button
-                type="submit"
-                className="whitespace-nowrap py-2 text-[0.9375rem] font-semibold underline decoration-2 underline-offset-4 decoration-rind hover:decoration-pepper"
-              >
-                Sign out
-              </button>
-            </form>
+            <AccountMenu
+              name={name}
+              email={user.email ?? null}
+              avatarUrl={avatarUrl}
+            />
           </div>
         </div>
       </header>
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t-2 border-pepper bg-butter">
+      <footer className="bg-butter">
         <p className="mx-auto max-w-6xl px-4 py-5 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind sm:px-5">
           Say Cheese · every photo from every guest
         </p>

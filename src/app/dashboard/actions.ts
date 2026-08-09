@@ -197,7 +197,7 @@ const appearanceSchema = z.object({
   // Not an enum, for the same reason `theme` is not: pairings are defined in
   // the application and an unknown one falls back when it is read.
   theme_font: z.string().trim().min(1).max(32),
-  cover_variant: z.enum(["full", "classic", "band", "type"]),
+  cover_variant: z.enum(["full", "classic", "half", "type"]),
   upload_variant: z.enum(["button", "panel", "bar", "split"]),
   gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
   cover_media_id: z.string().uuid().nullable(),
@@ -328,7 +328,7 @@ export async function deleteMedia(
   eventId: string,
   mediaIds: string[],
 ): Promise<ActionState> {
-  await requireOwnedEvent(eventId);
+  const event = await requireOwnedEvent(eventId);
   if (mediaIds.length === 0) return { ok: true };
 
   const admin = createAdminClient();
@@ -355,6 +355,20 @@ export async function deleteMedia(
       rows.map((r) => r.id),
     );
   await admin.rpc("release_storage", { p_event: eventId, p_bytes: bytes });
+
+  /*
+   * A deleted photo cannot go on being the cover. Left pointing at it the event
+   * page looks up a row that is no longer readable and falls back to "Just
+   * type", which reads as the cover style having broken rather than as the
+   * photograph having been removed - and the picker would show nothing
+   * selected while the row still named one.
+   */
+  if (event.cover_media_id && rows.some((row) => row.id === event.cover_media_id)) {
+    await admin
+      .from("events")
+      .update({ cover_media_id: null })
+      .eq("id", eventId);
+  }
 
   revalidatePath(`/dashboard/events/${eventId}`);
   return { ok: true };

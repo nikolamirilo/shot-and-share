@@ -102,7 +102,7 @@ function Strip() {
   ];
 
   return (
-    <section className="border-y-2 border-pepper bg-pepper text-butter">
+    <section className="bg-pepper text-butter">
       <div className="mx-auto grid max-w-6xl gap-5 px-4 py-7 sm:grid-cols-3 sm:gap-6 sm:px-5 sm:py-8">
         {facts.map(([title, detail]) => (
           <div key={title} className="flex items-start gap-3">
@@ -140,7 +140,7 @@ function Steps() {
   ];
 
   return (
-    <section id="how" className="border-b-2 border-pepper bg-gouda">
+    <section id="how" className="bg-gouda">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16 lg:py-24">
         <Eyebrow className="text-crust">How it works</Eyebrow>
         <h2 className="mt-3 max-w-2xl text-[2.25rem] sm:text-[4rem]">
@@ -151,7 +151,7 @@ function Steps() {
           {steps.map((step) => (
             <li
               key={step.n}
-              className="rounded-[1.25rem] border-2 border-pepper bg-cream p-5 sm:p-6"
+              className="rounded-[1.25rem] bg-cream p-5 shadow-md sm:p-6"
             >
               <span className="hole inline-flex h-11 w-11 items-center justify-center font-mono text-[0.8125rem] tracking-[0.1em] text-gouda-light sm:h-12 sm:w-12">
                 {step.n}
@@ -197,7 +197,7 @@ function Why() {
   ];
 
   return (
-    <section className="border-b-2 border-pepper bg-butter">
+    <section className="bg-butter">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16 lg:py-24">
         <Eyebrow>Why this one</Eyebrow>
         <h2 className="mt-3 max-w-2xl text-[2.25rem] sm:text-h1">
@@ -226,8 +226,8 @@ function Why() {
 
 function Pricing() {
   return (
-    <section id="pricing" className="border-b-2 border-pepper bg-butter">
-      <div className="mx-auto max-w-6xl px-4 pb-14 sm:px-5 sm:pb-20">
+    <section id="pricing" className="bg-cream">
+      <div className="mx-auto max-w-6xl px-4 pb-14 pt-12 sm:px-5 sm:pb-20 sm:pt-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Eyebrow>Pricing</Eyebrow>
@@ -287,14 +287,17 @@ function Faq() {
   ];
 
   return (
-    <section id="faq" className="border-b-2 border-pepper bg-butter">
-      <div className="mx-auto max-w-3xl px-4 pb-14 sm:px-5 sm:pb-20">
+    <section id="faq" className="bg-butter">
+      <div className="mx-auto max-w-3xl px-4 pb-14 pt-12 sm:px-5 sm:pb-20 sm:pt-16">
         <Eyebrow>Questions</Eyebrow>
         <h2 className="mt-3 text-[2.25rem] sm:text-h1">Before you ask.</h2>
 
-        <div className="mt-8 divide-y-2 divide-pepper/15 border-y-2 border-pepper/15 sm:mt-10">
+        {/* Ruled rows before, stacked cards now. A question is its own object
+            once there is no line penning it in, so each one gets a surface and
+            the gaps between them do the dividing. */}
+        <div className="mt-8 space-y-2.5 sm:mt-10">
           {faqs.map(([q, a]) => (
-            <details key={q} className="group py-1">
+            <details key={q} className="card group px-4 py-1 sm:px-5">
               {/* The padding is on the summary, not the details, so the whole
                   strip is the tap target rather than the words alone. */}
               <summary className="flex cursor-pointer list-none items-start gap-3 py-4 text-[1.15rem] font-extrabold leading-snug tracking-[-0.03em] marker:hidden sm:text-[1.3rem]">

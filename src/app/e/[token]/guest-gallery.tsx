@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PhotoGallery } from "@/components/gallery";
-import { Button, Hole } from "@/components/ui";
+import { Button, Hole, cx } from "@/components/ui";
 import { getFingerprint } from "@/lib/client/upload";
 import type { MediaView } from "@/lib/events";
-import type { GalleryLayout } from "@/lib/gallery";
+import { type GalleryLayout, neighbours } from "@/lib/gallery";
 
 /**
  * What everyone else has uploaded. Guests genuinely like seeing the night from
@@ -31,7 +32,13 @@ export function GuestGallery({
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState<MediaView | null>(null);
+  /**
+   * Which photo is open, held as an id rather than the photo itself. The
+   * lightbox now has a position in the wall - arrows either side - and a
+   * position only means something against the list. Holding the object would
+   * also keep a deleted photo on screen after it left `items`.
+   */
+  const [openId, setOpenId] = useState<string | null>(null);
   const [fingerprint, setFingerprint] = useState("");
 
   useEffect(() => setFingerprint(getFingerprint()), []);
@@ -77,8 +84,17 @@ export function GuestGallery({
       return;
     }
     setItems((prev) => prev.filter((i) => i.id !== item.id));
-    setOpen(null);
+    setOpenId(null);
   }
+
+  const openIndex = openId ? items.findIndex((i) => i.id === openId) : -1;
+  const open = openIndex === -1 ? null : items[openIndex];
+  const step = open
+    ? neighbours(
+        items.map((i) => i.id),
+        open.id,
+      )
+    : null;
 
   if (error && items.length === 0) {
     return (
@@ -100,7 +116,7 @@ export function GuestGallery({
       </div>
 
       {items.length === 0 && !loading ? (
-        <div className="mt-6 rounded-[1.25rem] border-2 border-dashed border-rind px-5 py-8 text-center sm:p-8">
+        <div className="inset-shadow-well mt-6 rounded-[1.25rem] bg-pepper/5 px-5 py-8 text-center sm:p-8">
           <div className="mx-auto flex w-fit gap-2">
             <Hole size={16} />
             <Hole size={24} />
@@ -115,7 +131,7 @@ export function GuestGallery({
         <PhotoGallery
           items={items}
           layout={layout}
-          onActivate={setOpen}
+          onActivate={(item) => setOpenId(item.id)}
           className="mt-6"
         />
       )}
@@ -131,12 +147,17 @@ export function GuestGallery({
         </Button>
       )}
 
-      {open && (
+      {open && step && (
         <Lightbox
           token={token}
           item={open}
           mine={open.uploaderFingerprint === fingerprint}
-          onClose={() => setOpen(null)}
+          prevId={step.prev}
+          nextId={step.next}
+          position={openIndex + 1}
+          total={items.length}
+          onStep={setOpenId}
+          onClose={() => setOpenId(null)}
           onRemove={() => removeOwn(open)}
         />
       )}
@@ -144,40 +165,111 @@ export function GuestGallery({
   );
 }
 
+/** Below this a drag is a tap with a shaky hand, not a swipe. */
+const SWIPE_MIN_PX = 50;
+
 function Lightbox({
   token,
   item,
   mine,
+  prevId,
+  nextId,
+  position,
+  total,
+  onStep,
   onClose,
   onRemove,
 }: {
   token: string;
   item: MediaView;
   mine: boolean;
+  /** The photo on each side, or null at either end of what has loaded. */
+  prevId: string | null;
+  nextId: string | null;
+  /** Which of the loaded photos this is, counting from one. */
+  position: number;
+  total: number;
+  onStep: (id: string) => void;
   onClose: () => void;
   onRemove: () => void;
 }) {
   const [full, setFull] = useState<MediaView | null>(null);
+  /**
+   * True while this photo's download link is being fetched. Separate from
+   * `full` being empty, which after the request has finished means the link
+   * genuinely is not coming.
+   */
+  const [linkPending, setLinkPending] = useState(true);
+  /** False until this photo's pixels are on screen. Reset on every step. */
+  const [loaded, setLoaded] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => setLoaded(false), [item.id]);
 
   useEffect(() => {
-    // Full-resolution URLs resolve only now, never for a whole page.
+    /*
+     * Full-resolution URLs resolve only now, never for a whole page.
+     *
+     * Clearing first matters once the arrows exist: `full` is where the
+     * Download button gets its link, so carrying the old one across a step
+     * would offer the previous photo under this one's picture. `live` covers
+     * the same hazard from the other side - step twice quickly and the two
+     * requests can land out of order.
+     */
+    let live = true;
+    setFull(null);
+    setLinkPending(true);
     const params = new URLSearchParams({ token, id: item.id });
     fetch(`/api/photo?${params}`)
       .then((r) => r.json())
-      .then((data) => setFull(data?.id ? data : null))
-      .catch(() => setFull(null));
+      .then((data) => live && setFull(data?.id ? data : null))
+      .catch(() => live && setFull(null))
+      .finally(() => live && setLinkPending(false));
+    return () => {
+      live = false;
+    };
   }, [token, item.id]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && prevId) onStep(prevId);
+      if (e.key === "ArrowRight" && nextId) onStep(nextId);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, onStep, prevId, nextId]);
 
   /*
-   * A photo shows the copy the grid already loaded - it is the full stored
-   * image, so opening one is instant rather than a second download. A video
-   * has to wait for the signed URL, because the poster is not the clip.
+   * Swipe, on photos only. A video gets the gesture instead - dragging across
+   * one is someone scrubbing, and stealing that to change photo would make the
+   * controls feel broken.
+   */
+  function onTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    touchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }
+
+  function onTouchEnd(e: React.TouchEvent) {
+    const start = touchStart.current;
+    const touch = e.changedTouches[0];
+    touchStart.current = null;
+    if (!start || !touch) return;
+
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    // Mostly sideways, or it belongs to the page: a tall photo in a scrolling
+    // panel is dragged up and down far more often than across.
+    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)) return;
+
+    const target = dx < 0 ? nextId : prevId;
+    if (target) onStep(target);
+  }
+
+  /*
+   * A video waits for the signed URL, because the poster is not the clip. A
+   * photo has its URL from the moment the grid loaded - what it waits for is
+   * the bytes, which is a different wait and is handled below.
    */
   const viewUrl = item.kind === "video" ? full?.url : item.previewUrl;
 
@@ -194,27 +286,82 @@ function Lightbox({
         className="max-h-full w-full max-w-2xl overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {item.kind === "video" ? (
-          viewUrl ? (
-            <video
-              src={viewUrl}
-              poster={item.posterUrl ?? undefined}
-              controls
-              playsInline
-              preload="metadata"
-              className="w-full rounded-xl"
-            />
+        <div
+          className="relative"
+          onTouchStart={item.kind === "video" ? undefined : onTouchStart}
+          onTouchEnd={item.kind === "video" ? undefined : onTouchEnd}
+        >
+          {item.kind === "video" ? (
+            viewUrl ? (
+              <video
+                src={viewUrl}
+                poster={item.posterUrl ?? undefined}
+                controls
+                playsInline
+                preload="metadata"
+                className="w-full rounded-xl"
+              />
+            ) : (
+              <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-hole" />
+            )
+          ) : viewUrl ? (
+            /*
+             * Through the optimiser, like the grid, rather than a bare <img>.
+             * `previewUrl` is the stored original - a phone camera's four-odd
+             * megabytes - and pointing an <img> at it downloaded all of them to
+             * fill 672 pixels of screen. It is the same photo either way; the
+             * difference is a second of staring at nothing on venue wifi.
+             *
+             * The shimmer behind it is what fills that second. It sits under
+             * the image rather than over it, and the image is never faded in:
+             * if `onLoad` somehow never fires, the photo still shows and the
+             * only cost is an animation nobody can see.
+             */
+            <>
+              {!loaded && (
+                <div className="shimmer absolute inset-0 overflow-hidden rounded-xl bg-hole" />
+              )}
+              <Image
+                src={viewUrl}
+                alt=""
+                // Real dimensions when we have them, a 4:3 guess when we do
+                // not: it only has to hold the shimmer's shape until the photo
+                // lands and takes over the height itself.
+                width={item.width ?? 1200}
+                height={item.height ?? 900}
+                // Full width on a phone, and the panel is max-w-2xl after that.
+                sizes="(max-width: 704px) 100vw, 672px"
+                onLoad={() => setLoaded(true)}
+                // This photo is the only reason the guest tapped. It is not a
+                // candidate for lazy loading - it is the point of the screen.
+                priority
+                className="relative h-auto w-full rounded-xl"
+              />
+            </>
           ) : (
-            <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-hole" />
-          )
-        ) : viewUrl ? (
-          <img src={viewUrl} alt="" className="w-full rounded-xl" />
-        ) : (
-          <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-hole" />
+            <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-hole" />
+          )}
+
+          {/* Nothing to step to at all means one photo in the event: two dead
+              buttons over it would be furniture. With a wall to move through
+              they both stay put and grey out at the ends, so the picture never
+              shifts under a finger that is tapping the same spot. */}
+          {(prevId || nextId) && (
+            <>
+              <StepArrow direction="prev" targetId={prevId} onStep={onStep} />
+              <StepArrow direction="next" targetId={nextId} onStep={onStep} />
+            </>
+          )}
+        </div>
+
+        {total > 1 && (
+          <p className="mt-3 text-center font-mono text-micro uppercase tracking-[0.16em] text-butter/70">
+            {position} of {total}
+          </p>
         )}
 
         {item.processing && (
-          <p className="mt-3 rounded-xl border-2 border-gouda bg-pepper px-3 py-2 text-center text-[0.8125rem] text-butter/80">
+          <p className="mt-3 rounded-xl bg-butter/12 px-3 py-2 text-center text-label text-butter/80">
             Still being converted so it plays everywhere. Check back shortly.
           </p>
         )}
@@ -223,11 +370,26 @@ function Lightbox({
           <Button onClick={onClose} variant="onDark" size="sm">
             Close
           </Button>
-          {full?.downloadUrl && (
+          {/*
+            * One anchor in two states rather than appearing when the link
+            * lands. Stepping between photos re-fetches the link, and a button
+            * that vanishes and comes back moves the two beside it every time -
+            * so it holds its place and goes dim instead. Without `href` it is
+            * inert and out of the tab order already; `aria-disabled` says so
+            * out loud.
+            *
+            * It is still absent entirely when the request has finished and
+            * brought back no link, because then there is nothing to wait for.
+            */}
+          {(linkPending || full?.downloadUrl) && (
             <a
-              href={full.downloadUrl}
-              download
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border-2 border-pepper bg-gouda px-3.5 py-2 text-[0.9375rem] font-semibold leading-tight text-pepper shadow-[4px_4px_0_var(--color-crust)]"
+              href={full?.downloadUrl}
+              download={full?.downloadUrl ? true : undefined}
+              aria-disabled={full?.downloadUrl ? undefined : true}
+              className={cx(
+                "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gouda px-3.5 py-2 text-small font-semibold leading-tight text-pepper",
+                !full?.downloadUrl && "opacity-45",
+              )}
             >
               Download
             </a>
@@ -240,5 +402,55 @@ function Lightbox({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * One of the two arrows over the open photo. A null target is the end of what
+ * has loaded: the button stays where it is and goes grey, because an arrow that
+ * disappeared would move the other one and shift the photo underneath.
+ */
+function StepArrow({
+  direction,
+  targetId,
+  onStep,
+}: {
+  direction: "prev" | "next";
+  targetId: string | null;
+  onStep: (id: string) => void;
+}) {
+  const back = direction === "prev";
+  return (
+    <button
+      type="button"
+      disabled={!targetId}
+      onClick={() => targetId && onStep(targetId)}
+      aria-label={back ? "Previous photo" : "Next photo"}
+      className={cx(
+        /*
+         * `min(50%, 35vh)` rather than a plain half: a tall portrait photo is
+         * taller than the window and the panel scrolls, so its true middle can
+         * sit below the fold - an arrow you have to scroll to find. Short
+         * photos still get the middle, tall ones get a point near the top that
+         * is on screen the moment the lightbox opens.
+         */
+        // Dimmed the same way every other disabled control in the app is.
+        "absolute top-[min(50%,35vh)] grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-gouda text-pepper transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
+        back ? "left-2" : "right-2",
+      )}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        role="presentation"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d={back ? "M15 4 7 12l8 8" : "M9 4l8 8-8 8"} />
+      </svg>
+    </button>
   );
 }

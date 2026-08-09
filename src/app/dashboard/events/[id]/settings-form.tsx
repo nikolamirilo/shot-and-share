@@ -85,12 +85,12 @@ export function SettingsForm({ event }: { event: EventRow }) {
       */}
 
       {state.error && (
-        <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
+        <p className="note p-3 text-[0.9375rem] font-semibold">
           {state.error}
         </p>
       )}
       {state.ok && (
-        <p className="rounded-xl border-2 border-pepper bg-gouda p-3 text-[0.9375rem]">
+        <p className="rounded-xl bg-gouda shadow-sm p-3 text-[0.9375rem]">
           Saved.
         </p>
       )}

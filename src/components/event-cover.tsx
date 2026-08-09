@@ -87,12 +87,12 @@ export function EventCover(props: CoverProps) {
   switch (variant) {
     case "classic":
       return <ClassicCover {...props} />;
-    case "band":
-      return <BandCover {...props} />;
+    case "half":
+      return <PhotoCover {...props} half />;
     case "type":
       return <TypeCover {...props} />;
     default:
-      return <FullCover {...props} />;
+      return <PhotoCover {...props} />;
   }
 }
 
@@ -191,13 +191,14 @@ function CoverPhoto({
 }
 
 /**
- * The photograph, the whole phone, the name across the bottom.
+ * The photograph with the name laid across the bottom of it, at one of two
+ * heights: the whole phone, or half of it.
  *
- * The default, and the reason the page is worth scanning a code for: a guest
- * arrives holding a phone, and the first thing they get is the event rather
- * than a form. `svh` rather than `vh` because a phone's address bar is inside
- * `vh` and outside `svh` - with `vh` the name sits under the browser chrome on
- * first paint, which is exactly the thing the cover exists to avoid.
+ * The full one is the default, and the reason the page is worth scanning a code
+ * for: a guest arrives holding a phone, and the first thing they get is the
+ * event rather than a form. `svh` rather than `vh` because a phone's address bar
+ * is inside `vh` and outside `svh` - with `vh` the name sits under the browser
+ * chrome on first paint, which is exactly the thing the cover exists to avoid.
  *
  * `flex-1` is the other half of that. The page puts this cover and the header
  * above it in one screen-high column (see the guest page), and there `flex-1`
@@ -205,33 +206,54 @@ function CoverPhoto({
  * screen and a bit, and the bit that overflows is the name. Standing alone,
  * outside a flex column, `flex-1` does nothing and the height applies.
  *
- * Everything else on the page is now below the fold, so the cover has to say
+ * Everything else on the page is then below the fold, so the cover has to say
  * that something is down there. That is the cue under the name; without it a
  * full-screen photo is indistinguishable from a page that failed to load the
  * rest of itself.
+ *
+ * `half` is the same drawing at half the height, for a host who wants the
+ * photograph to open the page without the upload button being below the fold.
+ * It carries no scroll cue and no safe-area padding for the same reason: the
+ * ask is already on the screen, and the foot of the cover is nowhere near the
+ * foot of the phone.
  */
-function FullCover({
+function PhotoCover({
   name,
   date,
   message,
   coverUrl,
   preview,
   photoLabel,
-}: CoverProps) {
+  half,
+}: CoverProps & {
+  /** Half the screen rather than all of it. */
+  half?: boolean;
+}) {
   return (
     <header
       className={cx(
-        "relative overflow-hidden border-b-2 border-pepper",
-        // A landscape phone is 375px tall. The floor keeps the name, the date
-        // and the cue from stacking into each other there.
-        preview ? "h-56 @xs:h-64 @sm:h-72" : "h-svh min-h-96 flex-1",
+        // `z-10` so the shadow falls on the gallery rather than being painted
+        // over by it - the panel below is a later sibling with a background.
+        "relative z-10 overflow-hidden shadow-md",
+        // A landscape phone is 375px tall. The floors keep the name, the date
+        // and the cue from stacking into each other there - half of 375px is
+        // not enough room for three lines of anything.
+        preview
+          ? half
+            ? "h-36 @xs:h-40 @sm:h-48"
+            : "h-56 @xs:h-64 @sm:h-72"
+          : half
+            ? "h-[50svh] min-h-72"
+            : "h-svh min-h-96 flex-1",
       )}
     >
       <div className="absolute inset-0">
         <CoverPhoto
           url={coverUrl}
           label={photoLabel}
-          emptyClassName={preview ? "pb-20" : "pb-40"}
+          emptyClassName={
+            preview ? (half ? "pb-14" : "pb-20") : half ? "pb-28" : "pb-40"
+          }
         />
       </div>
 
@@ -250,7 +272,9 @@ function FullCover({
           "absolute inset-x-0 bottom-0 mx-auto max-w-3xl",
           preview
             ? "px-4 pb-3"
-            : "px-4 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-12",
+            : half
+              ? "px-4 pb-6 sm:px-5 sm:pb-8"
+              : "px-4 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-12",
         )}
       >
         {/* Fixed light text: it sits on a photograph, not on the theme. */}
@@ -262,7 +286,7 @@ function FullCover({
             preview={preview}
             hero
           />
-          <ScrollCue preview={preview} />
+          {!half && <ScrollCue preview={preview} />}
         </div>
       </div>
     </header>
@@ -307,7 +331,7 @@ function ClassicCover({
   photoLabel,
 }: CoverProps) {
   return (
-    <header className="relative overflow-hidden border-b-2 border-pepper">
+    <header className="relative z-10 overflow-hidden shadow-md">
       <div
         className={cx(
           "relative w-full",
@@ -370,48 +394,10 @@ function ClassicCover({
   );
 }
 
-/** Photo above a solid band of accent carrying the name. */
-function BandCover({
-  name,
-  date,
-  message,
-  coverUrl,
-  preview,
-  photoLabel,
-}: CoverProps) {
-  return (
-    <header className="border-b-2 border-pepper">
-      <div
-        className={cx(
-          "relative w-full overflow-hidden border-b-2 border-pepper",
-          preview ? "h-20 @2xs:h-24 @sm:h-32" : "h-44 xs:h-52 sm:h-72",
-        )}
-      >
-        <CoverPhoto url={coverUrl} label={photoLabel} />
-      </div>
-      <div className="bg-gouda">
-        <div
-          className={cx(
-            "mx-auto max-w-3xl",
-            preview ? "px-4 py-3" : "px-4 py-7 sm:px-5 sm:py-8",
-          )}
-        >
-          <Title
-            name={name}
-            date={date}
-            message={message}
-            preview={preview}
-          />
-        </div>
-      </div>
-    </header>
-  );
-}
-
 /** No photo. Large type on the theme colour, with the hole vocabulary. */
 function TypeCover({ name, date, message, preview }: CoverProps) {
   return (
-    <header className="border-b-2 border-pepper bg-gouda">
+    <header className="relative z-10 bg-gouda shadow-md">
       <div
         className={cx(
           "mx-auto max-w-3xl",

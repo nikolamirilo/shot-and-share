@@ -6,8 +6,8 @@
  * when it is handed over, and a wedding page in Comic Sans is a support ticket
  * rather than a feature. So: five sets, each one tested against the layout.
  *
- * The mono face never changes. It labels the machine-readable parts — tokens,
- * short links, percentages — and that register is the product's, not the
+ * The mono face never changes. It labels the machine-readable parts - tokens,
+ * short links, percentages - and that register is the product's, not the
  * event's.
  *
  * Each set also carries the three display settings the stylesheet cannot

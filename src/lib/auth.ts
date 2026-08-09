@@ -72,7 +72,7 @@ export const RESET_SENT_MESSAGE =
   "If that address has an account, a reset link is on its way.";
 
 export const CHECK_INBOX_MESSAGE =
-  "Check your inbox — we sent a link to confirm your address.";
+  "Check your inbox - we sent a link to confirm your address.";
 
 export const GENERIC_MESSAGE = "Something went wrong. Try again.";
 
@@ -84,7 +84,7 @@ export const GENERIC_MESSAGE = "Something went wrong. Try again.";
 const AUTH_MESSAGES: Record<string, string> = {
   invalid_credentials: CREDENTIALS_MESSAGE,
   email_not_confirmed:
-    "Confirm your email address first — the link is in your inbox.",
+    "Confirm your email address first - the link is in your inbox.",
   over_request_rate_limit: "Too many attempts. Wait a minute and try again.",
   over_email_send_rate_limit:
     "Too many emails sent to that address. Wait a few minutes.",

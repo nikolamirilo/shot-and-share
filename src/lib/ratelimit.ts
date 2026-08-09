@@ -68,6 +68,14 @@ export const LIMITS = {
   presign: { limit: 120, window: 60 },
   /** Guest page loads per IP, per minute. */
   guestPage: { limit: 60, window: 60 },
+  /**
+   * Cover images a host may upload to one event, per minute.
+   *
+   * Deliberately much lower than `presign`: a host picks one cover, looks at
+   * it, and picks another if they do not like it. Anything past a handful in a
+   * minute is a stuck retry loop rather than somebody choosing.
+   */
+  coverUpload: { limit: 10, window: 60 },
   /** Archive builds are the biggest cost line in the system. */
   archive: { limit: 5, window: 3600 },
   /** Event creation per host, per hour. */
