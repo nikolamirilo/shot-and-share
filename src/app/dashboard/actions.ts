@@ -197,7 +197,7 @@ const appearanceSchema = z.object({
   // Not an enum, for the same reason `theme` is not: pairings are defined in
   // the application and an unknown one falls back when it is read.
   theme_font: z.string().trim().min(1).max(32),
-  cover_variant: z.enum(["classic", "band", "framed", "type"]),
+  cover_variant: z.enum(["full", "classic", "band", "type"]),
   upload_variant: z.enum(["button", "panel", "bar", "split"]),
   gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
   cover_media_id: z.string().uuid().nullable(),

@@ -12,6 +12,7 @@ import {
   coerceCover,
   coerceUpload,
   findTheme,
+  lightBackground,
   paletteToCssVars,
   resolveAppearance,
 } from "@/lib/appearance";
@@ -34,7 +35,9 @@ import {
   mix,
   parseHex,
   readableInk,
+  rgbToHsl,
   safeHex,
+  tint,
   toHex,
 } from "@/lib/color";
 
@@ -129,9 +132,61 @@ describe("colour derivation", () => {
     expect(lighten("#808080", 0.5)).toBe("#C0C0C0");
     expect(darken("#808080", 0.5)).toBe("#404040");
   });
+
+  it("tints without draining the hue", () => {
+    // Mixing towards white hands back a grey with a hint of the colour in it;
+    // a tint hands back the same colour, paler. Lifting a dark custom
+    // background depends entirely on the difference.
+    const tinted = parseHex(tint("#0B3D2E", 0.92))!;
+    const mixed = parseHex(lighten("#0B3D2E", 0.9))!;
+    expect(tinted.g - tinted.r).toBeGreaterThan(mixed.g - mixed.r);
+    expect(rgbToHsl(tinted).l).toBeCloseTo(0.92, 2);
+  });
+
+  it("leaves a grey grey", () => {
+    expect(tint("#808080", 0.9)).toBe("#E6E6E6");
+  });
 });
 
 describe("built themes", () => {
+  it("has no dark preset, and no way to reach one", () => {
+    /*
+     * The rule, not a description of today's list: an event page is looked at
+     * on a phone at the party and on a laptop the next morning, and a dark
+     * page fights every photograph on it. Adding a dark preset should fail
+     * here rather than ship.
+     */
+    for (const theme of THEMES) {
+      expect(isDark(theme.palette.bg), `${theme.id} background`).toBe(false);
+      expect(isDark(theme.palette.surface), `${theme.id} cards`).toBe(false);
+    }
+  });
+
+  it("lifts a dark custom background into the light", () => {
+    // The custom picker is not a hole in the rule above. A host who types
+    // black gets the palest version of it, and the form says so.
+    for (const bg of ["#000000", "#101820", "#2A5F3A", "#4B2E83"]) {
+      const palette = buildCustomPalette({ bg });
+      expect(isDark(palette.bg), bg).toBe(false);
+      expect(isDark(palette.surface), `${bg} cards`).toBe(false);
+      // Still legible on it, whatever the lift did.
+      expect(meetsContrast(palette.ink, palette.bg)).toBe(true);
+    }
+  });
+
+  it("leaves a background that is already light exactly as it was", () => {
+    expect(lightBackground("#FFF6DC")).toBe("#FFF6DC");
+    expect(buildCustomPalette({ bg: "#FBF1EF" }).bg).toBe("#FBF1EF");
+  });
+
+  it("keeps the hue when it lifts", () => {
+    // Lifting must not turn every dark pick into the same grey: a host who
+    // chose forest green should get the palest green, not the palest anything.
+    const lifted = parseHex(lightBackground("#0B3D2E"))!;
+    expect(lifted.g).toBeGreaterThan(lifted.r);
+    expect(lifted.g).toBeGreaterThan(lifted.b);
+  });
+
   it("every preset is readable", () => {
     for (const theme of THEMES) {
       const { ink, bg, surface, muted } = theme.palette;
@@ -179,10 +234,10 @@ describe("built themes", () => {
 
 describe("plan gating", () => {
   const customised = {
-    theme: "midnight",
+    theme: "sage",
     theme_custom: { bg: "#000000" },
     theme_font: "loud",
-    cover_variant: "framed",
+    cover_variant: "band",
     upload_variant: "panel",
     gallery_layout: "masonry",
   };
@@ -217,9 +272,9 @@ describe("plan gating", () => {
 
   it("honours everything on a paid event", () => {
     const appearance = resolveAppearance({ tier: "wedding", ...customised });
-    expect(appearance.themeId).toBe("midnight");
+    expect(appearance.themeId).toBe("sage");
     expect(appearance.font.id).toBe("loud");
-    expect(appearance.cover).toBe("framed");
+    expect(appearance.cover).toBe("band");
     expect(appearance.upload).toBe("panel");
     expect(appearance.layout).toBe("masonry");
     expect(appearance.customisable).toBe(true);
@@ -229,9 +284,10 @@ describe("plan gating", () => {
     const appearance = resolveAppearance({
       tier: "event",
       theme: CUSTOM_THEME_ID,
-      theme_custom: { bg: "#101010", accent: "#22DD88", ink: "#FFFFFF" },
+      theme_custom: { bg: "#2A5F3A", accent: "#22DD88", ink: "#101010" },
     });
-    expect(appearance.palette.bg).toBe("#101010");
+    // The hue survives; the darkness does not - see "every page is light".
+    expect(appearance.palette.bg).not.toBe("#2A5F3A");
     expect(meetsContrast(appearance.palette.ink, appearance.palette.bg)).toBe(
       true,
     );
@@ -240,9 +296,31 @@ describe("plan gating", () => {
 
 describe("cover variants", () => {
   it("coerces anything unknown to the default", () => {
-    expect(coerceCover("framed")).toBe("framed");
+    expect(coerceCover("band")).toBe("band");
     expect(coerceCover("carousel")).toBe(DEFAULT_COVER);
     expect(coerceCover(undefined)).toBe(DEFAULT_COVER);
+  });
+
+  it("sends a removed variant to the default rather than breaking", () => {
+    // 0011 rewrites every 'framed' row, but a restore, a replayed request or a
+    // browser tab left open across the deploy can still present one.
+    expect(coerceCover("framed")).toBe(DEFAULT_COVER);
+  });
+
+  it("opens on the full-screen photo unless told otherwise", () => {
+    // A guest arrives holding a phone. The photograph is what should be on it.
+    expect(DEFAULT_COVER).toBe("full");
+  });
+
+  it("matches the ids the database constraint allows", () => {
+    // 0011 constrains this column, so a new variant needs a migration as well
+    // as a component. Drifting apart means a save that fails at the database.
+    expect(COVER_VARIANTS.map((v) => v.id)).toEqual([
+      "full",
+      "classic",
+      "band",
+      "type",
+    ]);
   });
 
   it("has exactly one variant that works without a photo", () => {

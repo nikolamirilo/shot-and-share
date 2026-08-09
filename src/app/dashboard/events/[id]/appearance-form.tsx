@@ -16,7 +16,10 @@ import {
   UPLOAD_VARIANTS,
   type UploadVariant,
   buildCustomPalette,
+  coerceCover,
+  coerceUpload,
   findTheme,
+  lightBackground,
 } from "@/lib/appearance";
 import { AA_CONTRAST, contrastRatio, parseHex } from "@/lib/color";
 import type { EventRow } from "@/lib/db/types";
@@ -78,11 +81,15 @@ export function AppearanceForm({
   const custom = (event.theme_custom ?? {}) as Record<string, string>;
   const [themeId, setThemeId] = useState(event.theme ?? "cheese");
   const [fontId, setFontId] = useState(event.theme_font ?? "cheese");
+  // Coerced rather than cast: a row can hold a variant that no longer exists -
+  // "framed" until its migration lands, or after a restore - and putting that
+  // in the form's state means a preview of the wrong shape and a save the
+  // server rejects. The host lands on the default instead.
   const [cover, setCover] = useState<CoverVariant>(
-    (event.cover_variant as CoverVariant) ?? "classic",
+    coerceCover(event.cover_variant),
   );
   const [upload, setUpload] = useState<UploadVariant>(
-    (event.upload_variant as UploadVariant) ?? "button",
+    coerceUpload(event.upload_variant),
   );
   const [layout, setLayout] = useState<GalleryLayout>(event.gallery_layout);
   const [coverMediaId, setCoverMediaId] = useState<string | null>(
@@ -501,6 +508,12 @@ function CustomColours({
   const ratio = fg && bg ? contrastRatio(fg, bg) : 0;
   const readable = ratio >= AA_CONTRAST;
 
+  // Event pages are light. A dark pick is lifted rather than refused, and the
+  // host is told which colour their guests will actually get - a picker that
+  // silently disagrees with the page is worse than one that says no.
+  const lifted = lightBackground(colors.bg.toUpperCase());
+  const bgWasLifted = lifted !== colors.bg.toUpperCase();
+
   const fields: Array<[keyof CustomColours, string]> = [
     ["bg", "Background"],
     ["surface", "Cards"],
@@ -540,6 +553,20 @@ function CustomColours({
             : "Too low to read comfortably. We will darken or lighten your text colour automatically - pick a stronger one to keep the shade you want."}
         </span>
       </p>
+
+      {bgWasLifted && (
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-[0.8125rem]">
+          <span
+            className="h-5 w-5 shrink-0 rounded-full border-2 border-pepper"
+            style={{ background: lifted }}
+          />
+          <span className="text-crust">
+            Event pages are always light, so guests get{" "}
+            <span className="font-mono uppercase">{lifted}</span> as the
+            background - the palest version of the colour you picked.
+          </span>
+        </p>
+      )}
     </div>
   );
 }
@@ -560,9 +587,9 @@ function LockedPanel({ eventId }: { eventId: string }) {
 
       <ul className="mt-4 space-y-2">
         {[
-          "Five themes, or pick your own colours",
+          "Six themes, or pick your own colours",
           "Five type pairings, from formal to loud",
-          "Four cover styles, using any photo from the event",
+          "Four cover styles, including a full-screen photo",
           "Four ways to ask your guests for photos",
           "Choose how the gallery is laid out",
           "No Say Cheese header or footer",

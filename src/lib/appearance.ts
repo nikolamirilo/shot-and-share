@@ -5,6 +5,7 @@ import {
   mutedInk,
   readableInk,
   safeHex,
+  tint,
 } from "@/lib/color";
 import type { FontSet } from "@/lib/fonts";
 import { DEFAULT_FONT_ID, coerceFont, findFontSet } from "@/lib/fonts";
@@ -51,11 +52,25 @@ export interface Theme {
   palette: Palette;
 }
 
+/**
+ * Every preset is light, and that is a rule rather than a coincidence.
+ *
+ * An event page is looked at twice: on a phone held up at the party, and on a
+ * laptop the next morning. A dark page wins the first and loses the second, and
+ * it fights every photograph on it - a wedding is white dresses and daylight,
+ * a birthday is a lit cake, and both sit in a dark frame like a mistake. Light
+ * pages also print, screenshot and paste into a group chat without surprises.
+ *
+ * The six are the palettes events are actually held in: the house yellow for
+ * anything loud, ivory and gold, dusty rose, sage, dusty blue, and paper. A
+ * host who wants something else has the custom picker - which is held to the
+ * same rule, see buildCustomPalette.
+ */
 export const THEMES: Theme[] = [
   {
     id: "cheese",
     name: "Say Cheese",
-    hint: "The house palette. Warm yellow, near-black, one family.",
+    hint: "The house palette. Warm yellow and near-black - birthdays, parties, anything loud.",
     palette: {
       bg: "#FFF6DC",
       surface: "#FFFDF4",
@@ -69,57 +84,73 @@ export const THEMES: Theme[] = [
     },
   },
   {
-    id: "midnight",
-    name: "Midnight",
-    hint: "Dark and gold. Made for evening receptions and a phone in a dim room.",
+    id: "ivory",
+    name: "Ivory",
+    hint: "Ivory and antique gold. The wedding palette, and the one that suits almost anything.",
     palette: {
-      bg: "#14161F",
-      surface: "#1E212D",
-      accent: "#E8B44A",
-      accentSoft: "#F2CC7A",
-      accentDeep: "#C8912A",
-      ink: "#F5F2E9",
-      muted: "#A7A18F",
-      deep: "#DAD4C4",
-      hole: "#0A0C12",
+      bg: "#FAF6EC",
+      surface: "#FFFFFF",
+      accent: "#C6A15B",
+      accentSoft: "#DFC694",
+      accentDeep: "#9E7F41",
+      ink: "#241F16",
+      muted: "#7C6A46",
+      deep: "#4C4231",
+      hole: "#2C261A",
     },
   },
   {
     id: "blush",
     name: "Blush",
-    hint: "Soft rose and deep plum.",
+    hint: "Dusty rose and plum. Engagements, showers, spring weddings.",
     palette: {
-      bg: "#FBF0F1",
-      surface: "#FFFAFA",
-      accent: "#E8A0A8",
-      accentSoft: "#F3C4C9",
-      accentDeep: "#C97A85",
-      ink: "#2A1519",
-      muted: "#9A5E6A",
-      deep: "#6B3742",
-      hole: "#3D1F25",
+      bg: "#FBF1EF",
+      surface: "#FFFAF9",
+      accent: "#DFA69E",
+      accentSoft: "#EFC9C3",
+      accentDeep: "#B87A72",
+      ink: "#2A1917",
+      muted: "#96605A",
+      deep: "#66403B",
+      hole: "#3B2320",
     },
   },
   {
     id: "sage",
     name: "Sage",
-    hint: "Muted green and cream. Quiet, and good with greenery.",
+    hint: "Sage green and cream. Quiet, and good with greenery.",
     palette: {
-      bg: "#F1F3EC",
-      surface: "#FBFCF8",
-      accent: "#A8BE8F",
-      accentSoft: "#C6D6B4",
-      accentDeep: "#7E9A66",
-      ink: "#1A2016",
-      muted: "#586B4A",
+      bg: "#F0F4EA",
+      surface: "#FBFCF7",
+      accent: "#A5BD8B",
+      accentSoft: "#C8D9B5",
+      accentDeep: "#7B9761",
+      ink: "#1D2318",
+      muted: "#566A48",
       deep: "#3A4A31",
       hole: "#232C1D",
     },
   },
   {
+    id: "sky",
+    name: "Sky",
+    hint: "Dusty blue and slate. Christenings, milestone birthdays, anything formal.",
+    palette: {
+      bg: "#EEF3F8",
+      surface: "#FBFDFF",
+      accent: "#9FBDD8",
+      accentSoft: "#C6DAEA",
+      accentDeep: "#6B90B1",
+      ink: "#16202B",
+      muted: "#4E6A80",
+      deep: "#33475A",
+      hole: "#1D2B37",
+    },
+  },
+  {
     id: "ink",
     name: "Ink",
-    hint: "Black, white and paper. Lets the photographs do everything.",
+    hint: "Paper and charcoal. Lets the photographs do everything.",
     palette: {
       bg: "#F4F2EE",
       surface: "#FFFFFF",
@@ -154,9 +185,43 @@ export interface CustomThemeInput {
   ink?: string;
 }
 
+/**
+ * The lightest the page and its cards are allowed to be dark.
+ *
+ * Perceived brightness rather than WCAG luminance: this is a question about
+ * what the page *looks* like, not about whether text on it can be read, and
+ * relativeBrightness is the same measure the surface nudge below already uses.
+ */
+const LIGHT_FLOOR = 0.82;
+
+/**
+ * The host's colour, lifted into the light range if it was not already there.
+ *
+ * Event pages are light - see the note above THEMES - and the custom picker is
+ * not a hole in that rule. A host who types black gets the palest version of
+ * their own colour rather than a dark page, and the picker tells them so
+ * instead of quietly disagreeing with the swatch they chose.
+ *
+ * It tints rather than mixing towards white, because a host who picked forest
+ * green should recognise what comes back. Mixing drains the hue on the way up
+ * and hands back a grey; a tint keeps the hue and moves the lightness. The mix
+ * afterwards is only the remainder, for a hue so dark that even a pale version
+ * of it is not pale enough - and being a straight line through brightness, the
+ * weight that lands exactly on the floor can be solved for rather than stepped.
+ */
+export function lightBackground(hex: string): string {
+  if (relativeBrightness(hex) >= LIGHT_FLOOR) return hex;
+
+  const tinted = tint(hex, 0.92);
+  const lifted = relativeBrightness(tinted);
+  return lifted >= LIGHT_FLOOR
+    ? tinted
+    : lighten(tinted, (LIGHT_FLOOR - lifted) / (1 - lifted));
+}
+
 export function buildCustomPalette(input: CustomThemeInput): Palette {
   const base = THEMES[0].palette;
-  const bg = safeHex(input.bg, base.bg);
+  const bg = lightBackground(safeHex(input.bg, base.bg));
   const accent = safeHex(input.accent, base.accent);
   const requestedInk = safeHex(input.ink, base.ink);
 
@@ -168,7 +233,7 @@ export function buildCustomPalette(input: CustomThemeInput): Palette {
    * when the background is already white there is nowhere lighter to go, and
    * lightening it does nothing at all.
    */
-  const rawSurface = safeHex(input.surface, lighten(bg, 0.5));
+  const rawSurface = lightBackground(safeHex(input.surface, lighten(bg, 0.5)));
   const surface =
     Math.abs(relativeBrightness(rawSurface) - relativeBrightness(bg)) < 0.03
       ? relativeBrightness(bg) >= 0.92
@@ -201,23 +266,36 @@ function relativeBrightness(hex: string): number {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * How the page opens.
+ *
+ * Four shapes became three plus a default, because two of the four were the
+ * same decision. "Framed" - a photo card with the name beside it - stacked into
+ * a small picture above a heading on the phone every guest actually holds,
+ * which is "Band" without the colour; it is gone, and the events that had it
+ * now open full screen.
+ *
+ * What is left differs in what the guest sees first, which is the only question
+ * a cover answers: the whole photograph, a photograph with the ask under it,
+ * or no photograph at all.
+ */
 export const COVER_VARIANTS = [
   {
+    id: "full",
+    name: "Full screen",
+    hint: "The photo fills the phone, name across the bottom. The one that makes a guest stop.",
+    needsImage: true,
+  },
+  {
     id: "classic",
-    name: "Classic",
-    hint: "Photo across the top, name over it. The safe one.",
+    name: "Banner",
+    hint: "Photo across the top, name over it. Guests reach the upload button without scrolling.",
     needsImage: true,
   },
   {
     id: "band",
     name: "Band",
-    hint: "Photo above a solid band of colour carrying the name.",
-    needsImage: true,
-  },
-  {
-    id: "framed",
-    name: "Framed",
-    hint: "Photo as a card with a hard shadow, name beside it.",
+    hint: "Photo above a solid band of colour carrying the name. Best when the photo is busy.",
     needsImage: true,
   },
   {
@@ -229,7 +307,7 @@ export const COVER_VARIANTS = [
 ] as const;
 
 export type CoverVariant = (typeof COVER_VARIANTS)[number]["id"];
-export const DEFAULT_COVER: CoverVariant = "classic";
+export const DEFAULT_COVER: CoverVariant = "full";
 
 export function coerceCover(value: unknown): CoverVariant {
   return COVER_VARIANTS.some((v) => v.id === value)

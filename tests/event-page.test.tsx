@@ -21,7 +21,7 @@ describe("the cover a host is shown", () => {
   it("shows the variant that was picked before a photo exists", () => {
     // Every photo variant used to collapse into "Just type" here, so all four
     // buttons produced the same picture and the choice looked dead.
-    for (const variant of ["classic", "band", "framed"] as const) {
+    for (const variant of ["full", "classic", "band"] as const) {
       const html = renderToStaticMarkup(
         <EventCover
           variant={variant}

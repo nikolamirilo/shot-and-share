@@ -109,6 +109,71 @@ export function lighten(color: string, amount: number): string {
   return mix(color, "#FFFFFF", amount);
 }
 
+/* --- tinting ---------------------------------------------------------------
+   Mixing towards white is a straight line through RGB, and it drains the hue
+   on the way: forest green ends up a grey with a hint of green in it. A tint
+   raises lightness and leaves the hue alone, which is what "the palest version
+   of the colour you picked" has to mean for anyone to recognise it.
+   -------------------------------------------------------------------------- */
+
+interface Hsl {
+  /** Degrees, 0-360. */
+  h: number;
+  s: number;
+  l: number;
+}
+
+export function rgbToHsl({ r, g, b }: Rgb): Hsl {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  const delta = max - min;
+
+  if (delta === 0) return { h: 0, s: 0, l };
+
+  const s = delta / (1 - Math.abs(2 * l - 1));
+  const h =
+    max === rn
+      ? 60 * (((gn - bn) / delta) % 6)
+      : max === gn
+        ? 60 * ((bn - rn) / delta + 2)
+        : 60 * ((rn - gn) / delta + 4);
+
+  return { h: (h + 360) % 360, s, l };
+}
+
+export function hslToRgb({ h, s, l }: Hsl): Rgb {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] =
+    h < 60
+      ? [c, x, 0]
+      : h < 120
+        ? [x, c, 0]
+        : h < 180
+          ? [0, c, x]
+          : h < 240
+            ? [0, x, c]
+            : h < 300
+              ? [x, 0, c]
+              : [c, 0, x];
+  return { r: (r + m) * 255, g: (g + m) * 255, b: (b + m) * 255 };
+}
+
+/** The same hue, taken to a given lightness. A grey stays a grey. */
+export function tint(color: string, lightness: number): string {
+  const rgb = parseHex(color);
+  if (!rgb) return color;
+  const { h, s } = rgbToHsl(rgb);
+  return toHex(
+    hslToRgb({ h, s, l: Math.max(0, Math.min(1, lightness)) }),
+  );
+}
+
 export function darken(color: string, amount: number): string {
   return mix(color, "#000000", amount);
 }

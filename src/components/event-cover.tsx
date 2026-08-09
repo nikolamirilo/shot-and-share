@@ -1,6 +1,5 @@
 import type { CoverVariant, Palette } from "@/lib/appearance";
 import { paletteToCssVars } from "@/lib/appearance";
-import { isDark } from "@/lib/color";
 import type { FontSet } from "@/lib/fonts";
 import { fontToCssVars } from "@/lib/fonts";
 import { formatEventDate } from "@/lib/format";
@@ -78,14 +77,14 @@ export function EventCover(props: CoverProps) {
       : props.variant;
 
   switch (variant) {
+    case "classic":
+      return <ClassicCover {...props} />;
     case "band":
       return <BandCover {...props} />;
-    case "framed":
-      return <FramedCover {...props} />;
     case "type":
       return <TypeCover {...props} />;
     default:
-      return <ClassicCover {...props} />;
+      return <FullCover {...props} />;
   }
 }
 
@@ -94,12 +93,15 @@ function Title({
   date,
   message,
   preview,
+  hero,
   className,
 }: {
   name: string;
   date: string;
   message?: string | null;
   preview?: boolean;
+  /** The full-screen cover, where the name has the whole phone to itself. */
+  hero?: boolean;
   className?: string;
 }) {
   return (
@@ -113,8 +115,12 @@ function Title({
         className={cx(
           "mt-2 leading-[0.98]",
           preview
-            ? "text-[1.5rem]"
-            : "text-[2.125rem] xs:text-[2.5rem] sm:text-[3.25rem] lg:text-[4rem]",
+            ? hero
+              ? "text-[1.75rem]"
+              : "text-[1.5rem]"
+            : hero
+              ? "text-[2.5rem] xs:text-[3rem] sm:text-[4rem] lg:text-[4.75rem]"
+              : "text-[2.125rem] xs:text-[2.5rem] sm:text-[3.25rem] lg:text-[4rem]",
         )}
       >
         {name}
@@ -176,20 +182,116 @@ function CoverPhoto({
   );
 }
 
+/**
+ * The photograph, the whole phone, the name across the bottom.
+ *
+ * The default, and the reason the page is worth scanning a code for: a guest
+ * arrives holding a phone, and the first thing they get is the event rather
+ * than a form. `svh` rather than `vh` because a phone's address bar is inside
+ * `vh` and outside `svh` - with `vh` the name sits under the browser chrome on
+ * first paint, which is exactly the thing the cover exists to avoid.
+ *
+ * Everything else on the page is now below the fold, so the cover has to say
+ * that something is down there. That is the cue under the name; without it a
+ * full-screen photo is indistinguishable from a page that failed to load the
+ * rest of itself.
+ */
+function FullCover({
+  name,
+  date,
+  message,
+  coverUrl,
+  preview,
+  photoLabel,
+}: CoverProps) {
+  return (
+    <header
+      className={cx(
+        "relative overflow-hidden border-b-2 border-pepper",
+        // A landscape phone is 375px tall. The floor keeps the name, the date
+        // and the cue from stacking into each other there.
+        preview ? "h-56 sm:h-64 lg:h-80" : "h-svh min-h-96",
+      )}
+    >
+      <div className="absolute inset-0">
+        <CoverPhoto
+          url={coverUrl}
+          label={photoLabel}
+          emptyClassName={preview ? "pb-20" : "pb-40"}
+        />
+      </div>
+
+      {/* Heavier at the foot than the banner's wash: there is more type down
+          there, and a full-bleed photograph can be bright at any point in it. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.42) 27%, rgba(0,0,0,0.04) 58%, rgba(0,0,0,0.12) 100%)",
+        }}
+      />
+
+      <div
+        className={cx(
+          "absolute inset-x-0 bottom-0 mx-auto max-w-3xl",
+          preview
+            ? "px-4 pb-3"
+            : "px-4 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-12",
+        )}
+      >
+        {/* Fixed light text: it sits on a photograph, not on the theme. */}
+        <div className="text-white [&_.eyebrow]:text-white/75 [&_h1]:text-white [&_p]:text-white/85">
+          <Title
+            name={name}
+            date={date}
+            message={message}
+            preview={preview}
+            hero
+          />
+          <ScrollCue preview={preview} />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** "There is more underneath this." */
+function ScrollCue({ preview }: { preview?: boolean }) {
+  return (
+    <span
+      className={cx(
+        "flex items-center gap-2",
+        preview ? "mt-2.5" : "mt-6 sm:mt-8",
+      )}
+    >
+      <span className="eyebrow">add your photos</span>
+      <svg
+        viewBox="0 0 16 16"
+        fill="none"
+        aria-hidden="true"
+        className={cx("shrink-0", preview ? "h-3 w-3" : "h-4 w-4")}
+      >
+        <path
+          d="M8 2v11M3.5 8.5 8 13l4.5-4.5"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 /** Photo across the top with the name over it. */
 function ClassicCover({
   name,
   date,
   message,
   coverUrl,
-  palette,
   preview,
   photoLabel,
 }: CoverProps) {
-  // The scrim direction follows the theme: light text needs a dark wash under
-  // it, and on a light theme the opposite reads as a mistake.
-  const dark = isDark(palette.bg);
-
   return (
     <header className="relative overflow-hidden border-b-2 border-pepper">
       <div
@@ -210,12 +312,13 @@ function ClassicCover({
             emptyClassName={preview ? "pb-12" : "pb-16"}
           />
         </div>
+        {/* One wash, because every theme is light now: the wash is there for
+            the photograph underneath the type, not for the palette around it. */}
         <div
           className="absolute inset-0"
           style={{
-            background: dark
-              ? "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.25) 55%, rgba(0,0,0,0.1) 100%)"
-              : "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)",
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)",
           }}
         />
         <div
@@ -286,41 +389,6 @@ function BandCover({
             preview={preview}
           />
         </div>
-      </div>
-    </header>
-  );
-}
-
-/** Photo as a card with a hard shadow, name beside it. The slab, at cover size. */
-function FramedCover({
-  name,
-  date,
-  message,
-  coverUrl,
-  preview,
-  photoLabel,
-}: CoverProps) {
-  return (
-    <header className="border-b-2 border-pepper bg-butter">
-      <div
-        className={cx(
-          "mx-auto grid max-w-3xl items-center",
-          preview
-            ? "grid-cols-[1fr_1.1fr] gap-6 px-4 py-4"
-            : "gap-5 px-4 py-8 sm:grid-cols-[1fr_1.1fr] sm:gap-6 sm:px-5 sm:py-10",
-        )}
-      >
-        <div
-          className={cx(
-            "overflow-hidden rounded-[1.25rem] border-2 border-pepper bg-cream",
-            preview
-              ? "h-20 shadow-hard sm:h-24 lg:h-32"
-              : "h-48 shadow-hard sm:h-72 sm:shadow-hard-lg",
-          )}
-        >
-          <CoverPhoto url={coverUrl} label={photoLabel} />
-        </div>
-        <Title name={name} date={date} message={message} preview={preview} />
       </div>
     </header>
   );
