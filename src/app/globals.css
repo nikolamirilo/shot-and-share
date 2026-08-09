@@ -113,6 +113,30 @@
     font: inherit;
     color: inherit;
   }
+
+  /* Tailwind v4 leaves buttons on the default arrow. Everything that can be
+     pressed should say so under the pointer, and everything that cannot should
+     say that too. */
+  button,
+  summary,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  label[for],
+  select {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 @layer components {

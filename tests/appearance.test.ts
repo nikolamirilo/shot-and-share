@@ -261,12 +261,14 @@ describe("plan gating", () => {
     expect(resolveAppearance({ tier: "wedding" }).platformBranding).toBe(false);
   });
 
-  it("fixes the gallery on free, so guests get no switcher either", () => {
-    expect(resolveAppearance({ tier: "free" }).allowViewerLayoutChoice).toBe(
-      false,
+  it("fixes the gallery on free, whatever the row says", () => {
+    // The layout is the host's decision on a paid event and ours on a free
+    // one. Either way it is a decision about the event: no guest overrides it.
+    expect(resolveAppearance({ tier: "free", ...customised }).layout).toBe(
+      "grid",
     );
-    expect(resolveAppearance({ tier: "event" }).allowViewerLayoutChoice).toBe(
-      true,
+    expect(resolveAppearance({ tier: "event", ...customised }).layout).toBe(
+      "masonry",
     );
   });
 

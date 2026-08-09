@@ -1,14 +1,15 @@
 /**
  * Gallery layouts.
  *
- * Two different people choose this, and they are choosing different things:
+ * The **host** chooses one, and that is the one every guest gets. The layout is
+ * part of what the paid tiers call the custom event page - it is a decision
+ * about how the event looks, in the same way the theme and the cover are - so
+ * the guest page has no switcher on it at all. A wall that every guest sees the
+ * same way is also the wall the host is actually designing.
  *
- *  - The **host** sets the event's default. It is part of what the paid tiers
- *    call the custom event page, and it is what every guest sees on arrival.
- *  - The **viewer** can switch for themselves, and that choice is remembered in
- *    their own browser. It never touches the event.
- *
- * The host is setting the room; the viewer is choosing where to stand in it.
+ * The host's own console keeps a switcher, because there they are managing
+ * photographs rather than looking at an event page; that preference lives in
+ * their browser and never touches the event.
  */
 
 export const GALLERY_LAYOUTS = [
@@ -72,7 +73,10 @@ export function aspectRatio(
 
 const STORAGE_KEY = "say-cheese:gallery-layout";
 
-/** The viewer's own preference, if they have expressed one. */
+/**
+ * The host's own preference in their console, if they have expressed one.
+ * Guest pages do not read or write it - they render the event's layout.
+ */
 export function readViewerLayout(): GalleryLayout | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);

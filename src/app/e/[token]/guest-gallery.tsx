@@ -2,36 +2,30 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { LayoutSwitcher, PhotoGallery } from "@/components/gallery";
+import { PhotoGallery } from "@/components/gallery";
 import { Button, Hole } from "@/components/ui";
 import { getFingerprint } from "@/lib/client/upload";
 import type { MediaView } from "@/lib/events";
-import {
-  type GalleryLayout,
-  readViewerLayout,
-  writeViewerLayout,
-} from "@/lib/gallery";
+import type { GalleryLayout } from "@/lib/gallery";
 
 /**
  * What everyone else has uploaded. Guests genuinely like seeing the night from
  * other people's phones, which is why this is on by default - but it is the
  * host's switch, and when they turn it off the page is upload-only.
  *
- * The host chooses which layout a guest lands on. The guest can then change it
- * for themselves, and that sticks across events, because how somebody likes to
- * look at photos is a fact about them rather than about the wedding.
+ * The layout is the host's, and only the host's. A guest gets the wall the host
+ * designed, the same way they get the theme and the cover; there is no switcher
+ * on this page.
  */
 export function GuestGallery({
   token,
   refreshKey,
-  eventLayout,
-  allowLayoutChoice,
+  layout,
 }: {
   token: string;
   refreshKey: number;
-  eventLayout: GalleryLayout;
-  /** Free events fix the layout, so there is nothing to switch. */
-  allowLayoutChoice: boolean;
+  /** The event's layout, set by the host. Guests do not change it. */
+  layout: GalleryLayout;
 }) {
   const [items, setItems] = useState<MediaView[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -39,22 +33,8 @@ export function GuestGallery({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<MediaView | null>(null);
   const [fingerprint, setFingerprint] = useState("");
-  const [layout, setLayout] = useState<GalleryLayout>(eventLayout);
 
   useEffect(() => setFingerprint(getFingerprint()), []);
-
-  // Server-rendered markup has to match the host's default on first paint;
-  // the viewer's own preference is only knowable once we are in the browser.
-  useEffect(() => {
-    if (!allowLayoutChoice) return;
-    const preferred = readViewerLayout();
-    if (preferred) setLayout(preferred);
-  }, [allowLayoutChoice]);
-
-  function chooseLayout(next: GalleryLayout) {
-    setLayout(next);
-    writeViewerLayout(next);
-  }
 
   const load = useCallback(
     async (before: string | null, replace: boolean) => {
@@ -132,27 +112,12 @@ export function GuestGallery({
           </p>
         </div>
       ) : (
-        <>
-          {/* Only worth offering once there is enough on screen for the choice
-              to make any visible difference. */}
-          {allowLayoutChoice && items.length >= 4 && (
-            /* The switcher is wider than the smallest phone. It scrolls to the
-               screen edge rather than being squashed, and starts at the right
-               where it sits on every larger screen. */
-            <div className="-mx-4 mt-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-              <div className="flex min-w-max justify-end">
-                <LayoutSwitcher value={layout} onChange={chooseLayout} />
-              </div>
-            </div>
-          )}
-
-          <PhotoGallery
-            items={items}
-            layout={layout}
-            onActivate={setOpen}
-            className="mt-4"
-          />
-        </>
+        <PhotoGallery
+          items={items}
+          layout={layout}
+          onActivate={setOpen}
+          className="mt-6"
+        />
       )}
 
       {cursor && (
@@ -258,9 +223,9 @@ function Lightbox({
           <Button onClick={onClose} variant="onDark" size="sm">
             Close
           </Button>
-          {full?.url && (
+          {full?.downloadUrl && (
             <a
-              href={full.url}
+              href={full.downloadUrl}
               download
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border-2 border-pepper bg-gouda px-3.5 py-2 text-[0.9375rem] font-semibold leading-tight text-pepper shadow-[4px_4px_0_var(--color-crust)]"
             >

@@ -23,6 +23,13 @@ import { cx } from "@/components/ui";
  * beside the panel on a laptop, where a page-wide strip would leave most of a
  * 1400px screen empty above the thing it opens.
  *
+ * `variant` is the other axis, and it exists because these can nest. The event
+ * page's settings are a set of tabs inside the console's own tabs, and drawn
+ * the same way - separate pills, mono, uppercase - the two rows read as one
+ * confused navigation. `segmented` is a single joined control instead: one
+ * bordered strip, sentence case, the same shape the gallery's layout switcher
+ * already uses. Different object, different job.
+ *
  * Visibility is done in CSS rather than by mounting and unmounting. A panel
  * that is switched away from keeps its typed text, its unsaved choices and its
  * scroll position, and the page still ships every panel's markup on the first
@@ -47,6 +54,7 @@ export function Tabs({
   label,
   idPrefix,
   desktop = "strip",
+  variant = "pill",
   sticky = false,
   /**
    * Pixels of chrome already pinned to the top of the viewport. Used both for
@@ -62,6 +70,7 @@ export function Tabs({
   label: string;
   idPrefix?: string;
   desktop?: "strip" | "rail";
+  variant?: "pill" | "segmented";
   sticky?: boolean;
   stickyOffset?: number;
   className?: string;
@@ -69,6 +78,7 @@ export function Tabs({
   children: ReactNode;
 }) {
   const rail = desktop === "rail";
+  const segmented = variant === "segmented";
   const [active, setActive] = useState(items[0]?.id ?? "");
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
@@ -166,13 +176,19 @@ export function Tabs({
       {/* Five labels do not fit across a 360px phone, so the strip scrolls
           sideways rather than wrapping onto a second row that would cost as
           much height as a panel heading. Standing up as a rail, it has the
-          whole column and needs neither. */}
+          whole column and needs neither.
+
+          A segmented control scrolls the same way, inside its own border: the
+          five settings groups fit across a laptop column but not across a
+          phone, and a joined strip that wraps stops looking like one control. */}
       <div
         role="tablist"
         aria-label={label}
         aria-orientation={rail ? "vertical" : "horizontal"}
         className={cx(
-          "flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          "flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          !segmented && "gap-2 pb-2",
+          segmented && "w-full rounded-full border-2 border-pepper",
           rail && "lg:flex-col lg:gap-1.5 lg:overflow-x-visible lg:pb-0",
           sticky && "sticky top-(--tab-top) z-30",
           sticky &&
@@ -202,11 +218,31 @@ export function Tabs({
               onClick={() => open(item.id)}
               onKeyDown={(event) => onKeyDown(event, index)}
               className={cx(
-                "min-h-11 shrink-0 touch-manipulation whitespace-nowrap rounded-xl border-2 border-pepper px-3.5 font-mono text-micro uppercase tracking-[0.16em]",
+                "min-h-11 shrink-0 touch-manipulation whitespace-nowrap",
+                !segmented &&
+                  "rounded-xl border-2 border-pepper px-3.5 font-mono text-micro uppercase tracking-[0.16em]",
+                !segmented &&
+                  (selected ? "bg-gouda shadow-hard-sm" : "bg-cream text-crust"),
+                // Filled rather than outlined, because the border belongs to
+                // the strip: an outline on the open one would be a box inside
+                // a box, which is the thing the segmented variant is avoiding.
+                //
+                // `flex-1` against `shrink-0` is what makes one control out of
+                // five buttons: the segments share whatever width the strip
+                // has, so the strip is full at any width, and none of them may
+                // shrink below its own label, so on a phone the row scrolls
+                // instead of squeezing "Uploads" onto two lines.
+                //
+                // The padding is therefore a floor rather than a size - it is
+                // what decides whether five labels fit across a phone at all,
+                // and everywhere wider than that the growing does the spacing.
+                segmented &&
+                  "flex-1 px-2 text-label font-semibold leading-tight transition-colors",
+                segmented &&
+                  (selected
+                    ? "bg-pepper text-butter"
+                    : "bg-cream text-pepper hover:bg-gouda-light"),
                 rail && "lg:w-full lg:px-4 lg:text-left",
-                selected
-                  ? "bg-gouda shadow-hard-sm"
-                  : "bg-cream text-crust",
               )}
             >
               {item.label}

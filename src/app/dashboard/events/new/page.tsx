@@ -6,6 +6,7 @@ import { Eyebrow, Hole } from "@/components/ui";
 import { TIERS } from "@/lib/tiers";
 import { formatBytes } from "@/lib/format";
 import { approxPhotos } from "@/lib/tiers";
+import { MdArrowBackIosNew } from "react-icons/md";
 
 export const metadata: Metadata = { title: "New event" };
 
@@ -16,9 +17,9 @@ export default function NewEventPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-5 sm:py-10">
       <Link
         href="/dashboard"
-        className="inline-block py-1 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind hover:underline"
+        className="inline-flex items-center gap-2 py-1 font-mono text-micro uppercase tracking-[0.16em] text-rind hover:underline"
       >
-        ← All events
+        <MdArrowBackIosNew aria-hidden className="shrink-0" /> All events
       </Link>
 
       <Eyebrow className="mt-6">New event</Eyebrow>

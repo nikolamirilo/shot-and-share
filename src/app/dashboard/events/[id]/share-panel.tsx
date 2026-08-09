@@ -91,15 +91,9 @@ export function SharePanel({
             </div>
 
             <div>
-              <p className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-                The link
-              </p>
-              <p className="mt-1.5 break-all rounded-xl border-2 border-pepper bg-butter px-3 py-2 font-mono text-[0.8125rem]">
-                {link}
-              </p>
 
-              <div className="mt-3 grid grid-cols-2 gap-2 xs:flex xs:flex-wrap">
-                <Button onClick={copy} size="sm">
+              <div className="mt-3 flex flex-col gap-2">
+                <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
                   {copied ? "Copied" : "Copy link"}
                 </Button>
                 <ButtonLink
@@ -108,6 +102,7 @@ export function SharePanel({
                   rel="noopener"
                   variant="secondary"
                   size="sm"
+                  className="w-10/12 max-w-[250px]"
                 >
                   {brandedQr ? "Branded card" : "Printable card"}
                 </ButtonLink>

@@ -51,6 +51,25 @@ describe("the cover a host is shown", () => {
     expect(html).not.toContain("your photo");
   });
 
+  it("lets the full-screen cover take the room the header left it", () => {
+    // "Full screen" has to mean the screen. The guest page stacks the header
+    // and this cover in one screen-high column; a cover that only knows how to
+    // be 100svh tall is a screen *plus* a header, and what falls off the bottom
+    // is the name and the scroll cue - the two reasons the variant exists.
+    const html = renderToStaticMarkup(
+      <EventCover
+        variant="full"
+        name="Your event"
+        date="2026-09-12"
+        coverUrl="https://example.test/thumb.jpg"
+        palette={palette}
+      />,
+    );
+    expect(html).toContain("flex-1");
+    // Still correct standing on its own, where flex-1 does nothing.
+    expect(html).toContain("h-svh");
+  });
+
   it("uses the photo once there is one", () => {
     const html = renderToStaticMarkup(
       <EventCover
@@ -199,24 +218,51 @@ describe("the drawing of the guest page", () => {
     // and every one of them carries a colour the host is choosing.
     const html = preview({ message: "Send us the ones you took." });
 
-    expect(html).toContain("Say Cheese"); // the header mark
     expect(html).toContain("Ana and Marko");
     expect(html).toContain("Send us the ones you took.");
     expect(html).toContain("Add your photos");
     expect(html).toContain("Photos, up to 20 at a time.");
     expect(html).toContain("Everyone&#x27;s photos");
-    expect(html).toContain("go to the host of this event");
   });
 
-  it("loads no photograph at all", () => {
-    // Every frame is drawn. A host clicking through five themes and four
-    // layouts is not worth one image request, and their guests' faces answer
-    // none of the questions this panel is asking.
+  it("carries nothing of ours above the cover or below the gallery", () => {
+    // The panel is locked on the free plan, so everything this draws is a paid
+    // page - and a paid page is the host's, top to bottom. If the mark or the
+    // small print came back here it would mean it had come back on the page.
+    const html = preview();
+
+    expect(html).not.toContain("Say Cheese");
+    expect(html).not.toContain("go to the host of this event");
+  });
+
+  it("loads no gallery photograph at all", () => {
+    // Every tile is drawn. A host clicking through five themes and four
+    // layouts is not worth an image request per tile, and their guests' faces
+    // answer none of the questions this panel is asking.
     for (const layout of GALLERY_LAYOUTS) {
       const html = preview({ layout: layout.id });
       expect(html).not.toContain("<img");
       expect(html).not.toContain("background-image");
     }
+  });
+
+  it("draws the cover photo the host picked, and only that one", () => {
+    // The four cover styles are four crops of one picture. Judging between
+    // them against a grey frame is judging nothing, so this photograph - and
+    // no other - is real.
+    const html = preview({
+      cover: "full",
+      coverUrl: "https://media.example.com/photo.jpg",
+    });
+
+    expect(html).toContain('src="https://media.example.com/photo.jpg"');
+    expect(html.match(/<img/g)).toHaveLength(1);
+  });
+
+  it("keeps the marked frame until a cover photo exists", () => {
+    const html = preview({ cover: "full", coverChosen: false });
+    expect(html).not.toContain("<img");
+    expect(html).toContain("no photo yet");
   });
 
   it("gives every gallery layout its own shape", () => {
@@ -234,6 +280,16 @@ describe("the drawing of the guest page", () => {
     expect(drawn.get("holes")).toContain("hole");
     expect(drawn.get("holes")).toMatch(/width:\d+px/);
     expect(drawn.get("stack")).toContain("aspect-ratio:1.75");
+  });
+
+  it("draws no layout switcher, because the page no longer has one", () => {
+    // The layout is the host's decision, like the theme and the cover. A row
+    // of layout names in the drawing would promise guests a switch they do
+    // not get.
+    const html = preview({ layout: "grid" });
+    for (const option of GALLERY_LAYOUTS) {
+      expect(html).not.toContain(option.name);
+    }
   });
 
   it("hides the gallery when the event hides it", () => {

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import type { ReactNode } from "react";
 
 import { cx } from "@/components/ui";
 import type { MediaView } from "@/lib/events";
@@ -249,8 +248,13 @@ function Tile({
 }
 
 /**
- * The viewer's switch. Deliberately small and out of the way - it is a
- * preference, not a call to action, and the photos are the point of the page.
+ * The host's switch, in their own console.
+ *
+ * It is not on the guest page: there the layout is the host's decision, part of
+ * the event page they designed. This is the host looking through their own
+ * photographs, where how they like to look at a wall of them is their business
+ * and is remembered in their browser. Deliberately small and out of the way -
+ * it is a preference, not a call to action.
  */
 export function LayoutSwitcher({
   value,
@@ -294,46 +298,10 @@ export function LayoutSwitcher({
   );
 }
 
-/** Host-facing picker, with room to explain what each one does. */
-export function LayoutChooser({
-  name,
-  defaultValue,
-}: {
-  name: string;
-  defaultValue: GalleryLayout;
-}): ReactNode {
-  return (
-    <fieldset>
-      <legend className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-        Gallery layout
-      </legend>
-      <p className="mt-1.5 text-[0.9375rem] text-crust">
-        How guests see the shared gallery when they arrive. They can switch it
-        for themselves afterwards; this is the one they land on.
-      </p>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {GALLERY_LAYOUTS.map((option) => (
-          <label
-            key={option.id}
-            className="flex cursor-pointer items-start gap-2.5 rounded-xl border-2 border-pepper bg-butter p-3.5 has-[:checked]:bg-gouda"
-          >
-            <input
-              type="radio"
-              name={name}
-              value={option.id}
-              defaultChecked={option.id === defaultValue}
-              className="mt-0.5 h-5 w-5 shrink-0 accent-[#1F1607]"
-            />
-            <span>
-              <span className="block font-bold">{option.name}</span>
-              <span className="block text-[0.8125rem] leading-snug text-crust">
-                {option.hint}
-              </span>
-            </span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
+/*
+ * There was a LayoutChooser here - a radio-button version of the host's picker,
+ * unused since the appearance form grew its own, and carrying the sentence
+ * "they can switch it for themselves afterwards", which is no longer true of
+ * any page in the product. Dead copy that contradicts the product is worse than
+ * no copy, so it is gone rather than corrected.
+ */

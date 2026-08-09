@@ -29,8 +29,9 @@ export function HostGallery({
   const [error, setError] = useState<string | null>(null);
   const [layout, setLayout] = useState<GalleryLayout>(eventLayout);
 
-  // Start on the event's layout so the host sees what a guest sees, then let
-  // their own preference take over once the browser has told us there is one.
+  // Start on the event's layout - which is exactly what every guest gets - and
+  // let the host's own console preference take over once the browser has told
+  // us there is one. It is theirs alone: it never touches the event.
   useEffect(() => {
     const preferred = readViewerLayout();
     if (preferred) setLayout(preferred);
@@ -162,8 +163,8 @@ export function HostGallery({
 
       {layout !== eventLayout && (
         <p className="mt-3 text-[0.8125rem] text-rind">
-          You are viewing this your way. Guests still land on the layout set
-          under Event page.
+          You are viewing this your way. Guests always see the layout set under
+          Event page.
         </p>
       )}
 

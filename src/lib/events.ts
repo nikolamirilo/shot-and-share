@@ -107,8 +107,22 @@ export interface MediaView {
    * Download button points at.
    */
   url?: string;
+  /**
+   * The same object, signed to come back as an attachment. A browser ignores
+   * the `download` attribute on a link to another origin, so the only thing
+   * that actually saves the file instead of opening it is the bucket sending
+   * Content-Disposition itself.
+   */
+  downloadUrl?: string;
   /** Format of the stored object. */
   format: string | null;
+}
+
+/** What the saved file is called on the guest's device. */
+function downloadName(row: MediaRow): string {
+  const ext = row.media_key.split(".").pop() ?? (row.kind === "video" ? "mp4" : "jpg");
+  const stamp = row.created_at.slice(0, 19).replace(/[:T]/g, "-");
+  return `say-cheese-${stamp}.${ext}`;
 }
 
 /**
@@ -165,6 +179,13 @@ export async function toMediaView(
     view.url = await storage.presignDownload({
       key: row.media_key,
       expiresInSeconds: 900,
+    });
+    // A separate signature: the playback URL must stay inline, or a video
+    // downloads instead of playing.
+    view.downloadUrl = await storage.presignDownload({
+      key: row.media_key,
+      expiresInSeconds: 900,
+      downloadName: downloadName(row),
     });
   }
 

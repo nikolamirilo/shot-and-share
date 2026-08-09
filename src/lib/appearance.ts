@@ -370,8 +370,6 @@ export interface Appearance {
   platformBranding: boolean;
   /** Whether the host may change any of the above. */
   customisable: boolean;
-  /** Free events fix the gallery, so guests get no layout switcher either. */
-  allowViewerLayoutChoice: boolean;
 }
 
 interface AppearanceSource {
@@ -405,7 +403,6 @@ export function resolveAppearance(event: AppearanceSource): Appearance {
       layout: DEFAULT_LAYOUT,
       platformBranding: true,
       customisable: false,
-      allowViewerLayoutChoice: false,
     };
   }
 
@@ -424,7 +421,6 @@ export function resolveAppearance(event: AppearanceSource): Appearance {
     layout: coerceLayout(event.gallery_layout),
     platformBranding: false,
     customisable: true,
-    allowViewerLayoutChoice: true,
   };
 }
 

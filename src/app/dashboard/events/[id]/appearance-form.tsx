@@ -32,11 +32,11 @@ import { getTier } from "@/lib/tiers";
 /**
  * The custom event page editor.
  *
- * Every choice is judged against a drawing of the whole guest page - browser
- * frame, header, cover, ask, gallery, small print - because the only useful
- * answer to "what does Midnight look like?" is a page, and a swatch of a page
- * cannot give it. See EventPreview: it is the real components inside the real
- * EventThemeRoot, with the photographs left as empty frames.
+ * Every choice is judged against a drawing of the whole guest page - cover,
+ * ask, gallery - because the only useful answer to "what does Midnight look
+ * like?" is a page, and a swatch of a page cannot give it. See EventPreview: it
+ * is the real components inside the real EventThemeRoot, with the photographs
+ * left as empty frames.
  *
  * That is a rule rather than a detail. The parts of this preview that were once
  * drawn by hand - a dark bar standing in for the uploader, four dark tiles
@@ -47,10 +47,14 @@ import { getTier } from "@/lib/tiers";
  *
  * Six groups of options stacked under that preview is the longest scroll in the
  * product, and on a phone it put the gallery layout about four screens below
- * the thing it changes. Below `lg` the groups become tabs directly under the
- * preview, so every choice is one tap away and the preview it is judged
- * against stays on screen. On a laptop the column is short enough to read at
- * once and they all stay open.
+ * the thing it changes. The groups are tabs, so every choice is one tap from
+ * the drawing it changes.
+ *
+ * On a laptop they sit side by side: the controls down the left, the drawing
+ * pinned to the right where it stays in view for every one of them. Stacked,
+ * as it was, the preview scrolled off the top the moment the host started
+ * choosing, which is the one moment it is for. The drawing is a third of the
+ * width it used to be, which is roughly a phone - the thing a guest holds.
  */
 const LOOK_TABS: TabItem[] = [
   { id: "theme", label: "Colour" },
@@ -64,14 +68,11 @@ export function AppearanceForm({
   event,
   media,
   locked,
-  shareLink,
 }: {
   event: EventRow;
   media: MediaView[];
   /** Free plan: the whole thing is an upsell rather than a form. */
   locked: boolean;
-  /** Drawn into the preview's address bar. */
-  shareLink?: string | null;
 }) {
   const [state, formAction] = useActionState<ActionState, FormData>(
     updateAppearance.bind(null, event.id),
@@ -111,8 +112,16 @@ export function AppearanceForm({
 
   // A photo cover with no photo falls back to "Just type" on the guest page, so
   // the host is told rather than left to discover it after the invitations go
-  // out. The preview above still shows the shape they picked.
+  // out. The drawing still shows the shape they picked.
   const coverNeedsPhoto = cover !== "type" && coverMediaId === null;
+
+  // The cover is the one photograph the drawing carries, because the four cover
+  // styles are four crops of it and nobody can choose between crops of a grey
+  // rectangle. Null while the picker is on "none" - and also for a cover chosen
+  // long enough ago to have fallen off the end of the 120 photos loaded here,
+  // where the marked frame is the honest thing to draw.
+  const coverUrl =
+    media.find((item) => item.id === coverMediaId)?.previewUrl ?? null;
 
   if (locked) return <LockedPanel eventId={event.id} />;
 
@@ -135,38 +144,18 @@ export function AppearanceForm({
 
       <h2 className="text-h3">The event page</h2>
       <p className="mt-2 text-[0.9375rem] text-crust">
-        A drawing of what guests see when they scan the code. The photographs
-        are left as empty frames, so what you are judging is the page rather
-        than the pictures.
+        A drawing of what guests see when they scan the code. Your cover photo
+        is real; the gallery is left as empty frames, so what you are judging
+        there is the shape of the page rather than the pictures.
       </p>
 
-      {/* --- live preview -------------------------------------------------
-          The real components, in a real theme root. A mock-up here is how a
-          setting ends up looking dead: the panels below are the same ones the
-          guest gets, so a colour that does nothing visible in this box does
-          nothing on the page either. */}
-      <div className="mt-5">
-        <EventPreview
-          name={event.name || "Your event"}
-          date={event.event_date}
-          message={event.welcome_message}
-          palette={palette}
-          font={font}
-          cover={cover}
-          upload={upload}
-          layout={layout}
-          galleryVisible={event.gallery_visible}
-          coverChosen={coverMediaId !== null}
-          shareLink={shareLink}
-          uploadHint={
-            getTier(event.tier).video
-              ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
-              : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
-          }
-        />
-      </div>
-
-      <form action={formAction} className="mt-6 space-y-6">
+      {/* Two columns on a laptop, one on a phone. The form is the grid rather
+          than something inside it, so the drawing can sit in the second column
+          while the controls that change it stay part of the same submission. */}
+      <form
+        action={formAction}
+        className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_23rem] xl:gap-8"
+      >
         <input type="hidden" name="theme" value={themeId} />
         <input type="hidden" name="theme_font" value={fontId} />
         <input type="hidden" name="cover_variant" value={cover} />
@@ -181,205 +170,246 @@ export function AppearanceForm({
           <input key={key} type="hidden" name={`custom_${key}`} value={value} />
         ))}
 
-        <Tabs
-          items={LOOK_TABS}
-          label="Event page settings"
-          idPrefix="look"
-          /* Clear of the console's own strip, which is pinned to the top of a
-             phone screen: a group opened from the bottom of a long one has to
-             land under it, not behind it. */
-          stickyOffset={70}
-          tablistClassName="-mx-5 px-5 sm:-mx-6 sm:px-6"
-        >
-          <TabPanel id="theme" className="mt-5 space-y-6">
-            <Group label="Theme">
-              <div className="flex flex-wrap gap-2">
-                {THEMES.map((theme) => (
-                  <Swatch
-                    key={theme.id}
-                    selected={themeId === theme.id}
-                    onClick={() => setThemeId(theme.id)}
-                    title={theme.hint}
-                    name={theme.name}
-                    colors={[
-                      theme.palette.bg,
-                      theme.palette.accent,
-                      theme.palette.ink,
-                    ]}
-                  />
-                ))}
-                <Swatch
-                  selected={themeId === CUSTOM_THEME_ID}
-                  onClick={() => setThemeId(CUSTOM_THEME_ID)}
-                  title="Pick your own colours"
-                  name="Custom"
-                  colors={[colors.bg, colors.accent, colors.ink]}
-                />
-              </div>
-            </Group>
+        {/* --- live preview -------------------------------------------------
+            The real components, in a real theme root. A mock-up here is how a
+            setting ends up looking dead: the panels beside it are the same ones
+            the guest gets, so a colour that does nothing visible in this box
+            does nothing on the page either.
 
-            {themeId === CUSTOM_THEME_ID && (
-              <CustomColours colors={colors} onChange={setColors} />
-            )}
-          </TabPanel>
+            First in the source, so a phone still meets the drawing before the
+            controls; put in the second column by hand, so a laptop reads
+            controls-then-drawing without the markup having to. Pinned at the
+            same height as the console's own rail, because the whole point of
+            the split is that it is still there at the last group. */}
+        <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
+          <EventPreview
+            name={event.name || "Your event"}
+            date={event.event_date}
+            message={event.welcome_message}
+            palette={palette}
+            font={font}
+            cover={cover}
+            upload={upload}
+            layout={layout}
+            galleryVisible={event.gallery_visible}
+            coverChosen={coverMediaId !== null}
+            coverUrl={coverUrl}
+            uploadHint={
+              getTier(event.tier).video
+                ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
+                : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
+            }
+          />
+        </div>
 
-          <TabPanel id="type" className="mt-5 space-y-6">
-            <Group label="Type" hint="Pairs a heading face with a body face.">
-              <div className="grid gap-2 xs:grid-cols-2">
-                {FONT_SETS.map((set) => (
-                  <button
-                    key={set.id}
-                    type="button"
-                    onClick={() => setFontId(set.id)}
-                    aria-pressed={fontId === set.id}
-                    className={cx(
-                      "rounded-xl border-2 border-pepper p-3.5 text-left",
-                      fontId === set.id ? "bg-gouda" : "bg-butter",
-                    )}
-                  >
-                    {/* The name is set in the face it names. Nothing else here
-                        answers "what does Warm look like?" as quickly. */}
-                    <span
-                      className="block text-h3 leading-none"
-                      style={{
-                        fontFamily: set.display,
-                        fontWeight: set.displayWeight,
-                        fontStretch: set.displayStretch,
-                        letterSpacing: set.displayTracking,
-                      }}
-                    >
-                      {set.name}
-                    </span>
-                    <span
-                      className="mt-1.5 block text-[0.8125rem] leading-snug text-crust"
-                      style={{ fontFamily: set.body }}
-                    >
-                      {set.hint}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </Group>
-          </TabPanel>
-
-          <TabPanel id="cover" className="mt-5 space-y-6">
-            <Group label="Cover style">
-              <div className="grid gap-2 xs:grid-cols-2">
-                {COVER_VARIANTS.map((option) => (
-                  <Choice
-                    key={option.id}
-                    selected={cover === option.id}
-                    onClick={() => setCover(option.id)}
-                    name={option.name}
-                    hint={option.hint}
-                  />
-                ))}
-              </div>
-            </Group>
-
-            <Group
-              label="Cover photo"
-              hint={
-                media.length === 0
-                  ? "Once photos arrive you can pick one for the cover."
-                  : "Pick any photo from the event."
-              }
-            >
-              {coverNeedsPhoto && (
-                <p className="mb-2.5 rounded-xl border-2 border-dashed border-rind p-3 text-[0.8125rem] leading-snug text-crust">
-                  No cover photo yet. Until you pick one, guests get the{" "}
-                  <strong>Just type</strong> cover rather than the one above.
-                </p>
-              )}
-
-              {media.length > 0 && (
+        {/* A container rather than the viewport decides how the option grids
+            below break, because this column is a third of the screen on a
+            laptop: `xs:grid-cols-2` there is two columns of squeezed cards on
+            a wide screen, which is the opposite of what it was written for. */}
+        <div className="mt-6 min-w-0 space-y-6 @container lg:col-start-1 lg:row-start-1 lg:mt-0">
+          <Tabs
+            items={LOOK_TABS}
+            label="Event page settings"
+            idPrefix="look"
+            variant="segmented"
+            /* Clear of the console's own strip, which is pinned to the top of a
+               phone screen: a group opened from the bottom of a long one has to
+               land under it, not behind it. */
+            stickyOffset={70}
+          >
+            <TabPanel id="theme" className="mt-5 space-y-6">
+              <Group label="Theme">
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCoverMediaId(null)}
-                    className={cx(
-                      "h-16 w-16 rounded-lg border-2 border-pepper font-mono text-[0.6875rem] uppercase sm:h-14 sm:w-14",
-                      coverMediaId === null ? "bg-gouda" : "bg-butter",
-                    )}
-                  >
-                    none
-                  </button>
-                  {media.slice(0, 24).map((item) => (
+                  {THEMES.map((theme) => (
+                    <Swatch
+                      key={theme.id}
+                      selected={themeId === theme.id}
+                      onClick={() => setThemeId(theme.id)}
+                      title={theme.hint}
+                      name={theme.name}
+                      colors={[
+                        theme.palette.bg,
+                        theme.palette.accent,
+                        theme.palette.ink,
+                      ]}
+                    />
+                  ))}
+                  <Swatch
+                    selected={themeId === CUSTOM_THEME_ID}
+                    onClick={() => setThemeId(CUSTOM_THEME_ID)}
+                    title="Pick your own colours"
+                    name="Custom"
+                    colors={[colors.bg, colors.accent, colors.ink]}
+                  />
+                </div>
+              </Group>
+
+              {themeId === CUSTOM_THEME_ID && (
+                <CustomColours colors={colors} onChange={setColors} />
+              )}
+            </TabPanel>
+
+            <TabPanel id="type" className="mt-5 space-y-6">
+              <Group label="Type" hint="Pairs a heading face with a body face.">
+                <div className="grid gap-2 @min-[26rem]:grid-cols-2">
+                  {FONT_SETS.map((set) => (
                     <button
-                      key={item.id}
+                      key={set.id}
                       type="button"
-                      onClick={() => setCoverMediaId(item.id)}
-                      aria-pressed={coverMediaId === item.id}
+                      onClick={() => setFontId(set.id)}
+                      aria-pressed={fontId === set.id}
                       className={cx(
-                        "h-16 w-16 overflow-hidden rounded-lg border-2 border-pepper sm:h-14 sm:w-14",
-                        coverMediaId === item.id &&
-                          "ring-4 ring-pepper ring-offset-2 ring-offset-cream",
+                        "rounded-xl border-2 border-pepper p-3.5 text-left",
+                        fontId === set.id ? "bg-gouda" : "bg-butter",
                       )}
                     >
-                      {item.previewUrl && (
-                        // A 64px swatch off a 2560px photo. Without the resize
-                        // this picker pulls the whole gallery at full size.
-                        <Image
-                          src={item.previewUrl}
-                          alt=""
-                          width={128}
-                          height={128}
-                          sizes="128px"
-                          className="h-full w-full object-cover"
-                        />
-                      )}
+                      {/* The name is set in the face it names. Nothing else here
+                          answers "what does Warm look like?" as quickly. */}
+                      <span
+                        className="block text-h3 leading-none"
+                        style={{
+                          fontFamily: set.display,
+                          fontWeight: set.displayWeight,
+                          fontStretch: set.displayStretch,
+                          letterSpacing: set.displayTracking,
+                        }}
+                      >
+                        {set.name}
+                      </span>
+                      <span
+                        className="mt-1.5 block text-[0.8125rem] leading-snug text-crust"
+                        style={{ fontFamily: set.body }}
+                      >
+                        {set.hint}
+                      </span>
                     </button>
                   ))}
                 </div>
-              )}
-            </Group>
-          </TabPanel>
+              </Group>
+            </TabPanel>
 
-          <TabPanel id="uploads" className="mt-5 space-y-6">
-            <Group label="Asking for photos">
-              <div className="grid gap-2 xs:grid-cols-2">
-                {UPLOAD_VARIANTS.map((option) => (
-                  <Choice
-                    key={option.id}
-                    selected={upload === option.id}
-                    onClick={() => setUpload(option.id)}
-                    name={option.name}
-                    hint={option.hint}
-                  />
-                ))}
-              </div>
-            </Group>
-          </TabPanel>
+            <TabPanel id="cover" className="mt-5 space-y-6">
+              <Group label="Cover style">
+                <div className="grid gap-2 @min-[26rem]:grid-cols-2">
+                  {COVER_VARIANTS.map((option) => (
+                    <Choice
+                      key={option.id}
+                      selected={cover === option.id}
+                      onClick={() => setCover(option.id)}
+                      name={option.name}
+                      hint={option.hint}
+                    />
+                  ))}
+                </div>
+              </Group>
 
-          <TabPanel id="gallery" className="mt-5 space-y-6">
-            <Group label="Gallery layout">
-              <div className="grid gap-2 xs:grid-cols-2">
-                {GALLERY_LAYOUTS.map((option) => (
-                  <Choice
-                    key={option.id}
-                    selected={layout === option.id}
-                    onClick={() => setLayout(option.id)}
-                    name={option.name}
-                    hint={option.hint}
-                  />
-                ))}
-              </div>
-            </Group>
-          </TabPanel>
-        </Tabs>
+              <Group
+                label="Cover photo"
+                hint={
+                  media.length === 0
+                    ? "Once photos arrive you can pick one for the cover."
+                    : "Pick any photo from the event."
+                }
+              >
+                {coverNeedsPhoto && (
+                  <p className="mb-2.5 rounded-xl border-2 border-dashed border-rind p-3 text-[0.8125rem] leading-snug text-crust">
+                    No cover photo yet. Until you pick one, guests get the{" "}
+                    <strong>Just type</strong> cover rather than the one above.
+                  </p>
+                )}
 
-        {state.error && (
-          <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
-            {state.error}
-          </p>
-        )}
-        {state.ok && (
-          <p className="rounded-xl border-2 border-pepper bg-gouda p-3 text-[0.9375rem]">
-            Saved. Guests see this now.
-          </p>
-        )}
+                {media.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCoverMediaId(null)}
+                      className={cx(
+                        "h-16 w-16 rounded-lg border-2 border-pepper font-mono text-[0.6875rem] uppercase sm:h-14 sm:w-14",
+                        coverMediaId === null ? "bg-gouda" : "bg-butter",
+                      )}
+                    >
+                      none
+                    </button>
+                    {media.slice(0, 24).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setCoverMediaId(item.id)}
+                        aria-pressed={coverMediaId === item.id}
+                        className={cx(
+                          "h-16 w-16 overflow-hidden rounded-lg border-2 border-pepper sm:h-14 sm:w-14",
+                          coverMediaId === item.id &&
+                            "ring-4 ring-pepper ring-offset-2 ring-offset-cream",
+                        )}
+                      >
+                        {item.previewUrl && (
+                          // A 64px swatch off a 2560px photo. Without the resize
+                          // this picker pulls the whole gallery at full size.
+                          <Image
+                            src={item.previewUrl}
+                            alt=""
+                            width={128}
+                            height={128}
+                            sizes="128px"
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </Group>
+            </TabPanel>
 
-        <Save />
+            <TabPanel id="uploads" className="mt-5 space-y-6">
+              <Group label="Asking for photos">
+                <div className="grid gap-2 @min-[26rem]:grid-cols-2">
+                  {UPLOAD_VARIANTS.map((option) => (
+                    <Choice
+                      key={option.id}
+                      selected={upload === option.id}
+                      onClick={() => setUpload(option.id)}
+                      name={option.name}
+                      hint={option.hint}
+                    />
+                  ))}
+                </div>
+              </Group>
+            </TabPanel>
+
+            <TabPanel id="gallery" className="mt-5 space-y-6">
+              <Group
+                label="Gallery layout"
+                hint="How every guest sees the shared gallery. It is your choice, not theirs - there is no switcher on the event page."
+              >
+                <div className="grid gap-2 @min-[26rem]:grid-cols-2">
+                  {GALLERY_LAYOUTS.map((option) => (
+                    <Choice
+                      key={option.id}
+                      selected={layout === option.id}
+                      onClick={() => setLayout(option.id)}
+                      name={option.name}
+                      hint={option.hint}
+                    />
+                  ))}
+                </div>
+              </Group>
+            </TabPanel>
+          </Tabs>
+
+          {state.error && (
+            <p className="rounded-xl border-2 border-pepper bg-butter p-3 text-[0.9375rem] font-semibold">
+              {state.error}
+            </p>
+          )}
+          {state.ok && (
+            <p className="rounded-xl border-2 border-pepper bg-gouda p-3 text-[0.9375rem]">
+              Saved. Guests see this now.
+            </p>
+          )}
+
+          <Save />
+        </div>
       </form>
     </section>
   );
@@ -523,7 +553,7 @@ function CustomColours({
 
   return (
     <div className="rounded-xl border-2 border-dashed border-rind p-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 @min-[30rem]:grid-cols-4">
         {fields.map(([key, label]) => (
           <label key={key} className="block">
             <span className="block text-[0.8125rem] font-semibold">{label}</span>

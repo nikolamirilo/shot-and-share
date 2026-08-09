@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MdArrowBackIosNew } from "react-icons/md";
 
 import { AppearanceForm } from "@/app/dashboard/events/[id]/appearance-form";
 import { ArchivePanel } from "@/app/dashboard/events/[id]/archive-panel";
@@ -120,9 +121,9 @@ export default async function EventPage({
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
       <Link
         href="/dashboard"
-        className="inline-block py-1 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind hover:underline"
+        className="inline-flex items-center gap-2 py-1 font-mono text-micro uppercase tracking-[0.16em] text-rind hover:underline"
       >
-        ← All events
+        <MdArrowBackIosNew aria-hidden className="shrink-0" /> All events
       </Link>
 
       <header className="mt-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 sm:mt-6">
@@ -293,7 +294,6 @@ export default async function EventPage({
             event={event}
             media={media}
             locked={!tier.customPage}
-            shareLink={link}
           />
         </TabPanel>
 

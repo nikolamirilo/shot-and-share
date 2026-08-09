@@ -51,7 +51,15 @@ export interface CoverProps {
   message?: string | null;
   coverUrl?: string | null;
   palette: Palette;
-  /** Compact rendering for the dashboard preview. */
+  /**
+   * Compact rendering for the dashboard preview.
+   *
+   * The heights it picks step with the `@` container, which is the drawing
+   * itself (see EventPreview), not the window. The drawing is a column beside
+   * the controls now rather than the full width of the panel, and a cover that
+   * grew with the host's screen while its own box stayed still ended up half
+   * the height of a preview that is only 300px wide.
+   */
   preview?: boolean;
   /**
    * What the empty photo slot says. Preview only - a guest never sees an empty
@@ -191,6 +199,12 @@ function CoverPhoto({
  * `vh` and outside `svh` - with `vh` the name sits under the browser chrome on
  * first paint, which is exactly the thing the cover exists to avoid.
  *
+ * `flex-1` is the other half of that. The page puts this cover and the header
+ * above it in one screen-high column (see the guest page), and there `flex-1`
+ * takes the room the header did not - a plain `h-svh` under a header is a
+ * screen and a bit, and the bit that overflows is the name. Standing alone,
+ * outside a flex column, `flex-1` does nothing and the height applies.
+ *
  * Everything else on the page is now below the fold, so the cover has to say
  * that something is down there. That is the cue under the name; without it a
  * full-screen photo is indistinguishable from a page that failed to load the
@@ -210,7 +224,7 @@ function FullCover({
         "relative overflow-hidden border-b-2 border-pepper",
         // A landscape phone is 375px tall. The floor keeps the name, the date
         // and the cue from stacking into each other there.
-        preview ? "h-56 sm:h-64 lg:h-80" : "h-svh min-h-96",
+        preview ? "h-56 @xs:h-64 @sm:h-72" : "h-svh min-h-96 flex-1",
       )}
     >
       <div className="absolute inset-0">
@@ -300,7 +314,7 @@ function ClassicCover({
           // The drawing is compressed, but not by a fixed amount: the console's
           // column is three times wider on a laptop than on a phone, and a
           // cover that stays 128px tall inside it stops looking like a cover.
-          preview ? "h-32 sm:h-36 lg:h-44" : "h-52 xs:h-64 sm:h-80 lg:h-96",
+          preview ? "h-32 @2xs:h-36 @sm:h-44" : "h-52 xs:h-64 sm:h-80 lg:h-96",
         )}
       >
         <div className="absolute inset-0">
@@ -370,7 +384,7 @@ function BandCover({
       <div
         className={cx(
           "relative w-full overflow-hidden border-b-2 border-pepper",
-          preview ? "h-20 sm:h-24 lg:h-32" : "h-44 xs:h-52 sm:h-72",
+          preview ? "h-20 @2xs:h-24 @sm:h-32" : "h-44 xs:h-52 sm:h-72",
         )}
       >
         <CoverPhoto url={coverUrl} label={photoLabel} />

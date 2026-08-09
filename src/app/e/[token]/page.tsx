@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import { GuestExperience } from "@/app/e/[token]/guest-experience";
 import { EventCover, EventThemeRoot } from "@/components/event-cover";
-import { LogoMark } from "@/components/logo";
 import { PlatformFooter, PlatformHeader } from "@/components/platform-banner";
 import { Hole } from "@/components/ui";
 import { resolveAppearance } from "@/lib/appearance";
@@ -84,6 +83,15 @@ export default async function GuestPage({
     }
   }
 
+  /*
+   * Whether the cover about to render is the screen-filling one.
+   *
+   * It has to match what EventCover decides rather than what the row says: a
+   * "Full screen" cover with no photo falls back to "Just type", and stretching
+   * that short header down a whole screen is a page with a hole in it.
+   */
+  const fullScreenCover = appearance.cover === "full" && coverUrl !== null;
+
   // Only the pairing this event actually uses. Loading all five would put eight
   // font families on a phone on hotel wifi in order to render one of them, and
   // the house pairing is already in the root layout, so the default costs
@@ -100,24 +108,26 @@ export default async function GuestPage({
         <link rel="stylesheet" href={fontsHref} precedence="default" />
       )}
 
-      {appearance.platformBranding ? (
-        <PlatformHeader />
-      ) : (
-        <header className="border-b-2 border-pepper">
-          <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-4 py-3 sm:px-5">
-            <LogoMark className="h-7 w-auto" />
-          </div>
-        </header>
-      )}
+      {/*
+       * The platform bar and the cover share one screen-high column, so that
+       * "full screen" means the screen. Stacked the obvious way, a 100svh cover
+       * starts *underneath* the bar, which pushes the name and the scroll cue -
+       * the two things the cover exists for - below the fold on every phone.
+       * Here the bar takes what it needs and the cover takes the rest. A paid
+       * event has no bar at all, so the cover takes the whole column.
+       */}
+      <div className={fullScreenCover ? "flex min-h-svh flex-col" : undefined}>
+        {appearance.platformBranding && <PlatformHeader />}
 
-      <EventCover
-        variant={appearance.cover}
-        name={event.name}
-        date={event.event_date}
-        message={event.welcome_message}
-        coverUrl={coverUrl}
-        palette={appearance.palette}
-      />
+        <EventCover
+          variant={appearance.cover}
+          name={event.name}
+          date={event.event_date}
+          message={event.welcome_message}
+          coverUrl={coverUrl}
+          palette={appearance.palette}
+        />
+      </div>
 
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-5 sm:pb-20 sm:pt-8">
         <GuestExperience
@@ -125,7 +135,6 @@ export default async function GuestPage({
           eventId={event.id}
           galleryVisible={event.gallery_visible}
           galleryLayout={appearance.layout}
-          allowLayoutChoice={appearance.allowViewerLayoutChoice}
           uploadVariant={appearance.upload}
           allowVideo={tier.video}
           maxFileBytes={tier.maxFileBytes}
@@ -133,14 +142,23 @@ export default async function GuestPage({
         />
       </main>
 
-      <div className="border-t-2 border-pepper">
-        <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-rind sm:px-5">
-          Photos you add here go to the host of this event. Uploaded something by
-          mistake? Tap it in the gallery above to remove it, within the hour.
-        </p>
-      </div>
+      {/* A paid page ends at the gallery. Nothing below the fold is ours -
+          not the small print either, which is the last thing on the page
+          carrying our voice rather than the host's. Deleting a photo you
+          uploaded by mistake still works; only the instruction goes. */}
+      {appearance.platformBranding && (
+        <>
+          <div className="border-t-2 border-pepper">
+            <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-rind sm:px-5">
+              Photos you add here go to the host of this event. Uploaded
+              something by mistake? Tap it in the gallery above to remove it,
+              within the hour.
+            </p>
+          </div>
 
-      {appearance.platformBranding && <PlatformFooter />}
+          <PlatformFooter />
+        </>
+      )}
     </EventThemeRoot>
   );
 }

@@ -13,7 +13,6 @@ export function GuestExperience({
   eventId,
   galleryVisible,
   galleryLayout,
-  allowLayoutChoice,
   uploadVariant,
   allowVideo,
   maxFileBytes,
@@ -23,7 +22,6 @@ export function GuestExperience({
   eventId: string;
   galleryVisible: boolean;
   galleryLayout: GalleryLayout;
-  allowLayoutChoice: boolean;
   uploadVariant: UploadVariant;
   allowVideo: boolean;
   maxFileBytes: number;
@@ -57,8 +55,7 @@ export function GuestExperience({
         <GuestGallery
           token={token}
           refreshKey={refreshKey}
-          eventLayout={galleryLayout}
-          allowLayoutChoice={allowLayoutChoice}
+          layout={galleryLayout}
         />
       )}
     </>
