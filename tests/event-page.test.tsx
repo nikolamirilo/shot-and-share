@@ -1,9 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { EventCover, EventThemeRoot } from "@/components/event-cover";
-import { EventPreview } from "@/components/event-preview";
-import { UploadPanel } from "@/components/upload-panel";
+import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
+import { EventPreview } from "@/components/event/event-preview";
+import { UploadPanel } from "@/components/upload/upload-panel";
 import { THEMES, buildCustomPalette } from "@/lib/appearance";
 import { findFontSet } from "@/lib/fonts";
 import { GALLERY_LAYOUTS, type GalleryLayout } from "@/lib/gallery";

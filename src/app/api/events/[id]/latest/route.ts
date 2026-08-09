@@ -1,6 +1,8 @@
-import { ApiError, handle, ok } from "@/lib/api";
+import { handle, ok } from "@/lib/api";
 import type { MediaRow } from "@/lib/db/types";
 import { toMediaViews } from "@/lib/events";
+import { guestMedia } from "@/lib/db/media-repo";
+import { requireOwnedEvent } from "@/lib/host";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -22,22 +24,16 @@ export async function GET(
     const { id } = await params;
     const since = new URL(request.url).searchParams.get("since");
 
+    // Ownership, not just a session. This route used to check only that
+    // somebody was signed in and then query by the id in the URL, which left
+    // RLS as the sole thing standing between one host and another host's
+    // event - and made it the only route under events/[id] where that was so.
+    const event = await requireOwnedEvent(id);
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new ApiError("unauthorized", "Sign in first.");
 
-    let query = supabase
-      .from("media")
-      .select("*")
-      .eq("event_id", id)
-      .eq("status", "ready")
-      // The slideshow is the party looking at itself. A cover the host uploaded
-      // is not part of that - see migration 0013.
-      .eq("source", "guest")
-      .order("created_at", { ascending: false })
-      .limit(60);
+    // The slideshow is the party looking at itself, so a cover the host
+    // uploaded is not part of it - see migration 0013.
+    let query = guestMedia(supabase, event.id).limit(60);
 
     if (since) query = query.gt("created_at", since);
 

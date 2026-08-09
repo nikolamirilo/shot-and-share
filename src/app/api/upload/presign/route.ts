@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { ApiError, fail, handle, ok, parseBody } from "@/lib/api";
+import { enforceRateLimit } from "@/lib/guards";
 import type { Database } from "@/lib/db/types";
 import { requireGuestEvent, storageSummary } from "@/lib/events";
 import { formatBytes } from "@/lib/format";
@@ -11,7 +12,7 @@ import {
   type ImageFormat,
   imageFormatFromMime,
   videoFormatFromMime,
-} from "@/lib/formats";
+} from "@/lib/media-formats";
 import {
   MAX_POSTER_BYTES,
   classify,
@@ -19,7 +20,7 @@ import {
   posterKey,
   scopeOfEvent,
 } from "@/lib/media";
-import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
+import { LIMITS, clientIp } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import type { PresignedUpload } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -92,18 +93,11 @@ export async function POST(request: Request) {
     const body = await parseBody(request, bodySchema);
     const ip = clientIp(request.headers);
 
-    const limit = rateLimit(
+    enforceRateLimit(
+      LIMITS.presign,
       `presign:${body.token.slice(0, 12)}:${ip}`,
-      LIMITS.presign.limit,
-      LIMITS.presign.window,
+      "Too many uploads at once. Wait a moment and try again.",
     );
-    if (!limit.ok) {
-      return fail(
-        "rate_limited",
-        "Too many uploads at once. Wait a moment and try again.",
-        { retryAfterSeconds: limit.retryAfterSeconds },
-      );
-    }
 
     const { event } = await requireGuestEvent(body.token);
     const tier = getTier(event.tier);

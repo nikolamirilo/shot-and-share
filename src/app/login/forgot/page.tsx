@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ForgotForm } from "@/app/login/forgot/forgot-form";
-import { SiteFooter, SiteHeader } from "@/components/site";
+import { ForgotForm } from "@/components/auth/forgot-form";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
 import { Eyebrow } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Reset your password" };

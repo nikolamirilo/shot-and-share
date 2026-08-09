@@ -8,7 +8,7 @@ import {
   IMAGE_MIME,
   UNIVERSAL_VIDEO_FORMAT,
   VIDEO_MIME,
-} from "@/lib/formats";
+} from "@/lib/media-formats";
 import { mediaKey, posterKey, scopeOfMedia } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";

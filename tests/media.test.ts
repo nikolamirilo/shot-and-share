@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ACCEPT_ATTRIBUTE_PHOTO,
   ACCEPTED_MIME,
   archiveKey,
   classify,
@@ -23,6 +24,22 @@ describe("media types", () => {
 
   it("ignores charset parameters and case", () => {
     expect(classify("IMAGE/JPEG; charset=binary")?.ext).toBe("jpg");
+  });
+
+  it("gives HEIF the same extension as HEIC, because it is the same picture", () => {
+    // There were two MIME tables and they disagreed here: one called it
+    // "heif", the other folded HEIF into HEIC and called it "heic". The
+    // presign route imported from both, so which one an uploaded HEIF got
+    // depended on which branch ran. One table now, and this is its answer.
+    expect(classify("image/heif")).toEqual({ kind: "photo", ext: "heic" });
+    expect(classify("image/heif")).toEqual(classify("image/heic"));
+  });
+
+  it("still offers HEIF to the file picker", () => {
+    // Folding it into HEIC is about the stored extension, not about which
+    // files a phone is allowed to hand over.
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/heif");
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/heic");
   });
 
   it("is an allowlist, not a blocklist", () => {

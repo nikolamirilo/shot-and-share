@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { GuestExperience } from "@/app/e/[token]/guest-experience";
-import { EventCover, EventThemeRoot } from "@/components/event-cover";
-import { PlatformFooter, PlatformHeader } from "@/components/platform-banner";
-import { Hole } from "@/components/ui";
+import { ClosedPage } from "@/components/event/closed-page";
+import { GuestExperience } from "@/components/event/guest-experience";
+import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
+import { PlatformFooter, PlatformHeader } from "@/components/layout/platform-banner";
 import { resolveAppearance } from "@/lib/appearance";
 import type { MediaRow } from "@/lib/db/types";
 import { googleFontsHref } from "@/lib/fonts";
@@ -160,25 +159,5 @@ export default async function GuestPage({
         </>
       )}
     </EventThemeRoot>
-  );
-}
-
-function ClosedPage({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-butter px-5 py-16 text-center">
-      <div className="flex gap-3">
-        <Hole size={22} />
-        <Hole size={34} />
-        <Hole size={16} />
-      </div>
-      <h1 className="mt-8 max-w-lg text-[2.25rem] sm:text-h1">{title}</h1>
-      <p className="mt-4 max-w-md text-body text-crust">{body}</p>
-      <Link
-        href="/"
-        className="mt-8 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind underline"
-      >
-        What is Say Cheese?
-      </Link>
-    </div>
   );
 }

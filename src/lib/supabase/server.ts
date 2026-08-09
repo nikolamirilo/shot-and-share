@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import type { Database } from "@/lib/db/types";
-import { env, required } from "@/lib/env";
+import { hasSupabase, requireSupabaseConfig } from "@/lib/supabase/config";
 
 /**
  * The host's client. Every read runs under Row Level Security, so a query that
@@ -11,9 +11,11 @@ import { env, required } from "@/lib/env";
 export async function createClient() {
   const cookieStore = await cookies();
 
+  const { url, key } = requireSupabaseConfig();
+
   return createServerClient<Database>(
-    required("NEXT_PUBLIC_SUPABASE_URL"),
-    required("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
+    url,
+    key,
     {
       cookies: {
         getAll() {
@@ -41,7 +43,7 @@ export async function createClient() {
 }
 
 export async function getSessionUser() {
-  if (!env.supabase.url) return null;
+  if (!hasSupabase) return null;
   const supabase = await createClient();
   const {
     data: { user },

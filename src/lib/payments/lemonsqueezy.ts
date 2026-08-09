@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import type { Product } from "@/lib/db/types";
 import { env, hasLemonSqueezy } from "@/lib/env";
+import { PURCHASABLE_IDS } from "@/lib/tiers";
 
 /**
  * Lemon Squeezy acts as merchant of record.
@@ -15,9 +16,13 @@ import { env, hasLemonSqueezy } from "@/lib/env";
  * into. The unit economics are modelled on this fee, not the cheaper one.
  */
 
+/** A value off the wire, only if it names something that can be bought. */
+function asPurchasable(value: unknown): Product | null {
+  return PURCHASABLE_IDS.includes(value as Product) ? (value as Product) : null;
+}
+
 function variants(): Record<Product, string | undefined> {
   return {
-    free: undefined,
     event: env.lemonSqueezy.variants.event,
     wedding: env.lemonSqueezy.variants.wedding,
     keep_forever: env.lemonSqueezy.variants.keep_forever,
@@ -132,13 +137,18 @@ export function parseWebhook(payload: unknown): ParsedWebhook | null {
 
   // The product is carried in custom data, but fall back to the variant id so a
   // checkout created outside our own flow still resolves.
-  let product = (custom.product as Product | undefined) ?? null;
+  //
+  // Validated rather than cast. This is a string off the wire, and casting it
+  // to Product told the compiler a thing it had no way to know - which is why
+  // the caller carried a `product === "free"` check that looked redundant and
+  // was in fact the only thing standing between an unrecognised value and a
+  // grant.
+  let product = asPurchasable(custom.product);
   if (!product) {
     const variantId = String(attrs.first_order_item?.variant_id ?? "");
-    product =
-      (Object.entries(variants()).find(
-        ([, id]) => id && id === variantId,
-      )?.[0] as Product | undefined) ?? null;
+    product = asPurchasable(
+      Object.entries(variants()).find(([, id]) => id && id === variantId)?.[0],
+    );
   }
 
   return {

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { PasswordForm } from "@/app/account/password/password-form";
-import { SiteFooter, SiteHeader } from "@/components/site";
+import { PasswordForm } from "@/components/auth/password-form";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
 import { Eyebrow } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";

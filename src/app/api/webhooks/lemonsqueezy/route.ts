@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     if (!GRANTING_EVENTS.has(parsed.eventName)) {
       return ok({ ignored: parsed.eventName });
     }
-    if (!parsed.eventId || !parsed.product || parsed.product === "free") {
+    if (!parsed.eventId || !parsed.product) {
       console.warn("[webhook] paid order with no event to apply it to", parsed.txnId);
       return ok({ ignored: "no_target" });
     }

@@ -1,4 +1,11 @@
 import type { MediaKind } from "@/lib/db/types";
+import {
+  IMAGE_EXT,
+  IMAGE_MIME,
+  VIDEO_MIME,
+  imageFormatFromMime,
+  videoFormatFromMime,
+} from "@/lib/media-formats";
 import { MB } from "@/lib/tiers";
 
 /**
@@ -92,38 +99,35 @@ export function archiveKey(scope: EventScope): string {
 /**
  * An allowlist, not a blocklist. An unauthenticated upload endpoint invites
  * junk, and the file type check is a cost control as much as a security one.
+ *
+ * The table itself lives in @/lib/media-formats. There used to be a second copy
+ * here, and the two had already disagreed: this one gave `image/heif` the
+ * extension "heif" while the other folded HEIF into HEIC and said "heic".
+ * upload/presign imports from both, so which extension a HEIF got depended on
+ * which branch of that route ran.
+ *
+ * HEIF is the container and HEIC the common profile, so it is an alias rather
+ * than a format of its own - but it still has to be offered by the file input,
+ * which is why the accept list adds it back.
  */
-const PHOTO_TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/heic": "heic",
-  "image/heif": "heif",
-  "image/avif": "avif",
-  "image/gif": "gif",
-};
+const PHOTO_MIME = [...Object.values(IMAGE_MIME), "image/heif"];
 
-const VIDEO_TYPES: Record<string, string> = {
-  "video/mp4": "mp4",
-  "video/quicktime": "mov",
-  "video/webm": "webm",
-};
-
-export const ACCEPTED_MIME = [
-  ...Object.keys(PHOTO_TYPES),
-  ...Object.keys(VIDEO_TYPES),
-];
+export const ACCEPTED_MIME = [...PHOTO_MIME, ...Object.values(VIDEO_MIME)];
 
 /** What the file input offers. Photos first: that is the common case. */
-export const ACCEPT_ATTRIBUTE_PHOTO = Object.keys(PHOTO_TYPES).join(",");
+export const ACCEPT_ATTRIBUTE_PHOTO = PHOTO_MIME.join(",");
 export const ACCEPT_ATTRIBUTE_ALL = ACCEPTED_MIME.join(",");
 
 export function classify(
   mime: string,
 ): { kind: MediaKind; ext: string } | null {
-  const type = mime.toLowerCase().split(";")[0].trim();
-  if (PHOTO_TYPES[type]) return { kind: "photo", ext: PHOTO_TYPES[type] };
-  if (VIDEO_TYPES[type]) return { kind: "video", ext: VIDEO_TYPES[type] };
+  const image = imageFormatFromMime(mime);
+  if (image) return { kind: "photo", ext: IMAGE_EXT[image] };
+
+  // A VideoFormat id is its own extension: "mp4", "webm", "mov".
+  const video = videoFormatFromMime(mime);
+  if (video) return { kind: "video", ext: video };
+
   return null;
 }
 

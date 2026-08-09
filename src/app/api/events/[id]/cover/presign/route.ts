@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { ApiError, fail, handle, ok, parseBody } from "@/lib/api";
+import { enforceRateLimit } from "@/lib/guards";
 import type { Database } from "@/lib/db/types";
 import { storageSummary } from "@/lib/events";
 import { formatBytes } from "@/lib/format";
@@ -10,10 +11,10 @@ import {
   IMAGE_MIME,
   type ImageFormat,
   imageFormatFromMime,
-} from "@/lib/formats";
+} from "@/lib/media-formats";
 import { requireOwnedEvent } from "@/lib/host";
 import { classify, mediaKey, scopeOfEvent } from "@/lib/media";
-import { LIMITS, rateLimit } from "@/lib/ratelimit";
+import { LIMITS } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTier } from "@/lib/tiers";
@@ -75,16 +76,11 @@ export async function POST(
     const { id } = await params;
     const event = await requireOwnedEvent(id);
 
-    const limit = rateLimit(
+    enforceRateLimit(
+      LIMITS.coverUpload,
       `cover:${event.id}`,
-      LIMITS.coverUpload.limit,
-      LIMITS.coverUpload.window,
+      "That is a lot of covers at once.",
     );
-    if (!limit.ok) {
-      return fail("rate_limited", "That is a lot of covers at once.", {
-        retryAfterSeconds: limit.retryAfterSeconds,
-      });
-    }
 
     const tier = getTier(event.tier);
     if (!tier.customPage) {

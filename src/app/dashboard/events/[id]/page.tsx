@@ -3,24 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MdArrowBackIosNew } from "react-icons/md";
 
-import { AppearanceForm } from "@/app/dashboard/events/[id]/appearance-form";
-import { ArchivePanel } from "@/app/dashboard/events/[id]/archive-panel";
-import { DangerZone } from "@/app/dashboard/events/[id]/danger-zone";
-import { HostGallery } from "@/app/dashboard/events/[id]/host-gallery";
-import { SettingsForm } from "@/app/dashboard/events/[id]/settings-form";
-import { SharePanel } from "@/app/dashboard/events/[id]/share-panel";
-import { UpgradePanel } from "@/app/dashboard/events/[id]/upgrade-panel";
-import { TabPanel, Tabs, type TabItem } from "@/components/tabs";
-import { Badge, ButtonLink, Eyebrow, Hole, ProgressBar } from "@/components/ui";
+import { AppearanceForm } from "@/components/dashboard/appearance/appearance-form";
+import { ArchivePanel } from "@/components/dashboard/archive-panel";
+import { DangerZone } from "@/components/dashboard/danger-zone";
+import { HostGallery } from "@/components/dashboard/host-gallery";
+import { SettingsForm } from "@/components/dashboard/settings-form";
+import { SharePanel } from "@/components/dashboard/share-panel";
+import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
+import { EventStatsPanel } from "@/components/dashboard/event-stats-panel";
+import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
+import { Alert, Badge, Eyebrow } from "@/components/ui";
 import type { EventRow, MediaRow } from "@/lib/db/types";
 import { env } from "@/lib/env";
 import { getActiveShareToken, storageSummary, toMediaViews } from "@/lib/events";
-import {
-  describeRetention,
-  formatBytes,
-  formatEventDate,
-  pluralise,
-} from "@/lib/format";
+import { formatEventDate } from "@/lib/format";
 import { coerceLayout } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/server";
 import { getTier } from "@/lib/tiers";
@@ -120,19 +116,6 @@ export default async function EventPage({
   const tier = getTier(event.tier);
   const link = active ? shareUrl(env.siteUrl, active.token) : null;
 
-  /**
-   * The number that predicts whether the product works. A guest who opens the
-   * link and does not upload is the clearest signal of a broken experience, so
-   * it is on the host's page, not buried in an analytics tool.
-   */
-  const conversion =
-    event.link_opens > 0
-      ? Math.min(
-          100,
-          Math.round((Number(counts.uploader_count) / event.link_opens) * 100),
-        )
-      : null;
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
       <Link
@@ -159,19 +142,19 @@ export default async function EventPage({
           one column of everything. One tab is open at a time now, so they name
           the tab instead. */}
       {purchase && (
-        <Notice>
+        <Alert tone="notice" className="mt-5 sm:mt-6">
           Payment received. If the plan still looks the same, give the provider
           a few seconds - the upgrade lands when their webhook does, not when
           your browser comes back.
-        </Notice>
+        </Alert>
       )}
 
       {event.status === "expired" && (
-        <Notice>
+        <Alert tone="notice" className="mt-5 sm:mt-6">
           The storage window for this event has ended.{" "}
           <strong>Nothing has been deleted.</strong> Restore it under Settings,
           or add The Cellar to keep the photos permanently.
-        </Notice>
+        </Alert>
       )}
 
       <Tabs
@@ -197,65 +180,13 @@ export default async function EventPage({
             revoked={!active}
           />
 
-          <section className="card p-5 sm:p-6">
-            <h2 className="text-h3">How it is going</h2>
-
-            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
-              <Stat label="Photos" value={total.toLocaleString("en-GB")} />
-              <Stat
-                label="People who uploaded"
-                value={Number(counts.uploader_count).toLocaleString("en-GB")}
-              />
-              <Stat
-                label="Link opened"
-                value={pluralise(event.link_opens, "time")}
-              />
-              <Stat
-                label="Opened then uploaded"
-                value={conversion === null ? "-" : `${conversion}%`}
-                hint={
-                  conversion === null
-                    ? "No opens yet"
-                    : conversion < 40
-                      ? "Low. Check the code is easy to reach."
-                      : "Healthy"
-                }
-              />
-            </dl>
-
-            <div className="mt-7">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-                <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-                  Storage
-                </span>
-                <span className="text-[0.8125rem] text-crust">
-                  {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
-                </span>
-              </div>
-              <div className="mt-2">
-                <ProgressBar
-                  percent={summary.percent}
-                  tone={summary.percent >= 85 ? "warn" : "dark"}
-                />
-              </div>
-              <p className="mt-2 flex items-start gap-2 text-[0.8125rem] leading-snug text-crust">
-                <Hole size={8} className="mt-1.5" />
-                {event.keep_forever
-                  ? "Kept forever. This event is never deleted."
-                  : describeRetention(event.expires_at)}
-              </p>
-            </div>
-
-            {tier.slideshow && (
-              <ButtonLink
-                href={`/dashboard/events/${event.id}/slideshow`}
-                variant="secondary"
-                className="mt-6 w-full"
-              >
-                Open the live slideshow
-              </ButtonLink>
-            )}
-          </section>
+          <EventStatsPanel
+            event={event}
+            photoCount={total}
+            uploaderCount={Number(counts.uploader_count)}
+            summary={summary}
+            slideshow={tier.slideshow}
+          />
         </TabPanel>
 
         {/* The two-column rows split at `xl`, not `lg`: the rail takes 15rem
@@ -324,39 +255,6 @@ export default async function EventPage({
           <DangerZone event={event} />
         </TabPanel>
       </Tabs>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-}) {
-  return (
-    <div>
-      <dt className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
-        {label}
-      </dt>
-      <dd
-        className="mt-1 font-display text-[1.75rem] font-extrabold leading-none tracking-[-0.04em] sm:text-[1.9375rem]"
-        style={{ fontStretch: "86%" }}
-      >
-        {value}
-      </dd>
-      {hint && <p className="mt-1 text-[0.8125rem] text-crust">{hint}</p>}
-    </div>
-  );
-}
-
-function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-5 rounded-[1.25rem] bg-gouda p-4 shadow-md sm:mt-6 sm:p-5">
-      <p className="text-[0.9375rem] leading-relaxed">{children}</p>
     </div>
   );
 }

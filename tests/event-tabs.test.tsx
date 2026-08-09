@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { TabPanel, Tabs, type TabItem } from "@/components/tabs";
+import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 
 /**
  * The host's console shows one group at a time at every width - a strip across

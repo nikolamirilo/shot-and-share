@@ -1,8 +1,8 @@
 import { handle, ok } from "@/lib/api";
-import type { MediaRow } from "@/lib/db/types";
 import { toMediaViews } from "@/lib/events";
 import { requireOwnedEvent } from "@/lib/host";
 import { COVER_PAGE_SIZE } from "@/lib/media";
+import { listGuestPage } from "@/lib/db/media-repo";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -30,29 +30,13 @@ export async function GET(
     const event = await requireOwnedEvent(id);
 
     const before = new URL(request.url).searchParams.get("before");
-    const supabase = await createClient();
 
-    let query = supabase
-      .from("media")
-      .select("*")
-      .eq("event_id", event.id)
-      .eq("status", "ready")
-      .eq("source", "guest")
-      .order("created_at", { ascending: false })
-      .limit(COVER_PAGE_SIZE);
-
-    if (before) query = query.lt("created_at", before);
-
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-
-    const rows = (data ?? []) as MediaRow[];
-    return ok({
-      items: await toMediaViews(rows),
-      nextCursor:
-        rows.length === COVER_PAGE_SIZE
-          ? rows[rows.length - 1].created_at
-          : null,
+    const { rows, nextCursor } = await listGuestPage(await createClient(), {
+      eventId: event.id,
+      before,
+      pageSize: COVER_PAGE_SIZE,
     });
+
+    return ok({ items: await toMediaViews(rows), nextCursor });
   });
 }

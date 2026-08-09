@@ -11,7 +11,7 @@ import {
   PREFERRED_IMAGE_FORMATS,
   START_QUALITY,
   sizeBudget,
-} from "@/lib/formats";
+} from "@/lib/media-formats";
 import { POSTER_MAX_EDGE } from "@/lib/media";
 
 /**

@@ -1,0 +1,35 @@
+import { ButtonLink } from "@/components/ui";
+
+export function ClosingCta({ signedIn }: { signedIn: boolean }) {
+  return (
+    <section className="bg-gouda">
+      <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5 sm:py-20 lg:py-28">
+        <h2 className="text-[2.25rem] sm:text-[4rem]">
+          Set it up tonight. It costs nothing to try.
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-body text-crust sm:text-lead">
+          Make the event, print the code, send the link to one friend and watch
+          a photo arrive. Then decide whether to pay.
+        </p>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:gap-4">
+          <ButtonLink
+            href={signedIn ? "/dashboard" : "/login"}
+            size="lg"
+            variant="primary"
+            className="w-full sm:w-auto"
+          >
+            Create an event
+          </ButtonLink>
+          <ButtonLink
+            href="/pricing"
+            size="lg"
+            variant="secondary"
+            className="w-full sm:w-auto"
+          >
+            Compare the plans
+          </ButtonLink>
+        </div>
+      </div>
+    </section>
+  );
+}

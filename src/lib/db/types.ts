@@ -5,7 +5,7 @@
  */
 
 import type { GalleryLayout } from "@/lib/gallery";
-import type { TierId } from "@/lib/tiers";
+import type { PurchasableId, TierId } from "@/lib/tiers";
 
 export type EventStatus = "active" | "expired" | "deleted";
 export type MediaStatus = "pending" | "ready" | "deleted";
@@ -17,7 +17,11 @@ export type MediaProcessing = "done" | "pending" | "failed";
  * slideshow, the ZIP and the photo counts. See migration 0013.
  */
 export type MediaSource = "guest" | "cover";
-export type Product = TierId | "keep_forever";
+/**
+ * What the `purchases.product` column records. Historical rows only, so it is
+ * the purchasable set and nothing wider.
+ */
+export type Product = PurchasableId;
 
 export type ProfileRow = {
   id: string;

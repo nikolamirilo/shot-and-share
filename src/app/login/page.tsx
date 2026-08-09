@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { LoginPanel } from "@/app/login/login-panel";
-import { SiteFooter, SiteHeader } from "@/components/site";
+import { LoginPanel } from "@/components/auth/login-panel";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
 import { Eyebrow, Hole } from "@/components/ui";
 import { loginErrorMessage } from "@/lib/auth";
 import { hasSupabase } from "@/lib/env";

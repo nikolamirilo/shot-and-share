@@ -2,9 +2,10 @@ import archiver from "archiver";
 import { PassThrough } from "node:stream";
 
 import { ApiError, fail, handle, ok } from "@/lib/api";
+import { enforceRateLimit } from "@/lib/guards";
 import { requireOwnedEvent } from "@/lib/host";
 import { archiveKey, scopeOfEvent } from "@/lib/media";
-import { LIMITS, rateLimit } from "@/lib/ratelimit";
+import { LIMITS } from "@/lib/ratelimit";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAX_ARCHIVE_BUILDS } from "@/lib/tiers";
@@ -102,16 +103,11 @@ export async function POST(
       );
     }
 
-    const limit = rateLimit(
+    enforceRateLimit(
+      LIMITS.archive,
       `archive:${event.id}`,
-      LIMITS.archive.limit,
-      LIMITS.archive.window,
+      "A ZIP is already being built for this event.",
     );
-    if (!limit.ok) {
-      return fail("rate_limited", "A ZIP is already being built for this event.", {
-        retryAfterSeconds: limit.retryAfterSeconds,
-      });
-    }
 
     const key = archiveKey(scopeOfEvent(event));
     await buildArchive(key, event, media);

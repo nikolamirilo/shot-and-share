@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Slideshow } from "@/app/dashboard/events/[id]/slideshow/slideshow";
+import { Slideshow } from "@/components/dashboard/slideshow";
 import type { EventRow, MediaRow } from "@/lib/db/types";
 import { toMediaViews } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";

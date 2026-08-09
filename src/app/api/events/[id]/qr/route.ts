@@ -1,11 +1,10 @@
-import { ApiError, fail, handle } from "@/lib/api";
+import { fail, handle } from "@/lib/api";
+import { requireOwnedEvent } from "@/lib/host";
 import { env } from "@/lib/env";
 import { getActiveShareToken } from "@/lib/events";
 import { qrCardSvg, qrSvg } from "@/lib/qr";
-import { createClient } from "@/lib/supabase/server";
 import { getTier } from "@/lib/tiers";
 import { shareUrl } from "@/lib/tokens";
-import type { EventRow } from "@/lib/db/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,19 +25,7 @@ export async function GET(
     const { id } = await params;
     const format = new URL(request.url).searchParams.get("format") ?? "card";
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new ApiError("unauthorized", "Sign in first.");
-
-    const { data } = await supabase
-      .from("events")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (!data) throw new ApiError("not_found", "Event not found.");
-    const event = data as EventRow;
+    const event = await requireOwnedEvent(id);
 
     const active = await getActiveShareToken(event.id);
     if (!active) {

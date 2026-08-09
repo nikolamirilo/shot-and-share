@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { SiteFooter, SiteHeader } from "@/components/site";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
 import { Eyebrow } from "@/components/ui";
 import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
 

@@ -5,6 +5,22 @@ import type { EventRow } from "@/lib/db/types";
 import { createClient } from "@/lib/supabase/server";
 
 /**
+ * The signed-in host, for a route that answers in JSON.
+ *
+ * Separate from the guard in @/lib/actions/guards, which redirects to the login
+ * page. A fetch cannot follow a redirect to an HTML page and do anything useful
+ * with it, so this throws instead and `handle()` turns it into a 401.
+ */
+export async function requireUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new ApiError("unauthorized", "Sign in first.");
+  return { supabase, user };
+}
+
+/**
  * The event, if the signed-in host owns it.
  *
  * Row Level Security would already refuse a cross-tenant read, so the select
@@ -13,16 +29,16 @@ import { createClient } from "@/lib/supabase/server";
  * problems with different fixes, and a route that only knew it had no row would
  * have to guess which one to say.
  *
- * Every host-side API route goes through here. The server actions in
- * app/dashboard/actions.ts keep their own copy: those throw plain Errors into a
- * form, not ApiErrors into a JSON body.
+ * Every host-side API route goes through here - which was not true when this
+ * comment first claimed it: qr, checkout, dev/checkout each had a copy of the
+ * body below, and latest/ had no ownership step at all and leaned on RLS alone.
+ *
+ * The server actions keep a separate guard in @/lib/actions/guards. That is
+ * deliberate rather than duplication left lying around: the two differ in how
+ * they refuse, and a form needs a redirect where a fetch needs a status.
  */
 export async function requireOwnedEvent(id: string): Promise<EventRow> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new ApiError("unauthorized", "Sign in first.");
+  const { supabase } = await requireUser();
 
   const { data } = await supabase
     .from("events")

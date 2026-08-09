@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AccountMenu } from "@/components/account-menu";
-import { Wordmark } from "@/components/logo";
+import { AccountMenu } from "@/components/layout/account-menu";
+import { Wordmark } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";

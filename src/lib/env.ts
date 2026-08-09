@@ -1,3 +1,10 @@
+import "server-only";
+
+import {
+  SUPABASE_PUBLISHABLE_KEY,
+  hasSupabase,
+} from "@/lib/supabase/config";
+
 /**
  * Environment access in one place, so that "is S3 configured?" is a question
  * with a single answer rather than five scattered truthiness checks.
@@ -38,10 +45,7 @@ export const env = {
       return opt("NEXT_PUBLIC_SUPABASE_URL");
     },
     get publishableKey() {
-      return (
-        opt("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ??
-        opt("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-      );
+      return SUPABASE_PUBLISHABLE_KEY;
     },
     get secretKey() {
       return (
@@ -120,11 +124,12 @@ export const env = {
   },
 };
     
-export const hasSupabase = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-);
+/**
+ * Re-exported rather than recomputed. This used to have its own copy of the
+ * key fallback, which is how it could report "configured" for a deployment the
+ * Supabase client would then refuse to start against.
+ */
+export { hasSupabase };
 
 /**
  * Evaluated at import: the storage driver is chosen once per process and

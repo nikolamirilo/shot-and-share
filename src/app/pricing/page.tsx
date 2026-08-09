@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 
-import { PricingTable } from "@/components/pricing-table";
-import { SiteFooter, SiteHeader } from "@/components/site";
-import { Badge, ButtonLink, Eyebrow } from "@/components/ui";
+import { ComparisonTable } from "@/components/marketing/comparison-table";
+import { PricingDetail } from "@/components/marketing/pricing-detail";
+import { PricingTable } from "@/components/marketing/pricing-table";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
+import { ButtonLink, Eyebrow } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";
 
@@ -45,8 +48,8 @@ export default async function PricingPage() {
           </div>
         </section>
 
-        <Comparison />
-        <Detail />
+        <ComparisonTable />
+        <PricingDetail />
 
         <section className="bg-gouda">
           <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5 sm:py-20">
@@ -77,107 +80,3 @@ export default async function PricingPage() {
  * The comparison against the obvious alternative. Every line here is a fact
  * about published pricing, which is the only kind of comparison worth making.
  */
-function Comparison() {
-  const rows: Array<[string, string, string]> = [
-    ["Photos on the free plan", "50", "About 250"],
-    ["Bulk download when free", "No", "Yes"],
-    ["Free QR code", "Watermarked", "Clean"],
-    ["Mid tier", "$24.99 for 200 photos, 30 days", "€19 for ~2,500, 6 months"],
-    ["Top tier", "$49.99, 90 days", "€39, 12 months"],
-    ["Keep photos permanently", "$49 every year", "€29 once"],
-  ];
-
-  return (
-    <section className="bg-pepper text-butter">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
-        <Eyebrow className="text-gouda">Side by side</Eyebrow>
-        <h2 className="mt-3 text-[2.25rem] sm:text-h1">
-          Slightly cheaper. Dramatically more generous.
-        </h2>
-        <p className="mt-4 max-w-xl text-[0.9375rem] text-butter/70">
-          Compared against the best-known alternative in this category, using
-          their published prices.
-        </p>
-
-        {/* The table is wider than a phone and always will be - three columns
-            of prose. It scrolls edge to edge rather than inside a boxed-in
-            window, so the cut-off row is visibly cut off. */}
-        <div className="-mx-4 mt-8 overflow-x-auto px-4 sm:mx-0 sm:mt-9 sm:px-0">
-          <table className="w-full min-w-[520px] border-collapse text-left">
-            <thead>
-              <tr className="bg-butter/8">
-                <th className="py-3 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-butter/55">
-                  &nbsp;
-                </th>
-                <th className="py-3 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-butter/55">
-                  Them
-                </th>
-                <th className="py-3 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-gouda">
-                  Us
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(([label, them, us]) => (
-                <tr key={label} className="odd:bg-butter/4">
-                  <td className="py-3.5 pr-4 text-[0.9375rem]">{label}</td>
-                  <td className="py-3.5 pr-4 text-[0.9375rem] text-butter/60">
-                    {them}
-                  </td>
-                  <td className="py-3.5 text-[0.9375rem] font-bold text-gouda">
-                    {us}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Detail() {
-  const points: Array<[string, string]> = [
-    [
-      "Why gigabytes and not a photo count",
-      "A count limit punishes anyone with a recent phone and rewards nobody. Storage is what actually costs money, so that is what we count - and it lets us be far more generous for the same spend.",
-    ],
-    [
-      "Why the free plan is properly usable",
-      "You cannot judge this product on fifty photos. The thing you most want to test is what happens when a hundred arrive at once, so the free plan lets you do exactly that.",
-    ],
-    [
-      "Why Keep Forever is not a subscription",
-      "A wedding happens once. An annual charge for storage is the wrong shape for it: people forget, cards expire, and one day the photos are gone. €29, paid once, and they stay.",
-    ],
-    [
-      "Why we are not the cheapest",
-      "This sits next to a wedding that costs tens of thousands. A price far below the market reads as a hobby project, and this is a product whose entire promise is that it will not lose your memories.",
-    ],
-  ];
-
-  return (
-    <section className="bg-butter">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
-        <div className="flex flex-wrap items-center gap-3">
-          <Eyebrow>The reasoning</Eyebrow>
-          <Badge tone="outline">No subscription anywhere</Badge>
-        </div>
-
-        <div className="mt-8 grid gap-x-10 gap-y-8 sm:mt-9 sm:grid-cols-2">
-          {points.map(([title, body]) => (
-            <div key={title}>
-              <h3 className="text-[1.3rem] font-extrabold tracking-[-0.03em]">
-                {title}
-              </h3>
-              <p className="mt-2 text-[0.9375rem] leading-relaxed text-crust">
-                {body}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}

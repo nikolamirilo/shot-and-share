@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { NewEventForm } from "@/app/dashboard/events/new/form";
+import { NewEventForm } from "@/components/dashboard/new-event-form";
 import { Eyebrow, Hole } from "@/components/ui";
 import { TIERS } from "@/lib/tiers";
 import { formatBytes } from "@/lib/format";

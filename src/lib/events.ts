@@ -1,13 +1,14 @@
 import "server-only";
 
 import type { EventRow, MediaRow } from "@/lib/db/types";
+import { GALLERY_PAGE_SIZE, type MediaView } from "@/lib/media-view";
 import { ApiError } from "@/lib/api";
 import { decryptToken } from "@/lib/crypto";
 import { hasSupabase } from "@/lib/env";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken, looksLikeToken } from "@/lib/tokens";
-import { type ImageFormat, isUniversallyViewable } from "@/lib/formats";
+import { type ImageFormat, isUniversallyViewable } from "@/lib/media-formats";
 import { getTier } from "@/lib/tiers";
 
 export interface GuestContext {
@@ -78,44 +79,6 @@ export async function requireGuestEvent(token: string): Promise<GuestContext> {
     );
   }
   return ctx;
-}
-
-export interface MediaView {
-  id: string;
-  kind: MediaRow["kind"];
-  width: number | null;
-  height: number | null;
-  createdAt: string;
-  uploaderName: string | null;
-  uploaderFingerprint: string | null;
-  sizeBytes: number;
-  /**
-   * What a grid shows. For a photo this is the stored image itself - there is
-   * no separate thumbnail any more, because a compressed photo is already
-   * small enough that a second copy of it was costing storage to save nothing.
-   * For a video it is the poster frame.
-   */
-  previewUrl: string | null;
-  /** Poster frame for a video, so a grid never shows a grey box. */
-  posterUrl: string | null;
-  durationSeconds: number | null;
-  /** True while the worker still owes this file a viewable copy. */
-  processing: boolean;
-  /**
-   * The stored object behind a short-lived signature, resolved only when
-   * something is actually opened. It is what a video plays from and what the
-   * Download button points at.
-   */
-  url?: string;
-  /**
-   * The same object, signed to come back as an attachment. A browser ignores
-   * the `download` attribute on a link to another origin, so the only thing
-   * that actually saves the file instead of opening it is the bucket sending
-   * Content-Disposition itself.
-   */
-  downloadUrl?: string;
-  /** Format of the stored object. */
-  format: string | null;
 }
 
 /** What the saved file is called on the guest's device. */
@@ -210,7 +173,6 @@ export function storageSummary(event: EventRow) {
   };
 }
 
-export const GALLERY_PAGE_SIZE = 48;
 
 /**
  * The live share link for an event, decrypted so the dashboard can render the
@@ -234,3 +196,10 @@ export async function getActiveShareToken(
   const token = decryptToken(data.token_cipher);
   return token ? { token, tokenId: data.id } : null;
 }
+
+/**
+ * Re-exported so `@/lib/events` keeps meaning what it meant. New code should
+ * import the type from @/lib/media-view, which does not drag a server-only
+ * module in behind it.
+ */
+export { GALLERY_PAGE_SIZE, type MediaView };

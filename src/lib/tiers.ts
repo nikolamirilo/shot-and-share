@@ -108,7 +108,23 @@ export const KEEP_FOREVER = {
   priceEur: 29,
 };
 
-export type PurchasableId = TierId | typeof KEEP_FOREVER.id;
+/**
+ * What can actually be bought.
+ *
+ * `TierId` includes "free", which nobody purchases - which is why four places
+ * had each re-narrowed this by hand: a local `type Product` in the upgrade
+ * panel, an inline union in the checkout action, a zod enum in the route, and
+ * a dead `PurchasableId` in here that excluded nothing. One definition, and a
+ * runtime list so the zod enum is derived rather than retyped.
+ */
+export type PaidTierId = Exclude<TierId, "free">;
+export type PurchasableId = PaidTierId | typeof KEEP_FOREVER.id;
+
+export const PURCHASABLE_IDS = [
+  "event",
+  "wedding",
+  "keep_forever",
+] as const satisfies readonly PurchasableId[];
 
 export const TIER_ORDER: TierId[] = ["free", "event", "wedding"];
 

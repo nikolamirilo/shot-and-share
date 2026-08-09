@@ -1,11 +1,13 @@
-import { ApiError, fail, handle, ok } from "@/lib/api";
+import { ApiError, handle, ok } from "@/lib/api";
+import { enforceRateLimit } from "@/lib/guards";
 import {
   GALLERY_PAGE_SIZE,
   resolveGuestToken,
   gateGuest,
   toMediaViews,
 } from "@/lib/events";
-import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
+import { LIMITS, clientIp } from "@/lib/ratelimit";
+import { listGuestPage } from "@/lib/db/media-repo";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -22,16 +24,11 @@ export async function GET(request: Request) {
     const token = url.searchParams.get("token") ?? "";
     const before = url.searchParams.get("before");
 
-    const limit = rateLimit(
+    enforceRateLimit(
+      LIMITS.guestPage,
       `gallery:${clientIp(request.headers)}`,
-      LIMITS.guestPage.limit,
-      LIMITS.guestPage.window,
+      "Slow down a moment.",
     );
-    if (!limit.ok) {
-      return fail("rate_limited", "Slow down a moment.", {
-        retryAfterSeconds: limit.retryAfterSeconds,
-      });
-    }
 
     const ctx = await resolveGuestToken(token);
     if (!ctx) throw new ApiError("not_found", "This link is not valid any more.");
@@ -47,30 +44,14 @@ export async function GET(request: Request) {
       );
     }
 
-    const admin = createAdminClient();
-    let query = admin
-      .from("media")
-      .select("*")
-      .eq("event_id", ctx.event.id)
-      .eq("status", "ready")
-      // Guests see each other's photographs. The host's own cover image is
-      // already the top of the page they are looking at - see migration 0013.
-      .eq("source", "guest")
-      .order("created_at", { ascending: false })
-      .limit(GALLERY_PAGE_SIZE);
-
-    if (before) query = query.lt("created_at", before);
-
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-
-    const rows = data ?? [];
-    return ok({
-      items: await toMediaViews(rows),
-      nextCursor:
-        rows.length === GALLERY_PAGE_SIZE
-          ? rows[rows.length - 1].created_at
-          : null,
+    // The admin client: a guest has no session, so the token check above is
+    // what stands in for one.
+    const { rows, nextCursor } = await listGuestPage(createAdminClient(), {
+      eventId: ctx.event.id,
+      before,
+      pageSize: GALLERY_PAGE_SIZE,
     });
+
+    return ok({ items: await toMediaViews(rows), nextCursor });
   });
 }

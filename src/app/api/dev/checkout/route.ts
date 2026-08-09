@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { ApiError, fail, handle } from "@/lib/api";
+import { requireOwnedEvent, requireUser } from "@/lib/host";
 import { env } from "@/lib/env";
 import { grantPurchase } from "@/lib/payments/grant";
-import { createClient } from "@/lib/supabase/server";
-import { KEEP_FOREVER, TIERS } from "@/lib/tiers";
+import { KEEP_FOREVER, PURCHASABLE_IDS, TIERS } from "@/lib/tiers";
 import type { Product } from "@/lib/db/types";
 
 export const runtime = "nodejs";
@@ -29,22 +29,14 @@ export async function GET(request: Request) {
     const eventId = url.searchParams.get("eventId") ?? "";
     const product = (url.searchParams.get("product") ?? "") as Product;
 
-    if (!["event", "wedding", "keep_forever"].includes(product)) {
+    if (!PURCHASABLE_IDS.includes(product)) {
       throw new ApiError("bad_request", "Unknown product.");
     }
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new ApiError("unauthorized", "Sign in first.");
-
-    const { data: event } = await supabase
-      .from("events")
-      .select("id")
-      .eq("id", eventId)
-      .maybeSingle();
-    if (!event) throw new ApiError("not_found", "Event not found.");
+    // Both are guards here: nothing below needs the row, only the assurance
+    // that this host owns it.
+    await requireUser();
+    await requireOwnedEvent(eventId);
 
     const priceEur =
       product === KEEP_FOREVER.id

@@ -1,20 +1,20 @@
 import { z } from "zod";
 
 import { ApiError, handle, ok, parseBody } from "@/lib/api";
+import { requireOwnedEvent, requireUser } from "@/lib/host";
 import { env } from "@/lib/env";
+import { PURCHASABLE_IDS } from "@/lib/tiers";
 import {
   createCheckoutUrl,
   isCheckoutConfigured,
 } from "@/lib/payments/lemonsqueezy";
-import { createClient } from "@/lib/supabase/server";
-import type { EventRow } from "@/lib/db/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   eventId: z.string().uuid(),
-  product: z.enum(["event", "wedding", "keep_forever"]),
+  product: z.enum(PURCHASABLE_IDS),
 });
 
 /**
@@ -26,19 +26,8 @@ export async function POST(request: Request) {
   return handle(async () => {
     const body = await parseBody(request, bodySchema);
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new ApiError("unauthorized", "Sign in first.");
-
-    const { data } = await supabase
-      .from("events")
-      .select("*")
-      .eq("id", body.eventId)
-      .maybeSingle();
-    if (!data) throw new ApiError("not_found", "Event not found.");
-    const event = data as EventRow;
+    const { user } = await requireUser();
+    const event = await requireOwnedEvent(body.eventId);
 
     const redirectUrl = `${env.siteUrl}/dashboard/events/${event.id}?purchase=complete`;
 
