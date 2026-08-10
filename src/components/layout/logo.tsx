@@ -1,190 +1,89 @@
 /**
- * The mark: a camera taking a picture of cheese.
+ * The mark: a crop frame.
  *
- * The cheese is the subject and the camera is looking at it. It is a slice, not
- * a wedge - the cheese with holes is Emmental and Emmental is cut in slices.
- * The hole is the whole brand, so putting a generic wedge in the frame would
- * throw away the one idea the system is built on.
+ * Four corner brackets and nothing in the middle. It is the gesture every
+ * photograph starts with - deciding what is inside the picture and what is not
+ * - and it is the only mark in the product that is drawn rather than
+ * photographed, which is why it stays this simple.
  *
- * Three details say "this photo is being taken right now": focus brackets in
- * the corners of the frame, a flash burst off the top left, and the Ember
- * shutter light - the only place that colour ever appears.
+ * The gap in the middle is load-bearing. At 16px the brackets read as one
+ * square, at 200px they read as four marks around an empty frame, and both are
+ * the same object. A mark that has to survive being printed on a card in a dark
+ * room cannot be an illustration.
+ *
+ * The shutter dot is the one flash of claret and appears in no other mark.
  */
 
 type Variant = "primary" | "reversed" | "mono";
 
-const PALETTES: Record<Variant, Record<string, string>> = {
-  primary: {
-    body: "#1F1607",
-    trim: "#B0670F",
-    frame: "#FFFDF4",
-    cheese: "#FFC02E",
-    cheeseEdge: "#B0670F",
-    hole: "#4A3110",
-    shutter: "#E2542F",
-    line: "#1F1607",
-  },
-  reversed: {
-    body: "#FFFDF4",
-    trim: "#FFC02E",
-    frame: "#1F1607",
-    cheese: "#FFC02E",
-    cheeseEdge: "#B0670F",
-    hole: "#1F1607",
-    shutter: "#E2542F",
-    line: "#FFFDF4",
-  },
-  mono: {
-    body: "currentColor",
-    trim: "currentColor",
-    frame: "none",
-    cheese: "none",
-    cheeseEdge: "none",
-    hole: "currentColor",
-    shutter: "none",
-    line: "currentColor",
-  },
+const PALETTES: Record<Variant, { bracket: string; dot: string }> = {
+  primary: { bracket: "#181214", dot: "#7A1230" },
+  reversed: { bracket: "#FDF6F7", dot: "#C25A72" },
+  mono: { bracket: "currentColor", dot: "currentColor" },
 };
 
-/** The slice, drawn twice: a Rind face below for thickness, Gouda on top. */
-const SLICE = "M -31 -15 L 27 -22 L 33 13 L -25 21 Z";
-
-const HOLES: Array<[number, number, number]> = [
-  [-15, -3, 7],
-  [7, 3, 5],
-  [19, -9, 3.4],
-  [-3, -13, 3],
-  [9, 13, 4.2],
-];
+/* One bracket, drawn once and rotated into the other three corners. The arms
+   are deliberately short: a longer arm closes the frame and the mark turns
+   into a square with a hole in it. */
+const BRACKET = "M 26 76 L 26 34 Q 26 26 34 26 L 76 26";
 
 export function LogoMark({
   variant = "primary",
   className,
-  title = "Say Cheese",
+  title = "Shot & Share",
 }: {
   variant?: Variant;
   className?: string;
   title?: string;
 }) {
   const c = PALETTES[variant];
-  const mono = variant === "mono";
 
   return (
     <svg
-      viewBox="0 0 240 200"
+      viewBox="0 0 200 200"
       className={className}
       role="img"
       aria-label={title}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Flash burst - three short strokes radiating off the top left */}
       <g
-        stroke={c.line}
-        strokeWidth={5}
-        strokeLinecap="round"
-        fill="none"
-        opacity={mono ? 1 : 0.95}
-      >
-        <path d="M 34 40 L 24 30" />
-        <path d="M 50 30 L 46 17" />
-        <path d="M 22 54 L 8 50" />
-      </g>
-
-      {/* Viewfinder bump and flash unit */}
-      <rect x={52} y={28} width={54} height={22} rx={7} fill={c.trim} />
-      <rect x={156} y={30} width={40} height={20} rx={6} fill={c.trim} />
-
-      {/* Body */}
-      <rect
-        x={18}
-        y={46}
-        width={204}
-        height={136}
-        rx={22}
-        fill={c.body}
-        stroke={mono ? c.line : "none"}
-        strokeWidth={mono ? 4 : 0}
-      />
-
-      {/* Shutter light - the one flash of Ember */}
-      {!mono && <circle cx={200} cy={66} r={6.5} fill={c.shutter} />}
-
-      {/* Lens: a deep barrel, not a flat ring */}
-      <circle cx={120} cy={114} r={58} fill={c.trim} />
-      <circle cx={120} cy={114} r={50} fill={c.body} />
-      {mono && (
-        <>
-          <circle
-            cx={120}
-            cy={114}
-            r={58}
-            fill="none"
-            stroke={c.line}
-            strokeWidth={4}
-          />
-          <circle
-            cx={120}
-            cy={114}
-            r={38}
-            fill="none"
-            stroke={c.line}
-            strokeWidth={4}
-          />
-        </>
-      )}
-
-      {/* The frame - what the camera actually sees */}
-      <circle cx={120} cy={114} r={38} fill={c.frame} />
-
-      <g clipPath="url(#sc-frame-clip)">
-        <clipPath id="sc-frame-clip">
-          <circle cx={120} cy={114} r={38} />
-        </clipPath>
-
-        <g transform="translate(120 114) rotate(-7)">
-          {/* Thickness: the Rind face sitting below and behind */}
-          <path
-            d={SLICE}
-            transform="translate(0 8)"
-            fill={mono ? "none" : c.cheeseEdge}
-            stroke={c.line}
-            strokeWidth={4}
-            strokeLinejoin="round"
-          />
-          <path
-            d={SLICE}
-            fill={mono ? "none" : c.cheese}
-            stroke={c.line}
-            strokeWidth={4}
-            strokeLinejoin="round"
-          />
-          {HOLES.map(([cx, cy, r], i) => (
-            <circle
-              key={i}
-              cx={cx}
-              cy={cy}
-              r={r}
-              fill={mono ? "none" : c.hole}
-              stroke={c.line}
-              strokeWidth={mono ? 3 : 0}
-            />
-          ))}
-        </g>
-      </g>
-
-      {/* Focus brackets - the marks a viewfinder puts around its subject */}
-      <g
-        stroke={mono ? c.line : c.cheeseEdge}
-        strokeWidth={3.5}
-        strokeLinecap="round"
+        stroke={c.bracket}
+        strokeWidth={18}
+        strokeLinecap="square"
         fill="none"
       >
-        <path d="M 96 98 L 96 90 L 104 90" />
-        <path d="M 144 98 L 144 90 L 136 90" />
-        <path d="M 96 130 L 96 138 L 104 138" />
-        <path d="M 144 130 L 144 138 L 136 138" />
+        <path d={BRACKET} />
+        <path d={BRACKET} transform="rotate(90 100 100)" />
+        <path d={BRACKET} transform="rotate(180 100 100)" />
+        <path d={BRACKET} transform="rotate(270 100 100)" />
       </g>
+
+      {/* The subject. One dot, centred, the size of a shutter release. */}
+      <circle cx={100} cy={100} r={20} fill={c.dot} />
     </svg>
+  );
+}
+
+/**
+ * The ampersand, borrowed from the body face.
+ *
+ * Archivo draws its ampersand as an open, reversed-3 form. It is a fine glyph
+ * and it is wrong here: at the wordmark's weight and 82% width it stops looking
+ * like an ampersand at all and starts looking like a mistake in the logo. So
+ * the two words are set in the display face and the one character between them
+ * is set in the body face at a conventional weight, in claret.
+ *
+ * This is a lockup, not a typographic accident, and it is the same everywhere
+ * the name appears - which is why it lives here rather than in each caller.
+ */
+function Amp({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`font-sans font-bold text-claret ${className}`}
+      style={{ fontStretch: "normal", letterSpacing: "-0.01em" }}
+    >
+      &amp;
+    </span>
   );
 }
 
@@ -200,7 +99,7 @@ export function LogoMark({
 export function Wordmark({
   variant = "primary",
   className = "",
-  markClassName = "h-8 w-auto sm:h-9",
+  markClassName = "h-6 w-auto sm:h-7",
   labelClassName = "",
 }: {
   variant?: Variant;
@@ -212,10 +111,10 @@ export function Wordmark({
     <span className={`inline-flex items-center gap-2 sm:gap-2.5 ${className}`}>
       <LogoMark variant={variant} className={markClassName} />
       <span
-        className={`font-display text-[1.2rem] font-extrabold tracking-[-0.04em] sm:text-[1.35rem] ${labelClassName}`}
-        style={{ fontStretch: "86%" }}
+        className={`font-display text-[1.0625rem] font-extrabold uppercase tracking-[-0.052em] sm:text-[1.1875rem] ${labelClassName}`}
+        style={{ fontStretch: "74%" }}
       >
-        Say Cheese
+        Shot <Amp className="mx-[0.06em]" /> Share
       </span>
     </span>
   );

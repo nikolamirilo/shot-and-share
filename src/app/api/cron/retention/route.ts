@@ -26,7 +26,7 @@ export const maxDuration = 300;
  *   warn at 14, 7 and 1 days  ->  expire (nothing removed)  ->  wait 14 days
  *   ->  hard delete
  *
- * A host can restore the event, or buy The Cellar, at any point before the last
+ * A host can restore the event, or buy The Archive, at any point before the last
  * arrow.
  */
 export async function GET(request: Request) {

@@ -51,7 +51,7 @@ export async function GET(
       headers: {
         "Content-Type": "image/svg+xml; charset=utf-8",
         "Cache-Control": "private, no-store",
-        "Content-Disposition": `inline; filename="say-cheese-${format}.svg"`,
+        "Content-Disposition": `inline; filename="shot-and-share-${format}.svg"`,
       },
     });
   });

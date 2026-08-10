@@ -12,7 +12,7 @@ import { DEFAULT_FONT_ID, coerceFont } from "@/lib/fonts";
 import { type GalleryLayout, coerceLayout } from "@/lib/gallery";
 
 /** Where a host's unsaved edits wait while the tab is closed. */
-const DRAFT_PREFIX = "sayCheese:appearance:";
+const DRAFT_PREFIX = "shotAndShare:appearance:";
 
 export function draftKey(eventId: string) {
   return DRAFT_PREFIX + eventId;

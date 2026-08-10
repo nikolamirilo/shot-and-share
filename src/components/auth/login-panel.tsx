@@ -43,7 +43,7 @@ export function LoginPanel({
     return (
       <Card pad="roomy">
         <h2 className="text-h3">Supabase is not configured</h2>
-        <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
+        <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
           Set <code className="break-all font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_URL</code>,{" "}
           <code className="break-all font-mono text-[0.9375rem]">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code>{" "}
           and{" "}
@@ -53,7 +53,7 @@ export function LoginPanel({
           <code className="break-all font-mono text-[0.9375rem]">supabase/migrations</code>
           , then enable the Email and Google providers in Supabase Auth.
         </p>
-        <p className="mt-3 text-[0.9375rem] text-crust">
+        <p className="mt-3 text-[0.9375rem] text-ash">
           Full steps are in the README.
         </p>
       </Card>
@@ -63,7 +63,7 @@ export function LoginPanel({
   return (
     <Card pad="roomy">
       <h2 className="text-h3">Sign in</h2>
-      <p className="mt-2 text-[0.9375rem] text-crust">
+      <p className="mt-2 text-[0.9375rem] text-ash">
         Use an email address and password, or continue with Google.
       </p>
 
@@ -72,11 +72,11 @@ export function LoginPanel({
       </div>
 
       <div className="my-6 flex items-center gap-3" aria-hidden="true">
-        <span className="h-0.5 flex-1 bg-pepper/20" />
-        <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+        <span className="h-0.5 flex-1 bg-ink/20" />
+        <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
           or
         </span>
-        <span className="h-0.5 flex-1 bg-pepper/20" />
+        <span className="h-0.5 flex-1 bg-ink/20" />
       </div>
 
       <Button
@@ -91,7 +91,7 @@ export function LoginPanel({
 
       {failure && <Alert className="mt-4">{failure}</Alert>}
 
-      <p className="mt-6 text-[0.8125rem] leading-relaxed text-rind">
+      <p className="mt-6 text-[0.8125rem] leading-relaxed text-mist">
         By signing in you agree to the terms and the privacy notice. We never
         look at your photos, and you can delete an event and everything in it at
         any time.

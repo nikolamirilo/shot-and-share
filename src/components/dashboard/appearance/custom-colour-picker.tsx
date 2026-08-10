@@ -39,7 +39,7 @@ export function CustomColourPicker({
   ];
 
   return (
-    <div className="inset-shadow-well rounded-xl bg-pepper/5 p-4">
+    <div className="inset-shadow-well rounded-xl bg-ink/5 p-4">
       <div className="grid grid-cols-2 gap-3 @min-[30rem]:grid-cols-4">
         {fields.map(([key, label]) => (
           <label key={key} className="block">
@@ -63,10 +63,10 @@ export function CustomColourPicker({
       </div>
 
       <p className="mt-3 flex flex-wrap items-center gap-2 text-[0.8125rem]">
-        <Badge tone={readable ? "gouda" : "outline"}>
+        <Badge tone={readable ? "brand" : "outline"}>
           contrast {ratio.toFixed(1)}:1
         </Badge>
-        <span className="text-crust">
+        <span className="text-ash">
           {readable
             ? "Comfortable to read on a phone."
             : "Too low to read comfortably. We will darken or lighten your text colour automatically - pick a stronger one to keep the shade you want."}
@@ -79,7 +79,7 @@ export function CustomColourPicker({
             className="inset-shadow-well h-5 w-5 shrink-0 rounded-full shadow-sm"
             style={{ background: lifted }}
           />
-          <span className="text-crust">
+          <span className="text-ash">
             Event pages are always light, so guests get{" "}
             <span className="font-mono uppercase">{lifted}</span> as the
             background - the palest version of the colour you picked.

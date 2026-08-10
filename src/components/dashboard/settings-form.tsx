@@ -69,7 +69,7 @@ export function SettingsForm({ event }: { event: EventRow }) {
           <span className="block font-semibold">
             Let guests see the shared gallery
           </span>
-          <span className="block text-[0.9375rem] text-crust">
+          <span className="block text-[0.9375rem] text-ash">
             On by default. Guests like seeing the night from other people&apos;s
             phones. Turn it off and the page becomes upload-only.
           </span>

@@ -118,7 +118,7 @@ export function Lightbox({
     <div
       /* Safe-area padding at the bottom: on a phone the home indicator sits
          exactly where the Close button lands. */
-      className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-pepper/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-ink/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
@@ -143,7 +143,7 @@ export function Lightbox({
                 className="w-full rounded-xl"
               />
             ) : (
-              <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-hole" />
+              <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-well" />
             )
           ) : viewUrl ? (
             /*
@@ -160,7 +160,7 @@ export function Lightbox({
              */
             <>
               {!loaded && (
-                <div className="shimmer absolute inset-0 overflow-hidden rounded-xl bg-hole" />
+                <div className="shimmer absolute inset-0 overflow-hidden rounded-xl bg-well" />
               )}
               <Image
                 src={viewUrl}
@@ -180,7 +180,7 @@ export function Lightbox({
               />
             </>
           ) : (
-            <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-hole" />
+            <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-well" />
           )}
 
           {/* Nothing to step to at all means one photo in the event: two dead
@@ -196,13 +196,13 @@ export function Lightbox({
         </div>
 
         {total > 1 && (
-          <p className="mt-3 text-center font-mono text-micro uppercase tracking-[0.16em] text-butter/70">
+          <p className="mt-3 text-center font-mono text-micro uppercase tracking-[0.16em] text-linen/70">
             {position} of {total}
           </p>
         )}
 
         {item.processing && (
-          <p className="mt-3 rounded-xl bg-butter/12 px-3 py-2 text-center text-label text-butter/80">
+          <p className="mt-3 rounded-xl bg-linen/12 px-3 py-2 text-center text-label text-linen/80">
             Still being converted so it plays everywhere. Check back shortly.
           </p>
         )}
@@ -228,7 +228,7 @@ export function Lightbox({
               download={full?.downloadUrl ? true : undefined}
               aria-disabled={full?.downloadUrl ? undefined : true}
               className={cx(
-                "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gouda px-3.5 py-2 text-small font-semibold leading-tight text-pepper",
+                "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-chalk px-3.5 py-2 text-small font-semibold leading-tight text-ink",
                 !full?.downloadUrl && "opacity-45",
               )}
             >
@@ -276,7 +276,7 @@ function StepArrow({
          * is on screen the moment the lightbox opens.
          */
         // Dimmed the same way every other disabled control in the app is.
-        "absolute top-[min(50%,35vh)] grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-gouda text-pepper transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
+        "absolute top-[min(50%,35vh)] grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-chalk text-ink transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
         back ? "left-2" : "right-2",
       )}
     >

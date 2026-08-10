@@ -3,11 +3,23 @@ import Link from "next/link";
 import { Wordmark } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui";
 
+/**
+ * The navigation floats.
+ *
+ * A bar welded to the top edge draws a horizontal line across the page and the
+ * first thing a visitor sees is a rule. A card held clear of the edges reads as
+ * an object sitting on the page instead, which is the same thing every other
+ * surface in the product does - and it lets the hero's colour run all the way
+ * to the top of the window behind it.
+ *
+ * It is `sticky`, not `fixed`, so it keeps its own space in the flow and the
+ * hero below never has to guess how much clearance to leave.
+ */
 export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
   return (
-    <header className="sticky top-0 z-40 bg-butter/92 shadow-sm backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5">
-        <Link href="/" aria-label="Say Cheese, home" className="shrink-0">
+    <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 sm:pt-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl bg-paper/92 px-4 py-2.5 shadow-sm backdrop-blur sm:gap-4 sm:px-5 sm:py-3">
+        <Link href="/" aria-label="Shot & Share, home" className="shrink-0">
           <Wordmark labelClassName="hidden xs:inline" />
         </Link>
 

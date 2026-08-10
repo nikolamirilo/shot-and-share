@@ -25,11 +25,11 @@ const PAGES: Record<
     sections: [
       [
         "What the service is",
-        "Say Cheese gives the host of an event a link and a QR code. Guests use it to upload photos and video. The host can view, delete and download everything collected.",
+        "Shot & Share gives the host of an event a link and a QR code. Guests use it to upload photos and video. The host can view, delete and download everything collected.",
       ],
       [
         "What you pay for",
-        `Plans are a one-time payment per event: ${TIERS.event.name} at €${TIERS.event.priceEur} and ${TIERS.wedding.name} at €${TIERS.wedding.priceEur}. There is no subscription. The Cellar add-on is €29 paid once and keeps the photos permanently.`,
+        `Plans are a one-time payment per event: ${TIERS.event.name} at €${TIERS.event.priceEur} and ${TIERS.wedding.name} at €${TIERS.wedding.priceEur}. There is no subscription. The Archive add-on is €29 paid once and keeps the photos permanently.`,
       ],
       [
         "How long we keep things",
@@ -99,22 +99,22 @@ export default async function LegalPage({
   return (
     <>
       <SiteHeader />
-      <main className="bg-butter">
+      <main className="bg-linen">
         <div className="mx-auto max-w-2xl px-4 py-12 sm:px-5 sm:py-16">
           <Eyebrow>Legal</Eyebrow>
           <h1 className="mt-3 text-[2.25rem] sm:text-h1">{page.title}</h1>
-          <p className="mt-4 text-body text-crust">{page.intro}</p>
+          <p className="mt-4 text-body text-ash">{page.intro}</p>
 
           <div className="mt-8 space-y-7 sm:mt-10 sm:space-y-8">
             {page.sections.map(([heading, body]) => (
               <section key={heading}>
                 <h2 className="text-h3">{heading}</h2>
-                <p className="mt-2 leading-relaxed text-crust">{body}</p>
+                <p className="mt-2 leading-relaxed text-ash">{body}</p>
               </section>
             ))}
           </div>
 
-          <p className="mt-12 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+          <p className="mt-12 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
             Placeholder - review before launch
           </p>
         </div>

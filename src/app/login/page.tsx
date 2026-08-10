@@ -26,7 +26,7 @@ export default async function LoginPage({
   return (
     <>
       <SiteHeader />
-      <main className="bg-butter">
+      <main className="bg-linen">
         {/* `min-w-0` on both columns: a grid track sizes to its content's
             minimum, and an environment variable name with no spaces in it is
             wider than a small phone. Without this the whole page scrolls
@@ -37,7 +37,7 @@ export default async function LoginPage({
             <h1 className="mt-3 text-[2.25rem] sm:text-h1">
               Sign in once. Your guests never have to.
             </h1>
-            <p className="mt-4 max-w-md text-body text-crust">
+            <p className="mt-4 max-w-md text-body text-ash">
               The only account in this product is yours. Guests open a link and
               upload - no sign-in, no app, nothing to remember.
             </p>

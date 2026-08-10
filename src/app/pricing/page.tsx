@@ -23,13 +23,13 @@ export default async function PricingPage() {
       <SiteHeader signedIn={Boolean(user)} />
 
       <main>
-        <section className="bg-butter">
+        <section className="bg-linen">
           <div className="mx-auto max-w-6xl px-4 py-11 sm:px-5 sm:py-14 lg:py-20">
             <Eyebrow>Pricing</Eyebrow>
             <h1 className="mt-3 max-w-3xl text-[2.375rem] xs:text-[2.75rem] sm:text-[4rem]">
               One payment, per event. Then nothing.
             </h1>
-            <p className="mt-5 max-w-2xl text-body text-crust sm:text-lead">
+            <p className="mt-5 max-w-2xl text-body text-ash sm:text-lead">
               People plan one wedding, not twelve. Asking someone to remember to
               cancel a subscription afterwards is a bad experience and we are not
               going to build one.
@@ -41,7 +41,7 @@ export default async function PricingPage() {
               />
             </div>
 
-            <p className="mt-6 text-[0.9375rem] text-crust">
+            <p className="mt-6 text-[0.9375rem] text-ash">
               Prices include EU VAT handling - our payment provider is the
               merchant of record, so the VAT on your invoice is already sorted.
             </p>
@@ -51,12 +51,12 @@ export default async function PricingPage() {
         <ComparisonTable />
         <PricingDetail />
 
-        <section className="bg-gouda">
+        <section className="bg-blush">
           <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5 sm:py-20">
             <h2 className="text-[2.25rem] sm:text-h1">
               Try it before you pay for it.
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-body text-crust sm:text-lead">
+            <p className="mx-auto mt-4 max-w-xl text-body text-ash sm:text-lead">
               The free plan is a working product, not a demo. Clean QR code, bulk
               download, unlimited guests. Upgrade when you know it works.
             </p>

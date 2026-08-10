@@ -389,14 +389,14 @@ export function Uploader({
                   <Hole
                     size={11}
                     className={cx(
-                      item.status === "done" && "bg-pepper",
+                      item.status === "done" && "bg-ink",
                       item.status === "failed" && "opacity-40",
                     )}
                   />
                   <span className="min-w-0 flex-1 truncate">
                     {item.file.name}
                   </span>
-                  <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-rind">
+                  <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
                     {item.status === "done"
                       ? "added"
                       : item.status === "failed"
@@ -423,7 +423,7 @@ export function Uploader({
                 ? "One did not make it."
                 : `${failedCount} did not make it.`}
             </p>
-            <p className="mt-1.5 text-[0.9375rem] text-crust">
+            <p className="mt-1.5 text-[0.9375rem] text-ash">
               {items.find((i) => i.status === "failed")?.error ??
                 "The connection dropped."}
             </p>
@@ -439,14 +439,14 @@ export function Uploader({
         )}
 
         {completed > 0 && inFlight === 0 && !busy && (
-          <p className="mt-5 rounded-xl bg-gouda shadow-sm p-4 text-center">
+          <p className="mt-5 rounded-xl bg-blush shadow-sm p-4 text-center">
             <strong>Thank you.</strong>{" "}
             {completed === 1
               ? "Your photo is with the host."
               : `All ${completed} are with the host.`}{" "}
             Add more any time tonight.
             {saved.from > saved.to && saved.to > 0 && (
-              <span className="mt-1 block font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-crust">
+              <span className="mt-1 block font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ash">
                 sent {formatBytes(saved.to)} instead of {formatBytes(saved.from)}
               </span>
             )}
@@ -457,7 +457,7 @@ export function Uploader({
           <div className="mt-5 note p-4">
             <p className="text-[0.9375rem] font-semibold">{error}</p>
             {upgradeHint && (
-              <p className="mt-1.5 text-[0.9375rem] text-crust">
+              <p className="mt-1.5 text-[0.9375rem] text-ash">
                 The host needs to make more room. Let them know - they can raise
                 the limit from their phone in under a minute.
               </p>

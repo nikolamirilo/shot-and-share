@@ -27,7 +27,7 @@ export function Alert({
 }) {
   if (tone === "notice") {
     return (
-      <div className={cx("rounded-card bg-gouda p-4 sm:p-5", className)}>
+      <div className={cx("rounded-card bg-blush p-4 sm:p-5", className)}>
         <p className="text-small leading-relaxed">{children}</p>
       </div>
     );

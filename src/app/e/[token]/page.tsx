@@ -148,7 +148,7 @@ export default async function GuestPage({
       {appearance.platformBranding && (
         <>
           <div>
-            <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-rind sm:px-5">
+            <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-mist sm:px-5">
               Photos you add here go to the host of this event. Uploaded
               something by mistake? Tap it in the gallery above to remove it,
               within the hour.

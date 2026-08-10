@@ -1,13 +1,13 @@
-# Say Cheese
+# Shot & Share
 
-**Every photo from every guest, at any event.**
+**Every photo your guests take.**
 
 At a wedding, two hundred guests take two thousand photos. The couple sees maybe
 fifty. The rest sit on phones, scattered across group chats that compress
 everything into mush, or in shared albums half the guests never join because they
 have the wrong account type.
 
-Say Cheese closes that gap. The host creates an event and gets a link and a QR
+Shot & Share closes that gap. The host creates an event and gets a link and a QR
 code. Guests scan it, upload from their phone, and never sign in to anything. The
 host keeps the files.
 
@@ -236,16 +236,16 @@ poster frame, because a clip has no still of itself to show in a grid.
 ### The custom event page
 
 What a guest sees when they scan the code. Paid plans only - it is the "custom
-event page" the Slice and Wheel tiers already promise.
+event page" the Roll and Reel tiers already promise.
 
-| | Free | Slice / Wheel |
+| | Free | Roll / Reel |
 |---|---|---|
 | Theme | House palette | 5 presets, or pick your own colours |
 | Type | House pairing | 5 pairings, heading face and body face |
 | Cover | Fixed | 4 styles, using any photo from the event |
 | Asking for photos | Fixed button | 4 shapes, from a big button to a slim bar |
 | Gallery layout | Fixed grid | Host picks; guests may switch |
-| Say Cheese header and footer | Yes | No |
+| Shot & Share header and footer | Yes | No |
 
 The free plan's header and footer are the price of the free plan. Not a
 watermark across somebody's photographs - a small bar above and an invitation
@@ -263,7 +263,7 @@ Themes work by setting the design system's own CSS custom properties on a
 wrapper element, so a theme re-skins every existing component underneath it and
 **no component takes a `theme` prop**. Type works the same way: a pairing sets
 `--font-display` and `--font-sans` on the same wrapper, along with the display
-weight, width and tracking, because 86% width is right for Bricolage - which has
+weight, width and tracking, because 82% width is right for Archivo - which has
 a width axis - and meaningless for a serif that does not.
 
 A guest page requests only the pairing it uses. The house pairing is already in
@@ -316,7 +316,7 @@ warn at 14, 7 and 1 days  →  expire (nothing removed)  →  14-day grace  → 
 `/api/cron/retention` runs daily (see `vercel.json`) behind `CRON_SECRET`. Losing
 someone's wedding photos to a scheduling bug is the failure this product cannot
 survive, so the destructive step is always last and always delayed. A host can
-restore, or buy The Cellar, at any point before the final arrow.
+restore, or buy The Archive, at any point before the final arrow.
 
 ### Share tokens
 
@@ -334,38 +334,47 @@ role key.
 
 | Plan | Price | Storage | Kept for |
 |---|---|---|---|
-| **Taste** | Free | 1 GB, ~250 photos | 30 days |
-| **Slice** | €19 once | 10 GB, ~2,500 photos | 6 months |
-| **Wheel** | €39 once | 30 GB, ~7,500 photos | 12 months |
-| **The Cellar** | €29 once | - | permanently |
+| **Frame** | Free | 1 GB, ~250 photos | 30 days |
+| **Roll** | €19 once | 10 GB, ~2,500 photos | 6 months |
+| **Reel** | €39 once | 30 GB, ~7,500 photos | 12 months |
+| **The Archive** | €29 once | - | permanently |
 
 The unit is gigabytes, not photo counts: a count limit punishes anyone with a
 recent phone and rewards nobody, while storage is what actually costs money and
 lets us look far more generous for the same spend. Nothing is a subscription -
 people plan one wedding, not twelve.
 
-Wheel stops at twelve months deliberately. If retention were unlimited, the
-Cellar add-on would have no job to do.
+Reel stops at twelve months deliberately. If retention were unlimited, the
+Archive add-on would have no job to do.
 
 ---
 
 ## Design
 
-The whole system comes from one observation: **a cheese hole and a camera
-aperture are the same shape.** So a hole is never decoration here, it is a
-viewfinder - a void you look through to see something. The slab in the hero *is*
-the photo grid, and the photos live inside the holes. Every circle in the
-interface is the same object at a different size: step markers, list bullets,
-gallery tiles, loading states.
+The whole system comes from one rule: **the photographs are the colour.** An
+interface holding somebody's wedding is the frame, not the picture, so the
+product is a warm near-white, a near-black and two greys mixed towards the wine.
+Claret (`#7A1230`) is the only saturated colour in it and it is spent on the
+thing you are meant to press - the primary button, the chosen tab, the mark on a
+photograph - and on nothing else. Spending it twice on a page is the limit.
 
-The risk is that cheese reads as cheap or childish, which is fatal for something
-a person trusts with the only copy of their wedding photos. The safeguard is that
-cheese supplies exactly two things - the palette and the hole. No cartoon mice,
-no wedge illustrations, no comic lettering. Warmth from colour, seriousness from
-type.
+The mark is a crop frame: four brackets and a shutter dot, nothing in the middle.
+It is the gesture every photograph starts with, and it is the only drawn thing in
+a system that is otherwise photographic. The gap in the middle is load-bearing -
+at 16px the brackets read as one square, at 200px as four marks around an empty
+frame, and both are the same object.
 
-Yellow leads and near-black carries the contrast. Ember (`#E2542F`) appears once,
-on the shutter light in the logo, and never in the interface.
+Anything a photograph goes into is a **well**: the one dark surface in a light
+product, lit the way a print is - shadow along the top edge, a faint bounce off
+the bottom. Every circle and tile in the interface is the same well at a
+different size: step markers, list bullets, gallery tiles, loading states.
+
+The display face is Archivo, run heavy and narrow (82% width, 800) so a headline
+can be enormous without needing the whole page; body copy is Instrument Sans, and
+Azeret Mono labels the machine-readable parts - tokens, short links, units.
+Archivo draws its ampersand as an open, reversed-3 form, so the one in the
+wordmark is borrowed from the body face and set in claret. That is a lockup, not
+an accident, and it lives in `Wordmark` rather than in each caller.
 
 Fonts load from Google Fonts via a stylesheet link rather than `next/font`, so a
 build never depends on reaching an external host.
@@ -387,7 +396,7 @@ Stated plainly rather than left to be discovered:
   archive will outrun it and belongs in a Lambda or a small Fargate task. Moving
   it is a change of host, not of logic.
 - **`retention=forever` is not applied retroactively** to objects when a host
-  buys The Cellar after the event. Nothing is at risk - those events are excluded
+  buys The Archive after the event. Nothing is at risk - those events are excluded
   from expiry - but the objects sit in Glacier IR rather than Deep Archive, which
   leaks about a dollar a year per event. Fixing it needs an S3 Batch Operations
   job. See `infra/README.md`.

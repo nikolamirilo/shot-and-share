@@ -108,7 +108,7 @@ describe("the cover a host is shown", () => {
 describe("the colours a host is shown", () => {
   it("paints the chosen card colour in the preview", () => {
     // The old preview drew a near-black bar and four dark recesses, none of
-    // which read --color-cream - so picking wheat for "Cards" appeared to do
+    // which read --color-paper - so picking wheat for "Cards" appeared to do
     // nothing at all.
     const wheat = buildCustomPalette({
       bg: "#FFF6DC",
@@ -129,7 +129,7 @@ describe("the colours a host is shown", () => {
       </EventThemeRoot>,
     );
 
-    expect(html).toContain("--color-cream:#F5DEB3");
+    expect(html).toContain("--color-paper:#F5DEB3");
     // .card is what turns that variable into a visible surface.
     expect(html).toContain("card");
   });
@@ -331,10 +331,10 @@ describe("the drawing of the guest page", () => {
     });
     const html = preview({ palette: wheat, upload: "bar" });
 
-    expect(html).toContain("--color-cream:#F5DEB3");
+    expect(html).toContain("--color-paper:#F5DEB3");
     expect(html).toContain("card");
-    // The recesses the photos sit in are the theme's void, not a fixed grey.
-    expect(html).toContain("--color-hole:");
+    // The wells the photos sit in are the theme's dark, not a fixed grey.
+    expect(html).toContain("--color-well:");
   });
 
   it("puts nothing focusable inside the host's form", () => {

@@ -70,7 +70,7 @@ export function AccountMenu({
         title={displayName}
         className={cx(
           "block touch-manipulation rounded-full transition-transform duration-150",
-          "focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-pepper",
+          "focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink",
           open ? "translate-y-0" : "hover:-translate-y-0.5",
         )}
       >
@@ -99,7 +99,7 @@ export function AccountMenu({
                 {displayName}
               </p>
               {showEmail && (
-                <p className="mt-1 truncate font-mono text-micro lowercase tracking-[0.06em] text-rind">
+                <p className="mt-1 truncate font-mono text-micro lowercase tracking-[0.06em] text-mist">
                   {email}
                 </p>
               )}
@@ -144,7 +144,7 @@ function Face({
   return (
     <span
       className={cx(
-        "grid shrink-0 place-items-center overflow-hidden rounded-full bg-gouda",
+        "grid shrink-0 place-items-center overflow-hidden rounded-full bg-claret text-chalk",
         className,
       )}
       style={{ width: size, height: size }}
@@ -162,7 +162,7 @@ function Face({
       ) : (
         <span
           aria-hidden="true"
-          className="font-display font-extrabold leading-none tracking-[-0.02em] text-pepper"
+          className="font-display font-extrabold leading-none tracking-[-0.02em] text-ink"
           style={{ fontSize: size * 0.4 }}
         >
           {initials(name)}

@@ -86,7 +86,7 @@ export async function POST(
     if (!tier.customPage) {
       throw new ApiError(
         "forbidden",
-        "Your own cover image is on Slice and Wheel.",
+        "Your own cover image is on Roll and Reel.",
         { upgrade: true },
       );
     }

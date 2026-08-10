@@ -71,12 +71,12 @@ export function ArchivePanel({
     <Panel title="Download everything">
 
       {photoCount === 0 ? (
-        <p className="mt-3 text-[0.9375rem] text-crust">
+        <p className="mt-3 text-[0.9375rem] text-ash">
           Once photos start arriving you can take the lot as a single ZIP.
         </p>
       ) : (
         <>
-          <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
+          <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
             One ZIP with all {photoCount.toLocaleString("en-GB")} files, named by
             the time they were taken. Built once and kept, so downloading it
             again is instant.
@@ -117,7 +117,7 @@ export function ArchivePanel({
             </Button>
           </div>
 
-          <p className="mt-3 text-[0.8125rem] text-rind">
+          <p className="mt-3 text-[0.8125rem] text-mist">
             {buildsLeft > 0
               ? `${buildsLeft} of ${MAX_ARCHIVE_BUILDS} rebuilds left. Downloading the existing ZIP does not use one.`
               : "You have used all the rebuilds for this event. The last ZIP is still downloadable."}

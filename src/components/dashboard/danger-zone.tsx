@@ -32,7 +32,7 @@ export function DangerZone({ event }: { event: EventRow }) {
   }
 
   return (
-    <section className="inset-shadow-well rounded-[1.25rem] bg-rind/8 p-5 sm:p-6">
+    <section className="inset-shadow-well rounded-[1.25rem] bg-mist/8 p-5 sm:p-6">
       <h2 className="text-h3">Ending things</h2>
 
       {event.status === "expired" && (
@@ -55,7 +55,7 @@ export function DangerZone({ event }: { event: EventRow }) {
         </div>
       )}
 
-      <p className="mt-5 text-[0.9375rem] leading-relaxed text-crust">
+      <p className="mt-5 text-[0.9375rem] leading-relaxed text-ash">
         Deleting removes the event, every photo in it, and the share link
         immediately. There is no grace period on this one, because you asked for
         it directly. Type the event name to confirm.

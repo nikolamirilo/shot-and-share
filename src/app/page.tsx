@@ -13,7 +13,7 @@ import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Say Cheese - every photo from every guest, at any event",
+  title: "Shot & Share - every photo your guests take",
 };
 
 export default async function LandingPage() {

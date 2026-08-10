@@ -55,10 +55,10 @@ export function EventStatsPanel({
 
       <div className="mt-7">
         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
             Storage
           </span>
-          <span className="text-[0.8125rem] tabular-nums text-crust">
+          <span className="text-[0.8125rem] tabular-nums text-ash">
             {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
           </span>
         </div>
@@ -68,7 +68,7 @@ export function EventStatsPanel({
             tone={summary.percent >= 85 ? "warn" : "dark"}
           />
         </div>
-        <p className="mt-2 flex items-start gap-2 text-[0.8125rem] leading-snug text-crust">
+        <p className="mt-2 flex items-start gap-2 text-[0.8125rem] leading-snug text-ash">
           <Hole size={8} className="mt-1.5" />
           {event.keep_forever
             ? "Kept forever. This event is never deleted."

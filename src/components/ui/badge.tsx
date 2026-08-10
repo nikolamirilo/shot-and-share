@@ -7,14 +7,14 @@ export function Badge({
   tone = "dark",
 }: {
   children: ReactNode;
-  tone?: "dark" | "gouda" | "outline";
+  tone?: "dark" | "brand" | "outline";
 }) {
   /* All three are fills. `outline` keeps its name and its job - the quietest
      of the three - but earns it with a wash of ink rather than a stroke. */
   const tones = {
-    dark: "bg-pepper text-butter",
-    gouda: "bg-gouda text-pepper",
-    outline: "bg-pepper/8 text-pepper",
+    dark: "bg-ink text-linen",
+    brand: "bg-claret text-chalk",
+    outline: "bg-ink/8 text-ink",
   } as const;
   return (
     <span

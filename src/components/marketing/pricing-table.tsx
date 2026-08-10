@@ -61,15 +61,15 @@ export function PricingTable({
                 // The recommended plan is the one that comes furthest off the
                 // page: same trick as before, height instead of a heavier line.
                 highlighted
-                  ? "bg-gouda shadow-lg md:-mt-3 md:mb-3"
-                  : "bg-cream shadow-md",
+                  ? "bg-blush shadow-lg md:-mt-3 md:mb-3"
+                  : "bg-paper shadow-md",
               )}
             >
               <div className="flex items-baseline justify-between gap-2">
                 <h3 className="text-h3">{tier.name}</h3>
                 {highlighted && <Badge tone="dark">Most events</Badge>}
               </div>
-              <p className="mt-1 text-[0.9375rem] text-crust">{tier.meaning}</p>
+              <p className="mt-1 text-[0.9375rem] text-ash">{tier.meaning}</p>
 
               <p className="mt-5 flex items-baseline gap-2">
                 <span
@@ -79,7 +79,7 @@ export function PricingTable({
                   {tier.priceEur === 0 ? "Free" : `€${tier.priceEur}`}
                 </span>
                 {tier.priceEur > 0 && (
-                  <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+                  <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
                     once, per event
                   </span>
                 )}
@@ -109,15 +109,15 @@ export function PricingTable({
       {/* The add-on is the one thing here that is not a plan, and it used to
           say so with a dashed edge. It says it now by sitting *in* the page
           while the three plans float above it. */}
-      <div className="inset-shadow-well mt-4 rounded-[1.25rem] bg-pepper/5 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
+      <div className="inset-shadow-well mt-4 rounded-[1.25rem] bg-ink/5 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
         <div>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h3 className="text-h3">{KEEP_FOREVER.name}</h3>
-            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
               add-on
             </span>
           </div>
-          <p className="mt-1 max-w-lg text-[0.9375rem] text-crust">
+          <p className="mt-1 max-w-lg text-[0.9375rem] text-ash">
             {KEEP_FOREVER.meaning} Add it to any event and the photos stay
             permanently. Paid once, never again - not every year.
           </p>

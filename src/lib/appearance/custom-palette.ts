@@ -88,6 +88,10 @@ export function buildCustomPalette(input: CustomThemeInput): Palette {
     muted: mutedInk(bg, ink),
     deep: mix(ink, bg, 0.22),
     hole: darken(ink, 0.35),
+    /* Buttons are filled with the accent now, so the label on them cannot be
+       assumed: a host who picks near-black and a host who picks pale gold both
+       get whichever of their ink or its opposite actually reads. */
+    onAccent: readableInk(accent, ink),
   };
 }
 

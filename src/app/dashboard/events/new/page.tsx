@@ -17,7 +17,7 @@ export default function NewEventPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-5 sm:py-10">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-2 py-1 font-mono text-micro uppercase tracking-[0.16em] text-rind hover:underline"
+        className="inline-flex items-center gap-2 py-1 font-mono text-micro uppercase tracking-[0.16em] text-mist hover:underline"
       >
         <MdArrowBackIosNew aria-hidden className="shrink-0" /> All events
       </Link>
@@ -26,7 +26,7 @@ export default function NewEventPage() {
       <h1 className="mt-3 text-[2.25rem] sm:text-h1">
         What are we collecting photos from?
       </h1>
-      <p className="mt-3 max-w-xl text-body text-crust">
+      <p className="mt-3 max-w-xl text-body text-ash">
         Two fields. You get a link and a printable QR code straight after, and
         you can change any of this later.
       </p>
@@ -36,7 +36,7 @@ export default function NewEventPage() {
 
         <aside className="card h-fit p-5 sm:p-6">
           <h2 className="text-h3">Starts on {free.name}</h2>
-          <p className="mt-1 text-[0.9375rem] text-crust">{free.meaning}</p>
+          <p className="mt-1 text-[0.9375rem] text-ash">{free.meaning}</p>
           <ul className="mt-5 space-y-2.5">
             {[
               `${formatBytes(free.quotaBytes, 0)}, about ${approxPhotos(free.quotaBytes)} photos`,
@@ -51,7 +51,7 @@ export default function NewEventPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-5 text-[0.8125rem] leading-relaxed text-rind">
+          <p className="mt-5 text-[0.8125rem] leading-relaxed text-mist">
             Upgrade any time, including during the event. Buying a bigger plan
             raises the limit immediately and extends how long the photos are
             kept.

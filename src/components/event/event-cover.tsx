@@ -38,7 +38,7 @@ export function EventThemeRoot({
           ...(font ? fontToCssVars(font) : {}),
         } as React.CSSProperties
       }
-      className={cx("bg-butter font-sans text-pepper", className)}
+      className={cx("bg-linen font-sans text-ink", className)}
     >
       {children}
     </div>
@@ -140,7 +140,7 @@ function Title({
       {message && (
         <p
           className={cx(
-            "text-crust",
+            "text-ash",
             preview
               ? "mt-1.5 line-clamp-2 text-micro leading-snug"
               : "mt-3 max-w-xl text-body sm:mt-4 sm:text-lead",
@@ -381,7 +381,7 @@ function ClassicCover({
         >
           <p
             className={cx(
-              "text-crust",
+              "text-ash",
               preview
                 ? "line-clamp-2 text-micro leading-snug"
                 : "max-w-xl text-body sm:text-lead",
@@ -398,7 +398,7 @@ function ClassicCover({
 /** No photo. Large type on the theme colour, with the hole vocabulary. */
 function TypeCover({ name, date, message, preview }: CoverProps) {
   return (
-    <header className="relative z-10 bg-gouda shadow-md">
+    <header className="relative z-10 bg-blush shadow-md">
       <div
         className={cx(
           "mx-auto max-w-3xl",

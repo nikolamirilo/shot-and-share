@@ -11,8 +11,8 @@
  * event's.
  *
  * Each set also carries the three display settings the stylesheet cannot
- * assume. `font-stretch: 86%` is right for Bricolage, which has a width axis,
- * and meaningless for Playfair, which does not; -0.035em of tracking is right
+ * assume. `font-stretch: 82%` is right for Archivo, which has a width axis,
+ * and meaningless for Playfair, which does not; -0.046em of tracking is right
  * for a heavy grotesque and too tight for a serif. Shipping them with the set
  * is what keeps a headline from looking broken the moment the face changes.
  */
@@ -41,13 +41,13 @@ export interface FontSet {
 export const FONT_SETS: FontSet[] = [
   {
     id: "cheese",
-    name: "Say Cheese",
-    hint: "The house pairing. Heavy, slightly awkward, friendly underneath.",
-    display: '"Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif',
-    body: '"Figtree", ui-sans-serif, system-ui, sans-serif',
+    name: "Shot & Share",
+    hint: "The house pairing. Heavy and narrow over something that stays quiet.",
+    display: '"Archivo", ui-sans-serif, system-ui, sans-serif',
+    body: '"Instrument Sans", ui-sans-serif, system-ui, sans-serif',
     displayWeight: 800,
-    displayStretch: "86%",
-    displayTracking: "-0.035em",
+    displayStretch: "82%",
+    displayTracking: "-0.046em",
     families: [],
   },
   {
@@ -86,13 +86,13 @@ export const FONT_SETS: FontSet[] = [
   {
     id: "loud",
     name: "Loud",
-    hint: "One family, very heavy and a little wide. Reads from across a room.",
-    display: '"Archivo", ui-sans-serif, system-ui, sans-serif',
-    body: '"Archivo", ui-sans-serif, system-ui, sans-serif',
-    displayWeight: 900,
-    displayStretch: "112%",
-    displayTracking: "-0.04em",
-    families: ["Archivo:wdth,wght@62..125,100..900"],
+    hint: "One condensed face, very heavy. Reads from across a room.",
+    display: '"Anton", ui-sans-serif, system-ui, sans-serif',
+    body: '"Inter", ui-sans-serif, system-ui, sans-serif',
+    displayWeight: 400,
+    displayStretch: "100%",
+    displayTracking: "-0.02em",
+    families: ["Anton", "Inter:wght@100..900"],
   },
 ];
 

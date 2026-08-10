@@ -1,8 +1,9 @@
 /**
  * Plans.
  *
- * Names come from the cheese world and encode the size of the thing you are
- * buying, which is more useful than Basic / Pro / Premium.
+ * Names come from film and encode the size of the thing you are buying, which
+ * is more useful than Basic / Pro / Premium. A frame is one picture, a roll is
+ * an evening, a reel is the whole production.
  *
  * The unit is gigabytes, not photo counts. A count limit punishes people with
  * modern phones and rewards nobody; gigabytes are what actually cost money and
@@ -43,8 +44,8 @@ export interface Tier {
 export const TIERS: Record<TierId, Tier> = {
   free: {
     id: "free",
-    name: "Taste",
-    meaning: "Free. A sample.",
+    name: "Frame",
+    meaning: "Free. One look.",
     priceEur: 0,
     quotaBytes: 1 * GB,
     retentionDays: 30,
@@ -60,7 +61,7 @@ export const TIERS: Record<TierId, Tier> = {
   },
   event: {
     id: "event",
-    name: "Slice",
+    name: "Roll",
     meaning: "One event.",
     priceEur: 19,
     quotaBytes: 10 * GB,
@@ -77,7 +78,7 @@ export const TIERS: Record<TierId, Tier> = {
   },
   wedding: {
     id: "wedding",
-    name: "Wheel",
+    name: "Reel",
     meaning: "The whole thing.",
     priceEur: 39,
     quotaBytes: 30 * GB,
@@ -103,8 +104,8 @@ export const TIERS: Record<TierId, Tier> = {
  */
 export const KEEP_FOREVER = {
   id: "keep_forever" as const,
-  name: "The Cellar",
-  meaning: "Where cheese is aged, so where photos are kept for good.",
+  name: "The Archive",
+  meaning: "Where the negatives go, so where photos are kept for good.",
   priceEur: 29,
 };
 

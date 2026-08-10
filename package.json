@@ -1,8 +1,8 @@
 {
-  "name": "say-cheese",
+  "name": "shot-and-share",
   "version": "0.1.0",
   "private": true,
-  "description": "Every photo from every guest, at any event.",
+  "description": "Every photo your guests take.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

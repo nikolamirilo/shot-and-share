@@ -16,7 +16,7 @@ export function ForgotForm() {
     return (
       <Card pad="roomy">
         <h2 className="text-h3">Check your inbox</h2>
-        <p className="mt-3 text-[0.9375rem] text-crust">{state.notice}</p>
+        <p className="mt-3 text-[0.9375rem] text-ash">{state.notice}</p>
       </Card>
     );
   }

@@ -79,12 +79,12 @@ export function HostGallery({
           <Hole size={14} />
         </div>
         <p className="mt-5 text-lead">No photos yet.</p>
-        <p className="mx-auto mt-2 max-w-md text-[0.9375rem] text-crust">
+        <p className="mx-auto mt-2 max-w-md text-[0.9375rem] text-ash">
           Send the link to one person and ask them to upload something. It is the
           fastest way to see the whole thing work before the day itself.
         </p>
         {shareLink && (
-          <p className="mt-4 break-all font-mono text-[0.8125rem] text-rind">
+          <p className="mt-4 break-all font-mono text-[0.8125rem] text-mist">
             {shareLink}
           </p>
         )}
@@ -96,7 +96,7 @@ export function HostGallery({
     <div>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className="text-[0.9375rem] text-crust">
+          <p className="text-[0.9375rem] text-ash">
             {selected.size === 0
               ? "Tap a photo to select it."
               : `${selected.size} selected`}
@@ -154,7 +154,7 @@ export function HostGallery({
       />
 
       {layout !== eventLayout && (
-        <p className="mt-3 text-[0.8125rem] text-rind">
+        <p className="mt-3 text-[0.8125rem] text-mist">
           You are viewing this your way. Guests always see the layout set under
           Event page.
         </p>

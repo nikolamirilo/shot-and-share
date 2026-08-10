@@ -17,7 +17,7 @@ export const OPTION_GRID = "grid gap-2.5 @min-[26rem]:grid-cols-2";
 // so the two shadows are deliberately far apart rather than one step.
 export const OPTION_CARD =
   "flex min-h-24 flex-col justify-center rounded-xl p-3.5 text-left transition-shadow";
-export const OPTION_SELECTED = "bg-gouda shadow-lg";
+export const OPTION_SELECTED = "bg-claret text-chalk shadow-lg";
 
 export function Group({
   label,
@@ -30,10 +30,10 @@ export function Group({
 }) {
   return (
     <div>
-      <p className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+      <p className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
         {label}
       </p>
-      {hint && <p className="mt-1 text-[0.8125rem] text-crust">{hint}</p>}
+      {hint && <p className="mt-1 text-[0.8125rem] text-ash">{hint}</p>}
       <div className="mt-2.5">{children}</div>
     </div>
   );
@@ -58,7 +58,7 @@ export function Swatch({
       onClick={onClick}
       title={title}
       aria-pressed={selected}
-      className={cx(OPTION_CARD, selected ? OPTION_SELECTED : "bg-butter shadow-sm")}
+      className={cx(OPTION_CARD, selected ? OPTION_SELECTED : "bg-linen shadow-sm")}
     >
       {/* Big enough to judge a colour by. At the old size a theme was three
           dots about as wide as the full stop ending this sentence, and the
@@ -93,10 +93,15 @@ export function Choice({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={cx(OPTION_CARD, selected ? OPTION_SELECTED : "bg-butter shadow-sm")}
+      className={cx(OPTION_CARD, selected ? OPTION_SELECTED : "bg-linen shadow-sm")}
     >
       <span className="block font-bold leading-snug">{name}</span>
-      <span className="mt-0.5 block text-[0.8125rem] leading-snug text-crust">
+      <span
+        className={cx(
+          "mt-0.5 block text-[0.8125rem] leading-snug",
+          selected ? "text-chalk/75" : "text-ash",
+        )}
+      >
         {hint}
       </span>
     </button>

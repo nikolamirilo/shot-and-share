@@ -5,7 +5,7 @@ import { cx } from "@/lib/cx";
 
 /**
  * Buttons sit above the page on a soft shadow and lift further on hover, which
- * keeps the physical feel of the slab without outlining anything.
+ * keeps the physical feel of the interface without outlining anything.
  *
  * Every variant is a filled shape. That is what carries a button now that there
  * is no stroke around it: Secondary is Cream on a Butter page and reads as a
@@ -26,19 +26,20 @@ type Size = "sm" | "md" | "lg";
  * `min-h` is the tap target. Anything a thumb has to hit is at least 44px.
  */
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-xl text-center font-semibold leading-tight touch-manipulation transition-transform transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-2xl text-center font-semibold leading-tight touch-manipulation transition-transform transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
 
 const LIFT =
   "shadow-md hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: `bg-pepper text-butter ${LIFT}`,
-  secondary: `bg-cream text-pepper ${LIFT}`,
-  /* On a Pepper or a photographic background a shadow has nothing to fall on,
-     so this one is carried by the Gouda fill alone. */
-  onDark: "bg-gouda text-pepper hover:-translate-y-0.5",
+  primary: `bg-claret text-chalk ${LIFT}`,
+  secondary: `bg-paper text-ink ${LIFT}`,
+  /* On ink or on a photograph a shadow has nothing to fall on, so this one is
+     carried by the fill alone - and on those grounds the light shape is the
+     one that reads, not the wine one. */
+  onDark: "bg-chalk text-ink hover:-translate-y-0.5",
   ghost:
-    "text-pepper underline decoration-2 underline-offset-4 decoration-rind hover:decoration-pepper",
+    "text-ink underline decoration-2 underline-offset-4 decoration-claret hover:decoration-ink",
 };
 
 const SIZES: Record<Size, string> = {

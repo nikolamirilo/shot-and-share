@@ -99,7 +99,7 @@ export function GuestGallery({
   if (error && items.length === 0) {
     return (
       <section className="mt-10">
-        <p className="text-[0.9375rem] text-crust">{error}</p>
+        <p className="text-[0.9375rem] text-ash">{error}</p>
       </section>
     );
   }
@@ -109,21 +109,21 @@ export function GuestGallery({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-[1.625rem] sm:text-h2">Everyone&apos;s photos</h2>
         {items.length > 0 && (
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
             {items.length} so far
           </span>
         )}
       </div>
 
       {items.length === 0 && !loading ? (
-        <div className="inset-shadow-well mt-6 rounded-[1.25rem] bg-pepper/5 px-5 py-8 text-center sm:p-8">
+        <div className="inset-shadow-well mt-6 rounded-[1.25rem] bg-ink/5 px-5 py-8 text-center sm:p-8">
           <div className="mx-auto flex w-fit gap-2">
             <Hole size={16} />
             <Hole size={24} />
             <Hole size={12} />
           </div>
           <p className="mt-5 text-lead">Nothing here yet.</p>
-          <p className="mt-1 text-[0.9375rem] text-crust">
+          <p className="mt-1 text-[0.9375rem] text-ash">
             Be the first - yours will appear right here.
           </p>
         </div>

@@ -138,7 +138,7 @@ function DropPanel({
       </span>
       <span
         className={cx(
-          "mt-1 block text-crust",
+          "mt-1 block text-ash",
           preview ? "text-[0.625rem]" : "text-small",
         )}
       >
@@ -154,7 +154,7 @@ function DropPanel({
   // anyway.
   const shell = cx(
     "inset-shadow-well block w-full rounded-[1.25rem] text-center transition-colors",
-    over ? "bg-gouda-light" : "bg-butter",
+    over ? "bg-blush" : "bg-linen",
     preview ? "p-3" : "px-5 py-7 sm:p-8",
   );
 
@@ -320,8 +320,8 @@ function Action({
         className={cx(
           "inline-flex items-center justify-center rounded-xl px-3 text-label font-semibold",
           variant === "primary"
-            ? "bg-pepper text-butter shadow-md"
-            : "bg-cream text-pepper shadow-md",
+            ? "bg-ink text-linen shadow-md"
+            : "bg-paper text-ink shadow-md",
           className,
         )}
       >
@@ -355,7 +355,7 @@ function Hint({
   return (
     <p
       className={cx(
-        "text-crust",
+        "text-ash",
         preview ? "mt-2 text-[0.625rem] leading-snug" : "mt-3 text-small",
         className,
       )}
@@ -385,13 +385,13 @@ function NameField({
     return (
       <div className={className}>
         {!inline && (
-          <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-rind">
+          <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-mist">
             {label}
           </p>
         )}
         <div
           className={cx(
-            "inset-shadow-well rounded-lg bg-butter",
+            "inset-shadow-well rounded-lg bg-linen",
             inline ? "h-6" : "mt-1 h-6",
           )}
         />
@@ -404,7 +404,7 @@ function NameField({
       {!inline && (
         <label
           htmlFor="guest-name"
-          className="block font-mono text-micro uppercase tracking-[0.16em] text-rind"
+          className="block font-mono text-micro uppercase tracking-[0.16em] text-mist"
         >
           {label}
         </label>

@@ -1,9 +1,9 @@
 /**
  * The look of a guest's event page.
  *
- * Everything here is a paid feature - it is the "custom event page" the Slice
- * and Wheel plans already promise. A free event gets the product's own theme,
- * a fixed cover, a fixed gallery, and a small Say Cheese header and footer,
+ * Everything here is a paid feature - it is the "custom event page" the Roll
+ * and Reel plans already promise. A free event gets the product's own theme,
+ * a fixed cover, a fixed gallery, and a small Shot & Share header and footer,
  * which is what makes the free plan a genuinely useful product that also sells
  * the next one.
  *
@@ -26,8 +26,10 @@ export interface Palette {
   muted: string;
   /** Body copy that is not quite ink. */
   deep: string;
-  /** The inside of every punched circle. */
+  /** The inside of every well a photograph sits in. */
   hole: string;
+  /** Text that has to read on `accent`. Chosen, never assumed. */
+  onAccent: string;
 }
 
 export interface Theme {
@@ -46,26 +48,27 @@ export interface Theme {
  * a birthday is a lit cake, and both sit in a dark frame like a mistake. Light
  * pages also print, screenshot and paste into a group chat without surprises.
  *
- * The six are the palettes events are actually held in: the house yellow for
- * anything loud, ivory and gold, dusty rose, sage, dusty blue, and paper. A
+ * The six are the palettes events are actually held in: the house claret for
+ * anything at night, ivory and gold, dusty rose, sage, dusty blue, and paper. A
  * host who wants something else has the custom picker - which is held to the
  * same rule, see buildCustomPalette.
  */
 export const THEMES: Theme[] = [
   {
     id: "cheese",
-    name: "Say Cheese",
-    hint: "The house palette. Warm yellow and near-black - birthdays, parties, anything loud.",
+    name: "Shot & Share",
+    hint: "The house palette. Claret on warm white - weddings, parties, anything at night.",
     palette: {
-      bg: "#FFF6DC",
-      surface: "#FFFDF4",
-      accent: "#FFC02E",
-      accentSoft: "#FFD666",
-      accentDeep: "#F0A000",
-      ink: "#1F1607",
-      muted: "#B0670F",
-      deep: "#7A4409",
-      hole: "#4A3110",
+      bg: "#F6F2F3",
+      surface: "#FFFFFF",
+      accent: "#7A1230",
+      accentSoft: "#C25A72",
+      accentDeep: "#5C0B23",
+      ink: "#181214",
+      muted: "#776A6E",
+      deep: "#6C5F62",
+      hole: "#241A1D",
+      onAccent: "#FDF6F7",
     },
   },
   {
@@ -79,6 +82,7 @@ export const THEMES: Theme[] = [
       accentSoft: "#DFC694",
       accentDeep: "#9E7F41",
       ink: "#241F16",
+      onAccent: "#241F16",
       muted: "#7C6A46",
       deep: "#4C4231",
       hole: "#2C261A",
@@ -95,6 +99,7 @@ export const THEMES: Theme[] = [
       accentSoft: "#EFC9C3",
       accentDeep: "#B87A72",
       ink: "#2A1917",
+      onAccent: "#2A1917",
       muted: "#96605A",
       deep: "#66403B",
       hole: "#3B2320",
@@ -111,6 +116,7 @@ export const THEMES: Theme[] = [
       accentSoft: "#C8D9B5",
       accentDeep: "#7B9761",
       ink: "#1D2318",
+      onAccent: "#1D2318",
       muted: "#566A48",
       deep: "#3A4A31",
       hole: "#232C1D",
@@ -127,6 +133,7 @@ export const THEMES: Theme[] = [
       accentSoft: "#C6DAEA",
       accentDeep: "#6B90B1",
       ink: "#16202B",
+      onAccent: "#16202B",
       muted: "#4E6A80",
       deep: "#33475A",
       hole: "#1D2B37",
@@ -143,6 +150,7 @@ export const THEMES: Theme[] = [
       accentSoft: "#EDE9E1",
       accentDeep: "#B5AE9F",
       ink: "#16150F",
+      onAccent: "#16150F",
       muted: "#6A665B",
       deep: "#3A372E",
       hole: "#201E17",

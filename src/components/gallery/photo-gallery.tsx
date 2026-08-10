@@ -227,7 +227,7 @@ function Tile({
       ) : (
         <span
           className={cx(
-            "flex w-full items-center justify-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-gouda-light",
+            "flex w-full items-center justify-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-rose-soft",
             natural ? "aspect-[4/3]" : "h-full",
           )}
         >
@@ -236,7 +236,7 @@ function Tile({
       )}
 
       {item.kind === "video" && (
-        <span className="absolute bottom-1 left-1 rounded-full bg-pepper px-2 py-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-butter">
+        <span className="absolute bottom-1 left-1 rounded-full bg-ink px-2 py-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-linen">
           video
         </span>
       )}
@@ -244,9 +244,9 @@ function Tile({
       {selected && (
         <span
           aria-hidden="true"
-          className="absolute inset-0 grid place-items-center bg-pepper/45"
+          className="absolute inset-0 grid place-items-center bg-ink/45"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-gouda text-pepper shadow-md">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-claret text-chalk shadow-md">
             <svg viewBox="0 0 12 12" className="h-4 w-4" fill="none">
               <path
                 d="M2.5 6.4 4.9 8.8 9.5 3.4"

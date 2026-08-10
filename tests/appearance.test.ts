@@ -394,9 +394,12 @@ describe("css variables", () => {
     // This is what lets a theme re-skin every existing component without any
     // component knowing themes exist.
     const vars = paletteToCssVars(THEMES[0].palette);
-    expect(vars["--color-butter"]).toBe("#FFF6DC");
-    expect(vars["--color-pepper"]).toBe("#1F1607");
-    expect(vars["--color-gouda"]).toBe("#FFC02E");
-    expect(Object.keys(vars)).toHaveLength(9);
+    expect(vars["--color-linen"]).toBe("#F6F2F3");
+    expect(vars["--color-ink"]).toBe("#181214");
+    expect(vars["--color-claret"]).toBe("#7A1230");
+    // The label on a filled button is chosen rather than assumed, so the
+    // palette carries it and the variable is set alongside the accent.
+    expect(vars["--color-chalk"]).toBe("#FDF6F7");
+    expect(Object.keys(vars)).toHaveLength(11);
   });
 });
