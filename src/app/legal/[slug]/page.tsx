@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { JsonLd } from "@/components/seo/json-ld";
 import { Eyebrow } from "@/components/ui";
+import { breadcrumbSchema, graph } from "@/lib/seo";
 import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
 
 /**
@@ -84,7 +86,17 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  return { title: PAGES[slug]?.title ?? "Legal" };
+  const page = PAGES[slug];
+  if (!page) return { title: "Legal", robots: { index: false, follow: true } };
+
+  return {
+    title: page.title,
+    /* The intro sentence is the description. Legal pages are the one place
+       where a hand-written summary would say something different from the page
+       itself, and the page is the part that has to be true. */
+    description: page.intro,
+    alternates: { canonical: `/legal/${slug}` },
+  };
 }
 
 export default async function LegalPage({
@@ -98,6 +110,16 @@ export default async function LegalPage({
 
   return (
     <>
+      <JsonLd
+        id="ld-legal"
+        json={graph(
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: page.title, path: `/legal/${slug}` },
+          ]),
+        )}
+      />
+
       <SiteHeader />
       <main className="bg-linen">
         <div className="mx-auto max-w-2xl px-4 py-12 sm:px-5 sm:py-16">

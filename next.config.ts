@@ -49,6 +49,21 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   async headers() {
+    /* Applied to everything a crawler must never keep: the guest share links
+       and everything the API serves. A header rather than a meta tag, because
+       a meta tag only exists in HTML - it says nothing about the JPEG behind
+       /api/media, which is somebody's wedding photograph and is exactly the
+       thing that must not turn up in an image search.
+
+       These paths are deliberately left crawlable in robots.txt. A disallowed
+       path is never fetched, so this directive would never be read, and a URL
+       that got shared somewhere public could still be listed. Letting the
+       crawler in to be told "no" is the only way the "no" arrives. */
+    const noIndex = {
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow, noarchive, noimageindex",
+    };
+
     return [
       {
         source: "/:path*",
@@ -58,6 +73,8 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],
       },
+      { source: "/e/:path*", headers: [noIndex] },
+      { source: "/api/:path*", headers: [noIndex] },
     ];
   },
 };

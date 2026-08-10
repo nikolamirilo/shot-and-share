@@ -8,7 +8,10 @@ import { Eyebrow } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Set a new password" };
+export const metadata: Metadata = {
+  title: "Set a new password",
+  robots: { index: false, follow: false },
+};
 
 /**
  * Reached from a recovery link, which /auth/confirm has already turned into a

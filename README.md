@@ -381,6 +381,56 @@ build never depends on reaching an external host.
 
 ---
 
+## Search
+
+The marketing pages are the only part of this product a search engine should
+ever see. Everything else is either behind a sign-in or is somebody's private
+share link, and the whole approach follows from that.
+
+**Two tools, two jobs, and mixing them up is the classic mistake.** A path that
+must never be *indexed* has to stay crawlable, or the directive telling a
+crawler to stay away is never read and the URL can still be listed as a bare
+address. So `/e/` - the guest links - and `/login` are left open in robots.txt
+and carry `noindex` instead: `/e/` through an `X-Robots-Tag` header set in
+`next.config.ts`, which covers the JPEG behind `/api/media` as well as the HTML,
+because somebody's wedding photograph turning up in an image search is the
+failure that matters here. Paths that are merely private and redirect to
+`/login` anyway - `/dashboard`, `/account`, `/api`, `/auth` - are disallowed in
+robots.txt, to spend nobody's crawl budget on a redirect.
+
+**Anything a crawler reads is derived from what the page reads.** `lib/seo.ts`
+builds every canonical and every piece of structured data from the same
+constants the interface renders: the offers in the `SoftwareApplication` schema
+come from `tiers.ts`, and the `FAQPage` entries come from `lib/faqs.ts`, which is
+the array the FAQ section itself maps over. Structured data that disagrees with
+the page it describes is worse than none, and the only reliable way to prevent
+that is to make it impossible to change one without the other.
+
+| Route | Purpose |
+|---|---|
+| `/robots.txt` | `app/robots.ts`, rendered per request |
+| `/sitemap.xml` | `app/sitemap.ts`, the four public pages, per request |
+| `/manifest.webmanifest` | name, icon and colours for the browser chrome |
+| `/opengraph-image` | 1200x630 social card, drawn not screenshotted |
+| `/pricing/opengraph-image` | its own card, with the price read from `tiers.ts` |
+| `/apple-icon` | the mark rendered to PNG at build, since Safari refuses SVG |
+
+The social cards are drawn with `next/og` rather than fetching Archivo from
+Google at request time. It is the same rule the font loading follows: a build,
+and a card, must never depend on reaching an external host.
+
+**`NEXT_PUBLIC_SITE_URL` has to be set at build time.** Next evaluates page
+metadata when it builds, so canonicals and Open Graph URLs are frozen into the
+output. `robots.txt` and `sitemap.xml` are rendered per request and correct
+themselves; the pages do not. A build that did not know its own hostname ships
+canonicals pointing at `localhost:3000`.
+
+Search console ownership tokens are read from `GOOGLE_SITE_VERIFICATION` and
+`BING_SITE_VERIFICATION` and are absent by design in development and on
+previews.
+
+---
+
 ## What is deliberately not here
 
 Out of scope for version one, named so they do not creep in: face recognition,
