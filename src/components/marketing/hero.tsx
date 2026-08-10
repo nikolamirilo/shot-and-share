@@ -8,15 +8,17 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         <div className="rise">
           <Eyebrow>Photo collection for events</Eyebrow>
 
-          {/* Four words and a full stop. The old headline was a statistic
-              across two lines, and a visitor had to finish reading it before
-              they knew what was being sold. This one is the product, and the
-              sentence under it is the whole mechanism - if somebody reads
-              nothing else on the page they still know what this is. */}
-          <h1 className="mt-4 text-[3rem] leading-[0.9] xs:text-[3.5rem] sm:text-[5rem] lg:text-[6.25rem]">
+          {/* Four words and a full stop, with the photographs showing through
+              them. The old headline was a statistic across two lines and a
+              visitor had to finish reading it before they knew what was being
+              sold; this one is the product, and it is made of the thing the
+              product collects. The sentence under it is the whole mechanism -
+              if somebody reads nothing else on the page they still know what
+              this is. */}
+          <h1 className="photo-type mt-4 text-[3rem] leading-[0.9] xs:text-[3.5rem] sm:text-[5rem] lg:text-[6.25rem]">
             Every photo
             <br />
-            <span className="text-claret">your guests take.</span>
+            your guests take.
           </h1>
 
           <p className="mt-5 max-w-md text-body sm:mt-6 sm:text-lead">
