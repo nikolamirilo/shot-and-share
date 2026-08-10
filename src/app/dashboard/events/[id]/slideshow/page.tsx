@@ -30,14 +30,14 @@ export default async function SlideshowPage({
   if (!getTier(event.tier).slideshow) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center sm:px-5 sm:py-20">
-        <h1 className="text-[2.25rem] sm:text-h1">The slideshow is on Wheel</h1>
-        <p className="mt-4 text-body text-crust">
+        <h1 className="text-[2.25rem] sm:text-h1">The slideshow is on Reel</h1>
+        <p className="mt-4 text-body text-ash">
           It runs full screen on a laptop plugged into a projector and adds each
           photo as it arrives. No venue software, no special hardware.
         </p>
         <Link
           href={`/dashboard/events/${event.id}`}
-          className="mt-8 inline-block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind underline"
+          className="mt-8 inline-block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist underline"
         >
           ← Back to the event
         </Link>

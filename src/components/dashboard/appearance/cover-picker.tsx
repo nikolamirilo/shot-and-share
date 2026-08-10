@@ -276,7 +276,7 @@ export function CoverPicker({
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <span className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-butter shadow-md">
+        <span className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-linen shadow-md">
           {selectedUrl ? (
             <Image
               src={selectedUrl}
@@ -287,7 +287,7 @@ export function CoverPicker({
               className="h-full w-full object-cover"
             />
           ) : (
-            <span className="flex h-full w-full items-center justify-center font-mono text-micro uppercase text-rind">
+            <span className="flex h-full w-full items-center justify-center font-mono text-micro uppercase text-mist">
               none
             </span>
           )}
@@ -302,7 +302,7 @@ export function CoverPicker({
           >
             {selectedUrl ? "Change the cover photo" : "Choose a cover photo"}
           </Button>
-          <p className="mt-1.5 text-label text-crust">
+          <p className="mt-1.5 text-label text-ash">
             {photoCount === 0
               ? "No photos from guests yet - you can upload your own."
               : `${pluralise(photoCount, "photo")} from the event, or upload your own.`}
@@ -323,20 +323,20 @@ export function CoverPicker({
         <div
           /* Safe-area padding at the bottom: on a phone the home indicator sits
              exactly where the last row of tiles lands. */
-          className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-pepper/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-ink/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Choose a cover photo"
           onClick={() => setOpen(false)}
         >
           <div
-            className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-card bg-cream shadow-lg"
+            className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-card bg-paper shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative z-10 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 bg-butter p-4 shadow-sm sm:p-5">
+            <div className="relative z-10 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 bg-linen p-4 shadow-sm sm:p-5">
               <div className="min-w-0">
                 <h3 className="text-h3">Choose a cover photo</h3>
-                <p className="mt-1 text-label text-crust">
+                <p className="mt-1 text-label text-ash">
                   Tap one to use it. {formatBytes(remainingBytes)} of room left.
                 </p>
               </div>
@@ -362,11 +362,11 @@ export function CoverPicker({
             </div>
 
             {(upload || error) && (
-              <div className="relative z-10 bg-butter p-4 shadow-sm sm:p-5">
+              <div className="relative z-10 bg-linen p-4 shadow-sm sm:p-5">
                 {upload && (
                   <>
                     <ProgressBar percent={upload.percent} />
-                    <p className="mt-1.5 truncate text-label text-crust">
+                    <p className="mt-1.5 truncate text-label text-ash">
                       {upload.name}
                     </p>
                   </>
@@ -397,7 +397,7 @@ export function CoverPicker({
                   className={cx(
                     TILE,
                     "flex items-center justify-center font-mono text-micro uppercase",
-                    selectedId === null ? "bg-gouda" : "bg-butter",
+                    selectedId === null ? "bg-claret text-chalk" : "bg-linen",
                     selectedId === null && TILE_SELECTED,
                   )}
                 >
@@ -421,7 +421,7 @@ export function CoverPicker({
                       aria-label="Delete this cover image"
                       disabled={removing === item.id}
                       onClick={() => void removeUpload(item)}
-                      className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-cream text-label font-bold leading-none shadow-md disabled:opacity-45"
+                      className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-paper text-label font-bold leading-none shadow-md disabled:opacity-45"
                     >
                       ×
                     </button>
@@ -439,8 +439,8 @@ export function CoverPicker({
               </div>
             </div>
 
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-butter p-4 shadow-sm sm:p-5">
-              <span className="text-label text-crust">
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-linen p-4 shadow-sm sm:p-5">
+              <span className="text-label text-ash">
                 {photoCount === 0
                   ? "No photos from guests yet."
                   : `Showing ${photos.length} of ${pluralise(photoCount, "photo")} from the event.`}
@@ -472,7 +472,7 @@ export function CoverPicker({
  * host is scanning for is one picture among a hundred.
  */
 const TILE =
-  "relative aspect-square w-full overflow-hidden rounded-xl bg-butter shadow-sm transition-shadow";
+  "relative aspect-square w-full overflow-hidden rounded-xl bg-linen shadow-sm transition-shadow";
 const TILE_SELECTED = "shadow-lg";
 
 /**
@@ -487,7 +487,7 @@ function Chosen() {
   return (
     <span
       aria-hidden="true"
-      className="absolute bottom-1.5 right-1.5 grid h-6 w-6 place-items-center rounded-full bg-gouda text-pepper shadow-md"
+      className="absolute bottom-1.5 right-1.5 grid h-6 w-6 place-items-center rounded-full bg-claret text-chalk shadow-md"
     >
       <svg viewBox="0 0 12 12" className="h-3.5 w-3.5" fill="none">
         <path

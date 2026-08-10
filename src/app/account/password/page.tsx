@@ -24,11 +24,11 @@ export default async function PasswordPage() {
   return (
     <>
       <SiteHeader />
-      <main className="bg-butter">
+      <main className="bg-linen">
         <div className="mx-auto max-w-md px-4 py-11 sm:px-5 sm:py-16 lg:py-24">
           <Eyebrow>Hosts only</Eyebrow>
           <h1 className="mt-3 text-[2.25rem] sm:text-h1">Set a new password</h1>
-          <p className="mt-4 text-body text-crust">
+          <p className="mt-4 text-body text-ash">
             Signed in as {user.email}. This replaces any password on the account.
           </p>
 

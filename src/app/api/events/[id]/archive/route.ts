@@ -189,7 +189,7 @@ async function buildArchive(key: string, event: EventRow, media: MediaRow[]) {
   await uploading;
 }
 
-const README_TEXT = `Your photos from Say Cheese
+const README_TEXT = `Your photos from Shot & Share
 ============================
 
 Everything guests uploaded is in this folder, named by the time it was taken.

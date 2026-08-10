@@ -58,7 +58,7 @@ export function UpgradePanel({
   if (options.length === 0) {
     return (
       <Panel title="Nothing left to buy">
-        <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
+        <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
           This event is on {TIERS.wedding.name} with {KEEP_FOREVER.name} added.
           The photos are kept permanently and there is no subscription running
           in the background.
@@ -69,7 +69,7 @@ export function UpgradePanel({
 
   return (
     <Panel title="More room, or more time">
-      <p className="mt-2 text-[0.9375rem] text-crust">
+      <p className="mt-2 text-[0.9375rem] text-ash">
         One payment per event. Upgrading during the night works fine - the limit
         lifts the moment the payment clears.
       </p>
@@ -88,7 +88,7 @@ export function UpgradePanel({
                     {option.title}
                   </h3>
                 </div>
-                <p className="mt-1.5 text-[0.9375rem] leading-snug text-crust">
+                <p className="mt-1.5 text-[0.9375rem] leading-snug text-ash">
                   {option.body}
                 </p>
               </div>

@@ -191,10 +191,10 @@ export function Tabs({
           // A sunken track with the segments sitting in it. The control is one
           // object because of the trough they share, not because a line is
           // drawn around them.
-          segmented && "inset-shadow-well w-full gap-1 rounded-full bg-pepper/8 p-1",
+          segmented && "inset-shadow-well w-full gap-1 rounded-full bg-ink/8 p-1",
           rail && "lg:flex-col lg:gap-1.5 lg:overflow-x-visible lg:pb-0",
           sticky && "sticky top-(--tab-top) z-30",
-          sticky && "bg-butter/95 pt-2 shadow-sm backdrop-blur",
+          sticky && "bg-linen/95 pt-2 shadow-sm backdrop-blur",
           // Beside the panel there is nothing to divide it from, and the bar
           // of colour behind a column of buttons is just a second box.
           sticky &&
@@ -225,11 +225,11 @@ export function Tabs({
                   "rounded-xl px-3.5 font-mono text-micro uppercase tracking-[0.16em]",
                 !segmented &&
                   (selected
-                    ? "bg-gouda shadow-md"
-                    : "bg-cream text-crust shadow-sm"),
-                // Both states are raised - a flat pill on a Butter page would
+                    ? "bg-claret text-chalk shadow-md"
+                    : "bg-paper text-ash shadow-sm"),
+                // Both states are raised - a flat pill on a Linen page would
                 // not read as a control at all - but the open one is raised
-                // further and filled with Gouda, so the difference is height
+                // further and filled with Claret, so the difference is height
                 // and colour rather than an outline appearing.
                 //
                 // `flex-1` against `shrink-0` is what makes one control out of
@@ -245,8 +245,8 @@ export function Tabs({
                   "flex-1 rounded-full px-2 text-label font-semibold leading-tight transition-colors",
                 segmented &&
                   (selected
-                    ? "bg-pepper text-butter shadow-md"
-                    : "text-crust hover:bg-pepper/6"),
+                    ? "bg-ink text-linen shadow-md"
+                    : "text-ash hover:bg-ink/6"),
                 rail && "lg:w-full lg:px-4 lg:text-left",
               )}
             >

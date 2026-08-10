@@ -25,9 +25,9 @@ export function SaveBar({
     <div className="flex shrink-0 items-center gap-2.5">
       <span aria-live="polite" className="flex items-center">
         {changes > 0 ? (
-          <Badge tone="gouda">{pluralise(changes, "change")}</Badge>
+          <Badge tone="brand">{pluralise(changes, "change")}</Badge>
         ) : (
-          <span className="text-[0.8125rem] text-crust">
+          <span className="text-[0.8125rem] text-ash">
             {state.status === "saved"
               ? "Saved. Guests see this now."
               : "No changes"}

@@ -52,7 +52,7 @@ export function SharePanel({
 
       {revoked ? (
         <>
-          <p className="mt-3 text-[0.9375rem] leading-relaxed text-crust">
+          <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
             There is no active link for this event. Guests who scan an old code
             see a page telling them the link has closed.
           </p>
@@ -70,7 +70,7 @@ export function SharePanel({
                 of a stacked column it is a 340px square that pushes the link
                 and both buttons below the fold, and nobody scans a code off
                 the screen it was generated on. */}
-            <div className="mx-auto w-full max-w-[168px] rounded-xl bg-cream p-2 shadow-md sm:mx-0 sm:max-w-none">
+            <div className="mx-auto w-full max-w-[168px] rounded-xl bg-paper p-2 shadow-md sm:mx-0 sm:max-w-none">
               <img
                 src={`/api/events/${eventId}/qr?format=code`}
                 alt="QR code for this event"
@@ -100,7 +100,7 @@ export function SharePanel({
             </div>
           </div>
 
-          <p className="mt-5 text-[0.8125rem] leading-relaxed text-rind">
+          <p className="mt-5 text-[0.8125rem] leading-relaxed text-mist">
             Print the card and put one on every table. Guests point a camera at
             it - that is the whole instruction, and it is worth resisting the urge
             to add more.

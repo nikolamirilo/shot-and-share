@@ -30,7 +30,7 @@ export interface Appearance {
   cover: CoverVariant;
   upload: UploadVariant;
   layout: GalleryLayout;
-  /** Free events carry the Say Cheese header and footer. */
+  /** Free events carry the Shot & Share header and footer. */
   platformBranding: boolean;
   /** Whether the host may change any of the above. */
   customisable: boolean;

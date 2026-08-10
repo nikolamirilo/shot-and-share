@@ -85,7 +85,7 @@ export async function requireGuestEvent(token: string): Promise<GuestContext> {
 function downloadName(row: MediaRow): string {
   const ext = row.media_key.split(".").pop() ?? (row.kind === "video" ? "mp4" : "jpg");
   const stamp = row.created_at.slice(0, 19).replace(/[:T]/g, "-");
-  return `say-cheese-${stamp}.${ext}`;
+  return `shot-and-share-${stamp}.${ext}`;
 }
 
 /**

@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Say Cheese design tokens.
+   Shot & Share design tokens.
 
-   One warm family. Yellow leads, near-black carries the contrast. Ember exists
-   for the shutter light in the logo and appears nowhere in the interface.
+   One quiet family with one loud member. Claret is the only saturated colour in
+   the product and it is spent on the thing you are meant to press; everything
+   else is a warm near-white, a near-black, and two greys mixed towards the
+   wine so nothing on the page looks like it came from a different system.
+
+   The rule the palette is built on: the photographs are the colour. An
+   interface holding somebody's wedding should be the frame, not the picture.
    --------------------------------------------------------------------------- */
 
 @theme {
@@ -13,24 +18,43 @@
      tablet, and `sm` at 640px is far too late to make it. */
   --breakpoint-xs: 30rem; /* 480 */
 
-  --color-butter: #fff6dc;
-  --color-cream: #fffdf4;
-  --color-gouda: #ffc02e;
-  --color-gouda-light: #ffd666;
-  --color-gouda-deep: #f0a000;
-  --color-rind: #b0670f;
-  --color-crust: #7a4409;
-  --color-pepper: #1f1607;
-  --color-hole: #4a3110;
-  --color-ember: #e2542f;
+  /* Grounds. Linen is the page, Paper is anything sitting on it, Blush is the
+     step *down* - a selected option, a sunken well, a quiet band. */
+  --color-linen: #f6f2f3;
+  --color-paper: #ffffff;
+  --color-blush: #ede5e6;
 
-  /* Display: variable width and weight, slightly awkward, physically heavy.
-     Body: friendly geometric sans with more character than Inter.
+  /* Ink and its two quieter voices. Ash is secondary copy, Mist is the
+     machine-readable register: labels, captions, units. Mist is darker than it
+     looks like it wants to be: it sets 11px mono, and 11px mono that does not
+     clear 4.5:1 on the page is decoration pretending to be a label. */
+  --color-ink: #181214;
+  --color-ash: #6c5f62;
+  --color-mist: #776a6e;
+  --color-edge: #dcd1d3;
+
+  /* The one saturated colour, and what sits on it. */
+  --color-claret: #7a1230;
+  --color-claret-deep: #5c0b23;
+  --color-chalk: #fdf6f7;
+
+  /* Rose carries the brand onto dark grounds, where claret disappears; Pine is
+     the only other hue in the system and marks the healthy, finished, safe. */
+  --color-rose: #c25a72;
+  --color-rose-soft: #e6b9c4;
+  --color-pine: #2e4a45;
+
+  /* The inside of anything a photograph goes into. */
+  --color-well: #241a1d;
+
+  /* Display: a grotesque with a width axis, run heavy and narrow so a headline
+     can be enormous without needing the whole page.
+     Body: quiet, slightly warm, gets out of the way.
      Mono: labels the machine-readable parts - tokens, short links, prices per
      unit. It is not styling; scanning a QR code is a technical act. */
-  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Azeret Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Deliberate steps, not a gradient. Nothing sits between 24px and 31px. */
   --text-micro: 0.6875rem; /* 11 */
@@ -44,30 +68,30 @@
   --text-display: 4rem; /* 64 */
   --text-mega: 5.5rem; /* 88 */
 
-  --radius-card: 1.25rem;
+  --radius-card: 1rem; /* 16 */
 
   /* Depth is the only edge in the interface. Nothing is outlined, so a card is
      a card because it floats, an input is an input because it sinks.
 
-     The tint is mixed from --color-pepper rather than written as a fixed brown
+     The tint is mixed from --color-ink rather than written as a fixed grey
      because an event page overrides that variable with its host's own ink (see
      themeStyle in lib/appearance.ts). A var() inside a custom property is
      substituted where the property is *used*, not where it is declared, so a
      sage page casts a sage shadow without any of this being restated. */
   --shadow-sm:
-    0 1px 2px color-mix(in srgb, var(--color-pepper) 8%, transparent),
-    0 2px 6px color-mix(in srgb, var(--color-pepper) 7%, transparent);
+    0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent),
+    0 2px 6px color-mix(in srgb, var(--color-ink) 7%, transparent);
   --shadow-md:
-    0 1px 2px color-mix(in srgb, var(--color-pepper) 6%, transparent),
-    0 4px 12px color-mix(in srgb, var(--color-pepper) 10%, transparent);
+    0 1px 2px color-mix(in srgb, var(--color-ink) 6%, transparent),
+    0 4px 12px color-mix(in srgb, var(--color-ink) 10%, transparent);
   --shadow-lg:
-    0 2px 4px color-mix(in srgb, var(--color-pepper) 6%, transparent),
-    0 12px 28px color-mix(in srgb, var(--color-pepper) 12%, transparent);
+    0 2px 4px color-mix(in srgb, var(--color-ink) 6%, transparent),
+    0 12px 28px color-mix(in srgb, var(--color-ink) 12%, transparent);
 
   /* The counterpart. Anything the interface receives something into - a field,
      a drop zone, a progress track - is sunken rather than raised. */
   --inset-shadow-well:
-    inset 0 1px 3px color-mix(in srgb, var(--color-pepper) 12%, transparent);
+    inset 0 1px 3px color-mix(in srgb, var(--color-ink) 12%, transparent);
 }
 
 @layer base {
@@ -80,8 +104,8 @@
   }
 
   body {
-    background-color: var(--color-butter);
-    color: var(--color-pepper);
+    background-color: var(--color-linen);
+    color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: var(--text-body);
     line-height: 1.65;
@@ -98,7 +122,7 @@
   }
 
   /* Weight, width and tracking are variables because they belong to the face,
-     not to the heading: 86% width is right for Bricolage, which has a width
+     not to the heading: 82% width is right for Archivo, which has a width
      axis, and meaningless for a serif that does not. An event page overrides
      all three together when its host picks a different pairing. */
   h1,
@@ -107,18 +131,18 @@
     font-family: var(--font-display);
     font-weight: var(--font-display-weight, 800);
     line-height: 1.02;
-    letter-spacing: var(--font-display-tracking, -0.035em);
-    font-stretch: var(--font-display-stretch, 86%);
+    letter-spacing: var(--font-display-tracking, -0.046em);
+    font-stretch: var(--font-display-stretch, 82%);
     text-wrap: balance;
   }
 
   ::selection {
-    background-color: var(--color-gouda);
-    color: var(--color-pepper);
+    background-color: var(--color-rose-soft);
+    color: var(--color-ink);
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-pepper);
+    outline: 3px solid var(--color-ink);
     outline-offset: 3px;
   }
 
@@ -161,46 +185,47 @@
     font-size: var(--text-micro);
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--color-rind);
+    color: var(--color-mist);
   }
 
-  /* A punched hole. Not a circle with a fill: a void with depth.
-     Dark interior, inner shadow at the top, faint warm bounce at the bottom. */
+  /* A well. Not a shape with a fill: an opening with depth, and the only dark
+     surface in a light product. A photograph belongs in one, so it is lit the
+     way a print is - shadow along the top edge, a faint bounce off the bottom. */
   .hole,
   .recess {
-    background-color: var(--color-hole);
+    background-color: var(--color-well);
     box-shadow:
-      inset 0 6px 10px -2px rgba(0, 0, 0, 0.75),
-      inset 0 -4px 8px -3px rgba(255, 214, 102, 0.35);
+      inset 0 6px 10px -2px rgba(0, 0, 0, 0.55),
+      inset 0 -4px 8px -3px rgba(230, 185, 196, 0.22);
   }
 
   .hole {
     border-radius: 9999px;
   }
 
-  /* The same void with square shoulders. Photo tiles in the Grid, Masonry and
+  /* The same well with square shoulders. Photo tiles in the Grid, Masonry and
      Stack layouts sit in one of these: cropping a wedding photo into a circle
      is a decision the host should be making, not the stylesheet. */
   .recess {
-    border-radius: 0.875rem;
+    border-radius: 0.625rem;
   }
 
   .card {
-    background-color: var(--color-cream);
+    background-color: var(--color-paper);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-md);
   }
 
-  /* A note inside a card. Cream on cream is nothing without an outline, so the
-     surface steps down to the page colour and the shadow does the separating.
+  /* A note inside a card. White on white is nothing without an outline, so the
+     surface steps down a shade and the shadow does the separating.
      Errors and confirmations across the product go through this. */
   .note {
-    background-color: var(--color-butter);
+    background-color: var(--color-blush);
     border-radius: 0.75rem;
     box-shadow: var(--shadow-sm);
   }
 
-  /* The Holes gallery is drawn at fixed diameters, up to 188px, because the
+  /* The Circles gallery is drawn at fixed diameters, up to 188px, because the
      uneven sequence is what gives it its rhythm - randomising it makes photos
      jump when a new upload lands. On a 360px phone that largest hole is half
      the screen and two of them will not sit side by side, so the sequence is
@@ -275,7 +300,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 214, 102, 0.45),
+    rgba(237, 229, 230, 0.55),
     transparent
   );
   animation: shimmer 1.6s infinite;

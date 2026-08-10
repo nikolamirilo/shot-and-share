@@ -120,7 +120,7 @@ export default async function EventPage({
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-2 py-1 font-mono text-micro uppercase tracking-[0.16em] text-rind hover:underline"
+        className="inline-flex items-center gap-2 py-1 font-mono text-micro uppercase tracking-[0.16em] text-mist hover:underline"
       >
         <MdArrowBackIosNew aria-hidden className="shrink-0" /> All events
       </Link>
@@ -153,7 +153,7 @@ export default async function EventPage({
         <Alert tone="notice" className="mt-5 sm:mt-6">
           The storage window for this event has ended.{" "}
           <strong>Nothing has been deleted.</strong> Restore it under Settings,
-          or add The Cellar to keep the photos permanently.
+          or add The Archive to keep the photos permanently.
         </Alert>
       )}
 
@@ -216,7 +216,7 @@ export default async function EventPage({
               </h2>
             </div>
             {media.length < total && (
-              <p className="text-[0.8125rem] text-crust">
+              <p className="text-[0.8125rem] text-ash">
                 Showing the {media.length} most recent of {total}.
               </p>
             )}

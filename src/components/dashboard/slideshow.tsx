@@ -99,7 +99,7 @@ export function Slideshow({
   const current = items[index];
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-pepper text-butter">
+    <div className="fixed inset-0 flex flex-col bg-ink text-linen">
       <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
         <span className="inline-flex min-w-0 items-center gap-2.5">
           <LogoMark variant="reversed" className="h-7 w-auto" />
@@ -107,9 +107,9 @@ export function Slideshow({
             {eventName}
           </span>
         </span>
-        <span className="flex shrink-0 items-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-butter/60">
+        <span className="flex shrink-0 items-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-linen/60">
           <span
-            className={`inline-block h-2 w-2 rounded-full ${live ? "bg-gouda" : "bg-butter/30"}`}
+            className={`inline-block h-2 w-2 rounded-full ${live ? "bg-rose" : "bg-linen/30"}`}
           />
           {live ? "live" : "reconnecting"} · {items.length}
         </span>
@@ -163,7 +163,7 @@ export function Slideshow({
               <Hole size={38} />
               <Hole size={20} />
             </div>
-            <p className="text-lead text-butter/70">
+            <p className="text-lead text-linen/70">
               Waiting for the first photo.
             </p>
           </div>
@@ -171,7 +171,7 @@ export function Slideshow({
       </div>
 
       {current?.uploaderName && (
-        <p className="px-4 pb-5 text-center font-mono text-[0.8125rem] uppercase tracking-[0.16em] text-butter/60 sm:px-6">
+        <p className="px-4 pb-5 text-center font-mono text-[0.8125rem] uppercase tracking-[0.16em] text-linen/60 sm:px-6">
           {current.uploaderName}
         </p>
       )}

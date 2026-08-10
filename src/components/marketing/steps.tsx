@@ -20,9 +20,9 @@ export function Steps() {
   ];
 
   return (
-    <section id="how" className="bg-gouda">
+    <section id="how" className="bg-blush">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16 lg:py-24">
-        <Eyebrow className="text-crust">How it works</Eyebrow>
+        <Eyebrow className="text-ash">How it works</Eyebrow>
         <h2 className="mt-3 max-w-2xl text-[2.25rem] sm:text-[4rem]">
           Three things to do, and one of them is printing.
         </h2>
@@ -31,13 +31,13 @@ export function Steps() {
           {steps.map((step) => (
             <li
               key={step.n}
-              className="rounded-[1.25rem] bg-cream p-5 shadow-md sm:p-6"
+              className="rounded-[1.25rem] bg-paper p-5 shadow-md sm:p-6"
             >
-              <span className="hole inline-flex h-11 w-11 items-center justify-center font-mono text-[0.8125rem] tracking-[0.1em] text-gouda-light sm:h-12 sm:w-12">
+              <span className="hole inline-flex h-11 w-11 items-center justify-center font-mono text-[0.8125rem] tracking-[0.1em] text-rose-soft sm:h-12 sm:w-12">
                 {step.n}
               </span>
               <h3 className="mt-4 text-h3">{step.title}</h3>
-              <p className="mt-2 text-[0.9375rem] leading-relaxed text-crust">
+              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ash">
                 {step.body}
               </p>
             </li>

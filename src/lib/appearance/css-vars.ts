@@ -9,14 +9,16 @@ import type { Palette } from "@/lib/appearance/themes";
  */
 export function paletteToCssVars(palette: Palette): Record<string, string> {
   return {
-    "--color-butter": palette.bg,
-    "--color-cream": palette.surface,
-    "--color-gouda": palette.accent,
-    "--color-gouda-light": palette.accentSoft,
-    "--color-gouda-deep": palette.accentDeep,
-    "--color-pepper": palette.ink,
-    "--color-rind": palette.muted,
-    "--color-crust": palette.deep,
-    "--color-hole": palette.hole,
+    "--color-linen": palette.bg,
+    "--color-paper": palette.surface,
+    "--color-claret": palette.accent,
+    "--color-claret-deep": palette.accentDeep,
+    "--color-chalk": palette.onAccent,
+    "--color-rose": palette.accentSoft,
+    "--color-rose-soft": palette.accentSoft,
+    "--color-ink": palette.ink,
+    "--color-mist": palette.muted,
+    "--color-ash": palette.deep,
+    "--color-well": palette.hole,
   };
 }

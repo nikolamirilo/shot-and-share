@@ -26,8 +26,8 @@ export const GALLERY_LAYOUTS = [
   },
   {
     id: "holes",
-    name: "Holes",
-    hint: "Circles at varied sizes, punched through the page. Ours.",
+    name: "Circles",
+    hint: "Circles at varied sizes, cut out of the page. Ours.",
   },
   {
     id: "stack",
@@ -51,7 +51,7 @@ export function coerceLayout(value: unknown): GalleryLayout {
 }
 
 /**
- * The Holes layout cycles through these diameters rather than randomising, so
+ * The Circles layout cycles through these diameters rather than randomising, so
  * a photo does not change size when the gallery re-renders or a new upload
  * lands. The sequence is uneven on purpose - evenly varied reads as a mistake.
  */
@@ -97,7 +97,7 @@ export function neighbours(
   };
 }
 
-const STORAGE_KEY = "say-cheese:gallery-layout";
+const STORAGE_KEY = "shot-and-share:gallery-layout";
 
 /**
  * The host's own preference in their console, if they have expressed one.

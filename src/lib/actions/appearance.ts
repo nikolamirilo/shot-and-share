@@ -42,7 +42,7 @@ export async function updateAppearance(
   if (!getTier(event.tier).customPage) {
     return {
       error:
-        "Custom event pages are on Slice and Wheel. Your event still works exactly the same on the free plan.",
+        "Custom event pages are on Roll and Reel. Your event still works exactly the same on the free plan.",
     };
   }
 

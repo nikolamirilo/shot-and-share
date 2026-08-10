@@ -17,7 +17,7 @@ export function Stat({
 }) {
   return (
     <div>
-      <dt className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+      <dt className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
         {label}
       </dt>
       <dd
@@ -26,7 +26,7 @@ export function Stat({
       >
         {value}
       </dd>
-      {hint && <p className="mt-1 text-[0.8125rem] text-crust">{hint}</p>}
+      {hint && <p className="mt-1 text-[0.8125rem] text-ash">{hint}</p>}
     </div>
   );
 }

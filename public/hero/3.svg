@@ -1,18 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="400" height="400" role="presentation">
   <defs>
-    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFE9B8" />
-      <stop offset="1" stop-color="#A05A12" />
+    <linearGradient id="g3" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#2A1B22" />
+      <stop offset="1" stop-color="#5E2436" />
     </linearGradient>
-    <filter id="b3" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="7" />
+    <filter id="b3" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" />
     </filter>
+    <filter id="f3" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3.4" />
+    </filter>
+    <radialGradient id="v3" cx="50%" cy="42%" r="72%">
+      <stop offset="55%" stop-color="#000" stop-opacity="0" />
+      <stop offset="100%" stop-color="#000" stop-opacity="0.42" />
+    </radialGradient>
   </defs>
   <rect width="100" height="100" fill="url(#g3)" />
+  <rect y="66" width="100" height="34" fill="#1A1013" opacity="0.55" filter="url(#b3)" />
   <g filter="url(#b3)">
-    <circle cx="40" cy="44" r="34" fill="#FFC02E" opacity="0.75" />
-    <circle cx="76" cy="60" r="20" fill="#FFFDF4" opacity="0.65" />
-    <circle cx="24" cy="84" r="24" fill="#7A4409" opacity="0.5" />
-    <circle cx="64" cy="22" r="12" fill="#FFF6DC" opacity="0.8" />
+    <circle cx="35" cy="29" r="11" fill="#F3C48A" opacity="0.5" />
+    <circle cx="25" cy="12" r="11" fill="#F3C48A" opacity="0.67" />
+    <circle cx="31" cy="40" r="5" fill="#F3C48A" opacity="0.28" />
+    <circle cx="43" cy="13" r="6" fill="#F3C48A" opacity="0.54" />
+    <circle cx="91" cy="7" r="6" fill="#F3C48A" opacity="0.43" />
+    <circle cx="45" cy="26" r="15" fill="#F3C48A" opacity="0.57" />
+    <circle cx="36" cy="20" r="8" fill="#F3C48A" opacity="0.67" />
   </g>
+  <g filter="url(#f3)" fill="#1A1013" opacity="0.72">
+    <rect x="16" y="67" width="11" height="33" rx="6" />
+    <circle cx="22" cy="63" r="5" />
+    <rect x="34" y="75" width="8" height="25" rx="4" />
+    <circle cx="39" cy="72" r="4" />
+    <rect x="52" y="64" width="12" height="36" rx="6" />
+    <circle cx="58" cy="60" r="6" />
+    <rect x="69" y="73" width="9" height="27" rx="5" />
+    <circle cx="73" cy="70" r="4" />
+  </g>
+  <rect width="100" height="100" fill="url(#v3)" />
 </svg>

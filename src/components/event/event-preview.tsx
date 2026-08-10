@@ -125,7 +125,7 @@ export function EventPreview({
                     bigger ones. */}
                 <div className="relative mt-2 h-40 overflow-hidden @xs:h-48 @sm:h-52 @lg:h-60">
                   <PreviewGallery layout={layout} />
-                  <span className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-butter to-transparent" />
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-linen to-transparent" />
                 </div>
               </section>
             )}

@@ -160,7 +160,7 @@ export function AppearanceForm({
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
           <h2 className="text-h3">The event page</h2>
-          <p className="mt-2 max-w-prose text-[0.9375rem] text-crust">
+          <p className="mt-2 max-w-prose text-[0.9375rem] text-ash">
             A drawing of what guests see when they scan the code. Your cover
             photo is real; the gallery is left as empty frames, so what you are
             judging there is the shape of the page rather than the pictures.
@@ -277,7 +277,7 @@ export function AppearanceForm({
                       aria-pressed={settings.font === set.id}
                       className={cx(
                         OPTION_CARD,
-                        settings.font === set.id ? OPTION_SELECTED : "bg-butter shadow-sm",
+                        settings.font === set.id ? OPTION_SELECTED : "bg-linen shadow-sm",
                       )}
                     >
                       {/* The name is set in the face it names. Nothing else here
@@ -294,7 +294,7 @@ export function AppearanceForm({
                         {set.name}
                       </span>
                       <span
-                        className="mt-1.5 block text-[0.8125rem] leading-snug text-crust"
+                        className="mt-1.5 block text-[0.8125rem] leading-snug text-ash"
                         style={{ fontFamily: set.body }}
                       >
                         {set.hint}
@@ -325,7 +325,7 @@ export function AppearanceForm({
                 hint="Pick any photo from the event, or upload one of your own."
               >
                 {coverNeedsPhoto && (
-                  <p className="inset-shadow-well mb-2.5 rounded-xl bg-rind/8 p-3 text-label leading-snug text-crust">
+                  <p className="inset-shadow-well mb-2.5 rounded-xl bg-mist/8 p-3 text-label leading-snug text-ash">
                     No cover photo yet. Until you pick one, guests get the{" "}
                     <strong>Just type</strong> cover rather than the one above.
                   </p>

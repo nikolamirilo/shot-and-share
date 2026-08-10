@@ -8,7 +8,7 @@ export function Faq() {
     ],
     [
       "What happens when the storage window ends?",
-      "You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. Add The Cellar at any point and nothing is ever removed.",
+      "You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. Add The Archive at any point and nothing is ever removed.",
     ],
     [
       "Can I stop people uploading?",
@@ -16,7 +16,7 @@ export function Faq() {
     ],
     [
       "How many photos actually fit?",
-      "Slice holds about 2,500 and Wheel about 7,500, based on a 4 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.",
+      "Roll holds about 2,500 and Reel about 7,500, based on a 4 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.",
     ],
     [
       "Can guests see the photos everyone else uploaded?",
@@ -29,7 +29,7 @@ export function Faq() {
   ];
 
   return (
-    <section id="faq" className="bg-butter">
+    <section id="faq" className="bg-linen">
       <div className="mx-auto max-w-3xl px-4 pb-14 pt-12 sm:px-5 sm:pb-20 sm:pt-16">
         <Eyebrow>Questions</Eyebrow>
         <h2 className="mt-3 text-[2.25rem] sm:text-h1">Before you ask.</h2>
@@ -49,7 +49,7 @@ export function Faq() {
                 />
                 {q}
               </summary>
-              <p className="pb-4 pl-6 text-[0.9375rem] leading-relaxed text-crust">
+              <p className="pb-4 pl-6 text-[0.9375rem] leading-relaxed text-ash">
                 {a}
               </p>
             </details>

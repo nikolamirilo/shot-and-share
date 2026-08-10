@@ -14,7 +14,7 @@ export function LayoutSwitcher({
 }) {
   return (
     <div className="flex shrink-0 items-center gap-2">
-      <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+      <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
         {label}
       </span>
       <div
@@ -33,8 +33,8 @@ export function LayoutSwitcher({
             className={cx(
               "min-h-9 px-3 py-1.5 text-[0.8125rem] font-semibold leading-tight transition-colors",
               value === option.id
-                ? "bg-pepper text-butter"
-                : "bg-cream text-pepper hover:bg-gouda-light",
+                ? "bg-claret text-chalk"
+                : "bg-paper text-ink hover:bg-blush",
             )}
           >
             {option.name}

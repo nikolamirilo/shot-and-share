@@ -108,7 +108,7 @@ export const env = {
     return opt("RESEND_API_KEY");
   },
   get emailFrom() {
-    return opt("EMAIL_FROM") ?? "Say Cheese <office@reactify-solutions.com>";
+    return opt("EMAIL_FROM") ?? "Shot & Share <office@reactify-solutions.com>";
   },
 
   get cronSecret() {

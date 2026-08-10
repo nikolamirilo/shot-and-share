@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="400" height="400" role="presentation">
+  <defs>
+    <linearGradient id="g5" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#E9D8D6" />
+      <stop offset="1" stop-color="#7A1230" />
+    </linearGradient>
+    <filter id="b5" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" />
+    </filter>
+    <filter id="f5" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3.4" />
+    </filter>
+    <radialGradient id="v5" cx="50%" cy="42%" r="72%">
+      <stop offset="55%" stop-color="#000" stop-opacity="0" />
+      <stop offset="100%" stop-color="#000" stop-opacity="0.42" />
+    </radialGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#g5)" />
+  <rect y="66" width="100" height="34" fill="#241A1D" opacity="0.55" filter="url(#b5)" />
+  <g filter="url(#b5)">
+    <circle cx="24" cy="24" r="11" fill="#F6D3B4" opacity="0.58" />
+    <circle cx="78" cy="35" r="8" fill="#F6D3B4" opacity="0.62" />
+    <circle cx="84" cy="40" r="10" fill="#F6D3B4" opacity="0.43" />
+    <circle cx="41" cy="33" r="11" fill="#F6D3B4" opacity="0.4" />
+    <circle cx="58" cy="12" r="7" fill="#F6D3B4" opacity="0.31" />
+    <circle cx="16" cy="6" r="5" fill="#F6D3B4" opacity="0.3" />
+    <circle cx="31" cy="47" r="9" fill="#F6D3B4" opacity="0.65" />
+  </g>
+  <g filter="url(#f5)" fill="#241A1D" opacity="0.72">
+    <rect x="11" y="70" width="10" height="30" rx="5" />
+    <circle cx="16" cy="66" r="5" />
+    <rect x="34" y="64" width="12" height="36" rx="6" />
+    <circle cx="41" cy="60" r="6" />
+    <rect x="61" y="74" width="9" height="26" rx="4" />
+    <circle cx="66" cy="71" r="4" />
+  </g>
+  <rect width="100" height="100" fill="url(#v5)" />
+</svg>

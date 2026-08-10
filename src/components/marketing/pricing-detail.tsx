@@ -11,7 +11,7 @@ export function PricingDetail() {
       "You cannot judge this product on fifty photos. The thing you most want to test is what happens when a hundred arrive at once, so the free plan lets you do exactly that.",
     ],
     [
-      "Why Keep Forever is not a subscription",
+      "Why The Archive is not a subscription",
       "A wedding happens once. An annual charge for storage is the wrong shape for it: people forget, cards expire, and one day the photos are gone. €29, paid once, and they stay.",
     ],
     [
@@ -21,7 +21,7 @@ export function PricingDetail() {
   ];
 
   return (
-    <section className="bg-butter">
+    <section className="bg-linen">
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
         <div className="flex flex-wrap items-center gap-3">
           <Eyebrow>The reasoning</Eyebrow>
@@ -34,7 +34,7 @@ export function PricingDetail() {
               <h3 className="text-[1.3rem] font-extrabold tracking-[-0.03em]">
                 {title}
               </h3>
-              <p className="mt-2 text-[0.9375rem] leading-relaxed text-crust">
+              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ash">
                 {body}
               </p>
             </div>

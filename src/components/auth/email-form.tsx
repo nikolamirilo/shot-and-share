@@ -34,7 +34,7 @@ export function EmailForm({ next }: { next?: string }) {
     return (
       <div className="note p-4">
         <p className="text-small font-semibold">{signUpState.notice}</p>
-        <p className="mt-2 text-small text-crust">
+        <p className="mt-2 text-small text-ash">
           Nothing there after a minute? Check the spam folder.
         </p>
       </div>
@@ -105,7 +105,7 @@ export function EmailForm({ next }: { next?: string }) {
         <button
           type="button"
           onClick={() => setCreating((value) => !value)}
-          className="font-semibold underline decoration-2 decoration-rind underline-offset-4 hover:decoration-pepper"
+          className="font-semibold underline decoration-2 decoration-mist underline-offset-4 hover:decoration-ink"
         >
           {creating ? "I already have an account" : "Create an account"}
         </button>
@@ -113,7 +113,7 @@ export function EmailForm({ next }: { next?: string }) {
         {!creating && (
           <Link
             href="/login/forgot"
-            className="text-crust underline decoration-2 decoration-rind underline-offset-4 hover:decoration-pepper"
+            className="text-ash underline decoration-2 decoration-mist underline-offset-4 hover:decoration-ink"
           >
             Forgot password?
           </Link>

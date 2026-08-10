@@ -31,11 +31,11 @@ export function EventCard({
             <span className="block truncate text-[1.3rem] font-extrabold tracking-[-0.03em]">
               {event.name}
             </span>
-            <span className="mt-0.5 block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rind">
+            <span className="mt-0.5 block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
               {formatEventDate(event.event_date)}
             </span>
           </div>
-          <Badge tone={expired ? "outline" : "gouda"}>
+          <Badge tone={expired ? "outline" : "brand"}>
             {expired ? "Paused" : summary.tier.name}
           </Badge>
         </div>
@@ -54,11 +54,11 @@ export function EventCard({
             percent={summary.percent}
             tone={summary.percent >= 85 ? "warn" : "dark"}
           />
-          <p className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[0.8125rem] text-crust">
+          <p className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[0.8125rem] text-ash">
             <span>
               {formatBytes(summary.used)} of {formatBytes(summary.quota, 0)}
             </span>
-            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-rind">
+            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
               {event.keep_forever
                 ? "Kept forever"
                 : describeRetention(event.expires_at)}

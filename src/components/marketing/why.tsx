@@ -24,12 +24,12 @@ export function Why() {
     },
     {
       title: "Live slideshow on the night",
-      body: "Point a laptop at the projector and photos appear as guests upload them. On the Wheel plan, no venue software needed.",
+      body: "Point a laptop at the projector and photos appear as guests upload them. On the Reel plan, no venue software needed.",
     },
   ];
 
   return (
-    <section className="bg-butter">
+    <section className="bg-linen">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16 lg:py-24">
         <Eyebrow>Why this one</Eyebrow>
         <h2 className="mt-3 max-w-2xl text-[2.25rem] sm:text-h1">
@@ -45,7 +45,7 @@ export function Why() {
                   {item.title}
                 </h3>
               </div>
-              <p className="mt-2 text-[0.9375rem] leading-relaxed text-crust">
+              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ash">
                 {item.body}
               </p>
             </div>

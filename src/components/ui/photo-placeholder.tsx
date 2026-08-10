@@ -39,8 +39,8 @@ export function PhotoPlaceholder({
       {/* Percentage width rather than a fixed size: the same placeholder is a
           188px hole and a 40px one, and an icon that does not scale with its
           frame looks like a bug in one of them. */}
-      <PhotoIcon className="h-auto w-[34%] min-w-3.5 max-w-10 text-gouda opacity-75" />
-      {label && <span className="eyebrow text-gouda">{label}</span>}
+      <PhotoIcon className="h-auto w-[34%] min-w-3.5 max-w-10 text-rose-soft opacity-75" />
+      {label && <span className="eyebrow text-rose-soft">{label}</span>}
     </div>
   );
 }

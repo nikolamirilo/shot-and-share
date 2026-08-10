@@ -4,7 +4,7 @@ import { ButtonLink } from "@/components/ui";
 export function EventsEmptyState() {
   return (
     <div className="mt-8 max-w-xl">
-      <p className="text-lead text-crust">
+      <p className="text-lead text-ash">
         Make an event, print the code, and send the link to one friend. Watch a
         photo arrive before you decide anything else.
       </p>
