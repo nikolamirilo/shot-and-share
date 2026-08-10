@@ -6,7 +6,10 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Eyebrow } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Reset your password" };
+export const metadata: Metadata = {
+  title: "Reset your password",
+  robots: { index: false, follow: false },
+};
 
 export default function ForgotPage() {
   return (

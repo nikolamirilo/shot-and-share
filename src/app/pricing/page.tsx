@@ -6,13 +6,16 @@ import { PricingTable } from "@/components/marketing/pricing-table";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ButtonLink, Eyebrow } from "@/components/ui";
+import { JsonLd } from "@/components/seo/json-ld";
 import { hasSupabase } from "@/lib/env";
+import { breadcrumbSchema, graph, softwareApplicationSchema } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
     "One payment per event. No subscription. A free plan that holds about 250 photos, and a €29 add-on that keeps them permanently.",
+  alternates: { canonical: "/pricing" },
 };
 
 export default async function PricingPage() {
@@ -20,6 +23,17 @@ export default async function PricingPage() {
 
   return (
     <>
+      <JsonLd
+        id="ld-pricing"
+        json={graph(
+          softwareApplicationSchema(),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Pricing", path: "/pricing" },
+          ]),
+        )}
+      />
+
       <SiteHeader signedIn={Boolean(user)} />
 
       <main>

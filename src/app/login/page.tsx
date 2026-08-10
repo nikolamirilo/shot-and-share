@@ -9,7 +9,18 @@ import { loginErrorMessage } from "@/lib/auth";
 import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Sign in" };
+/**
+ * Crawlable but never indexed. A sign-in page has nothing a searcher wants -
+ * the answer to "shot and share login" is the home page - and it is left
+ * reachable rather than blocked in robots.txt precisely so this directive is
+ * the thing a crawler reads.
+ */
+export const metadata: Metadata = {
+  title: "Sign in",
+  description:
+    "Sign in to create an event and collect photos from your guests. Hosts only - guests never need an account.",
+  robots: { index: false, follow: true },
+};
 
 export default async function LoginPage({
   searchParams,

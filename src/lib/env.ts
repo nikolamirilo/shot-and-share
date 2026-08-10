@@ -40,6 +40,22 @@ export const env = {
     );
   },
 
+  /**
+   * Search console ownership tokens.
+   *
+   * Optional everywhere and absent by design in development and on previews:
+   * verifying a preview host tells a search console about a site nobody should
+   * be looking at.
+   */
+  seo: {
+    get googleVerification() {
+      return opt("GOOGLE_SITE_VERIFICATION");
+    },
+    get bingVerification() {
+      return opt("BING_SITE_VERIFICATION");
+    },
+  },
+
   supabase: {
     get url() {
       return opt("NEXT_PUBLIC_SUPABASE_URL");

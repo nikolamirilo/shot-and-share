@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MdArrowBackIosNew } from "react-icons/md";
 
@@ -12,7 +11,7 @@ import { SharePanel } from "@/components/dashboard/share-panel";
 import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
 import { EventStatsPanel } from "@/components/dashboard/event-stats-panel";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
-import { Alert, Badge, Eyebrow } from "@/components/ui";
+import { Alert, Badge, ButtonLink, Eyebrow } from "@/components/ui";
 import type { EventRow, MediaRow } from "@/lib/db/types";
 import { env } from "@/lib/env";
 import { getActiveShareToken, storageSummary, toMediaViews } from "@/lib/events";
@@ -118,12 +117,13 @@ export default async function EventPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-2 py-1 font-mono text-micro uppercase tracking-[0.16em] text-mist hover:underline"
-      >
+      {/* Below xs the header has no room for "My events", and the mark now
+          goes to the front of the site rather than to the dashboard, so this
+          is the way back out of an event on a phone. That makes it a control
+          rather than a caption, and it is sized like one. */}
+      <ButtonLink href="/dashboard" variant="secondary" size="sm">
         <MdArrowBackIosNew aria-hidden className="shrink-0" /> All events
-      </Link>
+      </ButtonLink>
 
       <header className="mt-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 sm:mt-6">
         <div className="min-w-0">
