@@ -32,21 +32,36 @@ export async function qrSvgPath(url: string): Promise<{
   return { path, size };
 }
 
-/** Plain black-on-white. Scanners are happiest and it survives a cheap printer. */
+/**
+ * The design tokens, written out. The card is generated on a server and printed
+ * on somebody else's printer, so it cannot read a stylesheet - these are the
+ * same values as `globals.css` and have to be changed in both places.
+ */
+const INK = "#181214";
+const PAPER = "#ffffff";
+const CHALK = "#fdf6f7";
+const ASH = "#6c5f62";
+const CLARET = "#7a1230";
+const CLARET_DEEP = "#5c0b23";
+const ROSE_SOFT = "#e6b9c4";
+
+const DISPLAY = "Archivo, ui-sans-serif, system-ui, sans-serif";
+const SANS = "Instrument Sans, ui-sans-serif, system-ui, sans-serif";
+const MONO = "Azeret Mono, ui-monospace, SFMono-Regular, monospace";
+
+/** Plain ink-on-white. Scanners are happiest and it survives a cheap printer. */
 export async function qrSvg(url: string, pixels = 512): Promise<string> {
   return QRCode.toString(url, {
     type: "svg",
     errorCorrectionLevel: "M",
     margin: 1,
     width: pixels,
-    color: { dark: "#1F1607", light: "#FFFDF4" },
+    color: { dark: INK, light: PAPER },
   });
 }
 
 export interface CardOptions {
   eventName: string;
-  /** Shown under the code so a guest can type it if the camera fails. */
-  shortUrl: string;
   /** Wedding tier: the printable card carries the event branding. */
   branded: boolean;
   headline?: string;
@@ -55,6 +70,15 @@ export interface CardOptions {
 /**
  * The print-ready card. A5 at 300dpi is 1748 x 2480; we draw in points and let
  * the SVG scale, since vector output means the printer decides the resolution.
+ *
+ * There is no link printed on it. A typed share token is a long string of
+ * random characters that nobody gets right from a table across a dark room, and
+ * the line asking them to try was the one thing on the card competing with the
+ * code. The code is the way in.
+ *
+ * The branded card is the palette's one loud move: claret ground, chalk type.
+ * The plain one is the same card on white. Either way the code itself sits on
+ * its own near-white plate, because a scanner wants contrast, not styling.
  */
 export async function qrCardSvg(
   url: string,
@@ -71,32 +95,36 @@ export async function qrCardSvg(
 
   const headline = escapeXml(opts.headline ?? "Share your photos");
   const name = escapeXml(opts.eventName);
-  const short = escapeXml(opts.shortUrl.replace(/^https?:\/\//, ""));
+
+  const ground = opts.branded ? CLARET : PAPER;
+  const frame = opts.branded ? CHALK : INK;
+  const heading = opts.branded ? CHALK : INK;
+  const quiet = opts.branded ? ROSE_SOFT : ASH;
+  const eyebrow = opts.branded ? ROSE_SOFT : CLARET;
 
   const holes = opts.branded
     ? `
-    <circle cx="76" cy="96" r="26" fill="#4A3110" />
-    <circle cx="524" cy="150" r="16" fill="#4A3110" />
-    <circle cx="60" cy="770" r="18" fill="#4A3110" />
-    <circle cx="536" cy="742" r="30" fill="#4A3110" />`
+    <circle cx="76" cy="96" r="26" fill="${CLARET_DEEP}" />
+    <circle cx="524" cy="150" r="16" fill="${CLARET_DEEP}" />
+    <circle cx="60" cy="770" r="18" fill="${CLARET_DEEP}" />
+    <circle cx="536" cy="742" r="30" fill="${CLARET_DEEP}" />`
     : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Scan to share your photos">
-  <rect width="${W}" height="${H}" fill="${opts.branded ? "#FFC02E" : "#FFFDF4"}" />
-  <rect x="18" y="18" width="${W - 36}" height="${H - 36}" fill="none" stroke="#1F1607" stroke-width="4" rx="28" />
+  <rect width="${W}" height="${H}" fill="${ground}" />
+  <rect x="18" y="18" width="${W - 36}" height="${H - 36}" fill="none" stroke="${frame}" stroke-width="4" rx="28" />
   ${holes}
-  <text x="${W / 2}" y="150" text-anchor="middle" font-family="DM Mono, ui-monospace, monospace" font-size="18" letter-spacing="3.2" fill="#B0670F">SAY CHEESE</text>
-  <text x="${W / 2}" y="216" text-anchor="middle" font-family="Bricolage Grotesque, Georgia, serif" font-size="46" font-weight="800" fill="#1F1607">${headline}</text>
-  <text x="${W / 2}" y="258" text-anchor="middle" font-family="Figtree, Helvetica, sans-serif" font-size="22" fill="#7A4409">${name}</text>
+  <text x="${W / 2}" y="150" text-anchor="middle" font-family="${MONO}" font-size="18" letter-spacing="3.2" fill="${eyebrow}">SAY CHEESE</text>
+  <text x="${W / 2}" y="216" text-anchor="middle" font-family="${DISPLAY}" font-size="46" font-weight="800" fill="${heading}">${headline}</text>
+  <text x="${W / 2}" y="258" text-anchor="middle" font-family="${SANS}" font-size="22" fill="${quiet}">${name}</text>
 
-  <rect x="${qrX - 20}" y="${qrY - 20}" width="${qrBox + 40}" height="${qrBox + 40}" fill="#FFFDF4" stroke="#1F1607" stroke-width="4" rx="20" />
+  <rect x="${qrX - 20}" y="${qrY - 20}" width="${qrBox + 40}" height="${qrBox + 40}" fill="${CHALK}" stroke="${frame}" stroke-width="4" rx="20" />
   <g transform="translate(${qrX} ${qrY}) scale(${scale})" shape-rendering="crispEdges">
-    <path d="${path}" stroke="#1F1607" stroke-width="1" fill="none" />
+    <path d="${path}" stroke="${INK}" stroke-width="1" fill="none" />
   </g>
 
-  <text x="${W / 2}" y="${qrY + qrBox + 92}" text-anchor="middle" font-family="Figtree, Helvetica, sans-serif" font-size="24" font-weight="600" fill="#1F1607">Point your camera at the code</text>
-  <text x="${W / 2}" y="${qrY + qrBox + 130}" text-anchor="middle" font-family="DM Mono, ui-monospace, monospace" font-size="19" letter-spacing="1.2" fill="#7A4409">${short}</text>
-  <text x="${W / 2}" y="${H - 48}" text-anchor="middle" font-family="Figtree, Helvetica, sans-serif" font-size="17" fill="#B0670F">No app. No account. Just photos.</text>
+  <text x="${W / 2}" y="${qrY + qrBox + 100}" text-anchor="middle" font-family="${SANS}" font-size="24" font-weight="600" fill="${heading}">Point your camera at the code</text>
+  <text x="${W / 2}" y="${H - 48}" text-anchor="middle" font-family="${SANS}" font-size="17" fill="${quiet}">No app. No account. Just photos.</text>
 </svg>`;
 }
 

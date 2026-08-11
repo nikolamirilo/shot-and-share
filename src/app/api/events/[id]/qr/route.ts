@@ -43,7 +43,6 @@ export async function GET(
         ? await qrSvg(url, 1024)
         : await qrCardSvg(url, {
             eventName: event.name,
-            shortUrl: url,
             branded: tier.brandedQr,
           });
 
