@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { MdArrowBackIosNew } from "react-icons/md";
+import {
+  MdArrowBackIosNew,
+  MdOutlineBarChart,
+  MdOutlinePalette,
+  MdOutlinePhotoLibrary,
+  MdOutlineQrCode2,
+  MdOutlineSettings,
+  MdOutlineWorkspacePremium,
+} from "react-icons/md";
 
 import { AppearanceForm } from "@/components/dashboard/appearance/appearance-form";
 import { ArchivePanel } from "@/components/dashboard/archive-panel";
@@ -35,12 +43,32 @@ export const dynamic = "force-dynamic";
  * on a laptop - see `Tabs`.
  */
 const TABS: TabItem[] = [
-  { id: "share", label: "Share" },
-  { id: "analytics", label: "Analytics" },
-  { id: "upgrade", label: "Plan" },
-  { id: "photos", label: "Photos" },
-  { id: "page", label: "Event page" },
-  { id: "settings", label: "Settings" },
+  { id: "share", label: "Share", short: "Share", icon: <MdOutlineQrCode2 /> },
+  {
+    id: "analytics",
+    label: "Analytics",
+    short: "Stats",
+    icon: <MdOutlineBarChart />,
+  },
+  {
+    id: "upgrade",
+    label: "Plan",
+    short: "Plan",
+    icon: <MdOutlineWorkspacePremium />,
+  },
+  {
+    id: "photos",
+    label: "Photos",
+    short: "Photos",
+    icon: <MdOutlinePhotoLibrary />,
+  },
+  { id: "page", label: "Event page", short: "Page", icon: <MdOutlinePalette /> },
+  {
+    id: "settings",
+    label: "Settings",
+    short: "Setup",
+    icon: <MdOutlineSettings />,
+  },
 ];
 
 export async function generateMetadata({
@@ -118,7 +146,10 @@ export default async function EventPage({
   const link = active ? shareUrl(env.siteUrl, active.token) : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5 sm:py-10">
+    /* The bottom padding is the bar's own height plus room to breathe. Without
+       it the last thing on every panel sits underneath the navigation, which is
+       the one bug a pinned bar always ships with. */
+    <div className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-5 sm:py-10 sm:pb-10">
       {/* Below xs the header has no room for "My events", and the mark now
           goes to the front of the site rather than to the dashboard, so this
           is the way back out of an event on a phone. That makes it a control
@@ -163,12 +194,13 @@ export default async function EventPage({
         items={TABS}
         label="Event sections"
         desktop="rail"
+        mobile="bar"
         sticky
         className="mt-6 sm:mt-7"
-        /* The strip runs to both edges of a phone, where it is a bar pinned
-           across the screen. The rail is a column inside the page and stops
-           where the page does. */
-        tablistClassName="-mx-4 px-4 sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0"
+        /* Below `sm` this is pinned across the bottom of the screen and needs
+           no margin of its own. From `sm` it is a strip that runs to both edges
+           of the page, and at `lg` a rail that stops where the page does. */
+        tablistClassName="sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0"
       >
         {/* The code and the ZIP are the two ends of the same errand - hand the
             link out, take everything home afterwards - so they stack in one

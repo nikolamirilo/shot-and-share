@@ -40,6 +40,14 @@ import { cx } from "@/components/ui";
 export interface TabItem {
   id: string;
   label: string;
+  /**
+   * The two fields the bottom bar needs, and nothing else uses. Six labels
+   * share the width of a phone there, which is about ten characters each -
+   * "Event page" and "Analytics" do not survive that, so they get a shorter
+   * name and an icon to carry the meaning the letters gave up.
+   */
+  short?: string;
+  icon?: ReactNode;
 }
 
 interface TabsContextValue {
@@ -54,6 +62,17 @@ export function Tabs({
   label,
   idPrefix,
   desktop = "strip",
+  /**
+   * What the buttons become on a phone. A `strip` scrolls sideways, which is
+   * fine for three or four of them and stops being fine at six: the ones past
+   * the edge are not hard to reach, they are unknown, because the scrollbar is
+   * hidden and nothing marks where the row continues.
+   *
+   * A `bar` is the same buttons pinned to the bottom of the screen, all of them
+   * at once, in the half of a phone a thumb can actually reach. It is one row
+   * of six rather than a row of six hundred pixels.
+   */
+  mobile = "strip",
   variant = "pill",
   sticky = false,
   /**
@@ -70,6 +89,7 @@ export function Tabs({
   label: string;
   idPrefix?: string;
   desktop?: "strip" | "rail";
+  mobile?: "strip" | "bar";
   variant?: "pill" | "segmented";
   sticky?: boolean;
   stickyOffset?: number;
@@ -79,6 +99,14 @@ export function Tabs({
 }) {
   const rail = desktop === "rail";
   const segmented = variant === "segmented";
+  /**
+   * One element, two shapes. Rendering a bar *and* a strip would mean two
+   * tablists over one set of panels - two elements carrying `id="share-tab"`,
+   * and every `aria-labelledby` on the page pointing at whichever the browser
+   * found first. So the bar is what this row is below `sm`, and the strip is
+   * what it becomes above it, which is also where six pills start fitting.
+   */
+  const bar = mobile === "bar";
   const [active, setActive] = useState(items[0]?.id ?? "");
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
@@ -192,9 +220,21 @@ export function Tabs({
           // object because of the trough they share, not because a line is
           // drawn around them.
           segmented && "inset-shadow-well w-full gap-1 rounded-full bg-ink/8 p-1",
+          // Pinned across the bottom of a phone, one equal column per tab, and
+          // back to being an ordinary row from `sm` up. `pb` clears the home
+          // indicator on the phones that have one and is a normal 0.4rem on the
+          // ones that do not.
+          bar &&
+            "fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-0 overflow-visible border-t border-edge bg-paper/95 px-1 pt-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur",
+          bar &&
+            "sm:static sm:z-auto sm:flex sm:gap-2 sm:overflow-x-auto sm:border-0 sm:bg-transparent sm:px-0 sm:pt-0 sm:pb-2 sm:shadow-none sm:backdrop-blur-none",
           rail && "lg:flex-col lg:gap-1.5 lg:overflow-x-visible lg:pb-0",
-          sticky && "sticky top-(--tab-top) z-30",
-          sticky && "bg-linen/95 pt-2 shadow-sm backdrop-blur",
+          sticky && !bar && "sticky top-(--tab-top) z-30",
+          sticky && !bar && "bg-linen/95 pt-2 shadow-sm backdrop-blur",
+          // A bar is already pinned, so it takes the sticky treatment only once
+          // it has stopped being one.
+          sticky && bar && "sm:sticky sm:top-(--tab-top) sm:z-30",
+          sticky && bar && "sm:bg-linen/95 sm:pt-2 sm:shadow-sm sm:backdrop-blur",
           // Beside the panel there is nothing to divide it from, and the bar
           // of colour behind a column of buttons is just a second box.
           sticky &&
@@ -221,9 +261,28 @@ export function Tabs({
               onKeyDown={(event) => onKeyDown(event, index)}
               className={cx(
                 "min-h-11 shrink-0 touch-manipulation whitespace-nowrap",
+                // In the bar the button is a column of icon over label with no
+                // shape of its own: six raised pills across a phone would be a
+                // wall, and the row already has an edge of its own to sit on.
+                // Colour alone carries which one is open, which is why the icon
+                // is there - it is the difference between two claret words and
+                // one claret thing.
+                bar &&
+                  "flex flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 transition-colors",
+                bar &&
+                  (selected
+                    ? "bg-transparent text-claret shadow-none"
+                    : "bg-transparent text-mist shadow-none"),
+                bar &&
+                  "sm:flex-row sm:gap-2 sm:rounded-xl sm:px-3.5 sm:py-0 sm:transition-none",
+                bar &&
+                  (selected
+                    ? "sm:bg-claret sm:text-chalk sm:shadow-md"
+                    : "sm:bg-paper sm:text-ash sm:shadow-sm"),
                 !segmented &&
                   "rounded-xl px-3.5 font-mono text-micro uppercase tracking-[0.16em]",
                 !segmented &&
+                  !bar &&
                   (selected
                     ? "bg-claret text-chalk shadow-md"
                     : "bg-paper text-ash shadow-sm"),
@@ -250,7 +309,22 @@ export function Tabs({
                 rail && "lg:w-full lg:px-4 lg:text-left",
               )}
             >
-              {item.label}
+              {bar && item.icon && (
+                <span aria-hidden className="text-[1.3125rem] sm:hidden">
+                  {item.icon}
+                </span>
+              )}
+              {/* The short name is what the bar has room for; the full one is
+                  the accessible name at every width, so a screen reader hears
+                  "Event page" rather than "Page" whatever the screen is. */}
+              {bar && (
+                <span aria-hidden className="tracking-[0.04em] sm:hidden">
+                  {item.short ?? item.label}
+                </span>
+              )}
+              <span className={cx(bar && "sr-only sm:not-sr-only")}>
+                {item.label}
+              </span>
             </button>
           );
         })}
