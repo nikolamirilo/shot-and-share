@@ -3,21 +3,62 @@ import { inflateSync } from "zlib";
 import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
-import { qrCardPdf, qrSvg } from "@/lib/qr";
+import { THEMES, findTheme } from "@/lib/appearance/themes";
+import { contrastRatio, parseHex } from "@/lib/color";
+import { cardColours, qrCardPdf, qrSvg } from "@/lib/qr";
 
 const URL_UNDER_TEST = "https://saycheese.app/e/aVeryLongTokenValue123456";
+const HOUSE = findTheme("cheese").palette;
 
-async function card(opts: { eventName: string; branded: boolean }) {
-  const bytes = await qrCardPdf(URL_UNDER_TEST, opts);
-  return { bytes, text: Buffer.from(bytes).toString("latin1") };
+async function card(opts: {
+  eventName: string;
+  branded: boolean;
+  theme?: string;
+  eventDate?: string;
+}) {
+  const colours = cardColours(
+    opts.theme ? findTheme(opts.theme).palette : HOUSE,
+    opts.branded,
+  );
+  const bytes = await qrCardPdf(URL_UNDER_TEST, {
+    eventName: opts.eventName,
+    eventDate: opts.eventDate ?? "14 June 2026",
+    colours,
+  });
+  return { bytes, colours, text: Buffer.from(bytes).toString("latin1") };
 }
 
 describe("QR generation", () => {
   it("produces scalable SVG, not a bitmap", async () => {
-    const svg = await qrSvg(URL_UNDER_TEST);
+    const svg = qrSvg(URL_UNDER_TEST, cardColours(HOUSE, true));
     expect(svg).toContain("<svg");
     expect(svg).toContain("viewBox");
     expect(svg).not.toContain("<image");
+  });
+
+  it("draws the code as rounded shapes rather than one stroked path", async () => {
+    // The look is the whole point of the shapes, and a later "simplification"
+    // back to a single path would take it away silently.
+    const svg = qrSvg(URL_UNDER_TEST, cardColours(HOUSE, true));
+    expect(svg.match(/<rect/g)?.length ?? 0).toBeGreaterThan(100);
+    expect(svg).toContain('rx="0.3"');
+  });
+
+  it("gives the code its quiet zone", async () => {
+    // Four modules of white on every side. Without them a scanner has nothing
+    // to find the symbol's edge against.
+    const svg = qrSvg(URL_UNDER_TEST, cardColours(HOUSE, true));
+    const extent = Number(/viewBox="0 0 ([\d.]+)/.exec(svg)![1]);
+    const first = Number(/<rect x="([\d.]+)"/.exec(svg)![1]);
+    expect(first).toBe(4);
+    expect(extent).toBeGreaterThan(4 * 2 + 20);
+  });
+
+  it("takes the plate and the modules from the event's theme", async () => {
+    const sky = cardColours(findTheme("sky").palette, true);
+    const svg = qrSvg(URL_UNDER_TEST, sky);
+    expect(svg).toContain(sky.plate);
+    expect(svg).toContain(sky.modules);
   });
 });
 
@@ -58,6 +99,31 @@ describe("the printable card", () => {
     expect(text).not.toContain("aVeryLongTokenValue123456");
   });
 
+  it("sets a long name smaller rather than off the edge", async () => {
+    // The name is the largest thing on the card, and a host types whatever they
+    // type. A card that fits "Ana & Marko" and runs a longer one into the
+    // margin is a card that only works for short names.
+    for (const eventName of [
+      "Ana & Marko",
+      "Marija i Nikola - vjencanje 2026",
+      "The Fortieth Birthday Party of Alexander Constantine",
+      "Supercalifragilisticexpialidocious",
+    ]) {
+      await expect(card({ eventName, branded: true })).resolves.toBeTruthy();
+    }
+  });
+
+  it("does not say the same thing twice", async () => {
+    // The instruction lives under the code. The line above the name is the
+    // date, and a card with no date simply has no eyebrow.
+    const { bytes } = await card({
+      eventName: "Ana & Marko",
+      branded: true,
+      eventDate: "",
+    });
+    await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
+  });
+
   it("sets a name the standard faces cannot encode, rather than throwing", async () => {
     // Event names are free text typed by a host, and a PDF standard font
     // *throws* on a character outside WinAnsi instead of dropping it. A wedding
@@ -85,20 +151,50 @@ describe("the printable card", () => {
     expect(plain).not.toContain(CLARET_DEEP);
   });
 
-  it("keeps the code itself high contrast on either card", async () => {
-    // The plate under the modules is near-white and the modules are ink on both
+  it("follows the event's theme rather than the house one", async () => {
+    // A host who dressed their page in sage gets a sage card. The claret is the
+    // default, not a constant.
+    for (const theme of THEMES) {
+      const { colours, bytes } = await card({
+        eventName: "T",
+        branded: true,
+        theme: theme.id,
+      });
+      expect(colours.ground).toBe(theme.palette.accent);
+      expect(await paints(bytes)).toContain(theme.palette.accent.toLowerCase());
+    }
+  });
+
+  it("sets the card's type in whatever reads on the host's colour", async () => {
+    // Claret is dark and takes chalk; ivory and sage are pale and take ink.
+    // Neither is special-cased - the palette says which, and the card obeys.
+    for (const theme of THEMES) {
+      const colours = cardColours(theme.palette, true);
+      expect(colours.heading).toBe(theme.palette.onAccent);
+    }
+  });
+
+  it("keeps the code readable whatever the theme is", async () => {
+    // The one part of the card with a job besides looking like the event.
+    for (const theme of THEMES) {
+      const { plate, modules } = cardColours(theme.palette, true);
+      expect(contrastRatio(parseHex(modules)!, parseHex(plate)!)).toBeGreaterThan(7);
+    }
+  });
+
+  it("puts the code on its own plate on either card", async () => {
+    // The plate is the palette's surface and the modules are its ink on both
     // cards - a claret ground is for the card, not for the thing being scanned.
     for (const branded of [true, false]) {
-      const used = await paints((await card({ eventName: "T", branded })).bytes);
-      expect(used).toContain(CHALK);
-      expect(used).toContain(INK);
+      const { bytes, colours } = await card({ eventName: "T", branded });
+      const used = await paints(bytes);
+      expect(used).toContain(colours.plate.toLowerCase());
+      expect(used).toContain(colours.modules.toLowerCase());
     }
   });
 });
 
-const INK = "#181214";
 const PAPER = "#ffffff";
-const CHALK = "#fdf6f7";
 const CLARET = "#7a1230";
 const CLARET_DEEP = "#5c0b23";
 

@@ -1,23 +1,127 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 
+import type { Palette } from "@/lib/appearance/themes";
+import { contrastRatio, mix, parseHex } from "@/lib/color";
+
 /**
  * QR codes are generated server-side. The code is the actual product - it is
  * the thing that goes on the table - so it gets the same care as the screen
  * does: SVG for the one on the host's dashboard, and a real A5 PDF for the card
  * that comes out of a printer.
+ *
+ * Both are drawn from one plan, so what a host looks at on the dashboard is the
+ * artwork that gets printed rather than a different renderer's idea of it.
  */
 
-/** Plain ink-on-white. Scanners are happiest and it survives a cheap printer. */
-export async function qrSvg(url: string, pixels = 512): Promise<string> {
-  return QRCode.toString(url, {
-    type: "svg",
-    errorCorrectionLevel: "M",
-    margin: 1,
-    width: pixels,
-    color: { dark: INK, light: PAPER },
-  });
+/**
+ * Quartile, not medium. The modules are drawn as separated rounded shapes
+ * rather than as a solid grid, which is a small tax on how much of each module
+ * is inked, and a code on a table in a dim room has no margin to spare. A
+ * quarter of the symbol can be lost and it still reads.
+ */
+const ECC = "Q";
+
+/** The gap around each module, as a fraction of it. What makes the code breathe. */
+const INSET = 0.06;
+
+/** How round a data module is. Half would be a dot; this is a soft square. */
+const RADIUS = 0.3;
+
+interface Cell {
+  x: number;
+  y: number;
+  size: number;
+  radius: number;
+  /** False for the light square inside a finder ring. */
+  dark: boolean;
 }
+
+/**
+ * The code as shapes, in module units, quiet zone included.
+ *
+ * The three big squares in the corners are the finder patterns - the part a
+ * scanner looks for first - and they are drawn as one rounded ring with a
+ * rounded pupil rather than as 33 separate modules. That is the whole of what
+ * makes a code look considered rather than generated: everything else is the
+ * same grid it always was, with its corners taken off.
+ */
+function codePlan(
+  url: string,
+  margin: number,
+): { extent: number; cells: Cell[] } {
+  const { modules } = QRCode.create(url, { errorCorrectionLevel: ECC });
+  const n = modules.size;
+  const cells: Cell[] = [];
+
+  const finders = [
+    [0, 0],
+    [0, n - 7],
+    [n - 7, 0],
+  ];
+  const inFinder = (row: number, col: number) =>
+    finders.some(
+      ([fr, fc]) => row >= fr && row < fr + 7 && col >= fc && col < fc + 7,
+    );
+
+  for (const [fr, fc] of finders) {
+    cells.push(
+      { x: fc + margin, y: fr + margin, size: 7, radius: 2, dark: true },
+      { x: fc + margin + 1, y: fr + margin + 1, size: 5, radius: 1.4, dark: false },
+      { x: fc + margin + 2, y: fr + margin + 2, size: 3, radius: 0.9, dark: true },
+    );
+  }
+
+  for (let row = 0; row < n; row += 1) {
+    for (let col = 0; col < n; col += 1) {
+      if (!modules.data[row * n + col] || inFinder(row, col)) continue;
+      cells.push({
+        x: col + margin + INSET,
+        y: row + margin + INSET,
+        size: 1 - INSET * 2,
+        radius: RADIUS,
+        dark: true,
+      });
+    }
+  }
+
+  return { extent: n + margin * 2, cells };
+}
+
+export interface CodeColours {
+  /** The ground the code sits on. Never transparent - a code needs its white. */
+  plate: string;
+  /** The modules themselves. */
+  modules: string;
+}
+
+/**
+ * The code on its own, as SVG. This is what the dashboard shows and what the
+ * host's PNG is rasterised from.
+ *
+ * Four modules of quiet zone, which is what the spec asks for and what a phone
+ * held at an angle across a table actually needs.
+ */
+export function qrSvg(
+  url: string,
+  { plate, modules, pixels = 512 }: CodeColours & { pixels?: number },
+): string {
+  const { extent, cells } = codePlan(url, 4);
+  const shapes = cells
+    .map(
+      (c) =>
+        `<rect x="${round(c.x)}" y="${round(c.y)}" width="${round(c.size)}" height="${round(c.size)}" rx="${round(c.radius)}" fill="${c.dark ? modules : plate}" />`,
+    )
+    .join("");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${extent} ${extent}" width="${pixels}" height="${pixels}" role="img" aria-label="QR code for this event"><rect width="${extent}" height="${extent}" rx="2" fill="${plate}" />${shapes}</svg>`;
+}
+
+function round(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+/* -------------------------------------------------------------------------- */
 
 /**
  * The design tokens, written out. The card is generated on a server and printed
@@ -26,17 +130,80 @@ export async function qrSvg(url: string, pixels = 512): Promise<string> {
  */
 const INK = "#181214";
 const PAPER = "#ffffff";
-const CHALK = "#fdf6f7";
-const ASH = "#6c5f62";
-const CLARET = "#7a1230";
-const CLARET_DEEP = "#5c0b23";
-const ROSE_SOFT = "#e6b9c4";
+
+export interface CardColours extends CodeColours {
+  /** The card's field. */
+  ground: string;
+  /** The border, and the edge of the plate the code sits on. */
+  frame: string;
+  /** Headline and instruction. */
+  heading: string;
+  /** Event name and footer. */
+  quiet: string;
+  /** The wordmark. */
+  eyebrow: string;
+  /** The punched flourish, or nothing on a plain card. */
+  holes: string | null;
+}
+
+/**
+ * The card in the host's own colours.
+ *
+ * A branded card is the event's accent used at full strength, with the type in
+ * whatever the palette says reads on it - `onAccent` is contrast-corrected at
+ * the point the palette is built, including for a colour the host typed
+ * themselves, so a claret card sets in chalk and a pale gold one sets in ink
+ * without either being special-cased here.
+ *
+ * The code is the exception. It takes the palette's surface and ink rather than
+ * the card's, and only if those two are far enough apart - a scanner wants
+ * contrast, not styling, and this is the one part of the card that has a job to
+ * do besides looking like the event.
+ */
+export function cardColours(palette: Palette, branded: boolean): CardColours {
+  const plate = palette.surface;
+  const modules = readable(palette.ink, plate) ? palette.ink : INK;
+
+  if (!branded) {
+    return {
+      ground: palette.surface,
+      frame: palette.ink,
+      heading: palette.ink,
+      quiet: palette.deep,
+      eyebrow: readable(palette.accent, palette.surface)
+        ? palette.accent
+        : palette.ink,
+      holes: null,
+      plate,
+      modules,
+    };
+  }
+
+  const soft = mix(palette.onAccent, palette.accent, 0.28);
+  return {
+    ground: palette.accent,
+    frame: palette.onAccent,
+    heading: palette.onAccent,
+    quiet: soft,
+    eyebrow: soft,
+    holes: palette.accentDeep,
+    plate,
+    modules,
+  };
+}
+
+/** Enough separation to set text on, or to point a camera at. */
+function readable(colour: string, on: string): boolean {
+  const a = parseHex(colour);
+  const b = parseHex(on);
+  return a !== null && b !== null && contrastRatio(a, b) >= 4.5;
+}
 
 export interface CardOptions {
   eventName: string;
-  /** Wedding tier: the printable card carries the event branding. */
-  branded: boolean;
-  headline?: string;
+  /** The card's eyebrow, already formatted for reading. */
+  eventDate?: string;
+  colours: CardColours;
 }
 
 /**
@@ -61,14 +228,16 @@ const K = PAGE_W / W;
  * The print-ready card, as a PDF a host can download, mail to a print shop, or
  * open on a phone.
  *
+ * The event's own name is the largest thing on it. That is what makes one card
+ * work for a wedding, a fortieth and a company summer party without a word of
+ * it being rewritten: the only large line is the one the host typed, so the
+ * card belongs to the party rather than to us. Our own name is one quiet line
+ * at the foot, which is where a maker's mark goes.
+ *
  * There is no link printed on it. A typed share token is a long string of
  * random characters that nobody gets right from a table across a dark room, and
  * the line asking them to try was the one thing on the card competing with the
  * code. The code is the way in.
- *
- * The branded card is the palette's one loud move: claret ground, chalk type.
- * The plain one is the same card on white. Either way the code itself sits on
- * its own near-white plate, because a scanner wants contrast, not styling.
  *
  * The type is set in the PDF standard faces rather than the product's own. A
  * PDF either carries its fonts inside it or names ones the reader has to
@@ -80,29 +249,23 @@ export async function qrCardPdf(
   url: string,
   opts: CardOptions,
 ): Promise<Uint8Array> {
+  const { colours } = opts;
   const pdf = await PDFDocument.create();
   pdf.setTitle(`${opts.eventName} - share your photos`);
-  pdf.setCreator("Say Cheese");
-  pdf.setProducer("Say Cheese");
+  pdf.setCreator("Shot & Share");
+  pdf.setProducer("Shot & Share");
 
   const display = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const sans = await pdf.embedFont(StandardFonts.Helvetica);
   const mono = await pdf.embedFont(StandardFonts.Courier);
 
   const page = pdf.addPage([PAGE_W, PAGE_H]);
-
-  const ground = opts.branded ? CLARET : PAPER;
-  const frame = opts.branded ? CHALK : INK;
-  const heading = opts.branded ? CHALK : INK;
-  const quiet = opts.branded ? ROSE_SOFT : ASH;
-  const eyebrow = opts.branded ? ROSE_SOFT : CLARET;
 
   page.drawRectangle({
     x: 0,
     y: 0,
     width: PAGE_W,
     height: PAGE_H,
-    color: hex(ground),
+    color: hex(colours.ground),
   });
 
   roundedRect(page, {
@@ -111,14 +274,14 @@ export async function qrCardPdf(
     width: W - 36,
     height: H - 36,
     radius: 28,
-    borderColor: hex(frame),
+    borderColor: hex(colours.frame),
     borderWidth: 4,
   });
 
   // The punched holes are the Wedding-tier flourish: the same shape the
   // interface uses as a bullet, dropped a step darker than the ground so they
   // read as debossed rather than as four dots printed on top of it.
-  if (opts.branded) {
+  if (colours.holes) {
     for (const [cx, cy, r] of [
       [76, 96, 26],
       [524, 150, 16],
@@ -129,29 +292,28 @@ export async function qrCardPdf(
         x: cx * K,
         y: PAGE_H - cy * K,
         size: r * K,
-        color: hex(CLARET_DEEP),
+        color: hex(colours.holes),
       });
     }
   }
 
-  tracked(page, "SAY CHEESE", {
-    font: mono,
-    size: 18,
-    tracking: 3.2,
-    baseline: 150,
-    color: hex(eyebrow),
-  });
-  centred(page, printable(opts.headline ?? "Share your photos"), {
+  // The date rather than a second instruction. "Point your camera at the code"
+  // is already under the code, where a guest looks after they have seen it, and
+  // saying it twice on one card reads as a card that does not trust them.
+  const date = printable(opts.eventDate ?? "").toUpperCase();
+  if (date) {
+    tracked(page, date, {
+      font: mono,
+      size: 15,
+      tracking: 2.6,
+      baseline: 150,
+      color: hex(colours.eyebrow),
+    });
+  }
+
+  drawName(page, printable(opts.eventName), {
     font: display,
-    size: 46,
-    baseline: 216,
-    color: hex(heading),
-  });
-  centred(page, printable(opts.eventName), {
-    font: sans,
-    size: 22,
-    baseline: 258,
-    color: hex(quiet),
+    colour: hex(colours.heading),
   });
 
   const qrBox = 320;
@@ -164,67 +326,134 @@ export async function qrCardPdf(
     width: qrBox + 40,
     height: qrBox + 40,
     radius: 20,
-    color: hex(CHALK),
-    borderColor: hex(frame),
+    color: hex(colours.plate),
+    borderColor: hex(colours.frame),
     borderWidth: 4,
   });
-  drawModules(page, url, { x: qrX, y: qrY, box: qrBox });
+  drawCode(page, url, { x: qrX, y: qrY, box: qrBox, colours });
 
   centred(page, "Point your camera at the code", {
     font: display,
     size: 24,
-    baseline: qrY + qrBox + 100,
-    color: hex(heading),
+    baseline: qrY + qrBox + 106,
+    color: hex(colours.heading),
   });
-  centred(page, "No app. No account. Just photos.", {
-    font: sans,
-    size: 17,
-    baseline: H - 48,
-    color: hex(quiet),
+  tracked(page, "SHOT & SHARE", {
+    font: mono,
+    size: 14,
+    tracking: 3,
+    baseline: H - 44,
+    color: hex(colours.eyebrow),
   });
 
   return pdf.save();
 }
 
 /**
- * The code itself, drawn as filled rectangles rather than as the stroked path
- * `qrcode` emits for SVG. A run of dark modules along a row becomes one
- * rectangle: fewer objects, and no seam where two of them meet. The rows are
- * grown by a hundredth of a module so they overlap instead of abutting, which
- * is invisible at any size and stops a viewer's anti-aliasing from drawing a
- * pale line across the code where a scanner wants solid ink.
+ * The event's name, as large as the card can carry it.
+ *
+ * A name is whatever a host typed, and the two shapes it comes in are "Ana &
+ * Marko" and "Marija i Nikola - vjenčanje 2026". Rather than picking a size
+ * that flatters the first and overflows the second, the size is solved for: one
+ * line as big as fits, and when even the smallest single line would run into
+ * the margins, two balanced lines instead.
  */
-function drawModules(
+function drawName(
+  page: PDFPage,
+  name: string,
+  { font, colour }: { font: PDFFont; colour: ReturnType<typeof rgb> },
+) {
+  if (!name) return;
+  const room = 456;
+
+  const single = largestSize(font, [name], room, 52, 30);
+  if (single) {
+    centred(page, name, { font, size: single, baseline: 234, color: colour });
+    return;
+  }
+
+  const [top, bottom] = balance(name);
+  const size = largestSize(font, [top, bottom], room, 38, 15) ?? 15;
+  centred(page, top, { font, size, baseline: 206, color: colour });
+  centred(page, bottom, {
+    font,
+    size,
+    baseline: 206 + Math.round(size * 1.2),
+    color: colour,
+  });
+}
+
+/** The biggest whole point size in the range at which every line still fits. */
+function largestSize(
+  font: PDFFont,
+  lines: string[],
+  room: number,
+  from: number,
+  to: number,
+): number | null {
+  for (let size = from; size >= to; size -= 1) {
+    // Widths scale linearly, so measuring at a size in card units returns a
+    // width in card units - no need to convert to points and back.
+    if (lines.every((line) => font.widthOfTextAtSize(line, size) <= room)) {
+      return size;
+    }
+  }
+  return null;
+}
+
+/** Two lines of roughly equal length, split on the most even word boundary. */
+function balance(name: string): [string, string] {
+  const words = name.split(" ");
+  if (words.length < 2) return [name, ""];
+
+  let best = 1;
+  let closest = Infinity;
+  for (let at = 1; at < words.length; at += 1) {
+    const left = words.slice(0, at).join(" ").length;
+    const right = words.slice(at).join(" ").length;
+    if (Math.abs(left - right) < closest) {
+      closest = Math.abs(left - right);
+      best = at;
+    }
+  }
+  return [words.slice(0, best).join(" "), words.slice(best).join(" ")];
+}
+
+/**
+ * The same shapes the SVG draws, onto the page. Two modules of quiet zone here
+ * rather than four: the plate the code sits on is another two modules of the
+ * same near-white on every side, so the code gets its four.
+ */
+function drawCode(
   page: PDFPage,
   url: string,
-  { x, y, box }: { x: number; y: number; box: number },
+  {
+    x,
+    y,
+    box,
+    colours,
+  }: { x: number; y: number; box: number; colours: CardColours },
 ) {
-  const { modules } = QRCode.create(url, { errorCorrectionLevel: "M" });
-  const count = modules.size;
-  const unit = (box / count) * K;
+  const { extent, cells } = codePlan(url, 2);
+  const unit = (box / extent) * K;
   const left = x * K;
   const top = PAGE_H - y * K;
-  const bleed = unit * 0.01;
 
-  for (let row = 0; row < count; row += 1) {
-    let run = 0;
-    for (let col = 0; col <= count; col += 1) {
-      const dark = col < count && modules.data[row * count + col] === 1;
-      if (dark) {
-        run += 1;
-        continue;
-      }
-      if (run > 0) {
-        page.drawRectangle({
-          x: left + (col - run) * unit,
-          y: top - (row + 1) * unit - bleed,
-          width: run * unit,
-          height: unit + bleed * 2,
-          color: hex(INK),
-        });
-        run = 0;
-      }
+  // Every data module is the same shape, so its path is built once and only its
+  // position moves. The finders are three sizes and get their own.
+  const paths = new Map<string, string>();
+  for (const cell of cells) {
+    const key = `${cell.size}:${cell.radius}`;
+    let path = paths.get(key);
+    if (!path) {
+      path = roundedPath(cell.size * unit, cell.size * unit, cell.radius * unit);
+      paths.set(key, path);
     }
+    page.drawSvgPath(path, {
+      x: left + cell.x * unit,
+      y: top - cell.y * unit,
+      color: hex(cell.dark ? colours.modules : colours.plate),
+    });
   }
 }
 
@@ -251,14 +480,27 @@ function roundedRect(
     borderWidth?: number;
   },
 ) {
-  const w = width * K;
-  const h = height * K;
-  const r = Math.min(radius * K, w / 2, h / 2);
+  page.drawSvgPath(roundedPath(width * K, height * K, radius * K), {
+    x: x * K,
+    y: PAGE_H - y * K,
+    color,
+    borderColor,
+    borderWidth: borderWidth * K,
+  });
+}
+
+/**
+ * A rounded rectangle as SVG path data, drawn from its top left corner
+ * downwards - which is the direction `drawSvgPath` reads, whatever the page's
+ * own axis is doing.
+ */
+function roundedPath(w: number, h: number, radius: number): string {
+  const r = Math.min(radius, w / 2, h / 2);
   // A quarter circle in beziers. 0.5523 is the constant that makes four of them
   // meet as a circle rather than as a slightly square-shouldered lozenge.
   const c = r * 0.5523;
 
-  const path = [
+  return [
     `M ${r} 0`,
     `H ${w - r}`,
     `C ${w - r + c} 0 ${w} ${r - c} ${w} ${r}`,
@@ -270,14 +512,6 @@ function roundedRect(
     `C 0 ${r - c} ${r - c} 0 ${r} 0`,
     "Z",
   ].join(" ");
-
-  page.drawSvgPath(path, {
-    x: x * K,
-    y: PAGE_H - y * K,
-    color,
-    borderColor,
-    borderWidth: borderWidth * K,
-  });
 }
 
 /** Centred on the card, positioned by baseline in card units. */
@@ -344,8 +578,8 @@ function tracked(
 }
 
 function hex(value: string) {
-  const n = parseInt(value.slice(1), 16);
-  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+  const parsed = parseHex(value) ?? parseHex(PAPER)!;
+  return rgb(parsed.r / 255, parsed.g / 255, parsed.b / 255);
 }
 
 /**

@@ -23,7 +23,7 @@ export function SharePanel({
   revoked: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const [building, setBuilding] = useState(false);
+  const [busy, setBusy] = useState<"card" | "png" | null>(null);
   const { pending, error, setError, run } = useServerAction();
 
   /**
@@ -34,28 +34,51 @@ export function SharePanel({
    * way that lands in the same Alert as everything else here.
    */
   async function downloadCard() {
-    setBuilding(true);
+    setBusy("card");
     setError(null);
     try {
       const res = await fetch(`/api/events/${eventId}/qr?format=card`);
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        setError(body?.error?.message ?? "The card could not be built.");
+        setError(await reason(res, "The card could not be built."));
         return;
       }
-      const href = URL.createObjectURL(await res.blob());
-      const a = document.createElement("a");
-      a.href = href;
-      a.download =
-        /filename="([^"]+)"/.exec(
-          res.headers.get("content-disposition") ?? "",
-        )?.[1] ?? "say-cheese-card.pdf";
-      a.click();
-      URL.revokeObjectURL(href);
+      save(await res.blob(), named(res, "shot-and-share-card.pdf"));
     } catch {
       setError("The card could not be built. Try again in a minute.");
     } finally {
-      setBuilding(false);
+      setBusy(null);
+    }
+  }
+
+  /**
+   * The code on its own, as a PNG, for the host who is putting it in their own
+   * invitation rather than printing ours.
+   *
+   * The server draws it once, as SVG, and the browser rasterises that - so the
+   * PNG is the same artwork the panel is showing rather than a second renderer's
+   * version of it, and the endpoint stays a single vector source. 1024px is big
+   * enough to print a code the size of a beer mat.
+   */
+  async function downloadPng() {
+    setBusy("png");
+    setError(null);
+    let objectUrl: string | null = null;
+    try {
+      const res = await fetch(`/api/events/${eventId}/qr?format=code`);
+      if (!res.ok) {
+        setError(await reason(res, "The code could not be built."));
+        return;
+      }
+      objectUrl = URL.createObjectURL(
+        new Blob([await res.text()], { type: "image/svg+xml" }),
+      );
+      const png = await rasterise(objectUrl, 1024);
+      save(png, named(res, "shot-and-share-code.svg").replace(/\.svg$/, ".png"));
+    } catch {
+      setError("The code could not be saved. Try again in a minute.");
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setBusy(null);
     }
   }
 
@@ -116,6 +139,9 @@ export function SharePanel({
 
             <div>
 
+              {/* Three things a host does with a code, in the order they do
+                  them: send the link, print our card, or take the code away and
+                  put it in something of their own. */}
               <div className="mt-3 flex flex-col items-center gap-2">
                 <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
                   {copied ? "Copied" : "Copy link"}
@@ -124,14 +150,23 @@ export function SharePanel({
                   onClick={downloadCard}
                   variant="secondary"
                   size="sm"
-                  disabled={building}
+                  disabled={busy !== null}
                   className="w-10/12 max-w-[250px]"
                 >
-                  {building
+                  {busy === "card"
                     ? "Building…"
                     : brandedQr
                       ? "Download branded card"
                       : "Download the card"}
+                </Button>
+                <Button
+                  onClick={downloadPng}
+                  variant="secondary"
+                  size="sm"
+                  disabled={busy !== null}
+                  className="w-10/12 max-w-[250px]"
+                >
+                  {busy === "png" ? "Saving…" : "Download the code (PNG)"}
                 </Button>
               </div>
             </div>
@@ -167,4 +202,56 @@ export function SharePanel({
       {error && <Alert className="mt-4">{error}</Alert>}
     </Panel>
   );
+}
+
+/** The API's own message where there is one, rather than a generic apology. */
+async function reason(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => null);
+  return body?.error?.message ?? fallback;
+}
+
+/** The filename the endpoint chose, which is built from the event's name. */
+function named(res: Response, fallback: string): string {
+  return (
+    /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ??
+    fallback
+  );
+}
+
+function save(blob: Blob, filename: string) {
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(href);
+}
+
+/**
+ * An SVG through a canvas and out as a PNG.
+ *
+ * The image has to have finished decoding before it is drawn - a canvas will
+ * happily paint nothing at all from an <img> that is not ready and report no
+ * error - and the SVG has to arrive as an object URL rather than as markup, so
+ * that the canvas stays untainted and `toBlob` is allowed to read it back.
+ */
+function rasterise(svgUrl: string, pixels: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onerror = () => reject(new Error("The code could not be drawn."));
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = pixels;
+      canvas.height = pixels;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("No canvas."));
+      ctx.drawImage(img, 0, 0, pixels, pixels);
+      canvas.toBlob(
+        (blob) =>
+          blob ? resolve(blob) : reject(new Error("The PNG came back empty.")),
+        "image/png",
+      );
+    };
+    img.src = svgUrl;
+  });
 }
