@@ -48,6 +48,39 @@ export interface TabItem {
    */
   short?: string;
   icon?: ReactNode;
+  /**
+   * The one lifted out of the bar: a claret circle standing half above the top
+   * edge, in the middle of the row whatever order this list is in. At most one,
+   * and it wants an odd number of tabs so that the rest divide evenly around
+   * it. Nothing above `sm`, where the bar is a strip again.
+   */
+  raised?: boolean;
+}
+
+/**
+ * Where each button sits in the bar, which is not the order they are declared
+ * in. The list is written in the order the desktop rail reads - the first thing
+ * a host does, first - and the bar puts the raised one in the middle and
+ * divides the others evenly around it.
+ *
+ * Below `sm` only. Above it the row is a strip again and reads in the order it
+ * was written, with Share back at the front where a rail wants it.
+ */
+const ORDER = [
+  "max-sm:order-1",
+  "max-sm:order-2",
+  "max-sm:order-3",
+  "max-sm:order-4",
+  "max-sm:order-5",
+  "max-sm:order-6",
+];
+
+function barOrder(items: TabItem[], item: TabItem): string | false {
+  const others = items.filter((i) => !i.raised);
+  const half = Math.floor(others.length / 2);
+  if (item.raised) return ORDER[half];
+  const among = others.indexOf(item);
+  return ORDER[among < half ? among : among + 1];
 }
 
 interface TabsContextValue {
@@ -214,7 +247,13 @@ export function Tabs({
         aria-label={label}
         aria-orientation={rail ? "vertical" : "horizontal"}
         className={cx(
-          "flex overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          "flex [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          // A bar never scrolls sideways, and it must not clip either: the
+          // raised button stands outside the row's own box. Declaring the two
+          // overflows in separate branches keeps them from fighting over which
+          // rule the compiler emitted last.
+          !bar && "overflow-x-auto",
+          bar && "overflow-visible sm:overflow-x-auto",
           !segmented && "gap-2 pb-2",
           // A sunken track with the segments sitting in it. The control is one
           // object because of the trough they share, not because a line is
@@ -225,9 +264,9 @@ export function Tabs({
           // indicator on the phones that have one and is a normal 0.4rem on the
           // ones that do not.
           bar &&
-            "fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-0 overflow-visible border-t border-edge bg-paper/95 px-1 pt-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur",
+            "fixed inset-x-0 bottom-0 z-40 grid auto-cols-fr grid-flow-col items-end gap-0 border-t border-edge bg-paper/95 px-1 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur",
           bar &&
-            "sm:static sm:z-auto sm:flex sm:gap-2 sm:overflow-x-auto sm:border-0 sm:bg-transparent sm:px-0 sm:pt-0 sm:pb-2 sm:shadow-none sm:backdrop-blur-none",
+            "sm:static sm:z-auto sm:flex sm:items-stretch sm:gap-2 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-0 sm:pb-2 sm:shadow-none sm:backdrop-blur-none",
           rail && "lg:flex-col lg:gap-1.5 lg:overflow-x-visible lg:pb-0",
           sticky && !bar && "sticky top-(--tab-top) z-30",
           sticky && !bar && "bg-linen/95 pt-2 shadow-sm backdrop-blur",
@@ -267,20 +306,31 @@ export function Tabs({
                 // Colour alone carries which one is open, which is why the icon
                 // is there - it is the difference between two claret words and
                 // one claret thing.
+                bar && barOrder(items, item),
                 bar &&
-                  "flex flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 transition-colors",
+                  "flex flex-col items-center justify-end gap-0.5 rounded-lg px-0.5 py-1 transition-colors",
                 bar &&
                   (selected
                     ? "bg-transparent text-claret shadow-none"
                     : "bg-transparent text-mist shadow-none"),
+                // The raised one keeps its colour whether or not it is open.
+                // It is the loudest thing in the interface and turning that off
+                // and on again would spend it for nothing - which one is open
+                // is said by the halo instead, below.
+                bar && item.raised && "text-claret",
                 bar &&
                   "sm:flex-row sm:gap-2 sm:rounded-xl sm:px-3.5 sm:py-0 sm:transition-none",
                 bar &&
                   (selected
                     ? "sm:bg-claret sm:text-chalk sm:shadow-md"
                     : "sm:bg-paper sm:text-ash sm:shadow-sm"),
-                !segmented &&
-                  "rounded-xl px-3.5 font-mono text-micro uppercase tracking-[0.16em]",
+                // The mono label is the same everywhere. Its shape is not: a
+                // pill in the strip, a bare column in the bar, and declaring
+                // both unconditionally would leave `px-3.5` and `px-0.5` on one
+                // element to be settled by whichever the compiler wrote last.
+                !segmented && "font-mono text-micro uppercase",
+                !segmented && !bar && "rounded-xl px-3.5 tracking-[0.16em]",
+                !segmented && bar && "sm:tracking-[0.16em]",
                 !segmented &&
                   !bar &&
                   (selected
@@ -309,7 +359,30 @@ export function Tabs({
                 rail && "lg:w-full lg:px-4 lg:text-left",
               )}
             >
-              {bar && item.icon && (
+              {/* The circle is measured against the *bar*, not against this
+                  button - `left-1/2` is the middle of the row, which is where
+                  the raised tab sits, and `top-0` with a half translate puts
+                  its centre exactly on the bar's top edge.
+
+                  The collar is a ring in the page's own colour. Above the edge
+                  it is invisible, being linen on linen; below it, it is linen
+                  on paper. That is what makes the button read as punched
+                  through the bar rather than dropped on top of it, and it is
+                  the same mark the interface already uses as a bullet and the
+                  branded card punches into its corners. */}
+              {bar && item.raised && item.icon && (
+                <span
+                  aria-hidden
+                  className={cx(
+                    "absolute top-0 left-1/2 grid size-[3.375rem] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-claret text-[1.5rem] text-chalk shadow-lg ring-[5px] ring-linen sm:hidden",
+                    selected &&
+                      "outline outline-[3px] outline-offset-[4px] outline-claret",
+                  )}
+                >
+                  {item.icon}
+                </span>
+              )}
+              {bar && !item.raised && item.icon && (
                 <span aria-hidden className="text-[1.3125rem] sm:hidden">
                   {item.icon}
                 </span>

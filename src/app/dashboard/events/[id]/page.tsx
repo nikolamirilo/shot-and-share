@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   MdArrowBackIosNew,
-  MdOutlineBarChart,
   MdOutlinePalette,
   MdOutlinePhotoLibrary,
   MdOutlineQrCode2,
@@ -17,9 +16,9 @@ import { HostGallery } from "@/components/dashboard/host-gallery";
 import { SettingsForm } from "@/components/dashboard/settings-form";
 import { SharePanel } from "@/components/dashboard/share-panel";
 import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
-import { EventStatsPanel } from "@/components/dashboard/event-stats-panel";
+import { StoragePanel } from "@/components/dashboard/storage-panel";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
-import { Alert, Badge, ButtonLink, Eyebrow } from "@/components/ui";
+import { Alert, Badge, ButtonLink, Eyebrow, Stat } from "@/components/ui";
 import type { EventRow, MediaRow } from "@/lib/db/types";
 import { env } from "@/lib/env";
 import { getActiveShareToken, storageSummary, toMediaViews } from "@/lib/events";
@@ -32,29 +31,29 @@ import { shareUrl } from "@/lib/tokens";
 export const dynamic = "force-dynamic";
 
 /**
- * The console, in the order a host meets it: get the code onto a table and take
- * the photos home again, see how the night is going, buy more room if it needs
- * it, look at what arrived, dress the page up, then the settings and the
- * ending.
+ * The console, in the order a host meets it: get the code onto a table, look at
+ * what arrived, dress the page up, buy more room if the night needs it, then
+ * the settings and the ending.
+ *
+ * Five, not six. There was an Analytics tab, and taking it away lost nothing -
+ * it was never a section, it was four numbers about four different things, and
+ * each one says more beside what it measures. How often the link was opened
+ * belongs under the link. How much room is left belongs above the price of
+ * more. What arrived belongs over the gallery.
+ *
+ * Five is also what the bar wants. One button raised out of the middle needs an
+ * odd number so the rest divide evenly around it - see `Tabs`.
  *
  * Each id is the id of its panel, so `#upgrade` still lands on the plan even
- * though that panel is now behind a tab. One group is open at a time at every
- * width: a strip across the top on a phone, a rail down the side of the panel
- * on a laptop - see `Tabs`.
+ * though that panel is behind a tab.
  */
 const TABS: TabItem[] = [
-  { id: "share", label: "Share", short: "Share", icon: <MdOutlineQrCode2 /> },
   {
-    id: "analytics",
-    label: "Analytics",
-    short: "Stats",
-    icon: <MdOutlineBarChart />,
-  },
-  {
-    id: "upgrade",
-    label: "Plan",
-    short: "Plan",
-    icon: <MdOutlineWorkspacePremium />,
+    id: "share",
+    label: "Share",
+    short: "Share",
+    icon: <MdOutlineQrCode2 />,
+    raised: true,
   },
   {
     id: "photos",
@@ -64,9 +63,15 @@ const TABS: TabItem[] = [
   },
   { id: "page", label: "Event page", short: "Page", icon: <MdOutlinePalette /> },
   {
+    id: "upgrade",
+    label: "Plan",
+    short: "Plan",
+    icon: <MdOutlineWorkspacePremium />,
+  },
+  {
     id: "settings",
     label: "Settings",
-    short: "Setup",
+    short: "Settings",
     icon: <MdOutlineSettings />,
   },
 ];
@@ -149,7 +154,7 @@ export default async function EventPage({
     /* The bottom padding is the bar's own height plus room to breathe. Without
        it the last thing on every panel sits underneath the navigation, which is
        the one bug a pinned bar always ships with. */
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-24 sm:px-5 sm:py-10 sm:pb-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 pb-28 sm:px-5 sm:py-10 sm:pb-10">
       {/* Below xs the header has no room for "My events", and the mark now
           goes to the front of the site rather than to the dashboard, so this
           is the way back out of an event on a phone. That makes it a control
@@ -214,31 +219,15 @@ export default async function EventPage({
             link={link}
             brandedQr={tier.brandedQr}
             revoked={!active}
+            opens={event.link_opens}
+            uploaders={Number(counts.uploader_count)}
           />
 
           <ArchivePanel eventId={event.id} photoCount={total} />
         </TabPanel>
 
-        <TabPanel id="analytics" className="mt-5 sm:mt-6 lg:mt-0">
-          <EventStatsPanel
-            event={event}
-            photoCount={total}
-            uploaderCount={Number(counts.uploader_count)}
-            summary={summary}
-            slideshow={tier.slideshow}
-          />
-        </TabPanel>
-
-        <TabPanel id="upgrade" className="mt-5 sm:mt-6 lg:mt-0">
-          <UpgradePanel
-            eventId={event.id}
-            tier={event.tier}
-            keepForever={event.keep_forever}
-          />
-        </TabPanel>
-
         <TabPanel id="photos" className="mt-5 sm:mt-6 lg:mt-0">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
             <div>
               <Eyebrow>Gallery</Eyebrow>
               <h2 className="mt-2 text-[1.625rem] sm:text-h2">
@@ -247,12 +236,33 @@ export default async function EventPage({
                   : "Everything so far"}
               </h2>
             </div>
-            {media.length < total && (
-              <p className="text-[0.8125rem] text-ash">
-                Showing the {media.length} most recent of {total}.
-              </p>
+            {tier.slideshow && (
+              <ButtonLink
+                href={`/dashboard/events/${event.id}/slideshow`}
+                variant="secondary"
+                size="sm"
+              >
+                Open the live slideshow
+              </ButtonLink>
             )}
           </div>
+
+          {/* What arrived, over the thing that arrived. Two numbers rather than
+              a panel: the gallery underneath is the real answer and these are
+              its caption. */}
+          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-md">
+            <Stat label="Photos" value={total.toLocaleString("en-GB")} />
+            <Stat
+              label="People who uploaded"
+              value={Number(counts.uploader_count).toLocaleString("en-GB")}
+            />
+          </dl>
+
+          {media.length < total && (
+            <p className="mt-4 text-[0.8125rem] text-ash">
+              Showing the {media.length} most recent of {total}.
+            </p>
+          )}
 
           <div className="mt-6">
             <HostGallery
@@ -276,6 +286,19 @@ export default async function EventPage({
             maxFileBytes={tier.maxFileBytes}
             remainingBytes={summary.remaining}
             locked={!tier.customPage}
+          />
+        </TabPanel>
+
+        {/* The meter above the price of more of it. */}
+        <TabPanel
+          id="upgrade"
+          className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
+        >
+          <StoragePanel event={event} summary={summary} />
+          <UpgradePanel
+            eventId={event.id}
+            tier={event.tier}
+            keepForever={event.keep_forever}
           />
         </TabPanel>
 
