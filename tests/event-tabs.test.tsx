@@ -127,13 +127,37 @@ function renderBar() {
   );
 }
 
+/** The console's own five, in the order the rail reads them. */
+const FIVE: TabItem[] = [
+  { id: "share", label: "Share", icon: <span>·</span>, raised: true },
+  { id: "photos", label: "Photos", icon: <span>·</span> },
+  { id: "page", label: "Event page", short: "Page", icon: <span>·</span> },
+  { id: "upgrade", label: "Plan", icon: <span>·</span> },
+  { id: "settings", label: "Settings", icon: <span>·</span> },
+];
+
+function renderRaised() {
+  return renderToStaticMarkup(
+    <Tabs items={FIVE} label="Event sections" desktop="rail" mobile="bar" sticky>
+      {FIVE.map((item) => (
+        <TabPanel key={item.id} id={item.id}>
+          {item.label} panel
+        </TabPanel>
+      ))}
+    </Tabs>,
+  );
+}
+
 describe("the bottom bar on a phone", () => {
   it("pins the row to the bottom, and stops at sm", () => {
     const html = renderBar();
     const list = /role="tablist"[^>]*class="([^"]*)"/.exec(html)![1];
     expect(list).toContain("fixed");
     expect(list).toContain("bottom-0");
-    expect(list).toContain("grid-cols-6");
+    // One equal column per tab, however many there are - the bar does not know
+    // the number and must not be told it twice.
+    expect(list).toContain("grid-flow-col");
+    expect(list).toContain("auto-cols-fr");
     // From `sm` up it is the strip it always was, in the flow of the page.
     expect(list).toContain("sm:static");
     expect(list).toContain("sm:flex");
@@ -144,7 +168,7 @@ describe("the bottom bar on a phone", () => {
     // must keep both feet on the ground.
     const html = render();
     expect(html).not.toContain("bottom-0");
-    expect(html).not.toContain("grid-cols-6");
+    expect(html).not.toContain("grid-flow-col");
   });
 
   it("is one tablist, not a bar and a strip", () => {
@@ -154,6 +178,73 @@ describe("the bottom bar on a phone", () => {
     const html = renderBar();
     expect(html.match(/role="tablist"/g)).toHaveLength(1);
     expect(html.match(/id="share-tab"/g)).toHaveLength(1);
+  });
+
+  it("raises one button out of the middle of the row", () => {
+    // Declared first, because that is where the desktop rail wants it, and
+    // drawn third, because that is the middle of five.
+    const html = renderRaised();
+    const order = (id: string) =>
+      new RegExp(`id="${id}-tab"[^>]*class="([^"]*)"`).exec(html)![1];
+    expect(order("share")).toContain("max-sm:order-3");
+    expect(order("photos")).toContain("max-sm:order-1");
+    expect(order("page")).toContain("max-sm:order-2");
+    expect(order("upgrade")).toContain("max-sm:order-4");
+    expect(order("settings")).toContain("max-sm:order-5");
+  });
+
+  it("puts the row back in its declared order above sm", () => {
+    // `max-sm:` and not a bare `order-*`: the rail reads top to bottom in the
+    // order a host does things, with Share at the front.
+    const html = renderRaised();
+    expect(html).not.toMatch(/(?<!max-sm:)\border-[1-6]\b/);
+  });
+
+  it("leaves one shape per width rather than two fighting", () => {
+    // A button carrying both `px-3.5` and `px-0.5` is not a bug you can see -
+    // it is settled by whichever rule the compiler emitted last, which is not
+    // a decision this file gets to make.
+    const html = renderRaised();
+    const button = /id="photos-tab"[^>]*class="([^"]*)"/.exec(html)![1];
+    const classes = button.split(/\s+/);
+    for (const pair of [
+      ["px-0.5", "px-3.5"],
+      ["rounded-lg", "rounded-xl"],
+    ]) {
+      expect(pair.filter((c) => classes.includes(c))).toHaveLength(1);
+    }
+  });
+
+  it("draws the raised one as a collared circle, and only on a phone", () => {
+    const html = renderRaised();
+    const circle = /class="([^"]*rounded-full[^"]*)"/.exec(html)![1];
+    // Measured against the bar rather than its own button, so that half of it
+    // stands above the bar's top edge.
+    expect(circle).toContain("absolute");
+    expect(circle).toContain("top-0");
+    expect(circle).toContain("left-1/2");
+    expect(circle).toContain("-translate-y-1/2");
+    // The collar, in the page's own colour, and nothing above sm.
+    expect(circle).toContain("ring-linen");
+    expect(circle).toContain("bg-claret");
+    expect(circle).toContain("sm:hidden");
+  });
+
+  it("says which tab is open with a halo, not by turning the colour off", () => {
+    const html = renderRaised();
+    const circle = /class="([^"]*rounded-full[^"]*)"/.exec(html)![1];
+    // Share is the open tab in this render, and it is claret either way.
+    expect(circle).toContain("outline-claret");
+    expect(circle).toContain("bg-claret");
+  });
+
+  it("never clips the button that stands outside the row", () => {
+    const html = renderRaised();
+    const list = /role="tablist"[^>]*class="([^"]*)"/.exec(html)![1];
+    expect(list).toContain("overflow-visible");
+    // And the strip above sm still scrolls, which is a different property on
+    // the same element - the two must not be declared in one branch.
+    expect(list).toContain("sm:overflow-x-auto");
   });
 
   it("keeps the full label as the accessible name at every width", () => {

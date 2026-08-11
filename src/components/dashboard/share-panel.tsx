@@ -5,7 +5,8 @@ import { useState } from "react";
 import { useServerAction } from "@/hooks/use-server-action";
 
 import { revokeShareLink, rotateShareLink } from "@/lib/actions/share-links";
-import { Alert, Button, Panel } from "@/components/ui";
+import { Alert, Button, Panel, Stat } from "@/components/ui";
+import { pluralise } from "@/lib/format";
 
 /**
  * The share panel is the product. A host should be able to get the code onto a
@@ -16,15 +17,23 @@ export function SharePanel({
   link,
   brandedQr,
   revoked,
+  opens,
+  uploaders,
 }: {
   eventId: string;
   link: string | null;
   brandedQr: boolean;
   revoked: boolean;
+  /** Times the link has been opened, and how many of those ended in an upload. */
+  opens: number;
+  uploaders: number;
 }) {
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<"card" | "png" | null>(null);
   const { pending, error, setError, run } = useServerAction();
+
+  const conversion =
+    opens > 0 ? Math.min(100, Math.round((uploaders / opens) * 100)) : null;
 
   /**
    * The card comes back as a PDF, and it is fetched rather than navigated to.
@@ -178,6 +187,25 @@ export function SharePanel({
             it - that is the whole instruction, and it is worth resisting the urge
             to add more.
           </p>
+
+          {/* These two numbers are about the link, not about the party, which
+              is why they are here rather than in a panel of their own. A guest
+              who scans the code and does not upload is the clearest signal the
+              card is not working, and it is only legible next to the card. */}
+          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-edge pt-5">
+            <Stat label="Link opened" value={pluralise(opens, "time")} />
+            <Stat
+              label="Opened then uploaded"
+              value={conversion === null ? "-" : `${conversion}%`}
+              hint={
+                conversion === null
+                  ? "No opens yet"
+                  : conversion < 40
+                    ? "Low. Check the code is easy to reach."
+                    : "Healthy"
+              }
+            />
+          </dl>
 
           <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
             <Button
