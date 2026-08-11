@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useServerAction } from "@/hooks/use-server-action";
 
 import { revokeShareLink, rotateShareLink } from "@/lib/actions/share-links";
-import { Alert, Button, Panel, Stat } from "@/components/ui";
+import { Alert, Button, Panel, Stat, cx } from "@/components/ui";
 import { pluralise } from "@/lib/format";
 
 /**
@@ -29,6 +29,7 @@ export function SharePanel({
   uploaders: number;
 }) {
   const [copied, setCopied] = useState(false);
+  const [codeReady, setCodeReady] = useState(false);
   const [busy, setBusy] = useState<"card" | "png" | null>(null);
   const { pending, error, setError, run } = useServerAction();
 
@@ -139,15 +140,42 @@ export function SharePanel({
               which is the cost of the two halves lining up exactly. */}
           <div className="mt-5 grid gap-4 sm:grid-cols-[8.5rem_1fr] sm:items-start sm:gap-5">
             <div className="mx-auto aspect-square w-10/12 max-w-[250px] rounded-xl bg-paper p-2 shadow-md sm:mx-0 sm:size-[8.5rem] sm:max-w-none">
-              {/* Same code the printable card carries, drawn from the same
-                  plan, so what is on screen is what comes out of the printer. */}
-              <img
-                src={`/api/events/${eventId}/qr?format=code`}
-                alt="QR code for this event"
-                className="size-full"
-                width={512}
-                height={512}
-              />
+              {/* The code is generated per request rather than served from a
+                  file, so there is a moment on a slow connection where this box
+                  is empty. An empty white square on the panel that is the whole
+                  product reads as "there is no code" rather than "not yet", so
+                  the shape of one is drawn while it is coming: three corners
+                  and a field, which is the part of a QR a person recognises
+                  before they can read any of it. */}
+              <div className="relative size-full">
+                {!codeReady && (
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 animate-pulse rounded-md bg-blush"
+                  >
+                    <span className="absolute top-[8%] left-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
+                    <span className="absolute top-[8%] right-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
+                    <span className="absolute bottom-[8%] left-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
+                  </div>
+                )}
+                {/* Same code the printable card carries, drawn from the same
+                    plan, so what is on screen is what comes out of the
+                    printer. */}
+                <img
+                  src={`/api/events/${eventId}/qr?format=code`}
+                  alt="QR code for this event"
+                  className={cx(
+                    "size-full transition-opacity duration-200",
+                    codeReady ? "opacity-100" : "opacity-0",
+                  )}
+                  width={512}
+                  height={512}
+                  onLoad={() => setCodeReady(true)}
+                  /* A code that fails to load should not leave a skeleton
+                     pulsing forever - the alt text is the honest answer. */
+                  onError={() => setCodeReady(true)}
+                />
+              </div>
             </div>
 
             {/* Three things a host does with a code, in the order they do

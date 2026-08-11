@@ -1,21 +1,38 @@
+import {
+  CreateArt,
+  KeepArt,
+  TableArt,
+} from "@/components/marketing/step-art";
 import { Eyebrow } from "@/components/ui";
 
+/**
+ * The mechanism, in three beats.
+ *
+ * Each card used to be a number and two sentences, and the second sentence was
+ * always the one doing the explaining - what a code looks like, where it goes,
+ * what comes back. Those are pictures. The drawing carries the mechanism and
+ * the line underneath says the one thing a drawing cannot: what it costs you,
+ * when it happens, what you get.
+ */
 export function Steps() {
   const steps = [
     {
       n: "01",
+      art: <CreateArt />,
       title: "Create the event",
-      body: "Name it, pick the date. You get a link and a printable QR card straight away, before you pay anything.",
+      body: "A link and a printable card, before you pay anything.",
     },
     {
       n: "02",
+      art: <TableArt />,
       title: "Put the code on the tables",
-      body: "Print it, drop it in the group chat, or put it on the order of service. Guests point a camera at it - that is the whole instruction.",
+      body: "Guests point a camera at it. That is the whole instruction.",
     },
     {
       n: "03",
+      art: <KeepArt />,
       title: "Keep everything",
-      body: "Photos land in one gallery as they arrive. Download the lot as a single ZIP the morning after.",
+      body: "One gallery as they arrive, one ZIP the morning after.",
     },
   ];
 
@@ -31,12 +48,21 @@ export function Steps() {
           {steps.map((step) => (
             <li
               key={step.n}
-              className="rounded-[1.25rem] bg-paper p-5 shadow-md sm:p-6"
+              className="flex flex-col rounded-[1.25rem] bg-paper p-5 shadow-md sm:p-6"
             >
-              <span className="hole inline-flex h-11 w-11 items-center justify-center font-mono text-[0.8125rem] tracking-[0.1em] text-rose-soft sm:h-12 sm:w-12">
-                {step.n}
-              </span>
-              <h3 className="mt-4 text-h3">{step.title}</h3>
+              {/* The drawing sits in its own sunken field rather than loose on
+                  the card. Three illustrations of different densities need a
+                  shared edge or the row reads as three unrelated things. */}
+              <div className="flex items-center justify-center rounded-2xl bg-linen px-4 py-5">
+                {step.art}
+              </div>
+
+              <div className="mt-5 flex items-center gap-3">
+                <span className="hole inline-flex h-9 w-9 shrink-0 items-center justify-center font-mono text-[0.6875rem] tracking-[0.1em] text-rose-soft">
+                  {step.n}
+                </span>
+                <h3 className="text-h3">{step.title}</h3>
+              </div>
               <p className="mt-2 text-[0.9375rem] leading-relaxed text-ash">
                 {step.body}
               </p>
