@@ -24,9 +24,10 @@ import { shareUrl } from "@/lib/tokens";
 export const dynamic = "force-dynamic";
 
 /**
- * The console, in the order a host meets it: get the code onto a table, buy
- * more room if the night needs it, look at what arrived, dress the page up,
- * then the settings and the ending.
+ * The console, in the order a host meets it: get the code onto a table and take
+ * the photos home again, see how the night is going, buy more room if it needs
+ * it, look at what arrived, dress the page up, then the settings and the
+ * ending.
  *
  * Each id is the id of its panel, so `#upgrade` still lands on the plan even
  * though that panel is now behind a tab. One group is open at a time at every
@@ -35,6 +36,7 @@ export const dynamic = "force-dynamic";
  */
 const TABS: TabItem[] = [
   { id: "share", label: "Share" },
+  { id: "analytics", label: "Analytics" },
   { id: "upgrade", label: "Plan" },
   { id: "photos", label: "Photos" },
   { id: "page", label: "Event page" },
@@ -168,10 +170,12 @@ export default async function EventPage({
            where the page does. */
         tablistClassName="-mx-4 px-4 sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0"
       >
+        {/* The code and the ZIP are the two ends of the same errand - hand the
+            link out, take everything home afterwards - so they stack in one
+            column, the download under the code rather than beside it. */}
         <TabPanel
           id="share"
-          display="grid"
-          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:mt-0 xl:grid-cols-[1.1fr_1fr]"
+          className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
         >
           <SharePanel
             eventId={event.id}
@@ -180,6 +184,10 @@ export default async function EventPage({
             revoked={!active}
           />
 
+          <ArchivePanel eventId={event.id} photoCount={total} />
+        </TabPanel>
+
+        <TabPanel id="analytics" className="mt-5 sm:mt-6 lg:mt-0">
           <EventStatsPanel
             event={event}
             photoCount={total}
@@ -189,15 +197,7 @@ export default async function EventPage({
           />
         </TabPanel>
 
-        {/* The two-column rows split at `xl`, not `lg`: the rail takes 15rem
-            out of the width, so at exactly `lg` a pair of columns is narrower
-            than either panel reads well at. */}
-        <TabPanel
-          id="upgrade"
-          display="grid"
-          className="mt-5 gap-4 sm:mt-6 sm:gap-6 lg:mt-0 xl:grid-cols-[1.1fr_1fr]"
-        >
-          <ArchivePanel eventId={event.id} photoCount={total} />
+        <TabPanel id="upgrade" className="mt-5 sm:mt-6 lg:mt-0">
           <UpgradePanel
             eventId={event.id}
             tier={event.tier}
