@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useServerAction } from "@/hooks/use-server-action";
 
 import { revokeShareLink, rotateShareLink } from "@/lib/actions/share-links";
-import { Alert, Button, ButtonLink, Panel } from "@/components/ui";
+import { Alert, Button, Panel } from "@/components/ui";
 
 /**
  * The share panel is the product. A host should be able to get the code onto a
@@ -23,7 +23,41 @@ export function SharePanel({
   revoked: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [building, setBuilding] = useState(false);
   const { pending, error, setError, run } = useServerAction();
+
+  /**
+   * The card comes back as a PDF, and it is fetched rather than navigated to.
+   * Pointing the window at the endpoint would download the file in the ordinary
+   * case and replace the dashboard with a page of JSON in the one case that
+   * matters - a link revoked in another tab since this panel was drawn. This
+   * way that lands in the same Alert as everything else here.
+   */
+  async function downloadCard() {
+    setBuilding(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/events/${eventId}/qr?format=card`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setError(body?.error?.message ?? "The card could not be built.");
+        return;
+      }
+      const href = URL.createObjectURL(await res.blob());
+      const a = document.createElement("a");
+      a.href = href;
+      a.download =
+        /filename="([^"]+)"/.exec(
+          res.headers.get("content-disposition") ?? "",
+        )?.[1] ?? "say-cheese-card.pdf";
+      a.click();
+      URL.revokeObjectURL(href);
+    } catch {
+      setError("The card could not be built. Try again in a minute.");
+    } finally {
+      setBuilding(false);
+    }
+  }
 
   async function copy() {
     if (!link) return;
@@ -86,16 +120,19 @@ export function SharePanel({
                 <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
                   {copied ? "Copied" : "Copy link"}
                 </Button>
-                <ButtonLink
-                  href={`/api/events/${eventId}/qr?format=card`}
-                  target="_blank"
-                  rel="noopener"
+                <Button
+                  onClick={downloadCard}
                   variant="secondary"
                   size="sm"
+                  disabled={building}
                   className="w-10/12 max-w-[250px]"
                 >
-                  {brandedQr ? "Branded card" : "Printable card"}
-                </ButtonLink>
+                  {building
+                    ? "Building…"
+                    : brandedQr
+                      ? "Download branded card"
+                      : "Download the card"}
+                </Button>
               </div>
             </div>
           </div>
