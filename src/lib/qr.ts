@@ -201,8 +201,9 @@ function readable(colour: string, on: string): boolean {
 
 export interface CardOptions {
   eventName: string;
+  /** The card's eyebrow, already formatted for reading. */
+  eventDate?: string;
   colours: CardColours;
-  headline?: string;
 }
 
 /**
@@ -227,14 +228,16 @@ const K = PAGE_W / W;
  * The print-ready card, as a PDF a host can download, mail to a print shop, or
  * open on a phone.
  *
+ * The event's own name is the largest thing on it. That is what makes one card
+ * work for a wedding, a fortieth and a company summer party without a word of
+ * it being rewritten: the only large line is the one the host typed, so the
+ * card belongs to the party rather than to us. Our own name is one quiet line
+ * at the foot, which is where a maker's mark goes.
+ *
  * There is no link printed on it. A typed share token is a long string of
  * random characters that nobody gets right from a table across a dark room, and
  * the line asking them to try was the one thing on the card competing with the
  * code. The code is the way in.
- *
- * Nothing on it names an occasion either. The same card goes on a wedding
- * table, a fortieth and a company summer party, and the only line that differs
- * between them is the one the host typed themselves.
  *
  * The type is set in the PDF standard faces rather than the product's own. A
  * PDF either carries its fonts inside it or names ones the reader has to
@@ -253,7 +256,6 @@ export async function qrCardPdf(
   pdf.setProducer("Shot & Share");
 
   const display = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const sans = await pdf.embedFont(StandardFonts.Helvetica);
   const mono = await pdf.embedFont(StandardFonts.Courier);
 
   const page = pdf.addPage([PAGE_W, PAGE_H]);
@@ -295,24 +297,23 @@ export async function qrCardPdf(
     }
   }
 
-  tracked(page, "SHOT & SHARE", {
-    font: mono,
-    size: 18,
-    tracking: 3.2,
-    baseline: 150,
-    color: hex(colours.eyebrow),
-  });
-  centred(page, printable(opts.headline ?? "Share your photos"), {
+  // The date rather than a second instruction. "Point your camera at the code"
+  // is already under the code, where a guest looks after they have seen it, and
+  // saying it twice on one card reads as a card that does not trust them.
+  const date = printable(opts.eventDate ?? "").toUpperCase();
+  if (date) {
+    tracked(page, date, {
+      font: mono,
+      size: 15,
+      tracking: 2.6,
+      baseline: 150,
+      color: hex(colours.eyebrow),
+    });
+  }
+
+  drawName(page, printable(opts.eventName), {
     font: display,
-    size: 46,
-    baseline: 216,
-    color: hex(colours.heading),
-  });
-  centred(page, printable(opts.eventName), {
-    font: sans,
-    size: 22,
-    baseline: 258,
-    color: hex(colours.quiet),
+    colour: hex(colours.heading),
   });
 
   const qrBox = 320;
@@ -334,17 +335,88 @@ export async function qrCardPdf(
   centred(page, "Point your camera at the code", {
     font: display,
     size: 24,
-    baseline: qrY + qrBox + 100,
+    baseline: qrY + qrBox + 106,
     color: hex(colours.heading),
   });
-  centred(page, "No app. No account. Just photos.", {
-    font: sans,
-    size: 17,
-    baseline: H - 48,
-    color: hex(colours.quiet),
+  tracked(page, "SHOT & SHARE", {
+    font: mono,
+    size: 14,
+    tracking: 3,
+    baseline: H - 44,
+    color: hex(colours.eyebrow),
   });
 
   return pdf.save();
+}
+
+/**
+ * The event's name, as large as the card can carry it.
+ *
+ * A name is whatever a host typed, and the two shapes it comes in are "Ana &
+ * Marko" and "Marija i Nikola - vjenčanje 2026". Rather than picking a size
+ * that flatters the first and overflows the second, the size is solved for: one
+ * line as big as fits, and when even the smallest single line would run into
+ * the margins, two balanced lines instead.
+ */
+function drawName(
+  page: PDFPage,
+  name: string,
+  { font, colour }: { font: PDFFont; colour: ReturnType<typeof rgb> },
+) {
+  if (!name) return;
+  const room = 456;
+
+  const single = largestSize(font, [name], room, 52, 30);
+  if (single) {
+    centred(page, name, { font, size: single, baseline: 234, color: colour });
+    return;
+  }
+
+  const [top, bottom] = balance(name);
+  const size = largestSize(font, [top, bottom], room, 38, 15) ?? 15;
+  centred(page, top, { font, size, baseline: 206, color: colour });
+  centred(page, bottom, {
+    font,
+    size,
+    baseline: 206 + Math.round(size * 1.2),
+    color: colour,
+  });
+}
+
+/** The biggest whole point size in the range at which every line still fits. */
+function largestSize(
+  font: PDFFont,
+  lines: string[],
+  room: number,
+  from: number,
+  to: number,
+): number | null {
+  for (let size = from; size >= to; size -= 1) {
+    // Widths scale linearly, so measuring at a size in card units returns a
+    // width in card units - no need to convert to points and back.
+    if (lines.every((line) => font.widthOfTextAtSize(line, size) <= room)) {
+      return size;
+    }
+  }
+  return null;
+}
+
+/** Two lines of roughly equal length, split on the most even word boundary. */
+function balance(name: string): [string, string] {
+  const words = name.split(" ");
+  if (words.length < 2) return [name, ""];
+
+  let best = 1;
+  let closest = Infinity;
+  for (let at = 1; at < words.length; at += 1) {
+    const left = words.slice(0, at).join(" ").length;
+    const right = words.slice(at).join(" ").length;
+    if (Math.abs(left - right) < closest) {
+      closest = Math.abs(left - right);
+      best = at;
+    }
+  }
+  return [words.slice(0, best).join(" "), words.slice(best).join(" ")];
 }
 
 /**

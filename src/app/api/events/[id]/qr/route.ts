@@ -3,6 +3,7 @@ import { requireOwnedEvent } from "@/lib/host";
 import { resolveAppearance } from "@/lib/appearance/resolve";
 import { env } from "@/lib/env";
 import { getActiveShareToken } from "@/lib/events";
+import { formatEventDate } from "@/lib/format";
 import { cardColours, qrCardPdf, qrSvg } from "@/lib/qr";
 import { getTier } from "@/lib/tiers";
 import { shareUrl } from "@/lib/tokens";
@@ -60,7 +61,11 @@ export async function GET(
       });
     }
 
-    const pdf = await qrCardPdf(url, { eventName: event.name, colours });
+    const pdf = await qrCardPdf(url, {
+      eventName: event.name,
+      eventDate: formatEventDate(event.event_date),
+      colours,
+    });
 
     // The name the file lands under is the event's, because a host printing
     // three parties this month ends up with three of these in one folder.

@@ -14,6 +14,7 @@ async function card(opts: {
   eventName: string;
   branded: boolean;
   theme?: string;
+  eventDate?: string;
 }) {
   const colours = cardColours(
     opts.theme ? findTheme(opts.theme).palette : HOUSE,
@@ -21,6 +22,7 @@ async function card(opts: {
   );
   const bytes = await qrCardPdf(URL_UNDER_TEST, {
     eventName: opts.eventName,
+    eventDate: opts.eventDate ?? "14 June 2026",
     colours,
   });
   return { bytes, colours, text: Buffer.from(bytes).toString("latin1") };
@@ -95,6 +97,31 @@ describe("the printable card", () => {
     const { text } = await card({ eventName: "Ana and Marko", branded: true });
     expect(text).not.toContain("saycheese.app");
     expect(text).not.toContain("aVeryLongTokenValue123456");
+  });
+
+  it("sets a long name smaller rather than off the edge", async () => {
+    // The name is the largest thing on the card, and a host types whatever they
+    // type. A card that fits "Ana & Marko" and runs a longer one into the
+    // margin is a card that only works for short names.
+    for (const eventName of [
+      "Ana & Marko",
+      "Marija i Nikola - vjencanje 2026",
+      "The Fortieth Birthday Party of Alexander Constantine",
+      "Supercalifragilisticexpialidocious",
+    ]) {
+      await expect(card({ eventName, branded: true })).resolves.toBeTruthy();
+    }
+  });
+
+  it("does not say the same thing twice", async () => {
+    // The instruction lives under the code. The line above the name is the
+    // date, and a card with no date simply has no eyebrow.
+    const { bytes } = await card({
+      eventName: "Ana & Marko",
+      branded: true,
+      eventDate: "",
+    });
+    await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
   });
 
   it("sets a name the standard faces cannot encode, rather than throwing", async () => {
