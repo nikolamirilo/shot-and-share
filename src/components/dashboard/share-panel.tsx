@@ -119,56 +119,57 @@ export function SharePanel({
         </>
       ) : (
         <>
-          <div className="mt-5 grid gap-4 sm:grid-cols-[150px_1fr] sm:items-start sm:gap-5">
-            {/* Same SVG the printable card embeds, so what is on screen is
-                exactly what comes out of the printer.
+          {/* The code and the three buttons are one block, and the two halves
+              are measured off each other rather than sized by eye.
 
-                Capped and centred on a phone. Stretched across the full width
-                of a stacked column it is a 340px square that pushes the link
-                and both buttons below the fold, and nobody scans a code off
-                the screen it was generated on. */}
-            <div className="mx-auto w-full max-w-[168px] rounded-xl bg-paper p-2 shadow-md sm:mx-0 sm:max-w-none">
+              Stacked on a phone, the code takes the buttons' width, so the
+              column has one edge rather than two. Side by side, it takes their
+              height: three `sm` buttons at their 2.5rem minimum with a 0.5rem
+              gap between them is 8.5rem, and the code is that square. Change
+              the button size or count and this number has to change with it -
+              which is the cost of the two halves lining up exactly. */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-[8.5rem_1fr] sm:items-start sm:gap-5">
+            <div className="mx-auto aspect-square w-10/12 max-w-[250px] rounded-xl bg-paper p-2 shadow-md sm:mx-0 sm:size-[8.5rem] sm:max-w-none">
+              {/* Same code the printable card carries, drawn from the same
+                  plan, so what is on screen is what comes out of the printer. */}
               <img
                 src={`/api/events/${eventId}/qr?format=code`}
                 alt="QR code for this event"
-                className="w-full"
+                className="size-full"
                 width={512}
                 height={512}
               />
             </div>
 
-            <div>
-
-              {/* Three things a host does with a code, in the order they do
-                  them: send the link, print our card, or take the code away and
-                  put it in something of their own. */}
-              <div className="mt-3 flex flex-col items-center gap-2">
-                <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
-                  {copied ? "Copied" : "Copy link"}
-                </Button>
-                <Button
-                  onClick={downloadCard}
-                  variant="secondary"
-                  size="sm"
-                  disabled={busy !== null}
-                  className="w-10/12 max-w-[250px]"
-                >
-                  {busy === "card"
-                    ? "Building…"
-                    : brandedQr
-                      ? "Download branded card"
-                      : "Download the card"}
-                </Button>
-                <Button
-                  onClick={downloadPng}
-                  variant="secondary"
-                  size="sm"
-                  disabled={busy !== null}
-                  className="w-10/12 max-w-[250px]"
-                >
-                  {busy === "png" ? "Saving…" : "Download the code (PNG)"}
-                </Button>
-              </div>
+            {/* Three things a host does with a code, in the order they do
+                them: send the link, print our card, or take the code away and
+                put it in something of their own. */}
+            <div className="flex flex-col items-center gap-2">
+              <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
+                {copied ? "Copied" : "Copy link"}
+              </Button>
+              <Button
+                onClick={downloadCard}
+                variant="secondary"
+                size="sm"
+                disabled={busy !== null}
+                className="w-10/12 max-w-[250px]"
+              >
+                {busy === "card"
+                  ? "Building…"
+                  : brandedQr
+                    ? "Download branded card"
+                    : "Download the card"}
+              </Button>
+              <Button
+                onClick={downloadPng}
+                variant="secondary"
+                size="sm"
+                disabled={busy !== null}
+                className="w-10/12 max-w-[250px]"
+              >
+                {busy === "png" ? "Saving…" : "Download the code (PNG)"}
+              </Button>
             </div>
           </div>
 
