@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { JsonLd } from "@/components/seo/json-ld";
-import { Alert, Eyebrow } from "@/components/ui";
+import { Eyebrow } from "@/components/ui";
 import { breadcrumbSchema, graph } from "@/lib/seo";
 import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
 
@@ -332,16 +332,6 @@ export default async function LegalPage({
           <p className="mt-3 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
             Last updated {UPDATED}
           </p>
-
-          {/* The document says what the product does, which is the part that has
-              to be true and is. It has still not been through a lawyer, and the
-              blanks in it are deliberate - saying so at the top is more honest
-              than a line at the bottom nobody scrolls to. */}
-          <Alert tone="notice" className="mt-6">
-            Draft pending legal review. Everything here is an accurate
-            description of how the product behaves; the passages in square
-            brackets are blanks that have to be filled in before launch.
-          </Alert>
 
           {/* Numbered, because a legal document is referred to by its section
               rather than read start to finish. */}
