@@ -1,10 +1,17 @@
 <svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Shot &amp; Share">
   <title>Shot &amp; Share</title>
+  <!-- The crop frame, and a print already on its way out of it. Same
+       coordinates as MarkFrame and MarkSubject in src/components/layout/logo.tsx. -->
   <g stroke="#181214" stroke-width="18" stroke-linecap="square" fill="none">
     <path d="M 26 76 L 26 34 Q 26 26 34 26 L 76 26" />
     <path d="M 26 76 L 26 34 Q 26 26 34 26 L 76 26" transform="rotate(90 100 100)" />
     <path d="M 26 76 L 26 34 Q 26 26 34 26 L 76 26" transform="rotate(180 100 100)" />
     <path d="M 26 76 L 26 34 Q 26 26 34 26 L 76 26" transform="rotate(270 100 100)" />
   </g>
-  <circle cx="100" cy="100" r="20" fill="#7A1230" />
+  <g stroke="#7A1230" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 82 L82 82" />
+    <path d="M46 101 L82 101" />
+    <path d="M58 120 L82 120" />
+  </g>
+  <rect x="94" y="78" width="46" height="46" rx="10" fill="#7A1230" transform="rotate(-12 117 101)" />
 </svg>

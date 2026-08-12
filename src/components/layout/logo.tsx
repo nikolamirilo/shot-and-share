@@ -1,20 +1,23 @@
 /**
- * The mark: a crop frame.
+ * The mark: a photo leaving the frame.
  *
- * Four corner brackets and nothing in the middle. It is the gesture every
- * photograph starts with - deciding what is inside the picture and what is not
- * - and it is the only mark in the product that is drawn rather than
- * photographed, which is why it stays this simple.
+ * Four corner brackets - the gesture every photograph starts with, deciding
+ * what is inside the picture and what is not - and inside them a print already
+ * on its way out, tilted, with its trail behind it. The frame says a photo was
+ * taken. The print says it did not stay where it was taken, which is the whole
+ * product.
  *
- * The gap in the middle is load-bearing. At 16px the brackets read as one
- * square, at 200px they read as four marks around an empty frame, and both are
- * the same object. A mark that has to survive being printed on a card in a dark
- * room cannot be an illustration.
+ * The trail does the work, which is why the photo itself is a plain rounded
+ * square. Drawing a picture inside the picture is how a mark turns into an
+ * illustration, and an illustration cannot be printed on a card in a dark room.
  *
- * The shutter dot is the one flash of claret and appears in no other mark.
+ * The print and its trail are the one flash of claret and appear in no other
+ * mark. Below roughly 20px the three lines close up against the print and the
+ * middle reads as a single claret shape moving right - nothing here depends on
+ * the lines being counted.
  */
 
-type Variant = "primary" | "reversed" | "mono";
+export type Variant = "primary" | "reversed" | "mono";
 
 const PALETTES: Record<Variant, { bracket: string; dot: string }> = {
   primary: { bracket: "#181214", dot: "#7A1230" },
@@ -22,10 +25,30 @@ const PALETTES: Record<Variant, { bracket: string; dot: string }> = {
   mono: { bracket: "currentColor", dot: "currentColor" },
 };
 
-/* One bracket, drawn once and rotated into the other three corners. The arms
-   are deliberately short: a longer arm closes the frame and the mark turns
-   into a square with a hole in it. */
-const BRACKET = "M 26 76 L 26 34 Q 26 26 34 26 L 76 26";
+/**
+ * The mark, as coordinates rather than as a component.
+ *
+ * The favicon, the home-screen icon and the card that represents this site in
+ * a feed are drawn somewhere else, and two of them go through Satori, which
+ * walks an `<svg>` looking for plain shapes and silently drops anything it has
+ * to resolve first - a component nested in there renders as nothing at all,
+ * and nothing at all is exactly what a missing icon looks like. So what is
+ * shared is these numbers, and each renderer writes its own plain elements
+ * from them. Everything is on a 0 0 200 200 canvas.
+ *
+ * The bracket is drawn once and rotated into the other three corners. Its arms
+ * are deliberately short: a longer arm closes the frame and the mark turns
+ * into a square with a hole in it.
+ */
+export const MARK = {
+  bracket: "M 26 76 L 26 34 Q 26 26 34 26 L 76 26",
+  corners: [90, 180, 270],
+  frameWidth: 18,
+  /** The trail, drawn before the print so the print reads as ahead of it. */
+  trail: ["M58 82 L82 82", "M46 101 L82 101", "M58 120 L82 120"],
+  trailWidth: 11,
+  print: { x: 94, y: 78, size: 46, rx: 10, tilt: "rotate(-12 117 101)" },
+} as const;
 
 export function LogoMark({
   variant = "primary",
@@ -48,18 +71,40 @@ export function LogoMark({
     >
       <g
         stroke={c.bracket}
-        strokeWidth={18}
+        strokeWidth={MARK.frameWidth}
         strokeLinecap="square"
         fill="none"
       >
-        <path d={BRACKET} />
-        <path d={BRACKET} transform="rotate(90 100 100)" />
-        <path d={BRACKET} transform="rotate(180 100 100)" />
-        <path d={BRACKET} transform="rotate(270 100 100)" />
+        <path d={MARK.bracket} />
+        {MARK.corners.map((deg) => (
+          <path
+            key={deg}
+            d={MARK.bracket}
+            transform={`rotate(${deg} 100 100)`}
+          />
+        ))}
       </g>
 
-      {/* The subject. One dot, centred, the size of a shutter release. */}
-      <circle cx={100} cy={100} r={20} fill={c.dot} />
+      <g
+        stroke={c.dot}
+        strokeWidth={MARK.trailWidth}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {MARK.trail.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
+      <rect
+        x={MARK.print.x}
+        y={MARK.print.y}
+        width={MARK.print.size}
+        height={MARK.print.size}
+        rx={MARK.print.rx}
+        fill={c.dot}
+        transform={MARK.print.tilt}
+      />
     </svg>
   );
 }
