@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AccountMenu } from "@/components/layout/account-menu";
 import { Wordmark } from "@/components/layout/logo";
+import { HeaderShell } from "@/components/layout/site-header";
 import { ButtonLink } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -58,35 +59,39 @@ export default async function DashboardLayout({
           taught them it is the way out. "My events" is what carries them back
           into the app instead - it appears from xs up, where there is room
           for a third thing, and below that the pages that need it have their
-          own way back. */}
-      <header className="relative z-10 bg-linen shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5">
-          <Link href="/" aria-label="Shot & Share, home" className="shrink-0">
-            <Wordmark labelClassName="hidden xs:inline" />
-          </Link>
+          own way back.
 
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Link
-              href="/dashboard"
-              className="hidden whitespace-nowrap text-[0.9375rem] font-semibold hover:underline xs:inline"
-            >
-              My events
-            </Link>
-            <ButtonLink
-              href="/dashboard/events/new"
-              size="sm"
-              className="whitespace-nowrap"
-            >
-              New event
-            </ButtonLink>
-            <AccountMenu
-              name={name}
-              email={user.email ?? null}
-              avatarUrl={avatarUrl}
-            />
-          </div>
+          The card itself is the marketing header's - same radius, same white,
+          same blur, same padding - because a person who signs in has not
+          changed products. It does not follow the page down: the tab rails
+          inside the dashboard pin themselves to the top of the viewport and
+          would run underneath it. */}
+      <HeaderShell className="relative z-10">
+        <Link href="/" aria-label="Shot & Share, home" className="shrink-0">
+          <Wordmark labelClassName="hidden xs:inline" />
+        </Link>
+
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            href="/dashboard"
+            className="hidden whitespace-nowrap text-[0.9375rem] font-semibold hover:underline xs:inline"
+          >
+            My events
+          </Link>
+          <ButtonLink
+            href="/dashboard/events/new"
+            size="sm"
+            className="whitespace-nowrap"
+          >
+            New event
+          </ButtonLink>
+          <AccountMenu
+            name={name}
+            email={user.email ?? null}
+            avatarUrl={avatarUrl}
+          />
         </div>
-      </header>
+      </HeaderShell>
 
       <main className="flex-1">{children}</main>
 
