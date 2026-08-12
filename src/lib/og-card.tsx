@@ -1,3 +1,4 @@
+import { MARK } from "@/components/layout/logo";
 import { SITE } from "@/lib/seo";
 
 /**
@@ -21,18 +22,46 @@ export const OG_SIZE = { width: 1200, height: 630 };
 const CLARET = "#7A1230";
 const CHALK = "#FDF6F7";
 
-/** The mark, drawn at the size the card needs it. */
+/**
+ * The mark, drawn at the size the card needs it, all in chalk on the claret.
+ *
+ * Written out as plain shapes on purpose. Satori resolves no components inside
+ * an `<svg>`, so the coordinates are imported and the elements are not.
+ */
 function Mark({ size }: { size: number }) {
-  const bracket = "M 26 76 L 26 34 Q 26 26 34 26 L 76 26";
   return (
     <svg width={size} height={size} viewBox="0 0 200 200">
-      <g stroke={CHALK} strokeWidth={18} strokeLinecap="square" fill="none">
-        <path d={bracket} />
-        <path d={bracket} transform="rotate(90 100 100)" />
-        <path d={bracket} transform="rotate(180 100 100)" />
-        <path d={bracket} transform="rotate(270 100 100)" />
+      <g
+        stroke={CHALK}
+        strokeWidth={MARK.frameWidth}
+        strokeLinecap="square"
+        fill="none"
+      >
+        <path d={MARK.bracket} />
+        {MARK.corners.map((deg) => (
+          <path key={deg} d={MARK.bracket} transform={`rotate(${deg} 100 100)`} />
+        ))}
       </g>
-      <circle cx={100} cy={100} r={20} fill={CHALK} />
+      <g
+        stroke={CHALK}
+        strokeWidth={MARK.trailWidth}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {MARK.trail.map((d) => (
+          <path key={d} d={d} />
+        ))}
+      </g>
+      <rect
+        x={MARK.print.x}
+        y={MARK.print.y}
+        width={MARK.print.size}
+        height={MARK.print.size}
+        rx={MARK.print.rx}
+        fill={CHALK}
+        transform={MARK.print.tilt}
+      />
     </svg>
   );
 }

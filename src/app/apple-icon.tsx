@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+import { MARK } from "@/components/layout/logo";
+
 /**
  * The home-screen icon. Safari will not take an SVG here, so the mark is drawn
  * once at 180px and rendered to PNG at build time rather than a binary being
@@ -9,7 +11,6 @@ export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
 export default function AppleIcon() {
-  const bracket = "M 26 76 L 26 34 Q 26 26 34 26 L 76 26";
   return new ImageResponse(
     (
       <div
@@ -23,13 +24,32 @@ export default function AppleIcon() {
         }}
       >
         <svg width={132} height={132} viewBox="0 0 200 200">
-          <g stroke="#181214" strokeWidth={18} strokeLinecap="square" fill="none">
-            <path d={bracket} />
-            <path d={bracket} transform="rotate(90 100 100)" />
-            <path d={bracket} transform="rotate(180 100 100)" />
-            <path d={bracket} transform="rotate(270 100 100)" />
+          <g stroke="#181214" strokeWidth={MARK.frameWidth} strokeLinecap="square" fill="none">
+            <path d={MARK.bracket} />
+            {MARK.corners.map((deg) => (
+              <path key={deg} d={MARK.bracket} transform={`rotate(${deg} 100 100)`} />
+            ))}
           </g>
-          <circle cx={100} cy={100} r={20} fill="#7A1230" />
+          <g
+            stroke="#7A1230"
+            strokeWidth={MARK.trailWidth}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {MARK.trail.map((d) => (
+              <path key={d} d={d} />
+            ))}
+          </g>
+          <rect
+            x={MARK.print.x}
+            y={MARK.print.y}
+            width={MARK.print.size}
+            height={MARK.print.size}
+            rx={MARK.print.rx}
+            fill="#7A1230"
+            transform={MARK.print.tilt}
+          />
         </svg>
       </div>
     ),
