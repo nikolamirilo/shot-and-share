@@ -12,6 +12,8 @@
  * their browser and never touches the event.
  */
 
+import type { MediaView } from "@/lib/media-view";
+
 export const GALLERY_LAYOUTS = [
   {
     id: "grid",
@@ -95,6 +97,44 @@ export function neighbours(
     prev: ids[at - 1] ?? null,
     next: ids[at + 1] ?? null,
   };
+}
+
+/* --- keeping a wall up to date -------------------------------------------- */
+
+/**
+ * A fresh newest-first page, with anything older the guest had already scrolled
+ * to kept underneath it.
+ *
+ * A refresh used to replace the list outright, which threw away every page past
+ * the first: a guest who had pressed "Show more" twice and then uploaded a
+ * photograph watched a hundred and fifty photographs collapse back to fifty.
+ *
+ * The page is authoritative for the stretch of the evening it covers - a photo
+ * deleted inside that range really is gone, and a photo that arrived inside it
+ * appears - and everything older than the page is kept as it was. An empty page
+ * means an empty gallery, not a failed request; those throw before they get
+ * here.
+ */
+export function withFreshHead(
+  held: readonly MediaView[],
+  head: readonly MediaView[],
+): MediaView[] {
+  if (head.length === 0) return [];
+  const oldest = head[head.length - 1].createdAt;
+  const arrived = new Set(head.map((item) => item.id));
+  const older = held.filter(
+    (item) => item.createdAt < oldest && !arrived.has(item.id),
+  );
+  return [...head, ...older];
+}
+
+/** "Show more": another page onto the end, minus anything already held. */
+export function withOlder(
+  held: readonly MediaView[],
+  page: readonly MediaView[],
+): MediaView[] {
+  const seen = new Set(held.map((item) => item.id));
+  return [...held, ...page.filter((item) => !seen.has(item.id))];
 }
 
 const STORAGE_KEY = "shot-and-share:gallery-layout";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 import { useServerAction } from "@/hooks/use-server-action";
 
@@ -30,6 +31,30 @@ export function HostGallery({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { pending, error, run } = useServerAction();
   const [layout, setLayout] = useState<GalleryLayout>(eventLayout);
+  const router = useRouter();
+
+  /**
+   * The wall is rendered on the server, once, and guests keep uploading after
+   * that. A host who leaves the dashboard open on a laptop all evening was
+   * looking at the party as it stood when the page loaded, with no way of
+   * knowing it - so coming back to the tab asks the server again.
+   *
+   * On return to the tab rather than on a timer: the photographs are only worth
+   * fetching when somebody is there to look at them, and the page is not cheap
+   * to render - it signs a URL per photograph.
+   */
+  const lastRefresh = useRef(0);
+  useEffect(() => {
+    const REFRESH_NO_MORE_THAN_EVERY = 10_000;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastRefresh.current < REFRESH_NO_MORE_THAN_EVERY) return;
+      lastRefresh.current = Date.now();
+      router.refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [router]);
 
   // Start on the event's layout - which is exactly what every guest gets - and
   // let the host's own console preference take over once the browser has told
