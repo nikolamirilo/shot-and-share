@@ -15,18 +15,15 @@ import { DangerZone } from "@/components/dashboard/danger-zone";
 import { HostGallery } from "@/components/dashboard/host-gallery";
 import { SettingsForm } from "@/components/dashboard/settings-form";
 import { SharePanel } from "@/components/dashboard/share-panel";
-import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
 import { StoragePanel } from "@/components/dashboard/storage-panel";
-import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
+import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
 import { Alert, Badge, ButtonLink, Eyebrow, Stat } from "@/components/ui";
-import type { EventRow, MediaRow } from "@/lib/db/types";
-import { env } from "@/lib/env";
-import { getActiveShareToken, storageSummary, toMediaViews } from "@/lib/events";
+import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
+import { findEventName } from "@/lib/db/event-repo";
 import { formatEventDate } from "@/lib/format";
 import { coerceLayout } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/server";
-import { getTier } from "@/lib/tiers";
-import { shareUrl } from "@/lib/tokens";
+import { loadEventConsole } from "@/lib/views/event-console";
 
 export const dynamic = "force-dynamic";
 
@@ -35,14 +32,8 @@ export const dynamic = "force-dynamic";
  * what arrived, dress the page up, buy more room if the night needs it, then
  * the settings and the ending.
  *
- * Five, not six. There was an Analytics tab, and taking it away lost nothing -
- * it was never a section, it was four numbers about four different things, and
- * each one says more beside what it measures. How often the link was opened
- * belongs under the link. How much room is left belongs above the price of
- * more. What arrived belongs over the gallery.
- *
- * Five is also what the bar wants. One button raised out of the middle needs an
- * odd number so the rest divide evenly around it - see `Tabs`.
+ * Five, not six, because the bar wants an odd number: one button is raised out
+ * of the middle and the rest divide evenly around it - see `Tabs`.
  *
  * Each id is the id of its panel, so `#upgrade` still lands on the plan even
  * though that panel is behind a tab.
@@ -82,13 +73,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("events")
-    .select("name")
-    .eq("id", id)
-    .maybeSingle();
-  return { title: data?.name ?? "Event" };
+  const name = await findEventName(await createClient(), id);
+  return { title: name ?? "Event" };
 }
 
 export default async function EventPage({
@@ -100,65 +86,20 @@ export default async function EventPage({
 }) {
   const { id } = await params;
   const { purchase } = await searchParams;
-  const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (!data) notFound();
-  const event = data as EventRow;
+  const view = await loadEventConsole(id);
+  if (!view) notFound();
 
-  const [{ data: stats }, { data: mediaRows }, { data: coverRows }, active] =
-    await Promise.all([
-      supabase.rpc("event_stats", { p_event: event.id }),
-      supabase
-        .from("media")
-        .select("*")
-        .eq("event_id", event.id)
-        .eq("status", "ready")
-        // Guests only. A cover the host uploaded lives in the same table and
-        // the same folder, but it is not a photograph of the party - see
-        // migration 0013 - so it belongs in the picker rather than the gallery.
-        .eq("source", "guest")
-        .order("created_at", { ascending: false })
-        .limit(120),
-      // The host's own covers, all of them. There are only ever a handful, and
-      // they get their own row at the top of the picker so a host can go back
-      // to one they uploaded last week.
-      supabase
-        .from("media")
-        .select("*")
-        .eq("event_id", event.id)
-        .eq("status", "ready")
-        .eq("source", "cover")
-        .order("created_at", { ascending: false }),
-      getActiveShareToken(event.id),
-    ]);
-
-  const counts = stats?.[0] ?? {
-    photo_count: 0,
-    video_count: 0,
-    uploader_count: 0,
-    bytes: 0,
-  };
-  const total = Number(counts.photo_count) + Number(counts.video_count);
-  const media = await toMediaViews((mediaRows ?? []) as MediaRow[]);
-  const covers = await toMediaViews((coverRows ?? []) as MediaRow[]);
-  const summary = storageSummary(event);
-  const tier = getTier(event.tier);
-  const link = active ? shareUrl(env.siteUrl, active.token) : null;
+  const { event, tier, summary, media, covers, photoCount } = view;
 
   return (
     /* The bottom padding is the bar's own height plus room to breathe. Without
-       it the last thing on every panel sits underneath the navigation, which is
-       the one bug a pinned bar always ships with. */
+       it the last thing on every panel sits underneath the navigation. */
     <div className="mx-auto max-w-6xl px-4 py-8 pb-28 sm:px-5 sm:py-10 sm:pb-10">
-      {/* Below xs the header has no room for "My events", and the mark now
-          goes to the front of the site rather than to the dashboard, so this
-          is the way back out of an event on a phone. That makes it a control
-          rather than a caption, and it is sized like one. */}
+      {/* Below xs the header has no room for "My events", and the mark goes to
+          the front of the site rather than the dashboard, so this is the way
+          back out of an event on a phone. That makes it a control rather than a
+          caption, and it is sized like one. */}
       <ButtonLink href="/dashboard" variant="secondary" size="sm">
         <MdArrowBackIosNew aria-hidden className="shrink-0" /> All events
       </ButtonLink>
@@ -176,9 +117,6 @@ export default async function EventPage({
         </div>
       </header>
 
-      {/* Both notices used to say "below", which was true when the page was
-          one column of everything. One tab is open at a time now, so they name
-          the tab instead. */}
       {purchase && (
         <Alert tone="notice" className="mt-5 sm:mt-6">
           Payment received. If the plan still looks the same, give the provider
@@ -203,27 +141,26 @@ export default async function EventPage({
         sticky
         className="mt-6 sm:mt-7"
         /* Below `sm` this is pinned across the bottom of the screen and needs
-           no margin of its own. From `sm` it is a strip that runs to both edges
-           of the page, and at `lg` a rail that stops where the page does. */
+           no margin. From `sm` it is a strip that runs to both edges of the
+           page, and at `lg` a rail that stops where the page does. */
         tablistClassName="sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0"
       >
         {/* The code and the ZIP are the two ends of the same errand - hand the
-            link out, take everything home afterwards - so they stack in one
-            column, the download under the code rather than beside it. */}
+            link out, take everything home afterwards - so they stack. */}
         <TabPanel
           id="share"
           className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
         >
           <SharePanel
             eventId={event.id}
-            link={link}
+            link={view.shareLink}
             brandedQr={tier.brandedQr}
-            revoked={!active}
+            revoked={view.shareLink === null}
             opens={event.link_opens}
-            uploaders={Number(counts.uploader_count)}
+            uploaders={view.uploaderCount}
           />
 
-          <ArchivePanel eventId={event.id} photoCount={total} />
+          <ArchivePanel eventId={event.id} photoCount={photoCount} />
         </TabPanel>
 
         <TabPanel id="photos" className="mt-5 sm:mt-6 lg:mt-0">
@@ -231,7 +168,7 @@ export default async function EventPage({
             <div>
               <Eyebrow>Gallery</Eyebrow>
               <h2 className="mt-2 text-[1.625rem] sm:text-h2">
-                {total === 0
+                {photoCount === 0
                   ? "Waiting for the first photo"
                   : "Everything so far"}
               </h2>
@@ -248,19 +185,18 @@ export default async function EventPage({
           </div>
 
           {/* What arrived, over the thing that arrived. Two numbers rather than
-              a panel: the gallery underneath is the real answer and these are
-              its caption. */}
+              a panel: the gallery underneath is the real answer. */}
           <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-md">
-            <Stat label="Photos" value={total.toLocaleString("en-GB")} />
+            <Stat label="Photos" value={photoCount.toLocaleString("en-GB")} />
             <Stat
               label="People who uploaded"
-              value={Number(counts.uploader_count).toLocaleString("en-GB")}
+              value={view.uploaderCount.toLocaleString("en-GB")}
             />
           </dl>
 
-          {media.length < total && (
+          {media.length < photoCount && (
             <p className="mt-4 text-[0.8125rem] text-ash">
-              Showing the {media.length} most recent of {total}.
+              Showing the {media.length} most recent of {photoCount}.
             </p>
           )}
 
@@ -268,21 +204,18 @@ export default async function EventPage({
             <HostGallery
               eventId={event.id}
               media={media}
-              shareLink={link}
+              shareLink={view.shareLink}
               eventLayout={coerceLayout(event.gallery_layout)}
             />
           </div>
         </TabPanel>
 
-        {/* These two used to be the two columns of one row on a laptop. Only
-            one tab is open at a time now, so there is no row to be columns of
-            and they are ordinary siblings. */}
         <TabPanel id="page" className="mt-5 sm:mt-6 lg:mt-0">
           <AppearanceForm
             event={event}
             media={media}
             covers={covers}
-            photoCount={total}
+            photoCount={photoCount}
             maxFileBytes={tier.maxFileBytes}
             remainingBytes={summary.remaining}
             locked={!tier.customPage}
