@@ -168,6 +168,27 @@ describe("presigning a cover image", () => {
     );
   });
 
+  /** Same missing-MIME case the guest route has; see upload-presign.test.ts. */
+  it("takes an image whose type the picker never reported", async () => {
+    const response = await presignRequest({ ...compressedImage, type: "" });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.upload.source).toBe("compressed");
+    expect(body.upload.media.fields.key).toMatch(/\.webp$/);
+  });
+
+  it("refuses an untyped file the browser could not decode", async () => {
+    const response = await presignRequest({
+      size: 3_000_000,
+      type: "",
+      needsServer: true,
+    });
+
+    expect(response.status).toBe(400);
+    expect(store.reserved()).toBe(0);
+  });
+
   it("refuses a video", async () => {
     const response = await presignRequest({
       size: 8_000_000,

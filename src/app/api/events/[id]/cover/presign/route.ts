@@ -29,7 +29,8 @@ export const dynamic = "force-dynamic";
 const bodySchema = z.object({
   file: z.object({
     size: z.number().int().positive(),
-    type: z.string().min(3).max(120),
+    /** Empty is allowed; see classifyUpload in the guest presign route. */
+    type: z.string().max(120),
     /** The compressed copy the browser produced, if it managed one. */
     compressed: z
       .object({
@@ -94,8 +95,16 @@ export async function POST(
     const body = await parseBody(request, bodySchema);
     const file = body.file;
 
+    /*
+     * A rendition the browser produced settles what this is, exactly as it does
+     * on the guest side: pickers routinely report no MIME type at all, and
+     * turning a decoded, re-encoded photograph away on a missing header is the
+     * one way this endpoint fails for a host who did nothing wrong.
+     */
+    const decoded = Boolean(file.compressed) && !file.needsServer;
     const classified = classify(file.type);
-    if (!classified || classified.kind !== "photo") {
+    const isPhoto = classified ? classified.kind === "photo" : decoded;
+    if (!isPhoto) {
       throw new ApiError(
         "bad_request",
         "A cover has to be an image. Pick a photo rather than a video.",
@@ -115,18 +124,20 @@ export async function POST(
     // The compressed copy is the photo, exactly as it is for a guest. The one
     // exception is a file the browser could not decode - chiefly HEIC outside
     // Safari - which goes up as it came off the disk for the worker to replace.
-    const useCompressed = Boolean(file.compressed) && !file.needsServer;
+    // Only that passthrough path needs the declared type, and only there is it
+    // guaranteed to be present: `decoded` is false, so `classified` is set.
+    const useCompressed = decoded;
 
     const format: string = useCompressed
       ? file.compressed!.format
-      : imageFormatFromMime(mime) ?? classified.ext;
+      : imageFormatFromMime(mime) ?? classified!.ext;
     const ext = useCompressed
       ? IMAGE_EXT[file.compressed!.format as ImageFormat]
-      : classified.ext;
+      : classified!.ext;
     const bytes = useCompressed ? file.compressed!.size : file.size;
     const contentType = useCompressed
       ? IMAGE_MIME[file.compressed!.format as ImageFormat]
-      : mime;
+      : mime || IMAGE_MIME[format as ImageFormat] || "application/octet-stream";
 
     const key = mediaKey(scope, mediaId, ext);
 

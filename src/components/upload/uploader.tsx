@@ -235,17 +235,27 @@ export function Uploader({
     });
   }
 
-  /** Runs a set of items through both gates and reports what survived. */
+  /**
+   * Runs a set of items through both gates and reports what survived.
+   *
+   * Everything is inside the try, including the two lines that read the
+   * fingerprint and the saved name. They look incapable of failing and are not:
+   * they touch `crypto` and `localStorage`, both of which throw outright in
+   * some browsers. Outside the try that left `busy` stuck on for good - the
+   * button disabled, the bar at zero, no message - which is the worst way for
+   * an upload to fail, because the guest cannot even tell that it has.
+   */
   async function runBatch(batch: Item[]) {
     setBusy(true);
-    const fingerprint = getFingerprint();
-    const uploaderName = name.trim() || null;
-    saveName(name.trim());
-
-    const compressing = gate(COMPRESS_AT_ONCE);
-    const uploading = gate(UPLOAD_AT_ONCE);
 
     try {
+      const fingerprint = getFingerprint();
+      const uploaderName = name.trim() || null;
+      saveName(name.trim());
+
+      const compressing = gate(COMPRESS_AT_ONCE);
+      const uploading = gate(UPLOAD_AT_ONCE);
+
       const results = await Promise.all(
         batch.map((item) =>
           runOne(item, fingerprint, uploaderName, compressing, uploading),
@@ -255,6 +265,16 @@ export function Uploader({
       const succeeded = results.filter(Boolean).length;
       setCompleted((prev) => prev + succeeded);
       if (succeeded > 0) onUploaded();
+    } catch (e) {
+      console.error("[upload] the batch could not be started", e);
+      setError("Something on this device stopped the upload before it began.");
+      setItems((prev) =>
+        prev.map((item) =>
+          batch.some((b) => b.key === item.key)
+            ? { ...item, status: "failed", error: "Could not start." }
+            : item,
+        ),
+      );
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";

@@ -14,6 +14,36 @@ const FINGERPRINT_KEY = "say-cheese:fingerprint";
 const NAME_KEY = "say-cheese:name";
 
 /**
+ * A random identifier that does not need a secure context.
+ *
+ * `crypto.randomUUID` exists only on HTTPS and localhost. Over plain HTTP - a
+ * phone opening the share link by IP on the venue wifi, a LAN preview, an
+ * office proxy that has not been given a certificate - it is simply not there,
+ * so calling it throws a TypeError rather than returning anything. That is the
+ * whole upload gone, before the first byte, and the guest is told nothing.
+ *
+ * `getRandomValues` is available in every one of those places, and where even
+ * it is missing this falls back again. Nothing here is a security boundary:
+ * the value identifies a browser to itself so it can delete its own photo.
+ */
+function randomId(): string {
+  const c: Crypto | undefined = globalThis.crypto;
+
+  if (typeof c?.randomUUID === "function") {
+    return c.randomUUID().replace(/-/g, "");
+  }
+
+  if (typeof c?.getRandomValues === "function") {
+    const bytes = c.getRandomValues(new Uint8Array(16));
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  return Array.from({ length: 32 }, () =>
+    Math.floor(Math.random() * 16).toString(16),
+  ).join("");
+}
+
+/**
  * Not an account, and deliberately not one. A random id in localStorage is
  * exactly enough to let a guest remove the blurry photo they just uploaded,
  * and nothing more.
@@ -22,13 +52,13 @@ export function getFingerprint(): string {
   try {
     const existing = localStorage.getItem(FINGERPRINT_KEY);
     if (existing) return existing;
-    const fresh = crypto.randomUUID().replace(/-/g, "");
+    const fresh = randomId();
     localStorage.setItem(FINGERPRINT_KEY, fresh);
     return fresh;
   } catch {
     // Private mode, or storage disabled. Uploads still work; only the
     // remove-my-own-photo affordance is lost.
-    return crypto.randomUUID().replace(/-/g, "");
+    return randomId();
   }
 }
 

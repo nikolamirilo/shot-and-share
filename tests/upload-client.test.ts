@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   UploadError,
   gate,
+  getFingerprint,
   postJson,
   uploadToPresigned,
   withRetry,
@@ -92,6 +93,61 @@ describe("gate", () => {
     expect(order.indexOf("compress b")).toBeLessThan(
       order.indexOf("upload a") + 1,
     );
+  });
+});
+
+/**
+ * `crypto.randomUUID` exists only in a secure context. A phone opening the
+ * share link by IP address on the venue wifi is not one, and neither is a LAN
+ * preview - so the call threw a TypeError, took the whole batch down before a
+ * single byte moved, and left the button disabled with nothing said.
+ */
+describe("getFingerprint", () => {
+  const store = new Map<string, string>();
+
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("works where randomUUID is not available", () => {
+    vi.stubGlobal("crypto", {
+      getRandomValues: (array: Uint8Array) => {
+        array.fill(7);
+        return array;
+      },
+    });
+
+    const id = getFingerprint();
+    expect(id).toMatch(/^[0-9a-f]{32}$/);
+    // Remembered, so the guest can still delete the photo they just sent.
+    expect(getFingerprint()).toBe(id);
+  });
+
+  it("works where there is no usable crypto at all", () => {
+    vi.stubGlobal("crypto", {});
+    expect(getFingerprint()).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it("still returns an id when storage itself throws", () => {
+    vi.stubGlobal("crypto", {});
+    vi.stubGlobal("localStorage", {
+      getItem() {
+        throw new Error("private mode");
+      },
+      setItem() {
+        throw new Error("private mode");
+      },
+    });
+
+    expect(getFingerprint()).toMatch(/^[0-9a-f]{32}$/);
   });
 });
 

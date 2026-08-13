@@ -114,9 +114,39 @@ const PHOTO_MIME = [...Object.values(IMAGE_MIME), "image/heif"];
 
 export const ACCEPTED_MIME = [...PHOTO_MIME, ...Object.values(VIDEO_MIME)];
 
+/**
+ * Extensions, listed beside the MIME types rather than instead of them.
+ *
+ * A MIME-only `accept` is the reason a guest can open the picker, see their
+ * photos greyed out and be unable to select any of them. The picker matches a
+ * file against the list using the type the *operating system* reports, and for
+ * HEIC that is very often nothing at all - Windows and most Android builds have
+ * no mapping for it, so `image/heic` matches no file on the device. The
+ * extension is the only thing that is always there.
+ *
+ * Both halves are needed. An extension alone loses the camera on iOS, which
+ * hands back a capture with a name but matches on type.
+ */
+const PHOTO_EXT = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".avif",
+  ".gif",
+  ".heic",
+  ".heif",
+];
+
+const VIDEO_EXT = [".mp4", ".mov", ".m4v", ".webm"];
+
 /** What the file input offers. Photos first: that is the common case. */
-export const ACCEPT_ATTRIBUTE_PHOTO = PHOTO_MIME.join(",");
-export const ACCEPT_ATTRIBUTE_ALL = ACCEPTED_MIME.join(",");
+export const ACCEPT_ATTRIBUTE_PHOTO = [...PHOTO_MIME, ...PHOTO_EXT].join(",");
+export const ACCEPT_ATTRIBUTE_ALL = [
+  ...ACCEPTED_MIME,
+  ...PHOTO_EXT,
+  ...VIDEO_EXT,
+].join(",");
 
 export function classify(
   mime: string,
