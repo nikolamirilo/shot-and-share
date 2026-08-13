@@ -80,6 +80,35 @@ describe("the masonry wall", () => {
   });
 });
 
+describe("filling the wall", () => {
+  /**
+   * Handing the browser a whole page of images at once is what made the wall
+   * fill in at random: they start together and finish in whatever order their
+   * file sizes settle on. These render without effects, which is exactly the
+   * first wave - ten, and nothing else asked of the network yet.
+   */
+  it("asks for the first ten photographs and no more", () => {
+    expect(order(markup("grid", photos(25)))).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    ]);
+  });
+
+  it("still holds a place for the ones whose turn has not come", () => {
+    // Held, not dropped. The wall keeps its full height so it does not grow
+    // under a thumb that is already scrolling.
+    expect(markup("grid", photos(25)).match(/<li>/g)).toHaveLength(25);
+  });
+
+  it("takes the turn from the gallery's order, not the column's", () => {
+    // Masonry, two columns: the ten newest are the top five of each column,
+    // not the first ten of the left one.
+    expect(columns(markup("masonry", photos(25)))).toEqual([
+      [1, 3, 5, 7, 9],
+      [2, 4, 6, 8, 10],
+    ]);
+  });
+});
+
 describe("the other layouts", () => {
   it("render photographs in the order they were given", () => {
     // Grid, Circles and Stack are all one flow, so source order is what shows.

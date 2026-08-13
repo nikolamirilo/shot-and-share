@@ -1,11 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 import { type GalleryLayout, aspectRatio, holeSize } from "@/lib/gallery";
+
+/** The props a layout does not get to decide, per photograph. */
+type TileTurn = Pick<
+  TileProps,
+  "item" | "onActivate" | "selected" | "selectable" | "hold" | "onSettled"
+>;
 
 /**
  * One gallery, four shapes, used by both the guest page and the host dashboard.
@@ -28,6 +34,18 @@ export function PhotoGallery({
   isSelected?: (item: MediaView) => boolean;
   className?: string;
 }) {
+  const { held, settle } = useLoadQueue(items);
+
+  /** Position in `items` is what decides a photograph's turn, in every layout. */
+  const turn = (item: MediaView, index: number): TileTurn => ({
+    item,
+    onActivate,
+    selected: isSelected?.(item) ?? false,
+    selectable: Boolean(isSelected),
+    hold: held(index),
+    onSettled: settle,
+  });
+
   if (layout === "holes") {
     return (
       <ul
@@ -43,10 +61,7 @@ export function PhotoGallery({
           return (
             <li key={item.id}>
               <Tile
-                item={item}
-                onActivate={onActivate}
-                selected={isSelected?.(item) ?? false}
-                selectable={Boolean(isSelected)}
+                {...turn(item, index)}
                 shape="hole"
                 style={{ width: size, height: size }}
                 // Largest hole in the sequence is 188px; doubled for retina.
@@ -61,25 +76,17 @@ export function PhotoGallery({
 
   if (layout === "masonry") {
     return (
-      <Masonry
-        items={items}
-        onActivate={onActivate}
-        isSelected={isSelected}
-        className={className}
-      />
+      <Masonry items={items} turn={turn} className={className} />
     );
   }
 
   if (layout === "stack") {
     return (
       <ul className={cx("mx-auto max-w-2xl space-y-4", className)}>
-        {items.map((item) => (
+        {items.map((item, index) => (
           <li key={item.id}>
             <Tile
-              item={item}
-              onActivate={onActivate}
-              selected={isSelected?.(item) ?? false}
-              selectable={Boolean(isSelected)}
+              {...turn(item, index)}
               shape="recess"
               /**
                * No forced aspect ratio here, unlike Masonry: the tile takes the
@@ -110,13 +117,10 @@ export function PhotoGallery({
         className,
       )}
     >
-      {items.map((item) => (
+      {items.map((item, index) => (
         <li key={item.id}>
           <Tile
-            item={item}
-            onActivate={onActivate}
-            selected={isSelected?.(item) ?? false}
-            selectable={Boolean(isSelected)}
+            {...turn(item, index)}
             shape="recess"
             className="aspect-square w-full"
             // grid-cols-3 / sm:grid-cols-4 / lg:grid-cols-6
@@ -126,6 +130,71 @@ export function PhotoGallery({
       ))}
     </ul>
   );
+}
+
+/**
+ * How many photographs are allowed to start loading at once.
+ *
+ * Handing the browser fifty images and letting it decide is what made the wall
+ * fill in at random: they all start together and finish in whatever order their
+ * file sizes and the venue's wifi settle on, so a photo halfway down appears
+ * before the one at the top. Ten at a time, in order, means the wall fills from
+ * the top down and the guest sees the newest photographs first.
+ */
+const LOAD_WAVE = 10;
+
+/**
+ * How long a wave gets before the next one goes anyway.
+ *
+ * One photograph that never arrives - a dropped connection, a request the
+ * optimiser is still working on - must not hold the rest of the evening behind
+ * it. The wave gives up its claim and the wall carries on.
+ */
+const WAVE_TIMEOUT_MS = 6000;
+
+/**
+ * Which photographs are allowed to ask the network for anything yet.
+ *
+ * A photograph is "settled" when it has loaded or failed; a wave is over when
+ * all of its photographs have settled, and then the next ten go. Anything with
+ * no preview at all is never waited on - it has nothing to fetch.
+ */
+function useLoadQueue(items: MediaView[]) {
+  const [released, setReleased] = useState(LOAD_WAVE);
+  const [settled, setSettled] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
+
+  const waiting = items
+    .slice(0, released)
+    .filter((item) => item.previewUrl && !settled.has(item.id)).length;
+
+  useEffect(() => {
+    if (released >= items.length) return;
+    if (waiting === 0) {
+      setReleased((count) => count + LOAD_WAVE);
+      return;
+    }
+
+    // Restarted by every photograph that lands, so this is six seconds of no
+    // progress at all rather than six seconds per wave.
+    const timer = setTimeout(
+      () => setReleased((count) => count + LOAD_WAVE),
+      WAVE_TIMEOUT_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [waiting, released, items.length]);
+
+  const settle = useCallback((id: string) => {
+    setSettled((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  return { held: (index: number) => index >= released, settle };
 }
 
 /**
@@ -180,18 +249,19 @@ function useMasonryColumns() {
  */
 function Masonry({
   items,
-  onActivate,
-  isSelected,
+  turn,
   className,
 }: {
   items: MediaView[];
-  onActivate: (item: MediaView) => void;
-  isSelected?: (item: MediaView) => boolean;
+  turn: (item: MediaView, index: number) => TileTurn;
   className?: string;
 }) {
   const columns = useMasonryColumns();
-  const lanes: MediaView[][] = Array.from({ length: columns }, () => []);
-  items.forEach((item, index) => lanes[index % columns].push(item));
+  // The turn is carried along with the photograph: a column's second tile is
+  // the second, fifth or seventh newest depending on how wide the wall is, and
+  // it loads in that order rather than in its column's order.
+  const lanes: TileTurn[][] = Array.from({ length: columns }, () => []);
+  items.forEach((item, index) => lanes[index % columns].push(turn(item, index)));
 
   return (
     <div className={cx("flex items-start gap-2 sm:gap-2.5", className)}>
@@ -200,16 +270,13 @@ function Masonry({
           key={index}
           className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-2.5"
         >
-          {lane.map((item) => (
-            <li key={item.id}>
+          {lane.map((tile) => (
+            <li key={tile.item.id}>
               <Tile
-                item={item}
-                onActivate={onActivate}
-                selected={isSelected?.(item) ?? false}
-                selectable={Boolean(isSelected)}
+                {...tile}
                 shape="recess"
                 style={{
-                  aspectRatio: aspectRatio(item.width, item.height),
+                  aspectRatio: aspectRatio(tile.item.width, tile.item.height),
                   width: "100%",
                 }}
                 // Two columns on a phone, three from sm, four from lg.
@@ -223,17 +290,7 @@ function Masonry({
   );
 }
 
-function Tile({
-  item,
-  onActivate,
-  selected,
-  selectable,
-  shape,
-  style,
-  className,
-  sizes,
-  natural = false,
-}: {
+interface TileProps {
   item: MediaView;
   onActivate: (item: MediaView) => void;
   selected: boolean;
@@ -249,7 +306,40 @@ function Tile({
   sizes: string;
   /** Let the image set the tile's height instead of cropping into a box. */
   natural?: boolean;
-}) {
+  /** Its turn has not come yet: an empty well, and nothing asked of the network. */
+  hold?: boolean;
+  /** Loaded, or given up on. Either way the wave is one photograph nearer done. */
+  onSettled?: (id: string) => void;
+}
+
+function Tile({
+  item,
+  onActivate,
+  selected,
+  selectable,
+  shape,
+  style,
+  className,
+  sizes,
+  natural = false,
+  hold = false,
+  onSettled,
+}: TileProps) {
+  /*
+   * A photograph can finish loading before React has hydrated the page - the
+   * host's wall is server-rendered, and a cached thumbnail arrives long before
+   * the JavaScript does. Its `onLoad` fired at no one, so the wave would sit
+   * there waiting for a photograph that is already on screen and only move on
+   * when the stall timer ran out. Asking the element whether it is already
+   * complete closes that gap.
+   */
+  const settleWhenReady = useCallback(
+    (node: HTMLImageElement | null) => {
+      if (node?.complete) onSettled?.(item.id);
+    },
+    [item.id, onSettled],
+  );
+
   return (
     <button
       type="button"
@@ -272,7 +362,19 @@ function Tile({
         className,
       )}
     >
-      {item.previewUrl ? (
+      {item.previewUrl && hold ? (
+        // Waiting its turn. An empty well the right shape, so the wall does not
+        // jump when the photograph lands in it.
+        <span
+          aria-hidden="true"
+          className={natural ? "block w-full" : "block h-full w-full"}
+          style={
+            natural
+              ? { aspectRatio: aspectRatio(item.width, item.height) }
+              : undefined
+          }
+        />
+      ) : item.previewUrl ? (
         /*
          * The stored object is full size - there is no thumbnail in the bucket
          * any more - so the tile asks the optimiser for something tile-sized.
@@ -294,7 +396,18 @@ function Tile({
               }
             : { fill: true, className: "object-cover" })}
           sizes={sizes}
-          loading="lazy"
+          /*
+           * Eager, which reads as the wrong answer for a wall of photographs
+           * and is the right one here: the queue is already holding everything
+           * back to ten at a time. Left lazy the two would fight - the browser
+           * would decline to fetch a released photograph that is below the
+           * fold, the wave would never finish, and the wall would advance on
+           * the stall timer instead of on photographs actually arriving.
+           */
+          loading="eager"
+          ref={settleWhenReady}
+          onLoad={() => onSettled?.(item.id)}
+          onError={() => onSettled?.(item.id)}
         />
       ) : (
         <span
