@@ -2,72 +2,34 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { ApiError, fail, handle, ok, parseBody } from "@/lib/api";
-import { enforceRateLimit } from "@/lib/guards";
-import type { Database } from "@/lib/db/types";
 import { storageSummary } from "@/lib/events";
 import { formatBytes } from "@/lib/format";
-import {
-  IMAGE_EXT,
-  IMAGE_MIME,
-  type ImageFormat,
-  imageFormatFromMime,
-} from "@/lib/media/formats";
+import { enforceRateLimit } from "@/lib/guards";
 import { requireOwnedEvent } from "@/lib/host";
-import { classify, mediaKey, scopeOfEvent } from "@/lib/media";
+import { mediaKey, scopeOfEvent } from "@/lib/media";
 import { LIMITS } from "@/lib/ratelimit";
-import { storage } from "@/lib/storage";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getTier } from "@/lib/tiers";
+import { classifyUpload, decideStoredObject } from "@/lib/uploads/classify";
+import { createReservation } from "@/lib/uploads/reservation";
+import { fileSchema } from "@/lib/uploads/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * The same shape the guest presign takes, minus the poster: a cover is a still
- * image, so there is never a second object to sign.
- */
-const bodySchema = z.object({
-  file: z.object({
-    size: z.number().int().positive(),
-    /** Empty is allowed; see classifyUpload in the guest presign route. */
-    type: z.string().max(120),
-    /** The compressed copy the browser produced, if it managed one. */
-    compressed: z
-      .object({
-        size: z.number().int().positive(),
-        format: z.enum(["webp", "jpeg", "avif", "png"]),
-        width: z.number().int().positive().max(60_000).optional(),
-        height: z.number().int().positive().max(60_000).optional(),
-      })
-      .optional()
-      .nullable(),
-    sourceWidth: z.number().int().positive().max(60_000).optional().nullable(),
-    sourceHeight: z.number().int().positive().max(60_000).optional().nullable(),
-    /** The browser could not decode it; the worker has to finish the job. */
-    needsServer: z.boolean().default(false),
-  }),
-});
-
-type ReservationInsert =
-  Database["public"]["Tables"]["upload_reservations"]["Insert"];
+/** The guest presign shape minus the poster: a cover is a still image. */
+const bodySchema = z.object({ file: fileSchema });
 
 /**
  * A cover image the host uploaded themselves.
  *
- * It is the guest handshake with the token swapped for a session, and it lands
- * in the same place: `{owner}/{event}/{id}.{ext}`, reserved against the same
- * quota, confirmed into the same table. Only `source` differs, and that is set
- * by the confirm - see migration 0013 for why a cover is kept out of the
- * gallery.
+ * The guest handshake with the token swapped for a session, landing in the same
+ * place, reserved against the same quota, confirmed into the same table. Only
+ * `source` differs, and the confirm sets that - see migration 0013 for why a
+ * cover is kept out of the gallery.
  *
- * Photos only. A cover is the still frame at the top of the page, so accepting
- * a video here would mean either storing one nobody plays or transcoding one to
- * take a frame off it, and the picker already lets a host pick any video's
- * poster out of the event.
- *
- * The paywall check is the same one the appearance form is behind. The form is
- * an upsell on the free plan and this endpoint is not reachable from it, so
- * refusing here is about the request nobody made through the UI.
+ * Photos only. Accepting a video here would mean either storing one nobody
+ * plays or transcoding one to take a frame off it, and the picker already lets
+ * a host pick any video's poster out of the event.
  */
 export async function POST(
   request: Request,
@@ -84,6 +46,9 @@ export async function POST(
     );
 
     const tier = getTier(event.tier);
+    // The appearance form is behind the same paywall and this endpoint is not
+    // reachable from it, so this is about the request nobody made through the
+    // interface.
     if (!tier.customPage) {
       throw new ApiError(
         "forbidden",
@@ -95,16 +60,8 @@ export async function POST(
     const body = await parseBody(request, bodySchema);
     const file = body.file;
 
-    /*
-     * A rendition the browser produced settles what this is, exactly as it does
-     * on the guest side: pickers routinely report no MIME type at all, and
-     * turning a decoded, re-encoded photograph away on a missing header is the
-     * one way this endpoint fails for a host who did nothing wrong.
-     */
-    const decoded = Boolean(file.compressed) && !file.needsServer;
-    const classified = classify(file.type);
-    const isPhoto = classified ? classified.kind === "photo" : decoded;
-    if (!isPhoto) {
+    const classified = classifyUpload(file);
+    if (classified?.kind !== "photo") {
       throw new ApiError(
         "bad_request",
         "A cover has to be an image. Pick a photo rather than a video.",
@@ -118,37 +75,39 @@ export async function POST(
     }
 
     const mediaId = randomUUID();
-    const mime = file.type.toLowerCase().split(";")[0].trim();
     const scope = scopeOfEvent(event);
+    const stored = decideStoredObject(file, classified);
 
-    // The compressed copy is the photo, exactly as it is for a guest. The one
-    // exception is a file the browser could not decode - chiefly HEIC outside
-    // Safari - which goes up as it came off the disk for the worker to replace.
-    // Only that passthrough path needs the declared type, and only there is it
-    // guaranteed to be present: `decoded` is false, so `classified` is set.
-    const useCompressed = decoded;
+    const result = await createReservation({
+      event,
+      mediaId,
+      key: mediaKey(scope, mediaId, stored.ext),
+      contentType: stored.contentType,
+      bytes: stored.bytes,
+      poster: null,
+      tierId: tier.id,
+      slack: 32 * 1024,
+      media: {
+        kind: "photo",
+        mime_type: stored.contentType,
+        media_format: stored.format,
+        duration_seconds: null,
+        width: file.sourceWidth ?? null,
+        height: file.sourceHeight ?? null,
+        processing: stored.useCompressed ? "done" : "pending",
+        /*
+         * No fingerprint and no name, and both are load-bearing. A null
+         * fingerprint is what the guest confirm compares against and always
+         * fails, so this reservation cannot be turned into a guest photo by
+         * anyone holding the share link - and it is what the cover confirm
+         * checks to be sure it is finishing an upload this endpoint started.
+         */
+        uploader_fingerprint: null,
+        uploader_name: null,
+      },
+    });
 
-    const format: string = useCompressed
-      ? file.compressed!.format
-      : imageFormatFromMime(mime) ?? classified!.ext;
-    const ext = useCompressed
-      ? IMAGE_EXT[file.compressed!.format as ImageFormat]
-      : classified!.ext;
-    const bytes = useCompressed ? file.compressed!.size : file.size;
-    const contentType = useCompressed
-      ? IMAGE_MIME[file.compressed!.format as ImageFormat]
-      : mime || IMAGE_MIME[format as ImageFormat] || "application/octet-stream";
-
-    const key = mediaKey(scope, mediaId, ext);
-
-    const admin = createAdminClient();
-    const { data: reserved, error: reserveError } = await admin.rpc(
-      "reserve_storage",
-      { p_event: event.id, p_bytes: bytes },
-    );
-    if (reserveError) throw new Error(reserveError.message);
-
-    if (!reserved) {
+    if (!result.ok) {
       const summary = storageSummary(event);
       return fail(
         "quota_exceeded",
@@ -161,84 +120,15 @@ export async function POST(
       );
     }
 
-    const reservation: ReservationInsert = {
-      id: mediaId,
-      event_id: event.id,
-      owner_id: event.owner_id,
-      media_key: key,
-      poster_key: null,
-      size_bytes: bytes,
-      poster_size_bytes: 0,
-      media: {
-        kind: "photo",
-        mime_type: contentType,
-        media_format: format,
-        duration_seconds: null,
-        width: file.sourceWidth ?? null,
-        height: file.sourceHeight ?? null,
-        processing: useCompressed ? "done" : "pending",
-        /*
-         * No fingerprint and no name, and both are load-bearing rather than
-         * absent for want of a value. A null fingerprint is what the guest
-         * confirm compares against and always fails, so this reservation cannot
-         * be turned into a guest photo by anyone holding the share link - and
-         * it is what the cover confirm checks to be sure it is finishing an
-         * upload this endpoint started.
-         */
-        uploader_fingerprint: null,
-        uploader_name: null,
+    return ok({
+      upload: {
+        mediaId,
+        /** Which blob to send: the compressed copy, or the file itself. */
+        source: stored.useCompressed
+          ? ("compressed" as const)
+          : ("file" as const),
+        media: result.media,
       },
-    };
-
-    const { error: insertError } = await admin
-      .from("upload_reservations")
-      .insert(reservation);
-
-    if (insertError) {
-      await release(event.id, bytes);
-      throw new Error(`reservation insert failed: ${insertError.message}`);
-    }
-
-    try {
-      const media = await storage.presignUpload({
-        key,
-        contentType,
-        // Browser encoders are not byte-deterministic between the measuring
-        // encode and the upload, so the signed ceiling carries some slack.
-        maxBytes: Math.max(bytes + 32 * 1024, 32 * 1024),
-        tags: { tier: tier.id },
-      });
-
-      return ok({
-        upload: {
-          mediaId,
-          /** Which blob to send: the compressed copy, or the file itself. */
-          source: useCompressed ? ("compressed" as const) : ("file" as const),
-          media,
-        },
-      });
-    } catch (error) {
-      // Nothing for the host to retry against, so the promise is withdrawn
-      // before the error goes up rather than eating their quota until the sweep.
-      await admin.from("upload_reservations").delete().eq("id", mediaId);
-      await release(event.id, bytes);
-      throw error;
-    }
+    });
   });
-}
-
-/** Best effort: a refund that fails must not mask the error that caused it. */
-async function release(eventId: string, bytes: number) {
-  try {
-    await createAdminClient().rpc("release_storage", {
-      p_event: eventId,
-      p_bytes: bytes,
-    });
-  } catch (error) {
-    console.error("[cover] could not release reserved bytes", {
-      eventId,
-      bytes,
-      error,
-    });
-  }
 }
