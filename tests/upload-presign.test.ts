@@ -184,6 +184,60 @@ describe("presigning an upload", () => {
     expect(media.processing).toBe("pending");
   });
 
+  /**
+   * The bug this exists to kill. A file picker is not obliged to report a MIME
+   * type and frequently does not - HEIC on Android and Windows has no mapping
+   * at all, and a file dragged out of a file manager arrives with an empty type
+   * on every platform. The route used to refuse the request outright, so a
+   * guest whose browser had already decoded the photograph and handed over a
+   * finished WebP was told their file type was not supported.
+   */
+  it("takes a photo whose type the picker never reported", async () => {
+    const res = await POST(request({ ...compressedPhoto, type: "" }));
+    const { upload } = await res.json();
+
+    expect(res.status).toBe(200);
+    // Stored as what the browser actually produced, which is all that is going
+    // up: the source type was never going to describe the stored object.
+    expect(upload.source).toBe("compressed");
+    expect(upload.media.fields.key).toMatch(/\.webp$/);
+    expect(reservations()[0].size_bytes).toBe(900_000);
+  });
+
+  it("still refuses a type it does not know and cannot see a photo behind", async () => {
+    const res = await POST(
+      request({
+        size: 3_000_000,
+        type: "application/zip",
+        compressed: null,
+        needsServer: true,
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(store.reserved()).toBe(0);
+    expect(reservations()).toHaveLength(0);
+  });
+
+  /**
+   * An untyped file the browser could not decode either. There is nothing to
+   * infer from, so it is refused - but the refusal has to survive the change
+   * above rather than falling through it.
+   */
+  it("refuses an untyped file the browser could not decode", async () => {
+    const res = await POST(
+      request({
+        size: 3_000_000,
+        type: "",
+        compressed: null,
+        needsServer: true,
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(store.reserved()).toBe(0);
+  });
+
   it("refuses video on a tier without it, before reserving anything", async () => {
     const res = await POST(request(video));
 

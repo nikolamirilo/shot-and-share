@@ -10,6 +10,8 @@ import {
   IMAGE_EXT,
   IMAGE_MIME,
   type ImageFormat,
+  VIDEO_MIME,
+  type VideoFormat,
   imageFormatFromMime,
   videoFormatFromMime,
 } from "@/lib/media-formats";
@@ -47,7 +49,13 @@ const bodySchema = z.object({
    */
   file: z.object({
     size: z.number().int().positive(),
-    type: z.string().min(3).max(120),
+    /*
+     * Empty is allowed, because empty is what a great many pickers report. The
+     * type is evidence about the file, not a promise: what actually decides
+     * how the object is stored is below, and a photo the browser has already
+     * decoded and re-encoded is decided by the rendition it produced.
+     */
+    type: z.string().max(120),
     /** The compressed copy the browser produced, if it managed one. */
     compressed: renditionSchema.optional().nullable(),
     poster: renditionSchema
@@ -64,6 +72,41 @@ const bodySchema = z.object({
 
 type ReservationInsert =
   Database["public"]["Tables"]["upload_reservations"]["Insert"];
+
+/**
+ * What this upload is, from the best evidence available rather than from the
+ * MIME type alone.
+ *
+ * The MIME type a file picker reports is not reliable and never was. Android
+ * and Windows commonly report nothing at all for HEIC, some pickers say
+ * `image/jpg`, and a file dragged in from a file manager can arrive with an
+ * empty type on every platform. Refusing those was refusing photographs: the
+ * browser had already decoded them and handed us a WebP to store, and the
+ * request was turned away on a header describing a file we were not going to
+ * upload anyway.
+ *
+ * So a compressed rendition settles it. The browser cannot produce one without
+ * having decoded an image, the rendition's own format is what the object is
+ * stored as, and the source type is not used for anything past this point.
+ * Anything else still has to name itself.
+ */
+function classifyUpload(file: {
+  type: string;
+  compressed?: { format: string } | null;
+  needsServer?: boolean;
+}) {
+  const declared = classify(file.type);
+  if (declared) return declared;
+
+  if (file.compressed && !file.needsServer) {
+    return {
+      kind: "photo" as const,
+      ext: IMAGE_EXT[file.compressed.format as ImageFormat],
+    };
+  }
+
+  return null;
+}
 
 /**
  * Reserve the space, sign the URL, and write down what to do when the bytes
@@ -106,7 +149,7 @@ export async function POST(request: Request) {
     const scope = scopeOfEvent(event);
 
     const file = body.file;
-    const classified = classify(file.type);
+    const classified = classifyUpload(file);
     if (!classified) {
       throw new ApiError(
         "bad_request",
@@ -149,9 +192,19 @@ export async function POST(request: Request) {
       ? IMAGE_EXT[file.compressed!.format as ImageFormat]
       : classified.ext;
     const bytes = useCompressed ? file.compressed!.size : file.size;
+    /*
+     * The passthrough path falls back to the type the extension implies. It
+     * signs a policy condition and is written onto the object, so an empty
+     * string here would sign a URL nothing can be posted to and store a photo
+     * the gallery then serves as `application/octet-stream`.
+     */
     const contentType = useCompressed
       ? IMAGE_MIME[file.compressed!.format as ImageFormat]
-      : mime;
+      : mime ||
+        (classified.kind === "photo"
+          ? IMAGE_MIME[format as ImageFormat]
+          : VIDEO_MIME[format as VideoFormat]) ||
+        "application/octet-stream";
 
     const key = mediaKey(scope, mediaId, ext);
     const poster =

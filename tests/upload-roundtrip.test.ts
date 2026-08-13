@@ -1,0 +1,226 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createStore } from "./stubs/supabase";
+
+/**
+ * Presign, upload, confirm - the three calls a guest's photo actually makes,
+ * run against each other rather than against a mock of each other.
+ *
+ * Every other upload test stubs the storage driver, so the one thing none of
+ * them can see is whether the presigned upload the route hands out is one the
+ * bucket will accept. That is exactly where a guest's upload fails: the route
+ * answers 200, the browser posts the bytes, and storage rejects them.
+ */
+
+const store = createStore();
+
+const EVENT = {
+  id: "11111111-2222-3333-4444-555555555555",
+  owner_id: "00000000-1111-2222-3333-444444444444",
+  tier: "wedding",
+  status: "active",
+  storage_quota_bytes: 2 * 1024 ** 3,
+  storage_used_bytes: 0,
+};
+
+vi.mock("@/lib/events", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/events")>(
+    "@/lib/events",
+  );
+  return {
+    ...actual,
+    requireGuestEvent: vi.fn(async () => ({ event: EVENT, tokenId: "t" })),
+  };
+});
+
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => store.client,
+}));
+
+const { POST: presign } = await import("@/app/api/upload/presign/route");
+const { POST: confirm } = await import("@/app/api/upload/confirm/route");
+const { POST: putObject } = await import("@/app/api/storage/local/route");
+
+let requests = 0;
+const token = () => `${(requests += 1)}`.padStart(32, "a");
+
+const FINGERPRINT = "f".repeat(16);
+
+async function presignFor(file: unknown) {
+  const response = await presign(
+    new Request("http://localhost/api/upload/presign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: token(),
+        fingerprint: FINGERPRINT,
+        uploaderName: "Guest",
+        file,
+      }),
+    }),
+  );
+  return { status: response.status, body: await response.json() };
+}
+
+/** The FormData the browser builds in uploadToPresigned, posted for real. */
+async function sendBytes(
+  presigned: { url: string; fields: Record<string, string>; fileField: string },
+  body: Blob,
+) {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(presigned.fields)) {
+    form.append(key, value);
+  }
+  form.append(presigned.fileField, body);
+
+  const response = await putObject(
+    new Request(presigned.url, { method: "POST", body: form }),
+  );
+  return {
+    status: response.status,
+    text: response.status === 204 ? "" : await response.text(),
+  };
+}
+
+beforeEach(() => {
+  store.reset();
+  requests = 0;
+});
+
+describe("a photo the browser compressed", () => {
+  it("is accepted by storage at the size the route signed for", async () => {
+    const compressed = new Blob([new Uint8Array(120_000)], {
+      type: "image/webp",
+    });
+
+    const { status, body } = await presignFor({
+      size: 3_000_000,
+      type: "image/jpeg",
+      compressed: {
+        size: compressed.size,
+        format: "webp",
+        width: 2560,
+        height: 1440,
+      },
+      sourceWidth: 4032,
+      sourceHeight: 3024,
+      needsServer: false,
+    });
+
+    expect(status).toBe(200);
+    expect(body.upload.source).toBe("compressed");
+
+    const sent = await sendBytes(body.upload.media, compressed);
+    expect(sent.text).toBe("");
+    expect(sent.status).toBe(204);
+  });
+});
+
+describe("a photo whose type the picker never reported", () => {
+  it("is signed and stored as what the browser produced", async () => {
+    const compressed = new Blob([new Uint8Array(80_000)], {
+      type: "image/webp",
+    });
+
+    const { status, body } = await presignFor({
+      size: 3_000_000,
+      type: "",
+      compressed: { size: compressed.size, format: "webp" },
+      sourceWidth: 4032,
+      sourceHeight: 3024,
+      needsServer: false,
+    });
+
+    expect(status).toBe(200);
+    expect(body.upload.media.fields["Content-Type"]).toBe("image/webp");
+
+    const sent = await sendBytes(body.upload.media, compressed);
+    expect(sent.text).toBe("");
+    expect(sent.status).toBe(204);
+  });
+});
+
+describe("a photo the browser could not decode", () => {
+  it("goes up as it came off the phone", async () => {
+    const original = new Blob([new Uint8Array(400_000)], {
+      type: "image/heic",
+    });
+
+    const { status, body } = await presignFor({
+      size: original.size,
+      type: "image/heic",
+      compressed: null,
+      sourceWidth: null,
+      sourceHeight: null,
+      needsServer: true,
+    });
+
+    expect(status).toBe(200);
+    expect(body.upload.source).toBe("file");
+
+    const sent = await sendBytes(body.upload.media, original);
+    expect(sent.text).toBe("");
+    expect(sent.status).toBe(204);
+  });
+});
+
+describe("a video with a poster", () => {
+  it("accepts both objects", async () => {
+    const clip = new Blob([new Uint8Array(900_000)], { type: "video/mp4" });
+    const poster = new Blob([new Uint8Array(40_000)], { type: "image/webp" });
+
+    const { status, body } = await presignFor({
+      size: clip.size,
+      type: "video/mp4",
+      poster: { size: poster.size, format: "webp", width: 720, height: 405 },
+      sourceWidth: 1920,
+      sourceHeight: 1080,
+      durationSeconds: 12,
+      needsServer: true,
+    });
+
+    expect(status).toBe(200);
+
+    expect((await sendBytes(body.upload.media, clip)).status).toBe(204);
+    expect((await sendBytes(body.upload.poster, poster)).status).toBe(204);
+  });
+});
+
+describe("the whole handshake", () => {
+  it("ends with a media row the gallery can read", async () => {
+    const compressed = new Blob([new Uint8Array(90_000)], {
+      type: "image/webp",
+    });
+
+    const { body } = await presignFor({
+      size: 2_000_000,
+      type: "image/jpeg",
+      compressed: { size: compressed.size, format: "webp" },
+      sourceWidth: 4032,
+      sourceHeight: 3024,
+      needsServer: false,
+    });
+
+    expect((await sendBytes(body.upload.media, compressed)).status).toBe(204);
+
+    const response = await confirm(
+      new Request("http://localhost/api/upload/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: token(),
+          fingerprint: FINGERPRINT,
+          mediaId: body.upload.mediaId,
+          width: 4032,
+          height: 3024,
+          mediaUploaded: true,
+          posterUploaded: false,
+          failed: false,
+        }),
+      }),
+    );
+
+    expect(await response.json()).toEqual({ confirmed: true });
+    expect(store.rows("media")).toHaveLength(1);
+  });
+});

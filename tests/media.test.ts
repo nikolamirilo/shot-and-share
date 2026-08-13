@@ -42,6 +42,22 @@ describe("media types", () => {
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/heic");
   });
 
+  /**
+   * A MIME-only accept list is why a guest can open the picker, see their
+   * photos greyed out and be unable to choose any of them. The picker matches
+   * on the type the operating system reports, and neither Windows nor most
+   * Android builds have a mapping for HEIC - so `image/heic` matches nothing on
+   * the device that produced the file.
+   */
+  it("offers extensions as well as types, so HEIC is selectable", () => {
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".heic");
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".heif");
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".jpg");
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".jpeg");
+    // The types stay: an iOS camera capture matches on type, not on a name.
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/jpeg");
+  });
+
   it("is an allowlist, not a blocklist", () => {
     // An unauthenticated upload endpoint invites junk, so anything not named
     // is refused rather than inspected.
