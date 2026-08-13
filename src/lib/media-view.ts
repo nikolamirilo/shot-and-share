@@ -52,5 +52,8 @@ export interface MediaView {
  * How many photographs a page of the gallery holds. Here rather than in the
  * server module because the guest gallery pages on the client and could not
  * otherwise share the number with the route that serves it.
+ *
+ * Fifty, which is five waves of ten - the gallery loads a page ten photographs
+ * at a time, in order, rather than asking for all of them at once.
  */
-export const GALLERY_PAGE_SIZE = 48;
+export const GALLERY_PAGE_SIZE = 50;
