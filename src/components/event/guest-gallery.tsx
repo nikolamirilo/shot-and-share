@@ -43,6 +43,14 @@ export function GuestGallery({
   layout: GalleryLayout;
 }) {
   const [items, setItems] = useState<MediaView[]>([]);
+  /**
+   * Every photograph at the event, counted in the database - not the length of
+   * what has been loaded. Those two are the same number only until a guest
+   * reaches fifty, and after that the heading was telling a wedding with four
+   * hundred photographs in it that there were fifty. Null until the first
+   * response, and if the count itself fails the length is a fair stand-in.
+   */
+  const [total, setTotal] = useState<number | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +107,7 @@ export function GuestGallery({
           : withOlder(shown.current, page);
 
         setItems(next);
+        setTotal(typeof body.total === "number" ? body.total : null);
         /*
          * The cursor is the oldest photograph *held*, not the oldest in this
          * response. A refresh asks for the newest fifty while the guest may
@@ -192,7 +201,10 @@ export function GuestGallery({
         <h2 className="text-[1.625rem] sm:text-h2">Everyone&apos;s photos</h2>
         {items.length > 0 && (
           <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-            {items.length} so far
+            {/* The count can lag the wall by one refresh - a photograph that
+                has just landed is in the page and not yet in the number - so
+                the larger of the two is the honest one. */}
+            {Math.max(total ?? 0, items.length)} so far
           </span>
         )}
       </div>

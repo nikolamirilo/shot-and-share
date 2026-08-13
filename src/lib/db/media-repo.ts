@@ -81,6 +81,38 @@ export async function listGuestPage(
   };
 }
 
+/**
+ * How many photographs the event has in total - not how many are loaded.
+ *
+ * Null rather than a throw when the count cannot be had. The number beside the
+ * heading is the least important thing on the page, and there is no version of
+ * "the gallery would not open" that is worth paying for it - including the one
+ * where this deploys before migration 0014 has been run, which is the normal
+ * order of things here since migrations are applied by hand.
+ */
+export async function countGuestMedia(
+  client: Client,
+  eventId: string,
+): Promise<number | null> {
+  const { data, error } = await client.rpc("event_media_count", {
+    p_event: eventId,
+  });
+
+  if (error) {
+    console.error("[gallery] could not count the event", error.message);
+    return null;
+  }
+
+  // Nothing at all is not zero photographs - it is a question that was never
+  // answered, and "0 so far" under a wall of them is worse than no number.
+  if (data === null || data === undefined) return null;
+
+  // bigint, which supabase-js hands back as a string once it is large enough
+  // to need to. No event reaches that, and parsing costs nothing.
+  const count = Number(data);
+  return Number.isFinite(count) ? count : null;
+}
+
 /** One media row, but only if it belongs to the event named. */
 export async function findEventMedia(
   client: Client,
