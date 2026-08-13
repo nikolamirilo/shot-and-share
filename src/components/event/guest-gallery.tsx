@@ -15,31 +15,20 @@ import {
 } from "@/lib/gallery";
 
 /**
- * How often the wall may ask the server what is new, at most.
- *
- * Slow enough that a guest sending thirty photographs does not spend their rate
- * limit refreshing, fast enough that a photograph appears while they are still
- * looking at the page rather than after the batch finally finishes.
+ * How often the wall may ask what is new. Slow enough that a guest sending
+ * thirty photographs does not spend their rate limit refreshing.
  */
 const REFRESH_EVERY_MS = 3000;
 
 /**
- * How many empty frames stand in for a page on its way.
- *
- * Not the page size: fifty shimmering rectangles is a wall of its own, and the
- * frames are a promise that photographs are coming, not a preview of how many.
- * Ten fills the first screen on a phone and most of one on a laptop.
+ * How many empty frames stand in for a page on its way. Not the page size:
+ * they promise that photographs are coming, not how many.
  */
 const PENDING_TILES = 10;
 
 /**
- * What everyone else has uploaded. Guests genuinely like seeing the night from
- * other people's phones, which is why this is on by default - but it is the
- * host's switch, and when they turn it off the page is upload-only.
- *
- * The layout is the host's, and only the host's. A guest gets the wall the host
- * designed, the same way they get the theme and the cover; there is no switcher
- * on this page.
+ * What everyone else has uploaded. On by default, but it is the host's switch,
+ * and the layout is theirs too - there is no switcher on this page.
  */
 export function GuestGallery({
   token,
@@ -53,36 +42,27 @@ export function GuestGallery({
 }) {
   const [items, setItems] = useState<MediaView[]>([]);
   /**
-   * Every photograph at the event, counted in the database - not the length of
-   * what has been loaded. Those two are the same number only until a guest
-   * reaches fifty, and after that the heading was telling a wedding with four
-   * hundred photographs in it that there were fifty. Null until the first
-   * response, and if the count itself fails the length is a fair stand-in.
+   * Counted in the database, not the length of what is loaded - those agree
+   * only up to the first page. Null until the first response.
    */
   const [total, setTotal] = useState<number | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   /**
-   * A page the guest asked for, as opposed to one the wall went and got by
-   * itself. Only the asked-for kind draws frames: a refresh three seconds after
-   * an upload must not make ten empty rectangles appear under a wall the guest
-   * is reading.
+   * A page the guest asked for, rather than one the wall fetched itself. Only
+   * the asked-for kind draws frames.
    */
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /**
-   * Which photo is open, held as an id rather than the photo itself. The
-   * lightbox now has a position in the wall - arrows either side - and a
-   * position only means something against the list. Holding the object would
-   * also keep a deleted photo on screen after it left `items`.
+   * An id rather than the photo itself: the lightbox has a position in the
+   * wall, and holding the object would keep a deleted photo on screen.
    */
   const [openId, setOpenId] = useState<string | null>(null);
   const [fingerprint, setFingerprint] = useState("");
   /**
-   * A refresh that did not land. The wall keeps whatever it already has - a
-   * guest mid-scroll must not have it emptied under them - but silence was the
-   * wrong other half of that: photographs went up, the refresh failed, the wall
-   * did not change, and nothing anywhere said so.
+   * A refresh that did not land. The wall keeps what it has - a guest
+   * mid-scroll must not have it emptied - but says so rather than going quiet.
    */
   const [staleSince, setStaleSince] = useState(false);
   /** Refreshes this component asks for itself, on top of the ones it is told about. */
@@ -91,9 +71,8 @@ export function GuestGallery({
   useEffect(() => setFingerprint(getFingerprint()), []);
 
   /*
-   * What is on screen, readable from inside `load` without making `load` change
-   * identity every time a photograph arrives - which would restart the effect
-   * below and turn every refresh into a second refresh.
+   * Readable from inside `load` without making `load` change identity on every
+   * arrival, which would restart the effect below and double every refresh.
    */
   const shown = useRef<MediaView[]>([]);
   useEffect(() => {
@@ -125,11 +104,9 @@ export function GuestGallery({
         setItems(next);
         setTotal(typeof body.total === "number" ? body.total : null);
         /*
-         * The cursor is the oldest photograph *held*, not the oldest in this
-         * response. A refresh asks for the newest fifty while the guest may
-         * already have scrolled through two hundred; handing back the head's
-         * cursor would make "Show more" fetch pages they are already looking
-         * at, and the button would appear to do nothing.
+         * The oldest photograph *held*, not the oldest in this response: a
+         * refresh asks for the newest page while the guest may have scrolled
+         * past several, and the head's cursor would refetch what they have.
          */
         setCursor(
           body.nextCursor ? (next[next.length - 1]?.createdAt ?? null) : null,
@@ -149,11 +126,8 @@ export function GuestGallery({
   );
 
   /**
-   * Photographs land one at a time, so the wall is told to refresh one at a
-   * time. Doing that literally would be a request per photograph - thirty in a
-   * minute from one phone, which is most of a guest's rate limit spent watching
-   * their own upload. Instead the wall refreshes at most every few seconds, and
-   * a burst of arrivals collapses into the next one of those.
+   * Photographs land one at a time, so a literal refresh each would be thirty
+   * requests a minute from one phone. A burst collapses into the next tick.
    */
   useEffect(() => {
     const wait =
@@ -164,12 +138,7 @@ export function GuestGallery({
     return () => clearTimeout(timer);
   }, [load, refreshKey, tick]);
 
-  /*
-   * A guest leaves the page to take another photograph and comes back. The
-   * evening moved on while they were in the camera app, and coming back to a
-   * wall frozen at the moment they left is the same complaint as not refreshing
-   * after an upload.
-   */
+  // The evening moved on while the guest was in the camera app.
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === "visible") setTick((t) => t + 1);
@@ -217,17 +186,15 @@ export function GuestGallery({
         <h2 className="text-[1.625rem] sm:text-h2">Everyone&apos;s photos</h2>
         {items.length > 0 && (
           <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-            {/* The count can lag the wall by one refresh - a photograph that
-                has just landed is in the page and not yet in the number - so
-                the larger of the two is the honest one. */}
+            {/* The count can lag the wall by one refresh, so the larger of
+                the two is the honest one. */}
             {Math.max(total ?? 0, items.length)} so far
           </span>
         )}
       </div>
 
-      {/* Not an error - what is on screen is real, it is just not the latest.
-          Said out loud, because a wall that quietly stopped updating is
-          indistinguishable from an upload that quietly failed. */}
+      {/* Not an error: what is on screen is real, just not the latest. A wall
+          that quietly stopped updating looks like a failed upload. */}
       {staleSince && (
         <p className="mt-2 text-[0.9375rem] text-ash">
           Could not check for new photos.{" "}
@@ -258,9 +225,8 @@ export function GuestGallery({
           items={items}
           layout={layout}
           onActivate={(item) => setOpenId(item.id)}
-          /* The first load draws the whole wall as frames - the alternative is
-             the empty container a guest currently stares at while the first
-             page is fetched and its photographs decoded. */
+          /* The first load draws the whole wall as frames rather than an
+             empty container. */
           pending={
             loadingMore || (items.length === 0 && loading) ? PENDING_TILES : 0
           }
@@ -271,9 +237,8 @@ export function GuestGallery({
       {cursor && (
         <Button
           onClick={() => {
-            // Set before the request, cleared after it: the frames are the
-            // answer to the tap, so they have to be on screen in the same
-            // frame as the tap rather than when the server gets back.
+            // Set before the request: the frames are the answer to the tap,
+            // so they appear with it rather than when the server replies.
             setLoadingMore(true);
             load(cursor, false).finally(() => setLoadingMore(false));
           }}

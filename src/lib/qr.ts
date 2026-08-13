@@ -5,24 +5,19 @@ import type { Palette } from "@/lib/appearance/themes";
 import { contrastRatio, mix, parseHex } from "@/lib/color";
 
 /**
- * QR codes are generated server-side. The code is the actual product - it is
- * the thing that goes on the table - so it gets the same care as the screen
- * does: SVG for the one on the host's dashboard, and a real A5 PDF for the card
- * that comes out of a printer.
- *
- * Both are drawn from one plan, so what a host looks at on the dashboard is the
- * artwork that gets printed rather than a different renderer's idea of it.
+ * QR codes, drawn server-side: an SVG for the host's dashboard and an A5 PDF
+ * for the printed card. Both come from one plan, so what a host looks at on
+ * screen is the artwork that gets printed.
  */
 
 /**
  * Quartile, not medium. The modules are drawn as separated rounded shapes
- * rather than as a solid grid, which is a small tax on how much of each module
- * is inked, and a code on a table in a dim room has no margin to spare. A
- * quarter of the symbol can be lost and it still reads.
+ * rather than a solid grid, which costs some ink coverage, and a code on a
+ * table in a dim room has no margin to spare.
  */
 const ECC = "Q";
 
-/** The gap around each module, as a fraction of it. What makes the code breathe. */
+/** The gap around each module, as a fraction of it. */
 const INSET = 0.06;
 
 /** How round a data module is. Half would be a dot; this is a soft square. */
@@ -40,11 +35,9 @@ interface Cell {
 /**
  * The code as shapes, in module units, quiet zone included.
  *
- * The three big squares in the corners are the finder patterns - the part a
- * scanner looks for first - and they are drawn as one rounded ring with a
- * rounded pupil rather than as 33 separate modules. That is the whole of what
- * makes a code look considered rather than generated: everything else is the
- * same grid it always was, with its corners taken off.
+ * The three corner squares are the finder patterns - what a scanner looks for
+ * first - drawn as one rounded ring with a rounded pupil rather than as 33
+ * separate modules.
  */
 function codePlan(
   url: string,
@@ -96,11 +89,8 @@ export interface CodeColours {
 }
 
 /**
- * The code on its own, as SVG. This is what the dashboard shows and what the
- * host's PNG is rasterised from.
- *
- * Four modules of quiet zone, which is what the spec asks for and what a phone
- * held at an angle across a table actually needs.
+ * The code on its own, as SVG: what the dashboard shows and what the host's
+ * PNG is rasterised from. Four modules of quiet zone, per the spec.
  */
 export function qrSvg(
   url: string,
@@ -124,9 +114,8 @@ function round(value: number): number {
 /* -------------------------------------------------------------------------- */
 
 /**
- * The design tokens, written out. The card is generated on a server and printed
- * on somebody else's printer, so it cannot read a stylesheet - these are the
- * same values as `globals.css` and have to be changed in both places.
+ * The card cannot read a stylesheet, so these repeat `globals.css` and have to
+ * be changed in both places.
  */
 const INK = "#181214";
 const PAPER = "#ffffff";
@@ -147,18 +136,12 @@ export interface CardColours extends CodeColours {
 }
 
 /**
- * The card in the host's own colours.
+ * The card in the host's own colours. `onAccent` is contrast-corrected where
+ * the palette is built, so a claret card sets in chalk and a pale gold one in
+ * ink without either being special-cased here.
  *
- * A branded card is the event's accent used at full strength, with the type in
- * whatever the palette says reads on it - `onAccent` is contrast-corrected at
- * the point the palette is built, including for a colour the host typed
- * themselves, so a claret card sets in chalk and a pale gold one sets in ink
- * without either being special-cased here.
- *
- * The code is the exception. It takes the palette's surface and ink rather than
- * the card's, and only if those two are far enough apart - a scanner wants
- * contrast, not styling, and this is the one part of the card that has a job to
- * do besides looking like the event.
+ * The code is the exception: it takes the palette's surface and ink, and only
+ * if those two are far enough apart. A scanner wants contrast, not styling.
  */
 export function cardColours(palette: Palette, branded: boolean): CardColours {
   const plate = palette.surface;
@@ -206,44 +189,31 @@ export interface CardOptions {
   colours: CardColours;
 }
 
-/**
- * A5 in points, which is what a PDF measures in. 148 x 210mm is the size the
- * card is meant to exist at - one to a table - and putting it in the page box
- * means a host presses print and gets that, rather than whatever their browser
- * decided to scale an image to.
- */
+/** A5 in points. Setting the page box means print gives 148 x 210mm exactly. */
 const PAGE_W = 419.53;
 const PAGE_H = 595.28;
 
 /**
  * The layout is written in the card's own 600 x 850 grid and scaled onto the
- * page, so the numbers below are readable as a design rather than as
- * millimetres. The two aspect ratios agree to within half a percent.
+ * page, so the numbers below read as a design rather than as millimetres. The
+ * two aspect ratios agree to within half a percent.
  */
 const W = 600;
 const H = 850;
 const K = PAGE_W / W;
 
 /**
- * The print-ready card, as a PDF a host can download, mail to a print shop, or
- * open on a phone.
+ * The print-ready card.
  *
- * The event's own name is the largest thing on it. That is what makes one card
- * work for a wedding, a fortieth and a company summer party without a word of
- * it being rewritten: the only large line is the one the host typed, so the
- * card belongs to the party rather than to us. Our own name is one quiet line
- * at the foot, which is where a maker's mark goes.
+ * The event's name is the largest thing on it and the only large line, so one
+ * card works for a wedding, a fortieth and a company summer party unchanged.
  *
- * There is no link printed on it. A typed share token is a long string of
- * random characters that nobody gets right from a table across a dark room, and
- * the line asking them to try was the one thing on the card competing with the
- * code. The code is the way in.
+ * No link is printed: a typed share token is a long random string nobody gets
+ * right from across a dark room, and the line asking them to try was the one
+ * thing competing with the code.
  *
- * The type is set in the PDF standard faces rather than the product's own. A
- * PDF either carries its fonts inside it or names ones the reader has to
- * already have, and shipping three variable webfonts into the bundle to set
- * four lines of text is not a trade worth making. Helvetica is the same kind of
- * grotesque Archivo is, and the card is recognisably the product's without it.
+ * Set in the PDF standard faces rather than the product's own - shipping three
+ * variable webfonts to set four lines of text is not a trade worth making.
  */
 export async function qrCardPdf(
   url: string,
@@ -278,9 +248,8 @@ export async function qrCardPdf(
     borderWidth: 4,
   });
 
-  // The punched holes are the Wedding-tier flourish: the same shape the
-  // interface uses as a bullet, dropped a step darker than the ground so they
-  // read as debossed rather than as four dots printed on top of it.
+  // The Wedding-tier flourish: the interface's bullet shape, a step darker
+  // than the ground so it reads as debossed rather than printed on top.
   if (colours.holes) {
     for (const [cx, cy, r] of [
       [76, 96, 26],
@@ -297,9 +266,8 @@ export async function qrCardPdf(
     }
   }
 
-  // The date rather than a second instruction. "Point your camera at the code"
-  // is already under the code, where a guest looks after they have seen it, and
-  // saying it twice on one card reads as a card that does not trust them.
+  // The date rather than a second instruction: the one under the code already
+  // says it, and saying it twice reads as a card that does not trust you.
   const date = printable(opts.eventDate ?? "").toUpperCase();
   if (date) {
     tracked(page, date, {
@@ -352,11 +320,9 @@ export async function qrCardPdf(
 /**
  * The event's name, as large as the card can carry it.
  *
- * A name is whatever a host typed, and the two shapes it comes in are "Ana &
- * Marko" and "Marija i Nikola - vjenčanje 2026". Rather than picking a size
- * that flatters the first and overflows the second, the size is solved for: one
- * line as big as fits, and when even the smallest single line would run into
- * the margins, two balanced lines instead.
+ * A name is whatever a host typed - "Ana & Marko" or "Marija i Nikola -
+ * vjenčanje 2026" - so the size is solved for rather than picked: one line as
+ * big as fits, and two balanced lines when even the smallest would overflow.
  */
 function drawName(
   page: PDFPage,
@@ -420,9 +386,9 @@ function balance(name: string): [string, string] {
 }
 
 /**
- * The same shapes the SVG draws, onto the page. Two modules of quiet zone here
- * rather than four: the plate the code sits on is another two modules of the
- * same near-white on every side, so the code gets its four.
+ * The same shapes the SVG draws, onto the page. Two modules of quiet zone
+ * rather than four: the plate adds another two of the same near-white on every
+ * side, so the code still gets its four.
  */
 function drawCode(
   page: PDFPage,
@@ -491,13 +457,12 @@ function roundedRect(
 
 /**
  * A rounded rectangle as SVG path data, drawn from its top left corner
- * downwards - which is the direction `drawSvgPath` reads, whatever the page's
- * own axis is doing.
+ * downwards - the direction `drawSvgPath` reads, whatever the page's axis does.
  */
 function roundedPath(w: number, h: number, radius: number): string {
   const r = Math.min(radius, w / 2, h / 2);
-  // A quarter circle in beziers. 0.5523 is the constant that makes four of them
-  // meet as a circle rather than as a slightly square-shouldered lozenge.
+  // A quarter circle in beziers. 0.5523 is what makes four of them meet as a
+  // circle rather than a slightly square-shouldered lozenge.
   const c = r * 0.5523;
 
   return [
@@ -542,8 +507,8 @@ function centred(
 
 /**
  * The eyebrow, letter by letter. PDF carries character spacing as a text-state
- * operator rather than as an argument to a drawn string, and one wordmark is
- * not worth reaching into the content stream for.
+ * operator rather than an argument to a drawn string, and one wordmark is not
+ * worth reaching into the content stream for.
  */
 function tracked(
   page: PDFPage,
@@ -583,17 +548,13 @@ function hex(value: string) {
 }
 
 /**
- * Event names are free text typed by a host. The standard PDF faces encode
- * WinAnsi, and a character outside it *throws* rather than dropping out, so
- * every one has to be dealt with before it reaches the encoder.
+ * Event names are free text. The standard PDF faces encode WinAnsi and a
+ * character outside it *throws* rather than dropping out, so every one has to
+ * be dealt with before it reaches the encoder.
  *
- * Anything WinAnsi already holds is left alone - an é stays an é. Everything
- * else is stripped back to its base letter, which is what saves the names this
- * product is full of: Milošević sets as Milosevic rather than losing its last
- * letter to a silent drop. Only what survives neither goes.
- *
- * Runs of whitespace collapse too. A newline in an event name would otherwise
- * push a line off the layout without saying so.
+ * Anything WinAnsi holds is left alone; everything else is stripped to its base
+ * letter, so Milošević sets as Milosevic rather than losing its last letter.
+ * Whitespace collapses too - a newline would push a line off the layout.
  */
 function printable(value: string): string {
   return [...value.replace(/\s+/g, " ").trim()].map(toWinAnsi).join("").trim();
