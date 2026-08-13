@@ -26,10 +26,9 @@ export async function GET(
     const { id } = await params;
     const since = new URL(request.url).searchParams.get("since");
 
-    // Ownership, not just a session. This route used to check only that
-    // somebody was signed in and then query by the id in the URL, which left
-    // RLS as the sole thing standing between one host and another host's
-    // event - and made it the only route under events/[id] where that was so.
+    // Ownership, not just a session: querying by the id in the URL after only
+    // an is-signed-in check would leave RLS as the sole thing between one host
+    // and another's event.
     const event = await requireOwnedEvent(id);
     const supabase = await createClient();
 

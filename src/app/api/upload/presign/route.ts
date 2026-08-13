@@ -24,10 +24,7 @@ const bodySchema = z.object({
   token: shareTokenSchema,
   fingerprint: fingerprintSchema,
   uploaderName: z.string().trim().max(60).optional().nullable(),
-  /**
-   * One file. The browser used to send the whole batch at once, which meant no
-   * photo could start uploading until the slowest had finished compressing.
-   */
+  /** One file, so uploading can start before the slowest has compressed. */
   file: guestFileSchema,
 });
 

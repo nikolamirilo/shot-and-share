@@ -99,9 +99,8 @@ export function PricingTable({
         })}
       </div>
 
-      {/* The add-on is the one thing here that is not a plan, and it used to
-          say so with a dashed edge. It says it now by sitting *in* the page
-          while the three plans float above it. */}
+      {/* The one thing here that is not a plan, and it says so by sitting *in*
+          the page while the three plans float above it. */}
       <div className="inset-shadow-well mt-4 rounded-[1.25rem] bg-ink/5 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
         <div>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
