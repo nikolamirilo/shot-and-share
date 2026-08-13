@@ -254,6 +254,11 @@ export interface Database {
           bytes: number;
         }[];
       };
+      event_media_count: {
+        Args: { p_event: string };
+        /** bigint, which supabase-js hands back as a number at these sizes. */
+        Returns: number;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

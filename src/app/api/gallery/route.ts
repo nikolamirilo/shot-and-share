@@ -7,7 +7,7 @@ import {
   toMediaViews,
 } from "@/lib/events";
 import { LIMITS, clientIp } from "@/lib/ratelimit";
-import { listGuestPage } from "@/lib/db/media-repo";
+import { countGuestMedia, listGuestPage } from "@/lib/db/media-repo";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -46,11 +46,19 @@ export async function GET(request: Request) {
 
     // The admin client: a guest has no session, so the token check above is
     // what stands in for one.
-    const { rows, nextCursor } = await listGuestPage(createAdminClient(), {
-      eventId: ctx.event.id,
-      before,
-      pageSize: GALLERY_PAGE_SIZE,
-    });
+    const admin = createAdminClient();
+
+    // Alongside the page, not after it: the count is an index-only scan and
+    // waiting for one to start the other would put the slower of the two on
+    // top of the faster for nothing.
+    const [{ rows, nextCursor }, total] = await Promise.all([
+      listGuestPage(admin, {
+        eventId: ctx.event.id,
+        before,
+        pageSize: GALLERY_PAGE_SIZE,
+      }),
+      countGuestMedia(admin, ctx.event.id),
+    ]);
 
     /*
      * `force-dynamic` above stops Next from caching the work; this stops
@@ -60,7 +68,7 @@ export async function GET(request: Request) {
      * seconds ago is indistinguishable from the upload having failed.
      */
     return ok(
-      { items: await toMediaViews(rows), nextCursor },
+      { items: await toMediaViews(rows), nextCursor, total },
       { headers: { "Cache-Control": "no-store, max-age=0" } },
     );
   });
