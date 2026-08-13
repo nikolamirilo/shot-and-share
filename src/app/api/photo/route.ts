@@ -1,6 +1,7 @@
 import { ApiError, handle, ok } from "@/lib/api";
 import { findEventMedia } from "@/lib/db/media-repo";
-import { resolveGuestToken, gateGuest, toMediaView } from "@/lib/events";
+import { requireVisibleGallery } from "@/lib/guards/guest";
+import { toMediaView } from "@/lib/media/view";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -19,14 +20,7 @@ export async function GET(request: Request) {
     const token = url.searchParams.get("token") ?? "";
     const id = url.searchParams.get("id") ?? "";
 
-    const ctx = await resolveGuestToken(token);
-    if (!ctx) throw new ApiError("not_found", "This link is not valid any more.");
-    if (gateGuest(ctx.event).state !== "open") {
-      throw new ApiError("gone", "This event has closed.");
-    }
-    if (!ctx.event.gallery_visible) {
-      throw new ApiError("forbidden", "The host has kept this gallery private.");
-    }
+    const ctx = await requireVisibleGallery(token);
 
     const row = await findEventMedia(createAdminClient(), {
       id,
