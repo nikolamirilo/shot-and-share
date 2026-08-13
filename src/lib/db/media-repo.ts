@@ -287,3 +287,29 @@ export async function mediaExists(
     .maybeSingle();
   return Boolean(data);
 }
+
+/** Does a media row with this id exist at all? The reservation sweep's guard. */
+export async function mediaExistsById(
+  client: Client,
+  id: string,
+): Promise<boolean> {
+  const { data } = await client
+    .from("media")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/** Every ready row at an event, covers included. The retention emails count. */
+export async function countReadyMedia(
+  client: Client,
+  eventId: string,
+): Promise<number> {
+  const { count } = await client
+    .from("media")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("status", "ready");
+  return count ?? 0;
+}

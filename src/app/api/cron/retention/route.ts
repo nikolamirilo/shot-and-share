@@ -1,4 +1,5 @@
 import { fail, handle, ok } from "@/lib/api";
+import { countReadyMedia, mediaExistsById } from "@/lib/db/media-repo";
 import {
   listEventsToPurge,
   listExpiredEvents,
@@ -104,13 +105,7 @@ async function sweepStaleReservations(summary: { reservationsSwept: number }) {
      * check is the difference between tidying up and deleting somebody's
      * wedding photo, so it happens before anything is removed.
      */
-    const { data: live } = await admin
-      .from("media")
-      .select("id")
-      .eq("id", row.id)
-      .maybeSingle();
-
-    if (live) {
+    if (await mediaExistsById(admin, row.id)) {
       await admin.from("upload_reservations").delete().eq("id", row.id);
       continue;
     }
@@ -147,18 +142,14 @@ async function sendWarnings(summary: { warned: number }) {
       continue;
     }
 
-    const { count } = await admin
-      .from("media")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", event.id)
-      .eq("status", "ready");
+    const photoCount = await countReadyMedia(admin, event.id);
 
     await sendEmail(
       retentionWarningEmail({
         to: event.profiles.email,
         eventName: event.name,
         days: Math.max(1, daysLeft),
-        photoCount: count ?? 0,
+        photoCount,
         downloadUrl: `${env.siteUrl}/dashboard/events/${event.id}`,
       }),
     );

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireOwnedEvent } from "@/lib/actions/guards";
 import type { ActionState } from "@/lib/actions/types";
-import type { MediaRow } from "@/lib/db/types";
+import { findMediaByIds } from "@/lib/db/media-repo";
 import { deleteMediaRows } from "@/lib/media/delete";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -15,16 +15,9 @@ export async function deleteMedia(
   await requireOwnedEvent(eventId);
   if (mediaIds.length === 0) return { ok: true };
 
-  const { data: rows, error } = await createAdminClient()
-    .from("media")
-    .select("*")
-    .eq("event_id", eventId)
-    .in("id", mediaIds)
-    .neq("status", "deleted");
-
-  if (error) return { error: error.message };
-
-  await deleteMediaRows(eventId, (rows ?? []) as MediaRow[]);
+  const admin = createAdminClient();
+  const rows = await findMediaByIds(admin, eventId, mediaIds);
+  await deleteMediaRows(eventId, rows);
 
   revalidatePath(`/dashboard/events/${eventId}`);
   return { ok: true };
