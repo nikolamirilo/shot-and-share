@@ -8,7 +8,7 @@ import { hasSupabase } from "@/lib/env";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashToken, looksLikeToken } from "@/lib/tokens";
-import { type ImageFormat, isUniversallyViewable } from "@/lib/media-formats";
+import { type ImageFormat, isUniversallyViewable } from "@/lib/media/formats";
 import { getTier } from "@/lib/tiers";
 
 export interface GuestContext {

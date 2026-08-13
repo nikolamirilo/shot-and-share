@@ -11,7 +11,7 @@ import {
   normaliseMime,
   sizeBudget,
   videoFormatFromMime,
-} from "@/lib/media-formats";
+} from "@/lib/media/formats";
 import { mediaBytes, mediaKeys } from "@/lib/media";
 
 describe("format identification", () => {

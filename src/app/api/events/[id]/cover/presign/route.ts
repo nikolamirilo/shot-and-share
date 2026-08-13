@@ -11,7 +11,7 @@ import {
   IMAGE_MIME,
   type ImageFormat,
   imageFormatFromMime,
-} from "@/lib/media-formats";
+} from "@/lib/media/formats";
 import { requireOwnedEvent } from "@/lib/host";
 import { classify, mediaKey, scopeOfEvent } from "@/lib/media";
 import { LIMITS } from "@/lib/ratelimit";

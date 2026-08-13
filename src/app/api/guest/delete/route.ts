@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 import { ApiError, handle, ok, parseBody } from "@/lib/api";
+import type { MediaRow } from "@/lib/db/types";
 import { requireGuestEvent } from "@/lib/events";
-import { mediaBytes, mediaKeys } from "@/lib/media";
-import { storage } from "@/lib/storage";
+import { deleteMediaRows } from "@/lib/media/delete";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -55,12 +55,7 @@ export async function POST(request: Request) {
       );
     }
 
-    await storage.remove(mediaKeys(row));
-    await admin.from("media").update({ status: "deleted" }).eq("id", row.id);
-    await admin.rpc("release_storage", {
-      p_event: event.id,
-      p_bytes: mediaBytes(row),
-    });
+    await deleteMediaRows(event.id, [row as MediaRow]);
 
     return ok({ deleted: true });
   });

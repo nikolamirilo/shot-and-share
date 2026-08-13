@@ -8,6 +8,7 @@ import {
 import { env } from "@/lib/env";
 import { eventPrefix, mediaBytes, mediaKeys, scopeOfEvent } from "@/lib/media";
 import { storage } from "@/lib/storage";
+import { release } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { HARD_DELETE_GRACE_DAYS, RETENTION_WARNING_DAYS } from "@/lib/tiers";
 
@@ -112,10 +113,7 @@ async function sweepStaleReservations(summary: { reservationsSwept: number }) {
 
     await storage.remove(mediaKeys(row));
     await admin.from("upload_reservations").delete().eq("id", row.id);
-    await admin.rpc("release_storage", {
-      p_event: row.event_id,
-      p_bytes: mediaBytes(row),
-    });
+    await release(row.event_id, mediaBytes(row));
     summary.reservationsSwept += 1;
   }
 }

@@ -14,7 +14,7 @@ import {
   type VideoFormat,
   imageFormatFromMime,
   videoFormatFromMime,
-} from "@/lib/media-formats";
+} from "@/lib/media/formats";
 import {
   MAX_POSTER_BYTES,
   classify,

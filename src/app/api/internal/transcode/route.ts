@@ -8,9 +8,10 @@ import {
   IMAGE_MIME,
   UNIVERSAL_VIDEO_FORMAT,
   VIDEO_MIME,
-} from "@/lib/media-formats";
+} from "@/lib/media/formats";
 import { mediaKey, posterKey, scopeOfMedia } from "@/lib/media";
 import { storage } from "@/lib/storage";
+import { adjust } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -205,29 +206,16 @@ export async function POST(request: Request) {
       (replaced ? mediaBytes - Number(media.size_bytes) : 0) +
       (wrotePoster ? posterBytes : 0);
 
-    if (added > 0) {
-      const { data: reserved } = await admin.rpc("reserve_storage", {
-        p_event: media.event_id,
-        p_bytes: added,
-      });
-      if (!reserved) {
-        /*
-         * The event filled up between upload and conversion. Keep what the
-         * guest uploaded, drop what the worker wrote, and leave the row usable
-         * rather than silently pushing the host over their quota.
-         */
-        if (newKey !== media.media_key) await storage.remove([newKey]);
-        await admin
-          .from("media")
-          .update({ processing: "failed" })
-          .eq("id", media.id);
-        return ok({ recorded: true, skipped: "quota" });
-      }
-    } else if (added < 0) {
-      await admin.rpc("release_storage", {
-        p_event: media.event_id,
-        p_bytes: -added,
-      });
+    if (!(await adjust(media.event_id, added))) {
+      // The event filled up between upload and conversion. Keep what the guest
+      // uploaded, drop what the worker wrote, and leave the row usable rather
+      // than silently pushing the host over their quota.
+      if (newKey !== media.media_key) await storage.remove([newKey]);
+      await admin
+        .from("media")
+        .update({ processing: "failed" })
+        .eq("id", media.id);
+      return ok({ recorded: true, skipped: "quota" });
     }
 
     await admin
