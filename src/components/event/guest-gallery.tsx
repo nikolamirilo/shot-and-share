@@ -24,6 +24,15 @@ import {
 const REFRESH_EVERY_MS = 3000;
 
 /**
+ * How many empty frames stand in for a page on its way.
+ *
+ * Not the page size: fifty shimmering rectangles is a wall of its own, and the
+ * frames are a promise that photographs are coming, not a preview of how many.
+ * Ten fills the first screen on a phone and most of one on a laptop.
+ */
+const PENDING_TILES = 10;
+
+/**
  * What everyone else has uploaded. Guests genuinely like seeing the night from
  * other people's phones, which is why this is on by default - but it is the
  * host's switch, and when they turn it off the page is upload-only.
@@ -53,6 +62,13 @@ export function GuestGallery({
   const [total, setTotal] = useState<number | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  /**
+   * A page the guest asked for, as opposed to one the wall went and got by
+   * itself. Only the asked-for kind draws frames: a refresh three seconds after
+   * an upload must not make ten empty rectangles appear under a wall the guest
+   * is reading.
+   */
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /**
    * Which photo is open, held as an id rather than the photo itself. The
@@ -242,13 +258,25 @@ export function GuestGallery({
           items={items}
           layout={layout}
           onActivate={(item) => setOpenId(item.id)}
+          /* The first load draws the whole wall as frames - the alternative is
+             the empty container a guest currently stares at while the first
+             page is fetched and its photographs decoded. */
+          pending={
+            loadingMore || (items.length === 0 && loading) ? PENDING_TILES : 0
+          }
           className="mt-6"
         />
       )}
 
       {cursor && (
         <Button
-          onClick={() => load(cursor, false)}
+          onClick={() => {
+            // Set before the request, cleared after it: the frames are the
+            // answer to the tap, so they have to be on screen in the same
+            // frame as the tap rather than when the server gets back.
+            setLoadingMore(true);
+            load(cursor, false).finally(() => setLoadingMore(false));
+          }}
           variant="secondary"
           disabled={loading}
           className="mt-6 w-full"
