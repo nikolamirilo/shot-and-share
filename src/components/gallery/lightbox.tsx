@@ -36,9 +36,8 @@ export function Lightbox({
 }) {
   const [full, setFull] = useState<MediaView | null>(null);
   /**
-   * True while this photo's download link is being fetched. Separate from
-   * `full` being empty, which after the request has finished means the link
-   * genuinely is not coming.
+   * True while the download link is being fetched. Separate from `full` being
+   * empty, which after the request means the link is not coming at all.
    */
   const [linkPending, setLinkPending] = useState(true);
   /** False until this photo's pixels are on screen. Reset on every step. */
@@ -51,11 +50,10 @@ export function Lightbox({
     /*
      * Full-resolution URLs resolve only now, never for a whole page.
      *
-     * Clearing first matters once the arrows exist: `full` is where the
-     * Download button gets its link, so carrying the old one across a step
-     * would offer the previous photo under this one's picture. `live` covers
-     * the same hazard from the other side - step twice quickly and the two
-     * requests can land out of order.
+     * Clearing first matters: `full` is where Download gets its link, so
+     * carrying the old one across a step would offer the previous photo under
+     * this one's picture. `live` covers the same hazard from the other side -
+     * step twice quickly and the requests can land out of order.
      */
     let live = true;
     setFull(null);
@@ -81,11 +79,7 @@ export function Lightbox({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, onStep, prevId, nextId]);
 
-  /*
-   * Swipe, on photos only. A video gets the gesture instead - dragging across
-   * one is someone scrubbing, and stealing that to change photo would make the
-   * controls feel broken.
-   */
+  // Swipe on photos only: dragging across a video is someone scrubbing.
   function onTouchStart(e: React.TouchEvent) {
     const touch = e.touches[0];
     touchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
@@ -99,19 +93,15 @@ export function Lightbox({
 
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    // Mostly sideways, or it belongs to the page: a tall photo in a scrolling
-    // panel is dragged up and down far more often than across.
+    // Mostly sideways, or it belongs to the page.
     if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)) return;
 
     const target = dx < 0 ? nextId : prevId;
     if (target) onStep(target);
   }
 
-  /*
-   * A video waits for the signed URL, because the poster is not the clip. A
-   * photo has its URL from the moment the grid loaded - what it waits for is
-   * the bytes, which is a different wait and is handled below.
-   */
+  // A video waits for the signed URL; a photo already has one and waits only
+  // for its bytes, which is handled below.
   const viewUrl = item.kind === "video" ? full?.url : item.previewUrl;
 
   return (
@@ -147,16 +137,11 @@ export function Lightbox({
             )
           ) : viewUrl ? (
             /*
-             * Through the optimiser, like the grid, rather than a bare <img>.
-             * `previewUrl` is the stored original - a phone camera's four-odd
-             * megabytes - and pointing an <img> at it downloaded all of them to
-             * fill 672 pixels of screen. It is the same photo either way; the
-             * difference is a second of staring at nothing on venue wifi.
+             * Through the optimiser rather than a bare <img>: `previewUrl` is
+             * the stored original, several megabytes to fill 672 pixels.
              *
-             * The shimmer behind it is what fills that second. It sits under
-             * the image rather than over it, and the image is never faded in:
-             * if `onLoad` somehow never fires, the photo still shows and the
-             * only cost is an animation nobody can see.
+             * The shimmer sits *under* the image and the image is never faded
+             * in, so if `onLoad` never fires the photo still shows.
              */
             <>
               {!loaded && (
@@ -165,16 +150,14 @@ export function Lightbox({
               <Image
                 src={viewUrl}
                 alt=""
-                // Real dimensions when we have them, a 4:3 guess when we do
-                // not: it only has to hold the shimmer's shape until the photo
-                // lands and takes over the height itself.
+                // A 4:3 guess when we have no real dimensions: it only holds
+                // the shimmer's shape until the photo takes over.
                 width={item.width ?? 1200}
                 height={item.height ?? 900}
                 // Full width on a phone, and the panel is max-w-2xl after that.
                 sizes="(max-width: 704px) 100vw, 672px"
                 onLoad={() => setLoaded(true)}
-                // This photo is the only reason the guest tapped. It is not a
-                // candidate for lazy loading - it is the point of the screen.
+                // The point of the screen, so never lazy.
                 priority
                 className="relative h-auto w-full rounded-xl"
               />
@@ -183,10 +166,8 @@ export function Lightbox({
             <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-well" />
           )}
 
-          {/* Nothing to step to at all means one photo in the event: two dead
-              buttons over it would be furniture. With a wall to move through
-              they both stay put and grey out at the ends, so the picture never
-              shifts under a finger that is tapping the same spot. */}
+          {/* Nothing to step to means one photo in the event, where two dead
+              buttons would be furniture. */}
           {(prevId || nextId) && (
             <>
               <StepArrow direction="prev" targetId={prevId} onStep={onStep} />
@@ -211,17 +192,11 @@ export function Lightbox({
           <Button onClick={onClose} variant="onDark" size="sm">
             Close
           </Button>
-          {/*
-            * One anchor in two states rather than appearing when the link
-            * lands. Stepping between photos re-fetches the link, and a button
-            * that vanishes and comes back moves the two beside it every time -
-            * so it holds its place and goes dim instead. Without `href` it is
-            * inert and out of the tab order already; `aria-disabled` says so
-            * out loud.
-            *
-            * It is still absent entirely when the request has finished and
-            * brought back no link, because then there is nothing to wait for.
-            */}
+          {/* One anchor in two states rather than one that appears when the
+              link lands: stepping re-fetches, and a button that vanishes and
+              returns moves the two beside it every time. Absent entirely once
+              the request finishes with no link, since there is nothing to wait
+              for. */}
           {(linkPending || full?.downloadUrl) && (
             <a
               href={full?.downloadUrl}
@@ -247,9 +222,9 @@ export function Lightbox({
 }
 
 /**
- * One of the two arrows over the open photo. A null target is the end of what
- * has loaded: the button stays where it is and goes grey, because an arrow that
- * disappeared would move the other one and shift the photo underneath.
+ * One of the two arrows. A null target is the end of what has loaded: the
+ * button stays put and greys out, because one that disappeared would move the
+ * other and shift the photo underneath.
  */
 function StepArrow({
   direction,
@@ -270,12 +245,9 @@ function StepArrow({
       className={cx(
         /*
          * `min(50%, 35vh)` rather than a plain half: a tall portrait photo is
-         * taller than the window and the panel scrolls, so its true middle can
-         * sit below the fold - an arrow you have to scroll to find. Short
-         * photos still get the middle, tall ones get a point near the top that
-         * is on screen the moment the lightbox opens.
+         * taller than the window, so its true middle can sit below the fold -
+         * an arrow you have to scroll to find.
          */
-        // Dimmed the same way every other disabled control in the app is.
         "absolute top-[min(50%,35vh)] grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-chalk text-ink transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
         back ? "left-2" : "right-2",
       )}

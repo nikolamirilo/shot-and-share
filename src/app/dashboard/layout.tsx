@@ -10,14 +10,9 @@ import { hasSupabase } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Nothing under /dashboard is for a stranger, and the pages here are all
- * redirects to /login for anyone who is not signed in. Declaring it once in the
- * layout covers every page in the segment, including any added later - the
- * child pages set only a title and inherit this.
- *
- * robots.txt disallows the path as well, which stops the crawl before it
- * starts; this is the directive that applies if a URL is reached some other
- * way, such as being pasted into a social preview.
+ * Declared once here so it covers every page in the segment, including ones
+ * added later. robots.txt disallows the path too; this is what applies when a
+ * URL is reached some other way, such as a social preview.
  */
 export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },

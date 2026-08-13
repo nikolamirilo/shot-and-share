@@ -4,23 +4,13 @@ import { Wordmark } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui";
 
 /**
- * The navigation floats.
+ * The navigation floats: a card held clear of the edges rather than a bar
+ * welded to the top, so the hero's colour runs to the top of the window behind
+ * it. The dashboard's header is the same object with different things in it.
  *
- * A bar welded to the top edge draws a horizontal line across the page and the
- * first thing a visitor sees is a rule. A card held clear of the edges reads as
- * an object sitting on the page instead, which is the same thing every other
- * surface in the product does - and it lets the hero's colour run all the way
- * to the top of the window behind it.
- *
- * The dashboard's header is the same object with different things in it, so
- * the card lives here and both import it. Signed in or not, a person is
- * looking at one product, and a navigation that changes shape when they sign
- * in tells them they have arrived somewhere else.
- *
- * `className` carries only how the header sits in the page. The marketing one
- * is `sticky`, not `fixed`, so it keeps its own space in the flow and the hero
- * below never has to guess how much clearance to leave; the dashboard's stays
- * in the flow because the panels under it pin themselves to the top of the
+ * `className` carries only how it sits in the page. The marketing one is
+ * `sticky` rather than `fixed`, so it keeps its space in the flow; the
+ * dashboard's stays in flow because the panels under it pin themselves to the
  * viewport and would slide underneath a header that followed them down.
  */
 export function HeaderShell({

@@ -1,20 +1,14 @@
 /**
- * The type on a guest's event page.
+ * The type on a guest's event page. A host picks a *pairing*, not a font -
+ * five sets, each tested against the layout.
  *
- * A host picks a *pairing*, not a font. Choosing a display face and a body face
- * that sit well together is the one part of typography that reliably goes wrong
- * when it is handed over, and a wedding page in Comic Sans is a support ticket
- * rather than a feature. So: five sets, each one tested against the layout.
+ * The mono face never changes: it labels the machine-readable parts, and that
+ * register is the product's rather than the event's.
  *
- * The mono face never changes. It labels the machine-readable parts - tokens,
- * short links, percentages - and that register is the product's, not the
- * event's.
- *
- * Each set also carries the three display settings the stylesheet cannot
- * assume. `font-stretch: 82%` is right for Archivo, which has a width axis,
- * and meaningless for Playfair, which does not; -0.046em of tracking is right
- * for a heavy grotesque and too tight for a serif. Shipping them with the set
- * is what keeps a headline from looking broken the moment the face changes.
+ * Each set carries the three display settings the stylesheet cannot assume.
+ * `font-stretch: 82%` is right for Archivo, which has a width axis, and
+ * meaningless for Playfair; -0.046em of tracking suits a heavy grotesque and is
+ * too tight for a serif.
  */
 
 export interface FontSet {

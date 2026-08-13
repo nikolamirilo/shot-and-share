@@ -37,34 +37,19 @@ import { getTier } from "@/lib/tiers";
 /**
  * The custom event page editor.
  *
- * Every choice is judged against a drawing of the whole guest page - cover,
- * ask, gallery - because the only useful answer to "what does Midnight look
- * like?" is a page, and a swatch of a page cannot give it. See EventPreview: it
- * is the real components inside the real EventThemeRoot, with the photographs
- * left as empty frames.
+ * Every choice is judged against a drawing of the whole guest page, because the
+ * only useful answer to "what does Midnight look like?" is a page. The drawing
+ * is the real components inside the real EventThemeRoot - see EventPreview -
+ * which is a rule rather than a detail: anything hand-drawn stops agreeing with
+ * the page it stands for.
  *
- * That is a rule rather than a detail. The parts of this preview that were once
- * drawn by hand - a dark bar standing in for the uploader, four dark tiles
- * standing in for a gallery - were exactly the parts that stopped agreeing with
- * the page: a hand-drawn panel has no card surface on it, so the "Cards" colour
- * had nothing to colour, and four identical squares said the same thing about
- * all four gallery layouts.
- *
- * Six groups of options stacked under that preview is the longest scroll in the
- * product, and on a phone it put the gallery layout about four screens below
- * the thing it changes. The groups are tabs, so every choice is one tap from
- * the drawing it changes.
- *
- * On a laptop they sit side by side: the controls down the left, the drawing
- * pinned to the right where it stays in view for every one of them. Stacked,
- * as it was, the preview scrolled off the top the moment the host started
- * choosing, which is the one moment it is for. The drawing is a third of the
- * width it used to be, which is roughly a phone - the thing a guest holds.
+ * The groups are tabs, so every choice is one tap from the drawing it changes,
+ * and on a laptop the drawing is pinned beside them where it stays in view.
  */
 const LOOK_TABS: TabItem[] = [
   { id: "theme", label: "Colour" },
-  // The id stays `type`: it is the panel's DOM id, so a link to `#look-type`
-  // written before the label changed still opens the right group.
+  // The id stays `type`: it is the panel's DOM id, so `#look-type` still
+  // opens the right group.
   { id: "type", label: "Font" },
   { id: "cover", label: "Cover" },
   { id: "uploads", label: "Uploads" },
@@ -94,13 +79,9 @@ export function AppearanceForm({
 }) {
   const { settings, update, changes, save, state } = useAppearanceDraft(event);
   /**
-   * The photo behind the current selection.
-   *
-   * The picker pages beyond what this component was handed, so a cover chosen
-   * on the fourth page is an id nothing here can resolve. The picker passes the
-   * whole item up rather than only its id, and it is trusted only while it
-   * still matches what is selected - a stale one after "none" would leave the
-   * drawing showing a photograph the host has just removed.
+   * The photo behind the current selection. The picker pages beyond what this
+   * component was handed, so it passes the whole item up rather than its id -
+   * trusted only while it still matches what is selected.
    */
   const [picked, setPicked] = useState<MediaView | null>(null);
 
@@ -111,17 +92,14 @@ export function AppearanceForm({
 
   const font = findFontSet(settings.font);
 
-  // A photo cover with no photo falls back to "Just type" on the guest page, so
-  // the host is told rather than left to discover it after the invitations go
-  // out. The drawing still shows the shape they picked.
+  // A photo cover with no photo falls back to "Just type" on the guest page,
+  // so the host is told rather than discovering it after the invitations.
   const coverNeedsPhoto =
     settings.cover !== "type" && settings.coverMediaId === null;
 
-  // The cover is the one photograph the drawing carries, because the four cover
-  // styles are four crops of it and nobody can choose between crops of a grey
-  // rectangle. Null while the picker is on "none" - and also for a cover saved
-  // in a draft whose photograph is not among the ones loaded here, where the
-  // marked frame is the honest thing to draw.
+  // The one photograph the drawing carries: the four cover styles are four
+  // crops of it. Null on "none", and for a draft whose photograph is not among
+  // those loaded here, where the marked frame is the honest thing to draw.
   const coverUrl =
     (picked?.id === settings.coverMediaId ? picked.previewUrl : null) ??
     [...covers, ...media].find((item) => item.id === settings.coverMediaId)
@@ -137,9 +115,8 @@ export function AppearanceForm({
 
   return (
     <Card as="section">
-      {/* Every pairing, not just the chosen one: the host is comparing them,
-          and a font that arrives half a second after the click reads as the
-          preview being broken. A guest page loads only its own. */}
+      {/* Every pairing, not just the chosen one: a font arriving half a second
+          after the click reads as a broken preview. A guest page loads one. */}
       {FONT_SETS.map((set) => {
         const href = googleFontsHref(set);
         return href ? (
@@ -152,11 +129,9 @@ export function AppearanceForm({
         ) : null;
       })}
 
-      {/* The heading and the save share a line. The count beside the button is
-          the whole answer to "did that stick?", so it has to be reachable from
-          whichever group is open rather than parked at the bottom of one of
-          them - which is where a save button under the tabs would read as
-          saving that group and nothing else. */}
+      {/* The count beside the button is the whole answer to "did that stick?",
+          so it has to be reachable from whichever group is open - a save button
+          under the tabs would read as saving that group alone. */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
           <h2 className="text-h3">The event page</h2>
@@ -180,17 +155,11 @@ export function AppearanceForm({
           the save is the button above rather than a submit down here, so what
           would have been a form is just the layout. */}
       <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_23rem] xl:gap-8">
-        {/* --- live preview -------------------------------------------------
-            The real components, in a real theme root. A mock-up here is how a
-            setting ends up looking dead: the panels beside it are the same ones
-            the guest gets, so a colour that does nothing visible in this box
-            does nothing on the page either.
-
-            First in the source, so a phone still meets the drawing before the
-            controls; put in the second column by hand, so a laptop reads
-            controls-then-drawing without the markup having to. Pinned at the
-            same height as the console's own rail, because the whole point of
-            the split is that it is still there at the last group. */}
+        {/* First in the source, so a phone meets the drawing before the
+            controls, and placed in the second column by hand so a laptop reads
+            controls-then-drawing. Pinned at the console rail's height, because
+            the point of the split is that it is still there at the last
+            group. */}
         <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
           <EventPreview
             name={event.name || "Your event"}
@@ -212,10 +181,9 @@ export function AppearanceForm({
           />
         </div>
 
-        {/* A container rather than the viewport decides how the option grids
-            below break, because this column is a third of the screen on a
-            laptop: `xs:grid-cols-2` there is two columns of squeezed cards on
-            a wide screen, which is the opposite of what it was written for. */}
+        {/* An `@container` rather than the viewport decides how the option
+            grids break: this column is a third of a laptop screen, so a
+            viewport breakpoint would squeeze two columns into it. */}
         <div className="mt-6 min-w-0 space-y-6 @container lg:col-start-1 lg:row-start-1 lg:mt-0">
           <Tabs
             items={LOOK_TABS}

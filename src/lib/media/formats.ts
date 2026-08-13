@@ -34,14 +34,12 @@ export const IMAGE_EXT: Record<ImageFormat, string> = {
 };
 
 /**
- * Formats a host can hand to anybody - open it on a ten-year-old Windows
- * laptop, attach it to an email, put it in a print order - and it works.
+ * Formats a host can hand to anybody and it works.
  *
- * HEIC is the one that matters here. iPhones produce it by default, it is
- * roughly half the size of the equivalent JPEG, and Chrome, Firefox and
- * Windows Photo Viewer cannot open it. A host who downloads a ZIP of HEIC
- * files on a Windows machine has been handed nothing, which is why an
- * openable copy is generated rather than treated as an optimisation.
+ * HEIC is the one that matters: iPhones produce it by default and Chrome,
+ * Firefox and Windows Photo Viewer cannot open it. A host who downloads a ZIP
+ * of HEIC files on Windows has been handed nothing, which is why an openable
+ * copy is generated rather than treated as an optimisation.
  */
 export const UNIVERSAL_IMAGE_FORMATS: ImageFormat[] = [
   "jpeg",
@@ -57,20 +55,11 @@ export function isUniversallyViewable(format: ImageFormat): boolean {
 /**
  * Preference order for the copies we generate and store.
  *
- * AVIF is deliberately absent, and it is the interesting omission. It beats
- * WebP by roughly 15 to 20 percent at these sizes, but:
- *
- *   - Encoding it happens on a guest's phone, at a wedding, with thirty photos
- *     queued behind it. AVIF encode is seconds per image where WebP is
- *     milliseconds, and a guest who waits does not finish uploading.
- *   - Around 7 percent of devices still cannot decode it, so shipping AVIF as
- *     the only stored copy breaks the promise that everyone can view and
- *     download. Keeping a second fallback copy doubles storage and upload time
- *     to save 15 percent on a file already four times smaller than the source.
- *
- * The win here comes overwhelmingly from resizing and quality targeting, not
- * from the last codec generation. When the transcode worker is deployed and
- * encoding is no longer on a phone, AVIF becomes worth revisiting server-side.
+ * AVIF is deliberately absent. It beats WebP by 15-20% at these sizes, but
+ * encoding happens on a guest's phone with thirty photos queued behind it -
+ * seconds per image against WebP's milliseconds - and ~7% of devices cannot
+ * decode it, so it would need a fallback copy alongside. Worth revisiting
+ * server-side once the transcode worker does the encoding.
  */
 export const PREFERRED_IMAGE_FORMATS: ImageFormat[] = ["webp", "jpeg"];
 

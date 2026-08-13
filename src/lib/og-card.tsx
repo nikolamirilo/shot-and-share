@@ -2,20 +2,11 @@ import { MARK } from "@/components/layout/logo";
 import { SITE } from "@/lib/seo";
 
 /**
- * The picture that represents this site in a feed, a message and a search
- * result preview.
- *
- * It is drawn rather than screenshotted, for two reasons. A screenshot of the
- * hero would be a photograph of an interface - unreadable at the 200px wide
- * this is usually seen at - and the real hero's type is Archivo, which the
- * image renderer would have to fetch from Google at request time. The whole
- * font strategy in this product is that a build never depends on reaching an
- * external host, and an OG image that 500s when Google Fonts is slow is worse
- * than a plain one.
- *
- * So: the claret ground, the crop mark, one sentence set as large as it goes,
- * and the address. It survives being 200px wide in a group chat, which is the
- * only test that matters.
+ * The picture that represents this site in a feed, drawn rather than
+ * screenshotted: an interface photographed at the 200px this is usually seen at
+ * is unreadable, and the hero's Archivo would have to be fetched from Google at
+ * request time - an OG image that 500s when Google Fonts is slow is worse than
+ * a plain one.
  */
 export const OG_SIZE = { width: 1200, height: 630 };
 

@@ -18,22 +18,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * The transcode worker's API.
+ * The transcode worker's API. It handles the two things a browser cannot:
+ * images it could not decode (chiefly HEIC outside Safari), and video, where
+ * client-side compression means MediaRecorder re-encoding in real time.
  *
- * The worker handles exactly the two things a browser cannot:
- *
- *   1. Images the browser could not decode - chiefly HEIC anywhere that is not
- *      Safari. Without this, an iPhone photo uploaded from a desktop Chrome is
- *      a file most of the guests and half the hosts cannot open.
- *   2. Video. Compressing a clip client-side means MediaRecorder, which
- *      re-encodes in real time - a two-minute video takes two minutes with a
- *      guest watching a spinner at a party. It has to happen off the phone.
- *
- * The worker never gets AWS credentials. It asks for jobs, receives presigned
- * URLs to read the input and write the outputs, and reports back. That means
- * the thing running ffmpeg on untrusted user input holds nothing worth stealing
- * - which matters, because ffmpeg parsing a hostile file is a real attack
- * surface and this is the process most likely to be compromised.
+ * The worker never gets AWS credentials - it asks for jobs, receives presigned
+ * URLs, and reports back. ffmpeg parsing a hostile file is a real attack
+ * surface, and this is the process most likely to be compromised, so it holds
+ * nothing worth stealing.
  */
 
 function authorised(request: Request): boolean {
@@ -68,10 +60,9 @@ export async function GET(request: Request) {
       rows.map(async (row) => {
         const isVideo = row.kind === "video";
 
-        // Output keys are decided here, not by the worker: the worker should
-        // not be able to choose where in the bucket it writes. The scope comes
-        // off the row itself, so a worker output can only ever land inside the
-        // folder of the host who owns the photo.
+        // Decided here, not by the worker: it must not choose where in the
+        // bucket it writes. The scope comes off the row, so an output can only
+        // land in the folder of the host who owns the photo.
         const scope = scopeOfMedia(row);
         const outKey = mediaKey(
           scope,
@@ -152,11 +143,8 @@ export async function POST(request: Request) {
     if (!media) return fail("not_found", "No such media row.");
 
     if (!body.ok) {
-      /*
-       * A failed conversion is not a lost file. What the guest uploaded is
-       * untouched and still downloadable; the row is marked so it stops being
-       * retried forever and so an operator can see it.
-       */
+      // A failed conversion is not a lost file: what the guest uploaded is
+      // untouched. The row is marked so it stops being retried forever.
       console.error("[transcode] failed", body.mediaId, body.error);
       await admin
         .from("media")
@@ -180,12 +168,9 @@ export async function POST(request: Request) {
     const replaced = mediaBytes > 0;
     const wrotePoster = isVideo && !media.poster_key && posterBytes > 0;
 
-    /*
-     * The converted file replaces what the guest uploaded, so the event folder
-     * never holds both. The delta can be negative - which is the usual case,
-     * since converting is what makes the file smaller - and the quota moves
-     * either way. Reserving cannot happen before the size is known.
-     */
+    // The converted file replaces the upload, so the folder never holds both.
+    // The delta is usually negative. Reserving cannot happen before the size
+    // is known.
     const added =
       (replaced ? mediaBytes - Number(media.size_bytes) : 0) +
       (wrotePoster ? posterBytes : 0);
@@ -228,13 +213,10 @@ export async function POST(request: Request) {
       })
       .eq("id", media.id);
 
-    /*
-     * Last, and only once the row points at the new object: the file the guest
-     * uploaded. A HEIC becomes a JPEG and a MOV becomes an MP4, so the key
-     * changes and the old object would otherwise sit in the bucket for the life
-     * of the event, being paid for and never read. Dropped after the update so
-     * a failure here leaves a stray object rather than a broken photo.
-     */
+    // Only once the row points at the new object. A HEIC becomes a JPEG and a
+    // MOV an MP4, so the key changes and the old object would otherwise be paid
+    // for and never read. After the update, so a failure here leaves a stray
+    // object rather than a broken photo.
     if (replaced && newKey !== media.media_key) {
       await storage.remove([media.media_key]);
     }

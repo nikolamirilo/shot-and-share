@@ -5,11 +5,9 @@ import { cx } from "@/lib/cx";
 /**
  * The space a photograph takes, before there is one.
  *
- * A drawing of a page draws its pictures rather than loading them. The host's
- * preview is judging the shape of the gallery and the colours around it, and a
- * real photograph is the one thing that would answer that question with
- * somebody's wedding instead - four faces in a tile tell you nothing about
- * whether the tile is the right size.
+ * The host's preview is judging the shape of the gallery and the colours around
+ * it, and four faces in a tile tell you nothing about whether the tile is the
+ * right size.
  *
  * The frame is the same recess or hole a real photo sits in, so the surface
  * being judged is the real surface: the void colour, the inner shadow and the

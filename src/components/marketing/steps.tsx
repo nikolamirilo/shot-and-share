@@ -6,13 +6,8 @@ import {
 import { Eyebrow } from "@/components/ui";
 
 /**
- * The mechanism, in three beats.
- *
- * Each card used to be a number and two sentences, and the second sentence was
- * always the one doing the explaining - what a code looks like, where it goes,
- * what comes back. Those are pictures. The drawing carries the mechanism and
- * the line underneath says the one thing a drawing cannot: what it costs you,
- * when it happens, what you get.
+ * The mechanism, in three beats. The drawing carries it; the line underneath
+ * says the one thing a drawing cannot - what it costs, when, and what you get.
  */
 export function Steps() {
   const steps = [

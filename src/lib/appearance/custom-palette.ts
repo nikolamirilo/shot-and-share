@@ -34,8 +34,7 @@ const LIGHT_FLOOR = 0.82;
  *
  * Event pages are light - see the note above THEMES - and the custom picker is
  * not a hole in that rule. A host who types black gets the palest version of
- * their own colour rather than a dark page, and the picker tells them so
- * instead of quietly disagreeing with the swatch they chose.
+ * their own colour, and the picker says so rather than quietly disagreeing.
  *
  * It tints rather than mixing towards white, because a host who picked forest
  * green should recognise what comes back. Mixing drains the hue on the way up

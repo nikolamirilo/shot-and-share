@@ -3,19 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * The contact sheet. The one place on the page where we spend boldness.
+ * The contact sheet: what a night looks like before anybody has chosen a
+ * favourite, which is what this product hands a host the morning after. The
+ * hero is the artefact rather than a picture of the interface.
  *
- * A contact sheet is what a night looks like before anybody has chosen a
- * favourite: every frame the same size, in the order they were taken, on one
- * piece of paper. That is exactly what this product hands a host the morning
- * after, so the hero is the artefact rather than a picture of the interface.
- *
- * Two behaviours give it life and no more than two:
- *   1. On load the frames rise in sequence, in shooting order.
- *   2. On pointer move the sheet tilts on both axes and drifts a few pixels,
- *      which is what makes it read as paper on a table rather than a grid.
- *
- * Both are off under prefers-reduced-motion.
+ * Two behaviours, both off under prefers-reduced-motion: the frames rise in
+ * shooting order on load, and the sheet tilts and drifts on pointer move, which
+ * is what makes it read as paper on a table rather than a grid.
  */
 
 /** Placeholders. Replace with licensed or original imagery before launch. */

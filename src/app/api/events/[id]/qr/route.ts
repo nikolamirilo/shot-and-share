@@ -12,19 +12,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * The QR code is the actual product - the thing that goes on the table - so
- * both formats are vector and print at any size without pixelation.
+ * Both formats are vector, so they print at any size.
  *
- * `format=code` is the bare code as SVG, which is what the dashboard shows and
- * what the host's PNG is rasterised from in the browser.
- * `format=card` is the printable A5 card, and it is a PDF that downloads rather
- * than an image that opens: the host is on the way to a printer, and a PDF page
- * box is the only way to say "this is A5" and be believed. The Wedding tier
- * gets the branded version of it.
+ * `format=code` is the bare SVG the dashboard shows. `format=card` is the
+ * printable A5 card as a PDF rather than an image: a PDF page box is the only
+ * way to say "this is A5" and be believed.
  *
- * Both take their colours from the event's own theme, through the same resolver
- * the guest page uses - so the card a host prints matches the page their guests
- * land on, and a free event gets the house palette whatever is in its row.
+ * Colours come from the event's theme through the same resolver the guest page
+ * uses, so the printed card matches the page guests land on.
  */
 export async function GET(
   request: Request,
