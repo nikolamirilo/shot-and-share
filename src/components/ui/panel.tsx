@@ -3,12 +3,9 @@ import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 
 /**
- * A titled card - the shape almost every panel in the host's console takes.
- *
- * The heading was written out as `<h2 className="text-h3">` at eight sites, and
- * one of them puts a control on the same line as the title. That row only
- * exists when there is something to put in it, because an empty flex row still
- * changes how the heading sits.
+ * A titled card - the shape almost every console panel takes. The title row
+ * only exists when there is a control to put in it, because an empty flex row
+ * still changes how the heading sits.
  */
 export function Panel({
   title,

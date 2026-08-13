@@ -31,15 +31,12 @@ export function Field({
 }
 
 /**
- * `text-body` is 17px, and that is not a typographic preference: Safari zooms
- * the whole page in when a focused field is under 16px, and a guest who has to
- * pinch back out to reach the upload button is a guest who does not upload.
- * Every field in the product goes through this class or matches it.
+ * `text-body` is 17px, not a typographic preference: Safari zooms the page in
+ * when a focused field is under 16px, and a guest who has to pinch back out to
+ * reach the upload button is a guest who does not upload.
  *
- * Butter rather than Cream, and sunken rather than raised. Most fields stand in
- * a Cream card, so the field steps *down* to the page colour and takes an inner
- * shadow along its top edge: a place something goes into. Everything the host
- * can press in the same card is doing the opposite.
+ * Sunken rather than raised - a place something goes into, where everything
+ * pressable in the same card is doing the opposite.
  */
 export const inputClass =
   "w-full min-h-11 rounded-xl bg-linen inset-shadow-well px-3.5 py-2.5 text-body placeholder:text-mist/60 focus:outline-none focus-visible:outline-3 focus-visible:outline-ink";

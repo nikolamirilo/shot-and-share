@@ -3,13 +3,10 @@ import Link from "next/link";
 import { ButtonLink } from "@/components/ui";
 
 /**
- * The one saturated band on the page.
- *
- * Claret is spent twice on the landing page - on the button in the hero and on
- * this - and nowhere in between, which is what keeps it meaning "press this"
- * rather than "brand colour". On the wine the filled button has to be the light
- * shape, and the second choice steps down to a plain underlined link: two
- * competing fills here would read as two equal offers, and they are not.
+ * The one saturated band on the page. Claret is spent twice on the landing page
+ * and nowhere in between, which keeps it meaning "press this" rather than
+ * "brand colour". The second choice is a plain link: two competing fills would
+ * read as two equal offers.
  */
 export function ClosingCta({ signedIn }: { signedIn: boolean }) {
   return (

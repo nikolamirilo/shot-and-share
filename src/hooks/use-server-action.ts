@@ -9,19 +9,13 @@ export interface ActionResult {
 }
 
 /**
- * Calling a server action from a button, with the pending flag and the error it
- * may come back with.
+ * Calling a server action from a button, with the pending flag and the error.
  *
- * Four panels each hand-rolled this, and they had drifted on the one question
- * that matters: when the error clears. One cleared it on the next call, one
- * cleared it up front, and two never cleared it at all - so a failure followed
- * by a success left the old message sitting under a panel that had just worked.
- * Clearing up front is the answer, and having it in one place is what stops the
- * next panel picking a fifth one.
+ * The error clears up front, so a failure followed by a success does not leave
+ * the old message under a panel that has just worked.
  *
- * Nothing is caught. A server action that redirects does so by throwing, and
- * swallowing that would turn "delete this event" into a button that appears to
- * do nothing.
+ * Nothing is caught: a server action that redirects does so by throwing, and
+ * swallowing that turns "delete this event" into a button that does nothing.
  */
 export function useServerAction() {
   const [pending, startTransition] = useTransition();

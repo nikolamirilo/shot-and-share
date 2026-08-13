@@ -3,10 +3,9 @@ import { cx } from "@/lib/cx";
 /**
  * Every class the tab strip can wear, keyed by the shape it is being.
  *
- * These were inline in the component, where 150 lines of `cx()` conditions sat
- * between the keyboard handling and the markup. Tailwind scans for whole class
- * strings, so they are written out in full rather than composed - that is the
- * constraint that makes this a table rather than a function.
+ * Tailwind scans for whole class strings, so they are written out in full
+ * rather than composed - which is what makes this a table rather than a
+ * function.
  */
 
 export interface TabShape {

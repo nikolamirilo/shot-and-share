@@ -51,10 +51,9 @@ export type ReservationResult =
  * bytes, the key they were promised for, and enough detail to build the real
  * row later. See migration 0010.
  *
- * Every failure after the reservation is charged for undoes it. This used to be
- * written per route, and the signing path had no rollback at all - a bucket
- * that had lost its credentials quietly ate a host's quota one upload at a
- * time.
+ * Every failure after the reservation is charged for undoes it, signing
+ * included - otherwise a bucket that has lost its credentials quietly eats a
+ * host's quota one upload at a time.
  */
 export async function createReservation(
   request: ReservationRequest,

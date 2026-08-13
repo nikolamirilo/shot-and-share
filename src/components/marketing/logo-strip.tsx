@@ -1,10 +1,7 @@
 /**
- * The one dark band near the top of the page.
- *
- * It exists so the hero and the section under it do not blur into one long
- * light page, and it says the three things a visitor is actually deciding
- * about. The markers are claret rather than a punched well: on ink a well is
- * invisible, and these are the only three claims on the page that get a mark.
+ * The one dark band near the top, so the hero and the section under it do not
+ * blur into one long light page. The markers are claret rather than a punched
+ * well, which on ink would be invisible.
  */
 export function LogoStrip() {
   const facts = [

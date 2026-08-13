@@ -108,14 +108,13 @@ export function ContactSheet({ qrHref }: { qrHref?: string }) {
           </div>
         </div>
 
-        {/* The QR code is the actual product. A visitor should see the thing
-            they are going to print before they read a word about it.
+        {/* The QR code is the actual product, so a visitor sees the thing they
+            will print before reading a word about it.
 
-            Held well clear of the right edge until the hero splits into two
-            columns and there is page margin to spend: six degrees of rotation
-            and 60px of translateZ put the card's painted corner about thirty
-            pixels outside its own layout box, and at `right-0` that lands past
-            the viewport on every phone. */}
+            Held clear of the right edge until the hero splits into two columns:
+            six degrees of rotation and 60px of translateZ put the painted corner
+            about thirty pixels outside its layout box, which at `right-0` lands
+            past the viewport on every phone. */}
         <div
           className="absolute -bottom-10 right-4 w-[30%] max-w-[132px] rounded-2xl bg-paper p-2.5 shadow-lg sm:-bottom-12 sm:right-6 sm:w-[27%] sm:p-2.5"
           style={{ transform: "rotate(6deg) translateZ(40px)" }}

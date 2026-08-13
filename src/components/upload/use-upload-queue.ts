@@ -25,22 +25,16 @@ export interface Item {
 }
 
 /**
- * What the guest is told is happening, for the batch as a whole.
- *
- * Per-file rows were the old answer and they were the wrong one: twenty
- * filenames with twenty numbers ticking beside them is a machine reporting to
- * itself. Only the files that *fail* are ever named.
+ * What the guest is told, for the batch as a whole. Twenty filenames with
+ * twenty numbers ticking beside them is a machine reporting to itself, so only
+ * the files that *fail* are ever named.
  */
 export type Phase = "preparing" | "uploading";
 
 /**
- * How many files are compressed, and uploaded, at the same time.
- *
- * Two gates rather than one queue, because they are two different machines:
- * compressing is the processor and uploading is the radio. A file that has
- * finished compressing climbs out over the network while the next one is still
- * being re-encoded, so the two costs overlap instead of being paid one after
- * the other.
+ * Two gates rather than one queue, because compressing is the processor and
+ * uploading is the radio: a file climbs out over the network while the next is
+ * still being re-encoded, so the two costs overlap.
  */
 const COMPRESS_AT_ONCE = 3;
 const UPLOAD_AT_ONCE = 3;
@@ -53,11 +47,8 @@ export interface UploadQueueOptions {
 }
 
 /**
- * The whole upload state machine, with no markup in it.
- *
- * It lived inside the Uploader component, which is why none of it was testable
- * without rendering a page - and it is the part of the guest side where a
- * mistake costs somebody their photographs.
+ * The whole upload state machine, with no markup in it - the part of the guest
+ * side where a mistake costs somebody their photographs.
  */
 export function useUploadQueue({
   token,
@@ -90,12 +81,8 @@ export function useUploadQueue({
   }
 
   /**
-   * Everything one file goes through, on its own.
-   *
-   * The whole batch used to share a single chain, which meant one unreadable
-   * file took twenty photos down with it and nothing was committed until the
-   * last one landed. Now a file that fails fails alone, and one that lands is
-   * written to the database immediately.
+   * Everything one file goes through, on its own: a file that fails fails
+   * alone, and one that lands is written to the database immediately.
    */
   async function runOne(
     item: Item,
@@ -137,12 +124,8 @@ export function useUploadQueue({
 
       update(item.key, { status: "done", progress: 100 });
 
-      /*
-       * Per photograph, not per batch. This used to fire once, after the last
-       * file had landed, so a guest sending twenty watched a wall that did not
-       * change for two minutes and then changed all at once - which reads
-       * exactly like an upload that is not working.
-       */
+      // Per photograph, not per batch: a wall that does not change for two
+      // minutes and then changes all at once reads as a broken upload.
       onUploaded();
       return true;
     } catch (e) {

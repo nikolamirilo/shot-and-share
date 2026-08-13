@@ -8,26 +8,17 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         <div className="rise">
           <Eyebrow>Photo collection for events</Eyebrow>
 
-          {/* Four words and a full stop, with the photographs showing through
-              them. The old headline was a statistic across two lines and a
-              visitor had to finish reading it before they knew what was being
-              sold; this one is the product, and it is made of the thing the
-              product collects. The sentence under it is the whole mechanism -
-              if somebody reads nothing else on the page they still know what
-              this is. */}
-          {/* `leading-[0.9]` was set for the two lines this is written as, and
-              a phone does not get two lines - "your guests take." does not fit
-              across 360px at 48px, so it wraps and the third line arrives 0.1em
-              inside the descenders of the second. The y and the g in "your
-              guests" were being cut in half by the word "take" underneath them.
+          {/* Four words and a full stop, made of the thing the product collects.
+              The sentence under it is the whole mechanism, so somebody who
+              reads nothing else still knows what this is. */}
+          {/* A phone does not get the two lines this is written as, and at
+              `leading-[0.9]` the third arrives inside the descenders of the
+              second. 1.02 is the smallest leading that cannot collide - the ink
+              height of the face, ascender to descender.
 
-              1.02 is the smallest leading that cannot collide: it is the ink
-              height of the face, ascender to descender. It still reads as a
-              poster - the tightness that mattered was never the last tenth.
-
-              The padding is for the other way this can go wrong. Where a
-              background is clipped to the text, Safari paints only inside the
-              element's box, and the final line's descenders hang below it. */}
+              The padding is the other failure: where a background is clipped to
+              the text, Safari paints only inside the element's box and the last
+              line's descenders hang below it. */}
           <h1 className="photo-type mt-4 pb-[0.06em] text-[3rem] leading-[1.02] xs:text-[3.5rem] sm:text-[5rem] lg:text-[6.25rem]">
             Every photo
             <br />

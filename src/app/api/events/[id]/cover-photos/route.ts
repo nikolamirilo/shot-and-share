@@ -9,17 +9,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * A page of the event's photographs, for the cover picker.
+ * A page of the event's photographs, for the cover picker. Keyset on
+ * `created_at` rather than an offset, so a photo arriving mid-browse cannot
+ * shuffle a row the host is looking at.
  *
- * The picker used to show whatever the console had already loaded, cut to the
- * first two dozen: a host whose cover shot was taken on the second night could
- * not reach it at all. This pages through the lot, newest first, on the same
- * keyset cursor the guest gallery uses - `created_at` rather than an offset, so
- * a photo arriving mid-browse cannot shuffle a row the host is looking at.
- *
- * Guest photographs only. The host's own uploaded covers come down with the
- * page itself: there are only ever a handful, and they belong in their own row
- * rather than scattered through the event by date.
+ * Guest photographs only: the host's own covers come down with the page itself
+ * and get their own row rather than being scattered through the event by date.
  */
 export async function GET(
   request: Request,

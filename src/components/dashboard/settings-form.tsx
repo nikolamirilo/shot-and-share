@@ -76,14 +76,9 @@ export function SettingsForm({ event }: { event: EventRow }) {
         </span>
       </label>
 
-      {/*
-        There is no photo-quality choice here, and that is deliberate. Photos
-        are always stored compressed - full resolution for any screen and for
-        printing up to A4, at about a quarter of the size. The alternative was
-        a setting whose only effect was filling the host's event four times
-        faster for a difference nobody can see, and whose consequences only
-        became visible once the event was over.
-      */}
+      {/* No photo-quality choice, deliberately: photos are always stored
+        compressed, and the alternative is a setting whose only effect is
+        filling the event four times faster for a difference nobody can see. */}
 
       {state.error && <Alert>{state.error}</Alert>}
       {state.ok && <Alert tone="ok">Saved.</Alert>}

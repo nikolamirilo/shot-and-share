@@ -6,12 +6,8 @@ import type { MediaView } from "@/lib/media-view";
 import { COVER_PAGE_SIZE } from "@/lib/media";
 
 /**
- * The event's photographs, a page at a time.
- *
- * The picker used to show whatever the console had already loaded, cut to the
- * first two dozen: a host whose cover shot was taken on the second night could
- * not reach it at all. This pages through the lot on the same keyset cursor the
- * guest gallery uses.
+ * The event's photographs, a page at a time, on the same keyset cursor the
+ * guest gallery uses - so a cover shot taken on the second night is reachable.
  */
 export function useCoverPhotos(
   eventId: string,

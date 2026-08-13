@@ -118,15 +118,10 @@ export function Slideshow({
       <div className="relative flex-1 overflow-hidden">
         {current ? (
           items.map((item, i) => {
-            /*
-             * Only the current slide and its neighbours are mounted. Every
-             * item used to be in the DOM at once, which was affordable when
-             * the gallery had 720px thumbnails and is not now that the stored
-             * object is the full photo: sixty of them is tens of megabytes on
-             * a venue's wifi, and fifty-eight are invisible. The neighbours
-             * stay so the crossfade has something to fade from, and so the
-             * next photo is decoded before its turn.
-             */
+            // Only the current slide and its neighbours: the stored object is
+            // the full photo, so sixty in the DOM is tens of megabytes on venue
+            // wifi and fifty-eight are invisible. The neighbours stay so the
+            // crossfade has something to fade from.
             const gap = Math.abs(i - index);
             if (gap > 1 && gap < items.length - 1) return null;
 

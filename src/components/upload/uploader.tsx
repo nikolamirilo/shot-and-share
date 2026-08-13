@@ -150,9 +150,8 @@ export function Uploader({
           {queue.busy ? working : ""}
         </p>
 
-        {/* A partial failure used to show a thank-you and nothing else, so a
-            guest had no way of knowing three of their ten were missing. This is
-            the one place a filename earns its keep. */}
+        {/* The one place a filename earns its keep: "one did not make it" is
+            useless if the guest cannot tell which one. */}
         {queue.failed.length > 0 && !queue.busy && (
           <div className="mt-5 note p-4">
             <p className="text-[0.9375rem] font-semibold">

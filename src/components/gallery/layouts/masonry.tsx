@@ -48,15 +48,13 @@ function useColumns() {
 /**
  * Nothing cropped, and the newest photographs along the top.
  *
- * This was CSS columns, which was free and had one bad property: a browser
- * fills a column to the bottom before starting the next. The gallery is newest
- * first, so with four columns the top row showed photographs from four
- * different points in the night. Dealing them across the columns like cards
- * puts the newest handful along the top row instead.
+ * Dealt across the columns like cards rather than CSS columns, which fill one
+ * to the bottom before starting the next - on a newest-first gallery that puts
+ * four different points in the night along the top row.
  *
  * The cost is that the columns are separate lists, so a screen reader hears one
- * column and then the next rather than the exact order on screen. Each column
- * is still newest first, and the tiles carry no sequence in their labels.
+ * and then the next rather than the order on screen. Each is still newest
+ * first, and the tiles carry no sequence in their labels.
  */
 export function MasonryLayout({
   items,

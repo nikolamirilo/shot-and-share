@@ -4,15 +4,9 @@ import { LogoMark } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui";
 
 /**
- * The Shot & Share header and footer on a free event.
- *
- * This is the free plan's price. Not a watermark stamped across somebody's
- * photographs - a small bar above and a clear invitation below, on the one page
- * where the audience is a hundred people who have just watched the product work
- * and are holding phones full of their own events.
- *
- * Paid events remove it entirely. That is most of what "custom event page" is
- * actually buying.
+ * The Shot & Share header and footer on a free event - the free plan's price,
+ * and a small bar rather than a watermark across somebody's photographs.
+ * Paid events remove it, which is most of what "custom event page" buys.
  */
 
 export function PlatformHeader() {

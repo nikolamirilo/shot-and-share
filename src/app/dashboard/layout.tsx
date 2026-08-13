@@ -42,25 +42,16 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-dvh flex-col bg-linen">
-      {/* Four things competed for about 300 usable pixels here and the loser
-          was "New event", which wrapped onto two lines and doubled in height.
-          Two of them are now one 40px circle - the name and the sign-out link
-          both live behind the badge - and the wordmark still gives up its word
-          below xs so the row never has to wrap.
+      {/* About 300 usable pixels on a phone: the name and sign-out both live
+          behind one 40px badge, and the wordmark gives up its word below xs so
+          the row never wraps.
 
-          The mark goes home, not to the dashboard. A logo that means "the top
-          of this app" in one place and "the front of this site" in another is
-          a logo a person cannot use, and every other site they visit has
-          taught them it is the way out. "My events" is what carries them back
-          into the app instead - it appears from xs up, where there is room
-          for a third thing, and below that the pages that need it have their
-          own way back.
+          The mark goes home, not to the dashboard - every other site has taught
+          people it is the way out. "My events" carries them back in, from xs up.
 
-          The card itself is the marketing header's - same radius, same white,
-          same blur, same padding - because a person who signs in has not
-          changed products. It does not follow the page down: the tab rails
-          inside the dashboard pin themselves to the top of the viewport and
-          would run underneath it. */}
+          The card is the marketing header's, because signing in is not a change
+          of product. It does not follow the page down: the tab rails inside
+          pin themselves to the viewport and would run underneath it. */}
       <HeaderShell className="relative z-10">
         <Link href="/" aria-label="Shot & Share, home" className="shrink-0">
           <Wordmark labelClassName="hidden xs:inline" />

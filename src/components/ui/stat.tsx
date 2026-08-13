@@ -1,10 +1,8 @@
 /**
- * A number the host is meant to read at a glance, with its label above it.
- *
- * The display face is set at a narrow width on purpose: these sit two to a row
- * on a phone, and a five-digit count in the full-width face wraps its own
- * column. `fontStretch` rather than a smaller size, so a big number and a small
- * one still look like the same kind of thing.
+ * A number read at a glance, with its label above it. Set at a narrow width
+ * because these sit two to a row on a phone and a five-digit count in the
+ * full-width face wraps its own column - `fontStretch` rather than a smaller
+ * size, so a big number and a small one look like the same kind of thing.
  */
 export function Stat({
   label,
