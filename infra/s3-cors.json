@@ -1,10 +1,13 @@
 {
   "CORSRules": [
     {
-      "_comment": "Guests POST directly to the bucket with a presigned policy. Replace the origins with the real hostnames before going live - a wildcard here is an invitation to have your upload policy used from somebody else's page.",
+      "_comment": "Guests POST directly to the bucket with a presigned policy, so every hostname the app is served from has to be listed here. A hostname that is missing is not a warning anywhere - the browser blocks the POST before it is sent, the app sees a status of 0, and the guest is told the upload could not reach storage. Reapply this file whenever a domain is added or the site is renamed. No wildcard on the apex: a wildcard here is an invitation to have your upload policy used from somebody else's page.",
       "AllowedOrigins": [
-        "https://saycheese.app",
-        "https://www.saycheese.app",
+        "https://shotandshare.com",
+        "https://www.shotandshare.com",
+        "https://shot-and-share-reactify-developers-projects.vercel.app",
+        "https://shot-and-share-git-main-reactify-developers-projects.vercel.app",
+        "https://shot-and-share-*-reactify-developers-projects.vercel.app",
         "http://localhost:3000"
       ],
       "AllowedMethods": ["POST", "GET", "HEAD"],

@@ -191,13 +191,23 @@ export function Uploader({
     } catch (e) {
       /*
        * Hand the reserved space back before giving up, so a failed upload does
-       * not sit on the host's quota until the nightly sweep.
+       * not sit on the host's quota until the nightly sweep - and say why,
+       * because this is the only report the operator will ever get. The bytes
+       * never touched our servers, so without this a bucket that refuses every
+       * upload in the country is indistinguishable from one guest's phone
+       * losing signal.
        */
-      await confirm(fingerprint, upload.mediaId, prepared, false, false).catch(
-        () => {
-          /* the sweep is the backstop */
-        },
-      );
+      const reason = e instanceof Error ? e.message : String(e);
+      await confirm(
+        fingerprint,
+        upload.mediaId,
+        prepared,
+        false,
+        false,
+        reason,
+      ).catch(() => {
+        /* the sweep is the backstop */
+      });
       throw e;
     }
 
@@ -222,6 +232,7 @@ export function Uploader({
     prepared: Prepared,
     mediaUploaded: boolean,
     posterUploaded: boolean,
+    reason?: string,
   ) {
     return postJson<{ confirmed: boolean }>("/api/upload/confirm", {
       token,
@@ -232,6 +243,7 @@ export function Uploader({
       mediaUploaded,
       posterUploaded,
       failed: !mediaUploaded,
+      reason: reason?.slice(0, 300),
     });
   }
 

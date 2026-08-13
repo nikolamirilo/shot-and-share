@@ -18,6 +18,17 @@ const bodySchema = z.object({
   mediaUploaded: z.boolean().default(true),
   posterUploaded: z.boolean().default(false),
   failed: z.boolean().default(false),
+  /**
+   * Why the browser gave up, in the app's own words.
+   *
+   * The upload goes straight from the phone to the bucket, so when it fails
+   * there is no request on our side to look at: presign answers 200, confirm
+   * arrives seconds later saying it did not work, and the reason exists only in
+   * a console nobody is reading. A bucket whose CORS rules do not name the live
+   * hostname looks exactly like a guest on bad wifi from here, and the two need
+   * completely different repairs.
+   */
+  reason: z.string().max(300).optional(),
 });
 
 type MediaInsert = Database["public"]["Tables"]["media"]["Insert"];
@@ -88,6 +99,19 @@ export async function POST(request: Request) {
     // The stored object is the photo. Without it there is nothing to keep, so
     // the whole promise goes back, poster and all.
     if (body.failed || !body.mediaUploaded) {
+      /*
+       * The only record that this upload was attempted at all. Everything else
+       * about a failure between the phone and the bucket is invisible to us,
+       * and one of the causes - CORS rules that have gone stale after a rename
+       * - takes down every upload at every event at once while leaving the
+       * logs looking entirely healthy.
+       */
+      console.error("[confirm] upload did not reach storage", {
+        eventId: event.id,
+        mediaKey: reservation.media_key,
+        bytes: totalBytes,
+        reason: body.reason ?? "not reported",
+      });
       await discard(reservation.id);
       await release(event.id, totalBytes);
       return ok({ confirmed: false });

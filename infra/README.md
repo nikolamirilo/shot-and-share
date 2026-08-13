@@ -32,6 +32,40 @@ aws s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" \
   --lifecycle-configuration file://s3-lifecycle.json
 ```
 
+## CORS is the one that breaks uploads silently
+
+`s3-cors.json` has to name every hostname the app is served from, and it has to
+be reapplied when that list changes. This is the failure mode to know by sight,
+because nothing in the system reports it as an error:
+
+- `/api/upload/presign` answers **200**. Signing does not touch CORS.
+- The browser refuses to send the POST, so the bucket never sees a request and
+  there is nothing in the S3 logs either.
+- The app gets an XHR status of `0` - no response at all, not a rejection - and
+  retries twice more before giving up, which is why a failed batch takes about
+  six seconds to report itself.
+- The guest is told "Could not reach storage. The bucket's CORS rules may not
+  allow this site." The client also logs the key and the size to the console.
+- The confirm step hands the reserved quota back, so the counters stay correct
+  and there is no wreckage to find afterwards.
+
+The tell is that presign succeeds and confirm arrives seconds later with
+`failed: true` and a reason, with no media row written. A rejection *by* the
+bucket looks different: it comes back as a 403 with an XML body naming the
+cause, is reported immediately rather than after a retry, and is not retried at
+all.
+
+```bash
+aws s3api put-bucket-cors --bucket "$BUCKET" \
+  --cors-configuration file://s3-cors.json
+
+# Read it back, and check the live hostname is in the list.
+aws s3api get-bucket-cors --bucket "$BUCKET"
+```
+
+Renaming the site is what makes this bite: the rules keep pointing at the old
+domain, every other page goes on working, and only the upload stops.
+
 ## The lifecycle rules are not optional
 
 Leaving 30 GB on S3 Standard for twelve months costs about \$8.28. Moving it to
