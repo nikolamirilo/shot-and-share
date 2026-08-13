@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import { cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
@@ -60,36 +61,12 @@ export function PhotoGallery({
 
   if (layout === "masonry") {
     return (
-      /**
-       * CSS columns rather than a JS masonry library: no measuring pass, no
-       * layout thrash when a photo loads, and it reflows for free. The known
-       * cost is that reading order runs down each column instead of across -
-       * acceptable for a photo wall where nothing depends on sequence.
-       */
-      <ul
-        className={cx(
-          "columns-2 gap-2 sm:columns-3 sm:gap-2.5 lg:columns-4 [&>li]:mb-2 sm:[&>li]:mb-2.5",
-          className,
-        )}
-      >
-        {items.map((item) => (
-          <li key={item.id} className="break-inside-avoid">
-            <Tile
-              item={item}
-              onActivate={onActivate}
-              selected={isSelected?.(item) ?? false}
-              selectable={Boolean(isSelected)}
-              shape="recess"
-              style={{
-                aspectRatio: aspectRatio(item.width, item.height),
-                width: "100%",
-              }}
-              // columns-2 / sm:columns-3 / lg:columns-4
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            />
-          </li>
-        ))}
-      </ul>
+      <Masonry
+        items={items}
+        onActivate={onActivate}
+        isSelected={isSelected}
+        className={className}
+      />
     );
   }
 
@@ -148,6 +125,101 @@ export function PhotoGallery({
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * How wide the wall has to be for a third and a fourth column. These are the
+ * `sm` and `lg` breakpoints; the columns are dealt in JavaScript now, so they
+ * have to be stated here rather than left to Tailwind.
+ */
+const MASONRY_STEPS = [
+  { query: "(min-width: 64rem)", columns: 4 },
+  { query: "(min-width: 40rem)", columns: 3 },
+] as const;
+const MASONRY_MIN = 2;
+
+function useMasonryColumns() {
+  // Two on the server and on the first paint. The wall is loaded by the client
+  // in both places it appears, so this is a starting value rather than
+  // something a visitor sees settle.
+  const [columns, setColumns] = useState(MASONRY_MIN);
+
+  useEffect(() => {
+    const lists = MASONRY_STEPS.map((step) => window.matchMedia(step.query));
+    const read = () => {
+      const hit = lists.findIndex((list) => list.matches);
+      setColumns(hit === -1 ? MASONRY_MIN : MASONRY_STEPS[hit].columns);
+    };
+
+    read();
+    lists.forEach((list) => list.addEventListener("change", read));
+    return () =>
+      lists.forEach((list) => list.removeEventListener("change", read));
+  }, []);
+
+  return columns;
+}
+
+/**
+ * Nothing cropped, and the newest photographs along the top.
+ *
+ * This was CSS columns, which was free and had one bad property: a browser
+ * fills a column to the bottom before starting the next one. The gallery is
+ * newest first, so with four columns the top row showed photographs from four
+ * different points in the night, and the newest ones ran down the left edge
+ * instead of across the top. On a wall that grows all evening that is the whole
+ * point of the ordering, gone.
+ *
+ * So the photographs are dealt across the columns like cards - first to the
+ * first, second to the second - which puts the newest handful along the top row
+ * and keeps recency running down each column after that. The cost is that the
+ * columns are separate lists, so a screen reader hears one column and then the
+ * next rather than the exact order on screen; each column is still newest
+ * first, and the tiles carry no sequence in their labels.
+ */
+function Masonry({
+  items,
+  onActivate,
+  isSelected,
+  className,
+}: {
+  items: MediaView[];
+  onActivate: (item: MediaView) => void;
+  isSelected?: (item: MediaView) => boolean;
+  className?: string;
+}) {
+  const columns = useMasonryColumns();
+  const lanes: MediaView[][] = Array.from({ length: columns }, () => []);
+  items.forEach((item, index) => lanes[index % columns].push(item));
+
+  return (
+    <div className={cx("flex items-start gap-2 sm:gap-2.5", className)}>
+      {lanes.map((lane, index) => (
+        <ul
+          key={index}
+          className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-2.5"
+        >
+          {lane.map((item) => (
+            <li key={item.id}>
+              <Tile
+                item={item}
+                onActivate={onActivate}
+                selected={isSelected?.(item) ?? false}
+                selectable={Boolean(isSelected)}
+                shape="recess"
+                style={{
+                  aspectRatio: aspectRatio(item.width, item.height),
+                  width: "100%",
+                }}
+                // Two columns on a phone, three from sm, four from lg.
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
+            </li>
+          ))}
+        </ul>
+      ))}
+    </div>
   );
 }
 
