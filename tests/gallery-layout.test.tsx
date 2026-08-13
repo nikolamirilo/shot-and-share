@@ -44,9 +44,12 @@ function markup(layout: GalleryLayout, items: MediaView[], pending = 0) {
   );
 }
 
-/** Empty frames standing in for photographs on their way. */
+/**
+ * Empty frames standing in for photographs on their way. Counted by the pulse,
+ * which is the one thing every frame has and nothing else on the wall does.
+ */
 function frames(html: string): number {
-  return (html.match(/shimmer/g) ?? []).length;
+  return (html.match(/animate-pulse/g) ?? []).length;
 }
 
 /**
@@ -150,7 +153,7 @@ describe("frames for photographs on their way", () => {
     expect(order(html)).toEqual([1, 2, 3, 4, 5]);
     // Five real tiles, and the ten frames sit past them rather than replacing
     // what the guest is already looking at.
-    expect(html.indexOf("shimmer")).toBeGreaterThan(
+    expect(html.indexOf("animate-pulse")).toBeGreaterThan(
       html.lastIndexOf("%2Fpreview%2F5"),
     );
   });

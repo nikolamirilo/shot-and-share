@@ -200,10 +200,26 @@ function Skeleton({
   return (
     <span
       aria-hidden="true"
-      className={cx(shape, "shimmer relative block overflow-hidden", className)}
+      className={cx("block", PENDING_SURFACE, roundedLike(shape), className)}
       style={style}
     />
   );
+}
+
+/**
+ * What a frame with no photograph in it looks like.
+ *
+ * Blush and a pulse, which is what the QR code on the host's share panel does
+ * while it is being generated - the one other place in the product that draws
+ * the shape of something before it has it. The well the photographs sit in is
+ * the darkest surface here, and a frame in it read as a hole in the wall rather
+ * than as a photograph on its way.
+ */
+const PENDING_SURFACE = "animate-pulse bg-blush";
+
+/** The radius of the well this frame stands in for. Kept in step with .recess. */
+function roundedLike(shape: "hole" | "recess") {
+  return shape === "hole" ? "rounded-full" : "rounded-[0.625rem]";
 }
 
 /**
@@ -456,15 +472,19 @@ function Tile({
       {item.previewUrl && hold ? (
         /*
          * Waiting its turn in the loading queue: the right shape, so the wall
-         * does not jump when the photograph lands in it, and shimmering like
-         * any other frame with a photograph on the way. A still, empty well
-         * here would be the same picture the wall shows for a photograph that
+         * does not jump when the photograph lands in it, and pulsing like any
+         * other frame with a photograph on the way. A still, empty well here
+         * would be the same picture the wall shows for a photograph that
          * failed to load, when this one has not been asked for yet.
+         *
+         * The tile already carries the radius and clips to it, so this only
+         * has to be the surface.
          */
         <span
           aria-hidden="true"
           className={cx(
-            "shimmer relative block overflow-hidden",
+            "block",
+            PENDING_SURFACE,
             natural ? "w-full" : "h-full w-full",
           )}
           style={
