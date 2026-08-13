@@ -366,6 +366,22 @@
   animation: shimmer 1.6s infinite;
 }
 
+/* Work with no measurable progress - compressing a photo says nothing until it
+   is done. The bar slides rather than fills, so the guest can see the phone is
+   still working without being shown a number that is not real. */
+@keyframes progress-drift {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.progress-drift {
+  animation: progress-drift 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -375,6 +391,14 @@
   .rise,
   .shimmer::after {
     animation: none !important;
+  }
+
+  /* Still has to read as "busy" with the movement taken away, so it fills the
+     track at half strength instead of parking a stub at the left edge. */
+  .progress-drift {
+    animation: none !important;
+    width: 100%;
+    opacity: 0.5;
   }
 
   *,

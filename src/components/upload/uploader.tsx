@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import { Button, Hole, ProgressBar, cx } from "@/components/ui";
+import { Button, Hole, ProgressBar } from "@/components/ui";
 import { UploadPanel } from "@/components/upload/upload-panel";
 import type { UploadVariant } from "@/lib/appearance/variants";
 import { type Prepared, estimate, prepare } from "@/lib/client/prepare";
@@ -33,6 +33,17 @@ interface Item {
   progress: number;
   error?: string;
 }
+
+/**
+ * What the guest is told is happening, for the batch as a whole.
+ *
+ * Per-file rows were the old answer and they were the wrong one: twenty
+ * filenames with twenty numbers ticking beside them is a machine reporting to
+ * itself. A guest wants one line telling them it is working and roughly how far
+ * along it is. Only the files that *fail* are ever named, because that is the
+ * one moment the name matters.
+ */
+type Phase = "preparing" | "uploading";
 
 interface PresignResponse {
   upload: {
@@ -93,6 +104,15 @@ export function Uploader({
   );
   const [completed, setCompleted] = useState(0);
   const [saved, setSaved] = useState({ from: 0, to: 0 });
+  const [phase, setPhase] = useState<Phase>("preparing");
+  /**
+   * The keys of the run that is on screen now.
+   *
+   * The counter and the bar are about *this* handful of photos. Measuring them
+   * against `items` would mean a guest who adds three more after sending twenty
+   * sees a bar that is already almost full.
+   */
+  const [running, setRunning] = useState<string[]>([]);
 
   function update(key: string, patch: Partial<Item>) {
     setItems((prev) =>
@@ -131,6 +151,10 @@ export function Uploader({
 
       await uploading(async () => {
         update(item.key, { status: "uploading", progress: 0 });
+        // Only ever forwards within a run. Compressing and uploading overlap,
+        // so a phase derived from what is happening right now would flip back
+        // to "optimising" every time a file finished climbing out.
+        setPhase("uploading");
         await send(item, prepared, fingerprint, uploaderName);
       });
 
@@ -247,6 +271,8 @@ export function Uploader({
    */
   async function runBatch(batch: Item[]) {
     setBusy(true);
+    setPhase("preparing");
+    setRunning(batch.map((item) => item.key));
 
     try {
       const fingerprint = getFingerprint();
@@ -340,19 +366,34 @@ export function Uploader({
     await runBatch(failed.map((item) => ({ ...item, status: "waiting" })));
   }
 
-  const failedCount = items.filter((i) => i.status === "failed").length;
+  const failed = items.filter((i) => i.status === "failed");
   const inFlight = items.filter(
     (i) => i.status !== "done" && i.status !== "failed",
   ).length;
+
+  const batch = items.filter((i) => running.includes(i.key));
+  const sent = batch.filter((i) => i.status === "done").length;
   const overall =
-    items.length === 0
+    batch.length === 0
       ? 0
       : Math.round(
-          items.reduce(
+          batch.reduce(
             (sum, i) => sum + (i.status === "done" ? 100 : i.progress),
             0,
-          ) / items.length,
+          ) / batch.length,
         );
+
+  // One line, in the guest's terms. "Compressing" and "presigning" are our
+  // words for our problems.
+  const one = batch.length === 1;
+  const working =
+    phase === "preparing"
+      ? one
+        ? "Optimising your photo"
+        : "Optimising your photos"
+      : one
+        ? "Uploading your photo"
+        : "Uploading your photos";
 
   const accept = allowVideo ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO;
 
@@ -385,7 +426,13 @@ export function Uploader({
       <UploadPanel
         variant={variant}
         busy={busy}
-        label={busy ? `Uploading… ${overall}%` : "Add your photos"}
+        label={
+          busy
+            ? phase === "preparing"
+              ? "Optimising…"
+              : "Uploading…"
+            : "Add your photos"
+        }
         hint={`${
           allowVideo
             ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
@@ -397,63 +444,74 @@ export function Uploader({
         onCapture={() => cameraRef.current?.click()}
         onDropFiles={handleFiles}
       >
-        {items.length > 0 && (
+        {/* The whole batch as one line. While the photos are being re-encoded
+            there is no number to show - the bar drifts instead of sitting at
+            zero looking stuck - and it starts filling once bytes are actually
+            moving. */}
+        {busy && batch.length > 0 && (
           <div className="mt-6">
-            <ProgressBar percent={overall} />
-            <ul className="mt-4 space-y-2">
-              {items.map((item) => (
-                <li
-                  key={item.key}
-                  className="flex items-center gap-3 text-[0.9375rem]"
-                >
-                  <Hole
-                    size={11}
-                    className={cx(
-                      item.status === "done" && "bg-ink",
-                      item.status === "failed" && "opacity-40",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1 truncate">
-                    {item.file.name}
+            <ProgressBar
+              percent={overall}
+              indeterminate={phase === "preparing"}
+            />
+            {/* Spoken by the live region below instead, so the count does not
+                get read out again on every photo that lands. */}
+            <div
+              aria-hidden
+              className="mt-3 flex items-center gap-3 text-[0.9375rem]"
+            >
+              <span className="min-w-0 flex-1 truncate">{working}…</span>
+              <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
+                {phase === "preparing"
+                  ? `${batch.length} ${batch.length === 1 ? "photo" : "photos"}`
+                  : `${sent} of ${batch.length}`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Always mounted, and holding the phase only. A live region that
+            appears at the same moment as its text is announced by some screen
+            readers and missed by others; one that changes from empty to full is
+            announced by all of them. */}
+        <p className="sr-only" aria-live="polite">
+          {busy ? working : ""}
+        </p>
+
+        {/* A partial failure used to show a thank-you and nothing else, so a
+            guest had no way of knowing three of their ten were missing and no
+            way to send them again without hunting through a camera roll. This
+            is the one place a filename earns its keep: "one did not make it"
+            is useless if the guest cannot tell which one. */}
+        {failed.length > 0 && !busy && (
+          <div className="mt-5 note p-4">
+            <p className="text-[0.9375rem] font-semibold">
+              {failed.length === 1
+                ? "One did not make it."
+                : `${failed.length} did not make it.`}
+            </p>
+            <ul className="mt-2 space-y-2">
+              {failed.map((item) => (
+                <li key={item.key} className="text-[0.9375rem]">
+                  <span className="flex items-center gap-2.5">
+                    <Hole size={11} className="opacity-40" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {item.file.name}
+                    </span>
                   </span>
-                  <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
-                    {item.status === "done"
-                      ? "added"
-                      : item.status === "failed"
-                        ? "failed"
-                        : item.status === "uploading"
-                          ? `${item.progress}%`
-                          : item.status === "preparing"
-                            ? "shrinking"
-                            : "waiting"}
+                  <span className="mt-0.5 block pl-[1.4375rem] text-ash">
+                    {item.error ?? "The connection dropped."}
                   </span>
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-
-        {/* A partial failure used to show a thank-you and nothing else, so a
-            guest had no way of knowing three of their ten were missing and no
-            way to send them again without hunting through a camera roll. */}
-        {failedCount > 0 && !busy && (
-          <div className="mt-5 note p-4">
-            <p className="text-[0.9375rem] font-semibold">
-              {failedCount === 1
-                ? "One did not make it."
-                : `${failedCount} did not make it.`}
-            </p>
-            <p className="mt-1.5 text-[0.9375rem] text-ash">
-              {items.find((i) => i.status === "failed")?.error ??
-                "The connection dropped."}
-            </p>
             <Button
               size="md"
               variant="secondary"
               onClick={retryFailed}
               className="mt-3"
             >
-              {failedCount === 1 ? "Try again" : `Try ${failedCount} again`}
+              {failed.length === 1 ? "Try again" : `Try ${failed.length} again`}
             </Button>
           </div>
         )}
