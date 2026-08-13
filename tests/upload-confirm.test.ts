@@ -145,6 +145,53 @@ describe("confirming an upload", () => {
     expect(store.released()).toBe(8_040_000);
   });
 
+  /**
+   * The bytes go from the phone to the bucket without passing through us, so a
+   * failure between the two leaves no request of ours to inspect: presign
+   * answers 200 and confirm turns up seconds later saying it did not work.
+   * Whether that was one guest's wifi or a bucket refusing every upload at
+   * every event - stale CORS rules after a rename do exactly that - is only
+   * answerable if the browser says which, and it is only visible if we write it
+   * down.
+   */
+  it("records why an upload never reached storage", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    reserve();
+
+    await POST(
+      request({
+        failed: true,
+        mediaUploaded: false,
+        reason:
+          "Could not reach storage. The bucket's CORS rules may not allow this site.",
+      }),
+    );
+
+    expect(logged).toHaveBeenCalledWith(
+      "[confirm] upload did not reach storage",
+      expect.objectContaining({
+        eventId: EVENT.id,
+        reason: expect.stringContaining("CORS"),
+      }),
+    );
+
+    logged.mockRestore();
+  });
+
+  it("says so plainly when the browser reported no reason at all", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    reserve();
+
+    await POST(request({ failed: true, mediaUploaded: false }));
+
+    expect(logged).toHaveBeenCalledWith(
+      "[confirm] upload did not reach storage",
+      expect.objectContaining({ reason: "not reported" }),
+    );
+
+    logged.mockRestore();
+  });
+
   it("keeps the clip and refunds only the poster when the poster failed", async () => {
     reserveVideo();
     const res = await POST(
