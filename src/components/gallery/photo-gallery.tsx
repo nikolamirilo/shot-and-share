@@ -25,6 +25,7 @@ export function PhotoGallery({
   layout,
   onActivate,
   isSelected,
+  pending = 0,
   className,
 }: {
   items: MediaView[];
@@ -32,6 +33,13 @@ export function PhotoGallery({
   onActivate: (item: MediaView) => void;
   /** Host mode. Omit entirely for a read-only gallery. */
   isSelected?: (item: MediaView) => boolean;
+  /**
+   * Photographs asked for and not yet arrived, drawn as empty shimmering
+   * frames at the end of the wall. The wall answers the tap immediately and
+   * fills in behind - rather than staying exactly as it was for two seconds,
+   * which is indistinguishable from a button that did not work.
+   */
+  pending?: number;
   className?: string;
 }) {
   const { held, settle } = useLoadQueue(items);
@@ -70,13 +78,28 @@ export function PhotoGallery({
             </li>
           );
         })}
+        {counting(pending).map((i) => {
+          // Continues the sequence, so the frames on their way are the sizes
+          // the photographs will actually be.
+          const size = `calc(${holeSize(items.length + i)}px * var(--hole-scale, 1))`;
+          return (
+            <li key={`pending-${i}`}>
+              <Skeleton shape="hole" style={{ width: size, height: size }} />
+            </li>
+          );
+        })}
       </ul>
     );
   }
 
   if (layout === "masonry") {
     return (
-      <Masonry items={items} turn={turn} className={className} />
+      <Masonry
+        items={items}
+        turn={turn}
+        pending={pending}
+        className={className}
+      />
     );
   }
 
@@ -106,6 +129,13 @@ export function PhotoGallery({
             />
           </li>
         ))}
+        {/* Stack is one photograph per screen, so ten frames is six thousand
+            pixels of shimmer. Three is already more than a guest can see. */}
+        {counting(Math.min(pending, 3)).map((i) => (
+          <li key={`pending-${i}`}>
+            <Skeleton shape="recess" className="aspect-[4/3] w-full" />
+          </li>
+        ))}
       </ul>
     );
   }
@@ -128,7 +158,51 @@ export function PhotoGallery({
           />
         </li>
       ))}
+      {counting(pending).map((i) => (
+        <li key={`pending-${i}`}>
+          <Skeleton shape="recess" className="aspect-square w-full" />
+        </li>
+      ))}
     </ul>
+  );
+}
+
+/** `counting(3)` is `[0, 1, 2]`. Keys and sizes both want the index. */
+function counting(n: number): number[] {
+  return Array.from({ length: Math.max(0, n) }, (_, i) => i);
+}
+
+/**
+ * Uneven on purpose. A column of identical rectangles reads as a broken grid;
+ * photographs on their way to a masonry wall are all different shapes, and
+ * saying so is the whole job of the frame that stands in for one.
+ */
+const PENDING_RATIOS = [0.75, 1, 1.33, 0.8, 1.5, 0.67] as const;
+
+/**
+ * The space a photograph is about to take, before there is a photograph to put
+ * in it - a page that has been asked for and has not come back yet.
+ *
+ * The same well a real one sits in, and the same shimmer a tile waiting its
+ * turn in the loading queue wears. From a guest's side of the screen those are
+ * one thing, "a photograph is coming here", and drawing them differently would
+ * be the wall explaining its own internals to somebody who did not ask.
+ */
+function Skeleton({
+  shape,
+  style,
+  className,
+}: {
+  shape: "hole" | "recess";
+  style?: React.CSSProperties;
+  className?: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cx(shape, "shimmer relative block overflow-hidden", className)}
+      style={style}
+    />
   );
 }
 
@@ -250,10 +324,12 @@ function useMasonryColumns() {
 function Masonry({
   items,
   turn,
+  pending,
   className,
 }: {
   items: MediaView[];
   turn: (item: MediaView, index: number) => TileTurn;
+  pending: number;
   className?: string;
 }) {
   const columns = useMasonryColumns();
@@ -284,6 +360,21 @@ function Masonry({
               />
             </li>
           ))}
+          {/* Dealt into the columns the same way the photographs are, so the
+              wall grows evenly rather than sprouting a tail on the left. */}
+          {counting(pending)
+            .filter((i) => (items.length + i) % columns === index)
+            .map((i) => (
+              <li key={`pending-${i}`}>
+                <Skeleton
+                  shape="recess"
+                  style={{
+                    aspectRatio: PENDING_RATIOS[i % PENDING_RATIOS.length],
+                    width: "100%",
+                  }}
+                />
+              </li>
+            ))}
         </ul>
       ))}
     </div>
@@ -363,11 +454,19 @@ function Tile({
       )}
     >
       {item.previewUrl && hold ? (
-        // Waiting its turn. An empty well the right shape, so the wall does not
-        // jump when the photograph lands in it.
+        /*
+         * Waiting its turn in the loading queue: the right shape, so the wall
+         * does not jump when the photograph lands in it, and shimmering like
+         * any other frame with a photograph on the way. A still, empty well
+         * here would be the same picture the wall shows for a photograph that
+         * failed to load, when this one has not been asked for yet.
+         */
         <span
           aria-hidden="true"
-          className={natural ? "block w-full" : "block h-full w-full"}
+          className={cx(
+            "shimmer relative block overflow-hidden",
+            natural ? "w-full" : "h-full w-full",
+          )}
           style={
             natural
               ? { aspectRatio: aspectRatio(item.width, item.height) }
