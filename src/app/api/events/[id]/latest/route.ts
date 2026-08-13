@@ -1,12 +1,14 @@
 import { handle, ok } from "@/lib/api";
-import type { MediaRow } from "@/lib/db/types";
+import { listGuestMediaSince } from "@/lib/db/media-repo";
 import { toMediaViews } from "@/lib/events";
-import { guestMedia } from "@/lib/db/media-repo";
 import { requireOwnedEvent } from "@/lib/host";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/** One poll's worth. The slideshow asks again as soon as Realtime nudges it. */
+const BATCH = 60;
 
 /**
  * Media that arrived after a given timestamp, with usable URLs attached.
@@ -31,15 +33,7 @@ export async function GET(
     const event = await requireOwnedEvent(id);
     const supabase = await createClient();
 
-    // The slideshow is the party looking at itself, so a cover the host
-    // uploaded is not part of it - see migration 0013.
-    let query = guestMedia(supabase, event.id).limit(60);
-
-    if (since) query = query.gt("created_at", since);
-
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-
-    return ok({ items: await toMediaViews((data ?? []) as MediaRow[]) });
+    const rows = await listGuestMediaSince(supabase, event.id, since, BATCH);
+    return ok({ items: await toMediaViews(rows) });
   });
 }

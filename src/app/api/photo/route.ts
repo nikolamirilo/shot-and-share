@@ -1,4 +1,5 @@
 import { ApiError, handle, ok } from "@/lib/api";
+import { findEventMedia } from "@/lib/db/media-repo";
 import { resolveGuestToken, gateGuest, toMediaView } from "@/lib/events";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -27,16 +28,10 @@ export async function GET(request: Request) {
       throw new ApiError("forbidden", "The host has kept this gallery private.");
     }
 
-    const admin = createAdminClient();
-    const { data: row, error } = await admin
-      .from("media")
-      .select("*")
-      .eq("id", id)
-      .eq("event_id", ctx.event.id)
-      .eq("status", "ready")
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
+    const row = await findEventMedia(createAdminClient(), {
+      id,
+      eventId: ctx.event.id,
+    });
     if (!row) throw new ApiError("not_found", "That photo is not here.");
 
     return ok(await toMediaView(row, { withUrl: true }));

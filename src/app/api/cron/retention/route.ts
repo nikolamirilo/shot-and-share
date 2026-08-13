@@ -1,5 +1,9 @@
 import { fail, handle, ok } from "@/lib/api";
-import type { EventRow } from "@/lib/db/types";
+import {
+  listEventsToPurge,
+  listExpiredEvents,
+  listExpiringEvents,
+} from "@/lib/db/event-repo";
 import {
   eventExpiredEmail,
   retentionWarningEmail,
@@ -126,19 +130,9 @@ async function sendWarnings(summary: { warned: number }) {
     Date.now() + Math.max(...RETENTION_WARNING_DAYS) * 86_400_000,
   ).toISOString();
 
-  const { data: events } = await admin
-    .from("events")
-    .select("*, profiles!events_owner_id_fkey(email)")
-    .eq("status", "active")
-    .eq("keep_forever", false)
-    .not("expires_at", "is", null)
-    .lte("expires_at", horizon)
-    .limit(500);
+  const events = await listExpiringEvents(admin, horizon, 500);
 
-  for (const raw of events ?? []) {
-    const event = raw as unknown as EventRow & {
-      profiles: { email: string | null } | null;
-    };
+  for (const event of events) {
     if (!event.expires_at || !event.profiles?.email) continue;
 
     const daysLeft = Math.ceil(
@@ -184,20 +178,9 @@ async function expireEvents(summary: { expired: number }) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
 
-  const { data: events } = await admin
-    .from("events")
-    .select("*, profiles!events_owner_id_fkey(email)")
-    .eq("status", "active")
-    .eq("keep_forever", false)
-    .not("expires_at", "is", null)
-    .lt("expires_at", now)
-    .limit(500);
+  const events = await listExpiredEvents(admin, now, 500);
 
-  for (const raw of events ?? []) {
-    const event = raw as unknown as EventRow & {
-      profiles: { email: string | null } | null;
-    };
-
+  for (const event of events) {
     await admin
       .from("events")
       .update({ status: "expired", deleted_at: now })
@@ -229,17 +212,9 @@ async function hardDelete(summary: {
     Date.now() - HARD_DELETE_GRACE_DAYS * 86_400_000,
   ).toISOString();
 
-  const { data: events } = await admin
-    .from("events")
-    // owner_id is part of the storage prefix, so it is not optional here.
-    .select("id, owner_id")
-    .eq("status", "expired")
-    .eq("keep_forever", false)
-    .not("deleted_at", "is", null)
-    .lt("deleted_at", cutoff)
-    .limit(50);
+  const events = await listEventsToPurge(admin, cutoff, 50);
 
-  for (const event of events ?? []) {
+  for (const event of events) {
     summary.objectsRemoved += await storage.removePrefix(
       eventPrefix(scopeOfEvent(event)),
     );

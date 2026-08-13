@@ -3,13 +3,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Slideshow } from "@/components/dashboard/slideshow";
-import type { EventRow, MediaRow } from "@/lib/db/types";
+import { findEvent } from "@/lib/db/event-repo";
+import { listGuestMedia } from "@/lib/db/media-repo";
 import { toMediaViews } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";
 import { getTier } from "@/lib/tiers";
 
 export const metadata: Metadata = { title: "Live slideshow" };
 export const dynamic = "force-dynamic";
+
+/** How many photographs the slideshow starts with; Realtime adds the rest. */
+const SLIDESHOW_SEED = 60;
 
 export default async function SlideshowPage({
   params,
@@ -19,13 +23,8 @@ export default async function SlideshowPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (!data) notFound();
-  const event = data as EventRow;
+  const event = await findEvent(supabase, id);
+  if (!event) notFound();
 
   if (!getTier(event.tier).slideshow) {
     return (
@@ -45,22 +44,13 @@ export default async function SlideshowPage({
     );
   }
 
-  const { data: rows } = await supabase
-    .from("media")
-    .select("*")
-    .eq("event_id", event.id)
-    .eq("status", "ready")
-    // The slideshow is the party looking at itself. A cover the host uploaded
-    // is not part of that - see migration 0013.
-    .eq("source", "guest")
-    .order("created_at", { ascending: false })
-    .limit(60);
+  const rows = await listGuestMedia(supabase, event.id, SLIDESHOW_SEED);
 
   return (
     <Slideshow
       eventId={event.id}
       eventName={event.name}
-      initial={await toMediaViews((rows ?? []) as MediaRow[])}
+      initial={await toMediaViews(rows)}
     />
   );
 }

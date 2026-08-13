@@ -1,6 +1,7 @@
 import "server-only";
 
 import { ApiError } from "@/lib/api";
+import { findEvent } from "@/lib/db/event-repo";
 import type { EventRow } from "@/lib/db/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,11 +41,7 @@ export async function requireUser() {
 export async function requireOwnedEvent(id: string): Promise<EventRow> {
   const { supabase } = await requireUser();
 
-  const { data } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-  if (!data) throw new ApiError("not_found", "Event not found.");
-  return data as EventRow;
+  const event = await findEvent(supabase, id);
+  if (!event) throw new ApiError("not_found", "Event not found.");
+  return event;
 }

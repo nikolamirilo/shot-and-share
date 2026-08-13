@@ -5,7 +5,7 @@ import { GuestExperience } from "@/components/event/guest-experience";
 import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
 import { PlatformFooter, PlatformHeader } from "@/components/layout/platform-banner";
 import { resolveAppearance } from "@/lib/appearance";
-import type { MediaRow } from "@/lib/db/types";
+import { findReadyMedia } from "@/lib/db/media-repo";
 import { googleFontsHref } from "@/lib/fonts";
 import {
   gateGuest,
@@ -69,17 +69,8 @@ export default async function GuestPage({
 
   let coverUrl: string | null = null;
   if (event.cover_media_id && appearance.cover !== "type") {
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from("media")
-      .select("*")
-      .eq("id", event.cover_media_id)
-      .eq("status", "ready")
-      .maybeSingle();
-    if (data) {
-      const view = await toMediaView(data as MediaRow);
-      coverUrl = view.previewUrl;
-    }
+    const row = await findReadyMedia(createAdminClient(), event.cover_media_id);
+    if (row) coverUrl = (await toMediaView(row)).previewUrl;
   }
 
   /*

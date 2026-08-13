@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { ApiError, handle, ok, parseBody } from "@/lib/api";
-import type { MediaRow } from "@/lib/db/types";
+import { findGuestOwnMedia } from "@/lib/db/media-repo";
 import { requireGuestEvent } from "@/lib/events";
 import { deleteMediaRows } from "@/lib/media/delete";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -31,18 +31,12 @@ export async function POST(request: Request) {
   return handle(async () => {
     const body = await parseBody(request, bodySchema);
     const { event } = await requireGuestEvent(body.token);
-    const admin = createAdminClient();
 
-    const { data: row, error } = await admin
-      .from("media")
-      .select("*")
-      .eq("id", body.mediaId)
-      .eq("event_id", event.id)
-      .eq("uploader_fingerprint", body.fingerprint)
-      .neq("status", "deleted")
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
+    const row = await findGuestOwnMedia(createAdminClient(), {
+      id: body.mediaId,
+      eventId: event.id,
+      fingerprint: body.fingerprint,
+    });
     if (!row) {
       throw new ApiError("not_found", "That photo is not yours to remove.");
     }
@@ -55,7 +49,7 @@ export async function POST(request: Request) {
       );
     }
 
-    await deleteMediaRows(event.id, [row as MediaRow]);
+    await deleteMediaRows(event.id, [row]);
 
     return ok({ deleted: true });
   });

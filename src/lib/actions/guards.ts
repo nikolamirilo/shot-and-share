@@ -2,7 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
-import type { EventRow } from "@/lib/db/types";
+import { findEvent } from "@/lib/db/event-repo";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -36,13 +36,7 @@ export async function requireUser() {
  */
 export async function requireOwnedEvent(eventId: string) {
   const { supabase, user } = await requireUser();
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", eventId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Event not found.");
-  return { supabase, user, event: data as EventRow };
+  const event = await findEvent(supabase, eventId);
+  if (!event) throw new Error("Event not found.");
+  return { supabase, user, event };
 }

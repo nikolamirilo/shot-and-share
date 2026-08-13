@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 import { fail, handle, ok, parseBody } from "@/lib/api";
-import type { MediaRow } from "@/lib/db/types";
+import { findMediaAnyStatus, listPendingProcessing } from "@/lib/db/media-repo";
 import {
   IMAGE_EXT,
   IMAGE_MIME,
@@ -62,18 +62,7 @@ export async function GET(request: Request) {
       10,
       Number(new URL(request.url).searchParams.get("limit") ?? 5),
     );
-    const admin = createAdminClient();
-
-    const { data, error } = await admin
-      .from("media")
-      .select("*")
-      .eq("processing", "pending")
-      .eq("status", "ready")
-      .order("created_at", { ascending: true })
-      .limit(limit);
-
-    if (error) throw new Error(error.message);
-    const rows = (data ?? []) as MediaRow[];
+    const rows = await listPendingProcessing(createAdminClient(), limit);
 
     const jobs = await Promise.all(
       rows.map(async (row) => {
@@ -159,13 +148,8 @@ export async function POST(request: Request) {
     const body = await parseBody(request, completeSchema);
     const admin = createAdminClient();
 
-    const { data: row } = await admin
-      .from("media")
-      .select("*")
-      .eq("id", body.mediaId)
-      .maybeSingle();
-    if (!row) return fail("not_found", "No such media row.");
-    const media = row as MediaRow;
+    const media = await findMediaAnyStatus(admin, body.mediaId);
+    if (!media) return fail("not_found", "No such media row.");
 
     if (!body.ok) {
       /*
