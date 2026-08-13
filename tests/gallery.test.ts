@@ -9,7 +9,10 @@ import {
   holeSize,
   isGalleryLayout,
   neighbours,
+  withFreshHead,
+  withOlder,
 } from "@/lib/gallery";
+import type { MediaView } from "@/lib/media-view";
 
 describe("gallery layouts", () => {
   it("offers the four layouts, each with a name and an explanation", () => {
@@ -112,5 +115,85 @@ describe("stepping between open photos", () => {
 
   it("goes nowhere when the event has a single photo", () => {
     expect(neighbours(["only"], "only")).toEqual({ prev: null, next: null });
+  });
+});
+
+/**
+ * A photograph as the wall holds it. Only the two fields the merge reads are
+ * real; the rest is scenery.
+ */
+function shot(id: string, minute: number): MediaView {
+  return {
+    id,
+    kind: "photo",
+    width: 3000,
+    height: 4000,
+    createdAt: `2026-08-13 12:${String(minute).padStart(2, "0")}:00+00`,
+    uploaderName: null,
+    uploaderFingerprint: null,
+    sizeBytes: 1000,
+    previewUrl: `/media/${id}`,
+    posterUrl: null,
+    durationSeconds: null,
+    processing: false,
+    format: "jpeg",
+  };
+}
+
+const ids = (items: MediaView[]) => items.map((item) => item.id);
+
+describe("keeping the wall up to date", () => {
+  // Newest first, which is the order the gallery is served in.
+  const held = [shot("c", 30), shot("b", 20), shot("a", 10)];
+
+  it("puts a photograph that has just arrived at the top", () => {
+    const head = [shot("new", 40), shot("c", 30), shot("b", 20), shot("a", 10)];
+    expect(ids(withFreshHead(held, head))).toEqual(["new", "c", "b", "a"]);
+  });
+
+  it("keeps the pages a guest already scrolled to", () => {
+    // The refresh asks for the newest few and gets them. Everything older than
+    // that page is the guest's own scrolling, and replacing the list outright
+    // is what used to throw it away.
+    const head = [shot("new", 40), shot("c", 30)];
+    expect(ids(withFreshHead(held, head))).toEqual(["new", "c", "b", "a"]);
+  });
+
+  it("lets the page it covers say what is gone", () => {
+    // The page reaches back to "a", so it covers "b" too - and "b" did not
+    // come back, because the host deleted it. Inside the page's range the
+    // server has the last word.
+    const head = [shot("c", 30), shot("a", 10)];
+    expect(ids(withFreshHead(held, head))).toEqual(["c", "a"]);
+  });
+
+  it("does not drop what the page never reached", () => {
+    // The same shape, except the page stops at "c". "b" and "a" are older than
+    // anything it covers, so its silence about them says nothing - a refresh
+    // must not quietly empty the wall below the fold.
+    const head = [shot("c", 30)];
+    expect(ids(withFreshHead(held, head))).toEqual(["c", "b", "a"]);
+  });
+
+  it("never shows the same photograph twice", () => {
+    const head = [shot("c", 30), shot("b", 20)];
+    expect(ids(withFreshHead(held, head))).toEqual(["c", "b", "a"]);
+  });
+
+  it("empties the wall when the gallery is empty", () => {
+    expect(withFreshHead(held, [])).toEqual([]);
+  });
+
+  it("adds an older page underneath what is held", () => {
+    const older = [shot("z", 5), shot("y", 2)];
+    expect(ids(withOlder(held, older))).toEqual(["c", "b", "a", "z", "y"]);
+  });
+
+  it("ignores a photograph the older page repeats", () => {
+    // New arrivals push the page boundary down, so a page can overlap the one
+    // before it. Without this the wall shows a photograph twice, and the
+    // lightbox's arrows walk into the duplicate.
+    const older = [shot("a", 10), shot("z", 5)];
+    expect(ids(withOlder(held, older))).toEqual(["c", "b", "a", "z"]);
   });
 });

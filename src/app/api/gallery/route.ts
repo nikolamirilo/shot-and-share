@@ -52,6 +52,16 @@ export async function GET(request: Request) {
       pageSize: GALLERY_PAGE_SIZE,
     });
 
-    return ok({ items: await toMediaViews(rows), nextCursor });
+    /*
+     * `force-dynamic` above stops Next from caching the work; this stops
+     * everything between here and the phone from caching the answer. The
+     * gallery is re-requested precisely when it has changed - a guest has just
+     * uploaded - so a CDN or a browser handing back the copy from thirty
+     * seconds ago is indistinguishable from the upload having failed.
+     */
+    return ok(
+      { items: await toMediaViews(rows), nextCursor },
+      { headers: { "Cache-Control": "no-store, max-age=0" } },
+    );
   });
 }

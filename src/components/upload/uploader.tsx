@@ -159,6 +159,15 @@ export function Uploader({
       });
 
       update(item.key, { status: "done", progress: 100 });
+
+      /*
+       * Per photograph, not per batch. This used to fire once, after the last
+       * file in the pick had landed, so a guest sending twenty photographs
+       * watched a wall that did not change for two minutes and then changed
+       * all at once - which reads exactly like an upload that is not working.
+       * The gallery collapses a burst of these into one request.
+       */
+      onUploaded();
       return true;
     } catch (e) {
       const message =
@@ -302,7 +311,6 @@ export function Uploader({
 
       const succeeded = results.filter(Boolean).length;
       setCompleted((prev) => prev + succeeded);
-      if (succeeded > 0) onUploaded();
     } catch (e) {
       console.error("[upload] the batch could not be started", e);
       setError("Something on this device stopped the upload before it began.");
