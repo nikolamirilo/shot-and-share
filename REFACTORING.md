@@ -1,4 +1,76 @@
-# Refactoring proposal
+# Refactoring
+
+Done. All eight steps below landed; the tables record what actually changed.
+No behaviour, URL, table or migration changed anywhere — 336 tests and the
+production build are green at every commit.
+
+## Result
+
+| Thing | Before | After |
+| --- | --- | --- |
+| Lines in `src/` | 19,840 | 19,553 |
+| Comment lines | 3,946 (**20%**) | 3,186 (**16%**) |
+| Comments narrating old versions of the code | 36 | 0 |
+| Files over 400 lines | 8 | 2 |
+| Copies of `release()` / `discard()` / `isDuplicate()` | 7 | 1 each |
+| Files calling `reserve_storage` / `release_storage` | 8 | 1 |
+| Hand-written `media` reads outside the repo | 25 | 0 |
+| The four presign/confirm routes | 990 lines | 396 lines |
+| uploader + cover-picker + gallery | 1,684 lines / 3 files | 1,558 / 15 files |
+
+The comment cut came to 760 lines, not the 2,500 the original estimate
+guessed. That estimate was wrong: once the history narration and the design
+essays were gone, what remained was mostly load-bearing — Safari's 16px field
+zoom, `svh` versus `vh`, Satori dropping nested components, why the gallery
+loads eagerly. Cutting further would have removed information, not noise.
+
+## What landed
+
+| # | Step | Commit |
+| --- | --- | --- |
+| 1 | Comment passes across `src/` | four commits |
+| 2 | `lib/storage/quota.ts`, `lib/media/delete.ts` | `da15184` |
+| 3 | `media-repo` finished, `event-repo` added | `e8b99d6`, `9659a92` |
+| 4 | Guest guards, `lib/events.ts` split | `be269e8` |
+| 5 | `lib/uploads/*` behind the four routes | `04a7a77` |
+| 6 | `lib/views/*` page loaders | `c41d220` |
+| 7 | The three large components split | `7a93c37` |
+| 8 | `ui/tabs` behaviour/styling split | `1a92d1c` |
+
+## Two things worth knowing
+
+**Cover presign signs with 32 KB of slack; guest presign signs with none.**
+Both were preserved rather than unified, via an explicit `slack` option on
+`createReservation`. The guest path arguably wants the slack too — browser
+encoders are not byte-deterministic between the measuring encode and the
+upload — but that is a behaviour change, so it is flagged rather than made.
+
+**`parseBody` was typed on the schema's input, not its output.** A field with
+a `.default()` read as possibly-undefined at every call site. Fixed in
+`lib/api.ts` rather than worked around per route.
+
+## Shape now
+
+```
+src/lib/
+  api.ts                 unchanged
+  guards/                guest.ts, guest-token.ts
+  db/                    media-repo.ts, event-repo.ts, types.ts
+  uploads/               classify.ts, reservation.ts, confirm.ts, schema.ts
+  media/                 keys.ts, accept.ts, formats.ts, view.ts, delete.ts
+  storage/               s3.ts, local.ts, quota.ts
+  views/                 event-console.ts, guest-page.ts
+  appearance/            unchanged
+```
+
+Every read of `media` and `events` now names the query it wants; only writes
+address a table directly, next to the code that owns them.
+
+---
+
+# Original proposal
+
+Kept for the reasoning behind each step.
 
 Analysis of `src/` (19,840 lines, 154 files). Nothing here changes behaviour —
 it is about where code lives, and about cutting the comments back.
