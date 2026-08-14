@@ -359,9 +359,9 @@ export function AppearanceForm({
         </div>
       </div>
 
-      {/* Last in the card and sticky against the bottom of the screen, so the
-          button is in reach from whichever group is open. It is one save for the
-          whole panel, not for the group above it. */}
+      {/* Floats over the bottom of the window, so the button is in reach from
+          whichever group is open. It is one save for the whole panel, not for
+          the group above it. */}
       <SaveBar changes={changes} state={state} onSave={save} />
 
       <Toast open={saved} onClose={() => setSaved(false)}>

@@ -50,7 +50,7 @@ export function Toast({
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="over-bottom-bar pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4"
     >
       {open && (
         <div
