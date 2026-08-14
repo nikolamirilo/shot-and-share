@@ -131,8 +131,6 @@ export interface CardColours extends CodeColours {
   quiet: string;
   /** The wordmark. */
   eyebrow: string;
-  /** The hairline field behind the card, or nothing on a plain card. */
-  texture: string | null;
 }
 
 /**
@@ -156,7 +154,6 @@ export function cardColours(palette: Palette, branded: boolean): CardColours {
       eyebrow: readable(palette.accent, palette.surface)
         ? palette.accent
         : palette.ink,
-      texture: null,
       plate,
       modules,
     };
@@ -169,7 +166,6 @@ export function cardColours(palette: Palette, branded: boolean): CardColours {
     heading: palette.onAccent,
     quiet: soft,
     eyebrow: soft,
-    texture: palette.accentDeep,
     plate,
     modules,
   };
@@ -247,13 +243,6 @@ export async function qrCardPdf(
     borderColor: hex(colours.frame),
     borderWidth: 4,
   });
-
-  // The Wedding-tier flourish: an even field of fine diagonal hairlines, a step
-  // darker than the ground. It reads as the card's stock rather than as a motif,
-  // so it belongs to whatever the event is instead of to a product's own shape.
-  if (colours.texture) {
-    drawTexture(page, colours.texture);
-  }
 
   // The date rather than a second instruction: the one under the code already
   // says it, and saying it twice reads as a card that does not trust you.
@@ -410,63 +399,6 @@ function drawCode(
       color: hex(cell.dark ? colours.modules : colours.plate),
     });
   }
-}
-
-/** How far apart the hairlines run, and how wide each one is, in card units. */
-const TEXTURE_PITCH = 26;
-const TEXTURE_WIDTH = 1;
-
-/** The margin the field keeps off the frame, so no line crosses the border. */
-const TEXTURE_INSET = 30;
-
-/**
- * The hairline field: parallel lines at 45 degrees across the card, drawn as
- * filled shapes rather than strokes so they sit in the same paint as everything
- * else on the page.
- *
- * Everything with a job on the card - the plate, the name, the instruction - is
- * drawn after this and covers it, so the texture only ever shows in the space
- * between them.
- */
-function drawTexture(page: PDFPage, colour: string) {
-  const x0 = TEXTURE_INSET;
-  const y0 = TEXTURE_INSET;
-  const x1 = W - TEXTURE_INSET;
-  const y1 = H - TEXTURE_INSET;
-  const ink = hex(colour);
-
-  // Each line is x + y = c, so stepping c walks the field corner to corner.
-  for (let c = x0 + y0; c <= x1 + y1; c += TEXTURE_PITCH) {
-    // Where that line enters and leaves the rectangle.
-    const from = Math.max(x0, c - y1);
-    const to = Math.min(x1, c - y0);
-    const length = to - from;
-    if (length < TEXTURE_PITCH / 2) continue;
-
-    page.drawSvgPath(hairlinePath(length), {
-      x: from * K,
-      y: PAGE_H - (c - from) * K,
-      color: ink,
-    });
-  }
-}
-
-/**
- * One hairline as a filled sliver, in card units from its start point. The
- * y axis runs downwards, the direction `drawSvgPath` reads.
- */
-function hairlinePath(length: number): string {
-  // Half the width, taken along the diagonal perpendicular to the line.
-  const h = (TEXTURE_WIDTH / 2) * Math.SQRT1_2;
-  const d = length;
-
-  return [
-    `M ${h * K} ${h * K}`,
-    `L ${(d + h) * K} ${(-d + h) * K}`,
-    `L ${(d - h) * K} ${(-d - h) * K}`,
-    `L ${-h * K} ${-h * K}`,
-    "Z",
-  ].join(" ");
 }
 
 /** A rounded rectangle in card units, flipped onto the page. */

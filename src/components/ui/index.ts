@@ -16,3 +16,4 @@ export { Panel } from "@/components/ui/panel";
 export { PhotoPlaceholder } from "@/components/ui/photo-placeholder";
 export { ProgressBar } from "@/components/ui/progress-bar";
 export { Stat } from "@/components/ui/stat";
+export { Toast } from "@/components/ui/toast";

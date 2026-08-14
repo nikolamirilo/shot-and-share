@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CoverPicker } from "@/components/dashboard/appearance/cover-picker";
 import { CustomColourPicker } from "@/components/dashboard/appearance/custom-colour-picker";
@@ -11,12 +11,13 @@ import {
   OPTION_CARD,
   OPTION_GRID,
   OPTION_SELECTED,
+  SWATCH_GRID,
   Swatch,
 } from "@/components/dashboard/appearance/option-card";
 import { SaveBar } from "@/components/dashboard/appearance/save-bar";
 import { useAppearanceDraft } from "@/components/dashboard/appearance/use-appearance-draft";
 import { EventPreview } from "@/components/event/event-preview";
-import { Card } from "@/components/ui";
+import { Card, Toast } from "@/components/ui";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 import {
   COVER_VARIANTS,
@@ -85,6 +86,17 @@ export function AppearanceForm({
    */
   const [picked, setPicked] = useState<MediaView | null>(null);
 
+  /**
+   * Whether the save is still worth announcing. State of its own rather than
+   * `state.status` read straight through, because the host can dismiss the
+   * message while the save it is about is still the last thing that happened -
+   * and the next edit takes it away, since "Saved" over unsaved work is a lie.
+   */
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    setSaved(state.status === "saved");
+  }, [state.status]);
+
   const palette =
     settings.theme === CUSTOM_THEME_ID
       ? buildCustomPalette(settings.colors)
@@ -129,20 +141,13 @@ export function AppearanceForm({
         ) : null;
       })}
 
-      {/* The count beside the button is the whole answer to "did that stick?",
-          so it has to be reachable from whichever group is open - a save button
-          under the tabs would read as saving that group alone. */}
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-        <div className="min-w-0">
-          <h2 className="text-h3">The event page</h2>
-          <p className="mt-2 max-w-prose text-[0.9375rem] text-ash">
-            A drawing of what guests see when they scan the code. Your cover
-            photo is real; the gallery is left as empty frames, so what you are
-            judging there is the shape of the page rather than the pictures.
-          </p>
-        </div>
-
-        <SaveBar changes={changes} state={state} onSave={save} />
+      <div className="min-w-0">
+        <h2 className="text-h3">The event page</h2>
+        <p className="mt-2 max-w-prose text-[0.9375rem] text-ash">
+          A drawing of what guests see when they scan the code. Your cover photo
+          is real; the gallery is left as empty frames, so what you are judging
+          there is the shape of the page rather than the pictures.
+        </p>
       </div>
 
       {state.error && (
@@ -197,7 +202,7 @@ export function AppearanceForm({
           >
             <TabPanel id="theme" className="mt-5 space-y-6">
               <Group label="Theme">
-                <div className={OPTION_GRID}>
+                <div className={SWATCH_GRID}>
                   {THEMES.map((theme) => (
                     <Swatch
                       key={theme.id}
@@ -212,7 +217,10 @@ export function AppearanceForm({
                       ]}
                     />
                   ))}
+                  {/* The ten are an even grid; the eleventh is not one of them,
+                      so it takes the last row rather than leaving a gap. */}
                   <Swatch
+                    className="col-span-2"
                     selected={settings.theme === CUSTOM_THEME_ID}
                     onClick={() => update({ theme: CUSTOM_THEME_ID })}
                     title="Pick your own colours"
@@ -350,6 +358,15 @@ export function AppearanceForm({
           </Tabs>
         </div>
       </div>
+
+      {/* Last in the card and sticky against the bottom of the screen, so the
+          button is in reach from whichever group is open. It is one save for the
+          whole panel, not for the group above it. */}
+      <SaveBar changes={changes} state={state} onSave={save} />
+
+      <Toast open={saved} onClose={() => setSaved(false)}>
+        Saved. Guests see this now.
+      </Toast>
     </Card>
   );
 }
