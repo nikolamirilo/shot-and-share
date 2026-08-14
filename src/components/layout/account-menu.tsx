@@ -5,18 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { Button, cx } from "@/components/ui";
 
 /**
- * Who you are signed in as, folded into one circle.
+ * Who you are signed in as, folded into one circle. A face is recognisable at
+ * 40px in a way a 40px-wide fragment of a name is not, and it costs the same
+ * width on a phone as on a laptop.
  *
- * The header had a truncated name that only appeared above 1024px and a "Sign
- * out" link that competed with "New event" for the same handful of pixels. A
- * face is recognisable at 40px in a way a 40px-wide fragment of a name is not,
- * and it costs the same width on a phone as on a laptop - so the identity is
- * finally visible everywhere, and the one action nobody performs twice a day
- * moves behind it.
- *
- * The panel is anchored to the badge rather than centred on the screen. It
- * belongs to the thing you clicked, and a card that flies out of the corner it
- * was summoned from does not need a backdrop to explain itself.
+ * The panel is anchored to the badge rather than centred: it belongs to the
+ * thing you clicked, so it needs no backdrop to explain itself.
  */
 export function AccountMenu({
   name,

@@ -1,15 +1,8 @@
 /**
- * Gallery layouts.
- *
- * The **host** chooses one, and that is the one every guest gets. The layout is
- * part of what the paid tiers call the custom event page - it is a decision
- * about how the event looks, in the same way the theme and the cover are - so
- * the guest page has no switcher on it at all. A wall that every guest sees the
- * same way is also the wall the host is actually designing.
- *
- * The host's own console keeps a switcher, because there they are managing
- * photographs rather than looking at an event page; that preference lives in
- * their browser and never touches the event.
+ * Gallery layouts. The host chooses one and every guest gets it - it is part of
+ * the custom event page, like the theme and the cover, so the guest page has no
+ * switcher. The host's own console keeps one, stored in their browser, because
+ * there they are managing photographs rather than looking at an event page.
  */
 
 import type { MediaView } from "@/lib/media-view";
@@ -74,18 +67,14 @@ export function aspectRatio(
 }
 
 /**
- * The photos either side of the one a guest has open, so the lightbox can point
- * its arrows somewhere - or grey them out.
+ * The photos either side of the open one, so the lightbox can point its arrows
+ * somewhere or grey them out.
  *
- * It works on the list that has actually loaded, which is not the whole event:
- * the gallery pages in behind a "Show more" button. So `next: null` means "no
- * further than this without asking", not "that was the last photo of the
- * night". Greying out beats fetching on the arrow, which on venue wifi is a
- * button that sometimes does nothing for four seconds.
+ * It works on the loaded list, not the whole event, so `next: null` means "no
+ * further without asking" rather than "last photo of the night".
  *
- * A missing id gives up in both directions rather than guessing at a position.
- * That is not a defensive check for an impossible case - it is exactly what
- * happens when a guest deletes their own photo while it is the one on screen.
+ * A missing id gives up in both directions: that is what happens when a guest
+ * deletes their own photo while it is the one on screen.
  */
 export function neighbours(
   ids: readonly string[],
@@ -102,18 +91,12 @@ export function neighbours(
 /* --- keeping a wall up to date -------------------------------------------- */
 
 /**
- * A fresh newest-first page, with anything older the guest had already scrolled
- * to kept underneath it.
+ * A fresh newest-first page, keeping anything older the guest had scrolled to.
  *
- * A refresh used to replace the list outright, which threw away every page past
- * the first: a guest who had pressed "Show more" twice and then uploaded a
- * photograph watched a hundred and fifty photographs collapse back to fifty.
- *
- * The page is authoritative for the stretch of the evening it covers - a photo
- * deleted inside that range really is gone, and a photo that arrived inside it
- * appears - and everything older than the page is kept as it was. An empty page
- * means an empty gallery, not a failed request; those throw before they get
- * here.
+ * The page is authoritative for the stretch it covers - a photo deleted inside
+ * that range is gone, one that arrived appears - and everything older is kept
+ * as it was. An empty page means an empty gallery, not a failed request; those
+ * throw before they reach here.
  */
 export function withFreshHead(
   held: readonly MediaView[],

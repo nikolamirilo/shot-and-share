@@ -1,15 +1,10 @@
 /**
- * The look of a guest's event page.
+ * The look of a guest's event page - the "custom event page" the paid plans
+ * promise. A free event gets the product's own theme and a small header and
+ * footer.
  *
- * Everything here is a paid feature - it is the "custom event page" the Roll
- * and Reel plans already promise. A free event gets the product's own theme,
- * a fixed cover, a fixed gallery, and a small Shot & Share header and footer,
- * which is what makes the free plan a genuinely useful product that also sells
- * the next one.
- *
- * The gate is applied when the appearance is *read*, not only when it is
- * written. Enforcing it on write alone would mean a stale row, a replayed
- * request, or any future path that skips the form quietly serves paid styling.
+ * The gate is applied when the appearance is *read*, not only when written: on
+ * write alone, a stale row or any path that skips the form serves paid styling.
  */
 
 export interface Palette {

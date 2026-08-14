@@ -2,7 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
-import type { EventRow } from "@/lib/db/types";
+import { findEvent } from "@/lib/db/event-repo";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -21,28 +21,19 @@ export async function requireUser() {
 }
 
 /**
- * The event, if the signed-in host owns it, along with the client that proved
- * it. Every host mutation goes through this.
+ * The event, if the signed-in host owns it, plus the client that proved it -
+ * so a mutation authenticates once rather than twice. Every host mutation goes
+ * through this.
  *
- * RLS would already stop a cross-tenant write, but failing early with a clear
- * error beats a silent zero-row update.
+ * RLS would already stop a cross-tenant write; failing early with a clear error
+ * beats a silent zero-row update.
  *
- * Returning the client matters: every action used to call requireOwnedEvent and
- * then requireUser, which authenticated twice per mutation.
- *
- * @/lib/host has the same lookup for API routes. The two are deliberately
- * separate: that one throws ApiError into a JSON body, this one redirects and
- * throws plain Errors into a form.
+ * @/lib/host has the same lookup for API routes, deliberately separate: that
+ * one throws ApiError into a JSON body, this one redirects into a form.
  */
 export async function requireOwnedEvent(eventId: string) {
   const { supabase, user } = await requireUser();
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", eventId)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Event not found.");
-  return { supabase, user, event: data as EventRow };
+  const event = await findEvent(supabase, eventId);
+  if (!event) throw new Error("Event not found.");
+  return { supabase, user, event };
 }

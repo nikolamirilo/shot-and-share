@@ -4,24 +4,16 @@ import type { ComponentProps } from "react";
 import { cx } from "@/lib/cx";
 
 /**
- * Buttons sit above the page on a soft shadow and lift further on hover, which
- * keeps the physical feel of the interface without outlining anything.
- *
- * Every variant is a filled shape. That is what carries a button now that there
- * is no stroke around it: Secondary is Cream on a Butter page and reads as a
- * button because it is lighter than what it sits on and casts a shadow, not
- * because it is drawn.
+ * Buttons sit above the page on a soft shadow and lift on hover. Every variant
+ * is a filled shape, which is what carries a button when nothing is outlined.
  */
 type Variant = "primary" | "secondary" | "ghost" | "onDark";
 type Size = "sm" | "md" | "lg";
 
 /**
- * `leading-tight` is load-bearing rather than cosmetic. Body copy runs at 1.65
- * and a button inherits it, which puts 11px of empty line box above and below a
- * single word - a 17px label in a 56px box. On a phone, where labels are long
- * relative to the width, that reads as a button of roughly double the height it
- * should be. Buttons set their own leading and reach their height through
- * padding and a minimum, so a two-word label and a six-word one look related.
+ * `leading-tight` is load-bearing: body copy runs at 1.65 and a button inherits
+ * it, which puts a 17px label in a 56px box. Buttons set their own leading and
+ * reach height through padding and a minimum.
  *
  * `min-h` is the tap target. Anything a thumb has to hit is at least 44px.
  */

@@ -11,17 +11,14 @@ import {
   PREFERRED_IMAGE_FORMATS,
   START_QUALITY,
   sizeBudget,
-} from "@/lib/media-formats";
+} from "@/lib/media/formats";
 import { POSTER_MAX_EDGE } from "@/lib/media";
 
 /**
- * The compression layer, running on the device that took the photo.
- *
- * Doing this in the browser is not a shortcut. The phone has the pixels already
- * decoded, it has spare cycles while the guest is looking at the screen, and it
- * means a 4 MB photo becomes a 900 KB upload - which on venue wifi is the
- * difference between a guest finishing and a guest giving up. It also removes
- * an entire asynchronous server pipeline from the common path.
+ * Compression, on the device that took the photo. The phone already has the
+ * pixels decoded and spare cycles while the guest looks at the screen, and a
+ * 4 MB photo becomes a 900 KB upload - on venue wifi that is the difference
+ * between a guest finishing and a guest giving up.
  */
 
 /* --- capability probing ---------------------------------------------------- */
@@ -29,12 +26,10 @@ import { POSTER_MAX_EDGE } from "@/lib/media";
 const probeCache = new Map<string, Promise<boolean>>();
 
 /**
- * Whether this browser can actually *encode* a format.
- *
- * The check has to inspect `blob.type`, not just whether a blob came back.
- * `canvas.toBlob` silently falls back to PNG when asked for a type it does not
- * support - so a naive check succeeds everywhere and quietly ships PNG bytes
- * labelled as WebP, which is both much larger and wrong.
+ * Whether this browser can *encode* a format. The check inspects `blob.type`,
+ * not just whether a blob came back: `canvas.toBlob` silently falls back to PNG
+ * for a type it does not support, so a naive check succeeds everywhere and
+ * ships PNG bytes labelled as WebP.
  */
 export function canEncode(format: ImageFormat): Promise<boolean> {
   const mime = IMAGE_MIME[format];

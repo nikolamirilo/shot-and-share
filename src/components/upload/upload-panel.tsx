@@ -6,19 +6,13 @@ import { Button, Hole, cx, inputClass } from "@/components/ui";
 import type { UploadVariant } from "@/lib/appearance/variants";
 
 /**
- * The shape of the ask, with none of the machinery.
- *
- * The uploader owns compression, presigning, retries and progress; this owns
- * what a guest actually looks at. Splitting them is what lets the host's
- * preview render the real thing instead of a mock-up - the previous preview
- * drew its own coloured rectangles, which is why a change to the "Cards" colour
- * appeared to do nothing at all.
+ * The shape of the ask, with none of the machinery. useUploadQueue owns
+ * compression, presigning, retries and progress; this owns what a guest looks
+ * at - which is what lets the host's preview render the real thing.
  *
  * Every variant keeps the same three parts: one obvious action, the line saying
- * what may be sent, and the optional name field. They differ in shape and in
- * how much of the screen they take, because that is the real choice a host is
- * making - a wedding wants the button impossible to miss, a conference wants
- * the gallery visible without scrolling.
+ * what may be sent, and the optional name field. They differ in how much of the
+ * screen they take, because that is the choice a host is making.
  */
 
 export interface UploadPanelProps {
@@ -104,9 +98,8 @@ function BigButton({
 }
 
 /**
- * A large dashed panel. The panel *is* the button, so the tap target is the
- * whole thing rather than a control inside it, and a laptop can drop files
- * anywhere on it.
+ * The panel *is* the button, so the tap target is the whole thing and a laptop
+ * can drop files anywhere on it.
  */
 function DropPanel({
   label,
@@ -147,11 +140,8 @@ function DropPanel({
     </>
   );
 
-  // Sunken rather than dashed. The dashed rectangle was the convention for
-  // "drop here", but the same thing is said by making the target a well the
-  // page steps down into - and it says it without a line on a page that has
-  // none. A drag over it fills with Gouda, which is the louder half of the cue
-  // anyway.
+  // Sunken rather than dashed: a well the page steps down into says "drop
+  // here" without a line on a page that has none. A drag fills it with Gouda.
   const shell = cx(
     "inset-shadow-well block w-full rounded-[1.25rem] text-center transition-colors",
     over ? "bg-blush" : "bg-linen",
@@ -206,9 +196,8 @@ function SlimBar({
 }: UploadPanelProps) {
   return (
     <div className={cx("card", preview ? "p-2.5" : "p-4")}>
-      {/* Side by side leaves the name field about sixty pixels wide on a small
-          phone. Below 480 the two stack; it is still far shorter than the
-          panel variants, which is the whole point of this one. */}
+      {/* Side by side leaves the name field about sixty pixels on a small
+          phone, so below 480 the two stack. */}
       <div
         className={cx(
           preview
@@ -238,8 +227,8 @@ function SlimBar({
 }
 
 /**
- * Two buttons. A guest holding a phone at the party wants the camera; a guest
- * on the sofa afterwards wants the camera roll. Asking is cheaper than guessing.
+ * Two buttons: a guest at the party wants the camera, a guest on the sofa
+ * afterwards wants the camera roll. Asking is cheaper than guessing.
  */
 function SplitButtons({
   label,
@@ -254,11 +243,9 @@ function SplitButtons({
 }: UploadPanelProps) {
   return (
     <div className={cx("card", preview ? "p-3" : "p-5 sm:p-6")}>
-      {/* Half a phone's width does not hold "Choose photos" at 17px next to
-          the large button's padding: both labels wrapped, and a two-line
-          button beside a one-line one is the worst thing on the guest page.
-          Below 480 they stack full width, which is a better shape for a thumb
-          anyway; side by side returns as soon as there is room for it. */}
+      {/* Half a phone's width does not hold "Choose photos" at 17px, and a
+          two-line button beside a one-line one is the worst thing on the guest
+          page. Below 480 they stack full width. */}
       <div
         className={cx(
           "grid",

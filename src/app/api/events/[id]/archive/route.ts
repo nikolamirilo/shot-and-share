@@ -2,6 +2,7 @@ import archiver from "archiver";
 import { PassThrough } from "node:stream";
 
 import { ApiError, fail, handle, ok } from "@/lib/api";
+import { listGuestMediaOldestFirst } from "@/lib/db/media-repo";
 import { enforceRateLimit } from "@/lib/guards";
 import { requireOwnedEvent } from "@/lib/host";
 import { archiveKey, scopeOfEvent } from "@/lib/media";
@@ -62,18 +63,9 @@ export async function POST(
     const event = await requireOwnedEvent(id);
     const admin = createAdminClient();
 
-    const { data: rows, error } = await admin
-      .from("media")
-      .select("*")
-      .eq("event_id", event.id)
-      .eq("status", "ready")
-      // What the host downloads is what their guests sent. A cover image they
-      // uploaded themselves is already on their own disk - see migration 0013.
-      .eq("source", "guest")
-      .order("created_at", { ascending: true });
-
-    if (error) throw new Error(error.message);
-    const media = (rows ?? []) as MediaRow[];
+    // What the host downloads is what their guests sent. A cover image they
+    // uploaded themselves is already on their own disk - see migration 0013.
+    const media = await listGuestMediaOldestFirst(admin, event.id);
     if (media.length === 0) {
       throw new ApiError("bad_request", "There is nothing to download yet.");
     }

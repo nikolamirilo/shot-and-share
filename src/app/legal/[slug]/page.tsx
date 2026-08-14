@@ -11,18 +11,14 @@ import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
 /**
  * The terms and the privacy policy.
  *
- * Two rules were followed writing these. Everything stated about the system is
- * true of the code in this repository - the retention windows come from the
- * same constants the product enforces, and the list of companies that touch the
- * data is the list of services this app actually calls. And everything that
- * cannot be known from the code, which is the operating company and the law it
- * answers to, is left as a marked blank rather than guessed at.
+ * Everything stated about the system is true of this repository - retention
+ * windows come from the constants the product enforces, and the list of
+ * companies that touch the data is the list of services this app calls. What
+ * cannot be known from the code is left as a marked blank.
  *
- * They are still not a lawyer's documents. The GDPR sections in particular
- * matter more here than in most products: photographs of identifiable people
- * are personal data, the host is the controller of them, and the split of
- * responsibility between the host and us is the part worth paying someone to
- * check.
+ * Still not a lawyer's documents: photographs of identifiable people are
+ * personal data, the host is their controller, and that split is worth paying
+ * someone to check.
  */
 
 const UPDATED = "11 August 2026";

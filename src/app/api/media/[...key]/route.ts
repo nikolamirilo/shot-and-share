@@ -9,24 +9,16 @@ export const runtime = "nodejs";
 /**
  * The stable address of a gallery image.
  *
- * There is one stored object per photo now and it is full size, so a grid of
- * forty-eight of them is thirty megabytes on venue wifi. The small version is
- * derived rather than stored: `next/image` points at this route, resizes to the
- * tile, and caches the result at the edge. That keeps the bucket holding one
- * file per upload while the phone downloads a fraction of it.
+ * One stored object per photo, at full size, so the small version is derived:
+ * `next/image` points here, resizes to the tile, and caches at the edge.
  *
  * Why the app serves the bytes at all, when the architecture is otherwise
- * strict that it must not: an image optimiser caches by URL, and the bucket is
- * private, so the only other address a photo has is a signed URL that changes
- * every hour. Caching on a URL that keeps changing is not caching - it is
- * re-transcoding the same photo on every page load. This route is the stable
- * name the optimiser needs.
+ * strict that it must not: an optimiser caches by URL, and a private bucket's
+ * only other address is a signed URL that changes every hour. Caching on a URL
+ * that keeps changing is re-transcoding on every page load.
  *
- * The cost is bounded and worth stating: one function invocation per photo per
- * size, on cache miss only, after which the edge serves it. Set
- * NEXT_PUBLIC_MEDIA_BASE_URL to a CDN in front of the bucket and this route
- * stops being used - publicUrl() prefers the CDN, and the optimiser fetches
- * from there instead.
+ * The cost is one invocation per photo per size, on cache miss only. Set
+ * NEXT_PUBLIC_MEDIA_BASE_URL to a CDN and this route stops being used.
  *
  * No token is required, deliberately. The key is three uuids and the event link
  * is already the access control - the same posture a CDN in front of the bucket

@@ -1,13 +1,10 @@
-import { ApiError, handle, ok } from "@/lib/api";
-import { enforceRateLimit } from "@/lib/guards";
-import {
-  GALLERY_PAGE_SIZE,
-  resolveGuestToken,
-  gateGuest,
-  toMediaViews,
-} from "@/lib/events";
-import { LIMITS, clientIp } from "@/lib/ratelimit";
+import { handle, ok } from "@/lib/api";
 import { countGuestMedia, listGuestPage } from "@/lib/db/media-repo";
+import { enforceRateLimit } from "@/lib/guards";
+import { requireVisibleGallery } from "@/lib/guards/guest";
+import { GALLERY_PAGE_SIZE } from "@/lib/media-view";
+import { toMediaViews } from "@/lib/media/view";
+import { LIMITS, clientIp } from "@/lib/ratelimit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -30,19 +27,7 @@ export async function GET(request: Request) {
       "Slow down a moment.",
     );
 
-    const ctx = await resolveGuestToken(token);
-    if (!ctx) throw new ApiError("not_found", "This link is not valid any more.");
-
-    const gate = gateGuest(ctx.event);
-    if (gate.state !== "open") {
-      throw new ApiError("gone", "This event has closed.");
-    }
-    if (!ctx.event.gallery_visible) {
-      throw new ApiError(
-        "forbidden",
-        "The host has kept this gallery private.",
-      );
-    }
+    const ctx = await requireVisibleGallery(token);
 
     // The admin client: a guest has no session, so the token check above is
     // what stands in for one.
@@ -61,11 +46,10 @@ export async function GET(request: Request) {
     ]);
 
     /*
-     * `force-dynamic` above stops Next from caching the work; this stops
-     * everything between here and the phone from caching the answer. The
-     * gallery is re-requested precisely when it has changed - a guest has just
-     * uploaded - so a CDN or a browser handing back the copy from thirty
-     * seconds ago is indistinguishable from the upload having failed.
+     * `force-dynamic` stops Next caching the work; this stops everything
+     * between here and the phone caching the answer. The gallery is
+     * re-requested precisely when it has changed - a guest has just uploaded -
+     * so a stale copy is indistinguishable from a failed upload.
      */
     return ok(
       { items: await toMediaViews(rows), nextCursor, total },

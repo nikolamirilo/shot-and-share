@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { ZodSchema } from "zod";
+import type { ZodTypeAny, output } from "zod";
 
 export type ApiErrorCode =
   | "bad_request"
@@ -79,10 +79,15 @@ export async function handle(
   }
 }
 
-export async function parseBody<T>(
+/**
+ * The parsed body, typed as what the schema *produces* rather than what it
+ * accepts - so a field with a `.default()` reads as set, which is the whole
+ * point of giving it one.
+ */
+export async function parseBody<S extends ZodTypeAny>(
   request: Request,
-  schema: ZodSchema<T>,
-): Promise<T> {
+  schema: S,
+): Promise<output<S>> {
   let json: unknown;
   try {
     json = await request.json();

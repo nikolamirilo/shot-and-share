@@ -1,10 +1,7 @@
 /**
- * The design system, one file per primitive.
- *
- * This barrel exists so a page can ask for four things in one line, which is
- * how nearly every page uses it. `cx` is re-exported from @/lib/cx because it
- * used to live in here and half the codebase imports it from this path - it is
- * a string helper, and non-React callers should reach for @/lib/cx directly.
+ * The design system, one file per primitive, barrelled so a page can ask for
+ * four things in one line. `cx` is re-exported for convenience; non-React
+ * callers should reach for @/lib/cx directly.
  */
 export { cx } from "@/lib/cx";
 

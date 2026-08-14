@@ -1,20 +1,9 @@
 /**
- * The mark: a photo leaving the frame.
+ * The mark: a photo leaving the frame. Four corner brackets, and inside them a
+ * tilted print on its way out with its trail behind it.
  *
- * Four corner brackets - the gesture every photograph starts with, deciding
- * what is inside the picture and what is not - and inside them a print already
- * on its way out, tilted, with its trail behind it. The frame says a photo was
- * taken. The print says it did not stay where it was taken, which is the whole
- * product.
- *
- * The trail does the work, which is why the photo itself is a plain rounded
- * square. Drawing a picture inside the picture is how a mark turns into an
- * illustration, and an illustration cannot be printed on a card in a dark room.
- *
- * The print and its trail are the one flash of claret and appear in no other
- * mark. Below roughly 20px the three lines close up against the print and the
- * middle reads as a single claret shape moving right - nothing here depends on
- * the lines being counted.
+ * Nothing depends on the three trail lines being counted - below about 20px
+ * they close up into a single claret shape moving right.
  */
 
 export type Variant = "primary" | "reversed" | "mono";
@@ -26,19 +15,15 @@ const PALETTES: Record<Variant, { bracket: string; dot: string }> = {
 };
 
 /**
- * The mark, as coordinates rather than as a component.
+ * The mark as coordinates rather than a component, on a 0 0 200 200 canvas.
  *
- * The favicon, the home-screen icon and the card that represents this site in
- * a feed are drawn somewhere else, and two of them go through Satori, which
- * walks an `<svg>` looking for plain shapes and silently drops anything it has
- * to resolve first - a component nested in there renders as nothing at all,
- * and nothing at all is exactly what a missing icon looks like. So what is
- * shared is these numbers, and each renderer writes its own plain elements
- * from them. Everything is on a 0 0 200 200 canvas.
+ * The favicon and the feed card go through Satori, which walks an `<svg>` for
+ * plain shapes and silently drops anything it has to resolve first - a nested
+ * component renders as nothing at all. So the numbers are shared and each
+ * renderer writes its own plain elements.
  *
  * The bracket is drawn once and rotated into the other three corners. Its arms
- * are deliberately short: a longer arm closes the frame and the mark turns
- * into a square with a hole in it.
+ * are short on purpose: longer and the frame closes into a square with a hole.
  */
 export const MARK = {
   bracket: "M 26 76 L 26 34 Q 26 26 34 26 L 76 26",
@@ -110,16 +95,9 @@ export function LogoMark({
 }
 
 /**
- * The ampersand, borrowed from the body face.
- *
- * Archivo draws its ampersand as an open, reversed-3 form. It is a fine glyph
- * and it is wrong here: at the wordmark's weight and 82% width it stops looking
- * like an ampersand at all and starts looking like a mistake in the logo. So
- * the two words are set in the display face and the one character between them
- * is set in the body face at a conventional weight, in claret.
- *
- * This is a lockup, not a typographic accident, and it is the same everywhere
- * the name appears - which is why it lives here rather than in each caller.
+ * The ampersand, borrowed from the body face. Archivo's is an open reversed-3
+ * form, which at the wordmark's weight and 82% width reads as a mistake in the
+ * logo rather than as an ampersand.
  */
 function Amp({ className = "" }: { className?: string }) {
   return (
@@ -133,13 +111,8 @@ function Amp({ className = "" }: { className?: string }) {
 }
 
 /**
- * The mark plus the name.
- *
- * On a narrow phone the name is the first thing to go. A header is a row of
- * competing claims on about 300 usable pixels, and losing four hundredths of
- * the brand costs less than pushing "New event" into wrapping onto two lines -
- * the mark on its own is still unmistakably this product. Pass
- * `labelClassName="hidden xs:inline"` anywhere that row is tight.
+ * The mark plus the name. On a narrow phone the name is the first thing to go -
+ * pass `labelClassName="hidden xs:inline"` anywhere the row is tight.
  */
 export function Wordmark({
   variant = "primary",

@@ -3,18 +3,13 @@
 import { cx } from "@/lib/cx";
 
 /**
- * One size for every option in this panel.
- *
- * The groups used to size themselves: theme swatches were short and flowed to
- * fill a row, the rest were taller and came two to a row. Tabbing between them
- * moved the controls under the cursor and resized the panel, which reads as the
- * page changing rather than the group. One grid, one floor on the height, and
- * the only thing that changes between tabs is what the cards say.
+ * One size for every option in this panel. Groups that size themselves resize
+ * the panel as the host tabs between them, which reads as the page changing
+ * rather than the group.
  */
 export const OPTION_GRID = "grid gap-2.5 @min-[26rem]:grid-cols-2";
-// Unselected tiles rest on the panel; the chosen one comes up off it. That
-// height difference is the whole selected state now that nothing is outlined,
-// so the two shadows are deliberately far apart rather than one step.
+// Height is the whole selected state, nothing being outlined, so the two
+// shadows are deliberately far apart rather than one step.
 export const OPTION_CARD =
   "flex min-h-24 flex-col justify-center rounded-xl p-3.5 text-left transition-shadow";
 export const OPTION_SELECTED = "bg-claret text-chalk shadow-lg";

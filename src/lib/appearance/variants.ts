@@ -1,16 +1,7 @@
 /**
- * How the page opens.
- *
- * Two shapes are gone, and both went for the same reason: they put the name
- * *beside* the photograph rather than on it, which on the phone every guest
- * actually holds is a small picture above a heading. "Framed" - a photo card
- * with the name next to it - went first, to `full`. "Band" - a photo above a
- * solid stripe of accent carrying the name - follows it, to `half`, which is
- * the same photograph at the same height with the name laid over it.
- *
- * What is left differs in how much of the phone the photograph gets before the
- * ask, which is the only question a cover answers: all of it, half of it, a
- * strip across the top, or none at all.
+ * How the page opens. The four differ only in how much of the phone the
+ * photograph gets before the ask, which is the one question a cover answers:
+ * all of it, half of it, a strip across the top, or none at all.
  */
 export const COVER_VARIANTS = [
   {

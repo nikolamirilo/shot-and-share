@@ -7,46 +7,22 @@ import type { FontSet } from "@/lib/fonts";
 import { type GalleryLayout, holeSize } from "@/lib/gallery";
 
 /**
- * A drawing of the guest page, at the size of a panel in the host's console.
+ * A drawing of the whole guest page, at the size of a console panel.
  *
- * It is the whole page rather than a sample of it - the cover, the ask, the
- * gallery - because "what does Midnight look like?" is a question about a page,
- * and a swatch of a page cannot answer it. Every piece here is either the real
- * component (EventCover, UploadPanel) or the real markup at a smaller size,
- * sitting under the real EventThemeRoot, so a colour that does nothing visible
- * in this box does nothing on the page either.
+ * Every piece is either the real component (EventCover, UploadPanel) or the
+ * real markup smaller, under the real EventThemeRoot - so a colour that does
+ * nothing visible here does nothing on the page either.
  *
- * The box is a container, and everything inside it breaks against the box
- * rather than against the window. It sits in a column about a phone wide beside
- * the controls, so a `sm:` in here would ask the wrong question: whether the
- * host's screen is wide, when what decides how many photos fit across the
- * drawing is how wide the drawing is.
+ * The box is an `@container`: everything breaks against the drawing rather than
+ * the window, because what decides how many photos fit across it is how wide
+ * *it* is, not how wide the host's screen is.
  *
- * There was a browser chrome bar across the top of it, with the share link in
- * an address field. It said nothing the host did not know - they are looking at
- * their own event page, and the link has a panel of its own - and it cost the
- * drawing a strip of height in a column that no longer has any to spare.
- *
- * There is no header and no small print, because there are none on the page
- * this draws. The panel is locked behind an upsell on the free plan, so every
- * event that reaches this component is paid, and a paid guest page carries
- * nothing of ours above the cover or below the gallery.
- *
- * Two deliberate departures from the guest page:
- *
- *  - **No photographs in the gallery.** Every tile is an empty frame with a
- *    picture mark in it. The host is judging the shape of the wall and the
- *    colours around it, and fifty of their guests' faces are the one thing that
- *    would answer that question with something else - and it would cost an
- *    image request per tile every time a swatch is clicked.
- *
- *    The cover is the exception, and it is not really one: the cover *is* a
- *    particular photograph the host picked, so a grey frame there answers the
- *    wrong question. They are choosing between four crops of their own picture,
- *    which is impossible to judge without the picture.
- *  - **The gallery is clipped.** A page of photos is taller than a preview can
- *    be, so the wall runs into a fade the way it runs off the bottom of a
- *    phone. Each layout keeps its own real geometry inside that window.
+ * Two departures from the guest page. The gallery holds empty frames rather
+ * than photographs - the host is judging the shape of the wall, and their
+ * guests' faces would answer a different question at an image request per tile.
+ * The cover is the exception, because it *is* a particular photograph and they
+ * are choosing between four crops of it. And the wall is clipped into a fade,
+ * the way it runs off the bottom of a phone.
  */
 
 export interface EventPreviewProps {
@@ -84,9 +60,8 @@ export function EventPreview({
 }: EventPreviewProps) {
   return (
     <div className="@container overflow-hidden rounded-xl shadow-md">
-      {/* A picture of a page, not a page. Nothing inside can be clicked,
-          focused or read out: it would put a second "Add your photos" in the
-          host's tab order, inside a form that saves. */}
+      {/* A picture of a page, not a page: nothing inside can be clicked,
+          focused or read out. */}
       <div aria-hidden inert>
         <EventThemeRoot palette={palette} font={font}>
           <EventCover
@@ -94,9 +69,8 @@ export function EventPreview({
             name={name}
             date={date}
             message={message}
-            /* The one real photograph in the drawing - the host is judging
-               their own picture in four different crops. The label is what
-               fills the frame until they have picked one. */
+            /* The one real photograph in the drawing. The label fills the
+               frame until they have picked one. */
             coverUrl={coverUrl ?? null}
             photoLabel={coverChosen ? "your photo" : "no photo yet"}
             palette={palette}
@@ -118,11 +92,8 @@ export function EventPreview({
                   Everyone&apos;s photos
                 </h2>
 
-                {/* One window, whatever is in it: the wall runs into a fade
-                    the way it runs off the bottom of a phone, and every layout
-                    is then judged in the same amount of room. It grows with
-                    the drawing, so a wide one shows more rows rather than
-                    bigger ones. */}
+                {/* One window, whatever is in it, so every layout is judged in
+                    the same amount of room. */}
                 <div className="relative mt-2 h-40 overflow-hidden @xs:h-48 @sm:h-52 @lg:h-60">
                   <PreviewGallery layout={layout} />
                   <span className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-linen to-transparent" />
@@ -137,19 +108,12 @@ export function EventPreview({
 }
 
 /**
- * The four walls, in miniature.
+ * The four walls in miniature. Each keeps the geometry its counterpart in
+ * PhotoGallery has, because that geometry *is* the choice being made.
  *
- * Each one keeps the geometry its real counterpart in PhotoGallery has - equal
- * squares, ragged columns, the uneven circle sequence, one photo at a time -
- * because that geometry *is* the choice being made. Drawing all four as a row
- * of squares, which is what this used to do, made three of the four buttons
- * look broken.
- *
- * The column counts are a phone's, and they are counted off the width of the
- * drawing rather than the width of the screen: the drawing is about as wide as
- * a phone now, so the two agree by construction. Off the screen they did not -
- * a 320px drawing on a laptop was laying its photos out four across, which no
- * phone does, and the host was choosing between walls no guest would see.
+ * Column counts are a phone's, measured off the drawing rather than the screen:
+ * a 320px drawing on a laptop laying photos out four across is a wall no guest
+ * would ever see.
  */
 const SKETCH_RATIOS = [1, 0.74, 1.34, 0.82, 1, 1.5, 0.72, 1.12, 0.9];
 
@@ -193,9 +157,8 @@ function PreviewGallery({ layout }: { layout: GalleryLayout }) {
   }
 
   if (layout === "stack") {
-    // Wide enough that the second row starts inside the window: one photo at a
-    // time is the point of Stack, and one photo filling the whole frame with
-    // nothing under it reads as a broken gallery rather than as a tall one.
+    // Wide enough that the second row starts inside the window: one photo
+    // filling the frame with nothing under it reads as a broken gallery.
     return (
       <div className="mx-auto max-w-md space-y-2">
         {[1.75, 1.2].map((ratio, i) => (

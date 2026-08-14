@@ -3,19 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * The contact sheet. The one place on the page where we spend boldness.
+ * The contact sheet: what a night looks like before anybody has chosen a
+ * favourite, which is what this product hands a host the morning after. The
+ * hero is the artefact rather than a picture of the interface.
  *
- * A contact sheet is what a night looks like before anybody has chosen a
- * favourite: every frame the same size, in the order they were taken, on one
- * piece of paper. That is exactly what this product hands a host the morning
- * after, so the hero is the artefact rather than a picture of the interface.
- *
- * Two behaviours give it life and no more than two:
- *   1. On load the frames rise in sequence, in shooting order.
- *   2. On pointer move the sheet tilts on both axes and drifts a few pixels,
- *      which is what makes it read as paper on a table rather than a grid.
- *
- * Both are off under prefers-reduced-motion.
+ * Two behaviours, both off under prefers-reduced-motion: the frames rise in
+ * shooting order on load, and the sheet tilts and drifts on pointer move, which
+ * is what makes it read as paper on a table rather than a grid.
  */
 
 /** Placeholders. Replace with licensed or original imagery before launch. */
@@ -114,14 +108,13 @@ export function ContactSheet({ qrHref }: { qrHref?: string }) {
           </div>
         </div>
 
-        {/* The QR code is the actual product. A visitor should see the thing
-            they are going to print before they read a word about it.
+        {/* The QR code is the actual product, so a visitor sees the thing they
+            will print before reading a word about it.
 
-            Held well clear of the right edge until the hero splits into two
-            columns and there is page margin to spend: six degrees of rotation
-            and 60px of translateZ put the card's painted corner about thirty
-            pixels outside its own layout box, and at `right-0` that lands past
-            the viewport on every phone. */}
+            Held clear of the right edge until the hero splits into two columns:
+            six degrees of rotation and 60px of translateZ put the painted corner
+            about thirty pixels outside its layout box, which at `right-0` lands
+            past the viewport on every phone. */}
         <div
           className="absolute -bottom-10 right-4 w-[30%] max-w-[132px] rounded-2xl bg-paper p-2.5 shadow-lg sm:-bottom-12 sm:right-6 sm:w-[27%] sm:p-2.5"
           style={{ transform: "rotate(6deg) translateZ(40px)" }}

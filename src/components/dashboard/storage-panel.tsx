@@ -4,13 +4,9 @@ import { describeRetention, formatBytes } from "@/lib/format";
 import type { storageSummary } from "@/lib/events";
 
 /**
- * How much room is left, and until when.
- *
- * It sits directly above the thing that sells more of both, because a bar at
- * 90% and a price for the next tier are one thought, not two. They used to be
- * a tab apart - the number in an analytics panel and the offer under Plan -
- * which meant the moment a host understood they were running out was also the
- * moment they had to go looking.
+ * How much room is left, and until when. It sits directly above the thing that
+ * sells more of both: a bar at 90% and a price for the next tier are one
+ * thought, not two.
  */
 export function StoragePanel({
   event,

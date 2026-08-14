@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
 
 import { ClosedPage } from "@/components/event/closed-page";
-import { GuestExperience } from "@/components/event/guest-experience";
 import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
-import { PlatformFooter, PlatformHeader } from "@/components/layout/platform-banner";
-import { resolveAppearance } from "@/lib/appearance";
-import type { MediaRow } from "@/lib/db/types";
-import { googleFontsHref } from "@/lib/fonts";
+import { GuestExperience } from "@/components/event/guest-experience";
 import {
-  gateGuest,
-  resolveGuestToken,
-  storageSummary,
-  toMediaView,
-} from "@/lib/events";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getTier } from "@/lib/tiers";
+  PlatformFooter,
+  PlatformHeader,
+} from "@/components/layout/platform-banner";
+import { googleFontsHref } from "@/lib/fonts";
+import { resolveGuestToken } from "@/lib/guards/guest";
+import { loadGuestPage } from "@/lib/views/guest-page";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +33,9 @@ export default async function GuestPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const ctx = await resolveGuestToken(token);
+  const page = await loadGuestPage(token);
 
-  if (!ctx) {
+  if (page.state === "unknown") {
     return (
       <ClosedPage
         title="This link is not working"
@@ -49,52 +44,20 @@ export default async function GuestPage({
     );
   }
 
-  const gate = gateGuest(ctx.event);
-  if (gate.state !== "open") {
+  if (page.state === "closed") {
     return (
       <ClosedPage
-        title={`${ctx.event.name} has closed`}
+        title={`${page.eventName} has closed`}
         body="This event is no longer collecting photos. If you still have some on your phone, send them to the host directly."
       />
     );
   }
 
-  const event = ctx.event;
-  const tier = getTier(event.tier);
-  const summary = storageSummary(event);
+  const { event, tier, appearance, coverUrl, fullScreenCover } = page;
 
-  // The gate is here, not in the form that wrote these columns. A free event
-  // renders as a free event whatever its row happens to contain.
-  const appearance = resolveAppearance(event);
-
-  let coverUrl: string | null = null;
-  if (event.cover_media_id && appearance.cover !== "type") {
-    const admin = createAdminClient();
-    const { data } = await admin
-      .from("media")
-      .select("*")
-      .eq("id", event.cover_media_id)
-      .eq("status", "ready")
-      .maybeSingle();
-    if (data) {
-      const view = await toMediaView(data as MediaRow);
-      coverUrl = view.previewUrl;
-    }
-  }
-
-  /*
-   * Whether the cover about to render is the screen-filling one.
-   *
-   * It has to match what EventCover decides rather than what the row says: a
-   * "Full screen" cover with no photo falls back to "Just type", and stretching
-   * that short header down a whole screen is a page with a hole in it.
-   */
-  const fullScreenCover = appearance.cover === "full" && coverUrl !== null;
-
-  // Only the pairing this event actually uses. Loading all five would put eight
-  // font families on a phone on hotel wifi in order to render one of them, and
-  // the house pairing is already in the root layout, so the default costs
-  // nothing at all.
+  // Only the pairing this event uses. Loading all five would put eight font
+  // families on a phone on hotel wifi to render one of them, and the house
+  // pairing is already in the root layout.
   const fontsHref = googleFontsHref(appearance.font);
 
   return (
@@ -110,10 +73,9 @@ export default async function GuestPage({
       {/*
        * The platform bar and the cover share one screen-high column, so that
        * "full screen" means the screen. Stacked the obvious way, a 100svh cover
-       * starts *underneath* the bar, which pushes the name and the scroll cue -
+       * starts underneath the bar, which pushes the name and the scroll cue -
        * the two things the cover exists for - below the fold on every phone.
-       * Here the bar takes what it needs and the cover takes the rest. A paid
-       * event has no bar at all, so the cover takes the whole column.
+       * A paid event has no bar, so the cover takes the whole column.
        */}
       <div className={fullScreenCover ? "flex min-h-svh flex-col" : undefined}>
         {appearance.platformBranding && <PlatformHeader />}
@@ -137,14 +99,14 @@ export default async function GuestPage({
           uploadVariant={appearance.upload}
           allowVideo={tier.video}
           maxFileBytes={tier.maxFileBytes}
-          remainingBytes={summary.remaining}
+          remainingBytes={page.remainingBytes}
         />
       </main>
 
-      {/* A paid page ends at the gallery. Nothing below the fold is ours -
-          not the small print either, which is the last thing on the page
-          carrying our voice rather than the host's. Deleting a photo you
-          uploaded by mistake still works; only the instruction goes. */}
+      {/* A paid page ends at the gallery. Nothing below the fold is ours - not
+          the small print either, which is the last thing on the page carrying
+          our voice rather than the host's. Deleting a photo you uploaded by
+          mistake still works; only the instruction goes. */}
       {appearance.platformBranding && (
         <>
           <div>

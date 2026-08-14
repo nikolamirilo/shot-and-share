@@ -5,12 +5,9 @@ import { FAQS } from "@/lib/faqs";
 /**
  * One place that knows how this site describes itself.
  *
- * Every title, description, canonical and piece of structured data is built
- * from here rather than typed at each page, because the failure mode of SEO
- * work is drift: a price changes in `tiers.ts`, the JSON-LD keeps advertising
- * the old one, and a search engine has been told something the page does not
- * say. Anything a crawler reads that also appears on screen is derived from the
- * same constant the screen reads.
+ * Anything a crawler reads that also appears on screen is derived from the same
+ * constant the screen reads, because the failure mode of SEO work is drift: a
+ * price changes in `tiers.ts` and the JSON-LD keeps advertising the old one.
  */
 
 export const SITE = {
@@ -26,11 +23,8 @@ export const SITE = {
 } as const;
 
 /**
- * The origin, from the environment.
- *
  * Never hard-coded: a canonical tag pointing at production from a preview
- * deployment is how a staging site ends up in the index, and how the real one
- * ends up de-duplicated against it.
+ * deployment is how a staging site ends up in the index.
  */
 export function siteUrl(): string {
   return env.siteUrl.replace(/\/$/, "");
@@ -42,10 +36,8 @@ export function absoluteUrl(path = "/"): string {
 }
 
 /**
- * The public pages, in the order a person would meet them.
- *
- * The sitemap and the breadcrumbs both read this, so a page cannot be added to
- * one and forgotten in the other.
+ * The public pages. The sitemap and the breadcrumbs both read this, so a page
+ * cannot be added to one and forgotten in the other.
  */
 export const PUBLIC_ROUTES = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
@@ -55,14 +47,10 @@ export const PUBLIC_ROUTES = [
 ] as const;
 
 /**
- * Everything a crawler is asked to stay out of.
- *
- * Two different tools for two different jobs, and mixing them up is the classic
- * mistake. A path that must never be *indexed* has to stay crawlable so the
- * noindex directive is actually read - that is `/e/` and `/login`, which carry
- * it in a header and in their metadata. A path that is merely private and
- * behind a redirect is blocked here instead, to spend nobody's crawl budget on
- * it.
+ * Blocked from crawling, which is not the same as noindex. A path that must
+ * never be *indexed* has to stay crawlable so the directive is read - that is
+ * `/e/` and `/login`. These are merely private, so nobody's crawl budget goes
+ * on them.
  */
 export const DISALLOWED_PATHS = [
   "/api/",
@@ -111,12 +99,8 @@ export function websiteSchema(): Json {
 }
 
 /**
- * The product, priced from `tiers.ts`.
- *
- * `SoftwareApplication` rather than `Product` because that is what this is, and
- * because it carries an offer list without pretending there is a thing being
- * shipped. The free tier is included: "there is a free plan" is the single most
- * useful fact in a result page for this category.
+ * The product, priced from `tiers.ts`. `SoftwareApplication` carries an offer
+ * list without pretending there is a thing being shipped.
  */
 export function softwareApplicationSchema(): Json {
   const offers = TIER_ORDER.map((id) => {
@@ -164,11 +148,8 @@ export function softwareApplicationSchema(): Json {
 }
 
 /**
- * The questions on the landing page, and only those.
- *
  * Built from the same array the page renders, so the markup can never promise
- * an answer a visitor cannot find - which is the one thing that turns FAQ
- * structured data from useful into a manual action.
+ * an answer a visitor cannot find - which is what earns a manual action.
  */
 export function faqSchema(): Json {
   return {
@@ -197,11 +178,8 @@ export function breadcrumbSchema(
 }
 
 /**
- * A `@graph` rather than a page full of separate script tags.
- *
- * One document per page, with the nodes cross-referenced by `@id`, is what lets
- * a crawler understand that the application, the FAQ and the publisher are the
- * same site rather than three unrelated claims.
+ * One document per page with the nodes cross-referenced by `@id`, so a crawler
+ * reads the application, the FAQ and the publisher as one site.
  */
 export function graph(...nodes: Json[]): string {
   return JSON.stringify({

@@ -1,5 +1,10 @@
 import { fail, handle, ok } from "@/lib/api";
-import type { EventRow } from "@/lib/db/types";
+import { countReadyMedia, mediaExistsById } from "@/lib/db/media-repo";
+import {
+  listEventsToPurge,
+  listExpiredEvents,
+  listExpiringEvents,
+} from "@/lib/db/event-repo";
 import {
   eventExpiredEmail,
   retentionWarningEmail,
@@ -8,6 +13,7 @@ import {
 import { env } from "@/lib/env";
 import { eventPrefix, mediaBytes, mediaKeys, scopeOfEvent } from "@/lib/media";
 import { storage } from "@/lib/storage";
+import { release } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { HARD_DELETE_GRACE_DAYS, RETENTION_WARNING_DAYS } from "@/lib/tiers";
 
@@ -99,23 +105,14 @@ async function sweepStaleReservations(summary: { reservationsSwept: number }) {
      * check is the difference between tidying up and deleting somebody's
      * wedding photo, so it happens before anything is removed.
      */
-    const { data: live } = await admin
-      .from("media")
-      .select("id")
-      .eq("id", row.id)
-      .maybeSingle();
-
-    if (live) {
+    if (await mediaExistsById(admin, row.id)) {
       await admin.from("upload_reservations").delete().eq("id", row.id);
       continue;
     }
 
     await storage.remove(mediaKeys(row));
     await admin.from("upload_reservations").delete().eq("id", row.id);
-    await admin.rpc("release_storage", {
-      p_event: row.event_id,
-      p_bytes: mediaBytes(row),
-    });
+    await release(row.event_id, mediaBytes(row));
     summary.reservationsSwept += 1;
   }
 }
@@ -128,19 +125,9 @@ async function sendWarnings(summary: { warned: number }) {
     Date.now() + Math.max(...RETENTION_WARNING_DAYS) * 86_400_000,
   ).toISOString();
 
-  const { data: events } = await admin
-    .from("events")
-    .select("*, profiles!events_owner_id_fkey(email)")
-    .eq("status", "active")
-    .eq("keep_forever", false)
-    .not("expires_at", "is", null)
-    .lte("expires_at", horizon)
-    .limit(500);
+  const events = await listExpiringEvents(admin, horizon, 500);
 
-  for (const raw of events ?? []) {
-    const event = raw as unknown as EventRow & {
-      profiles: { email: string | null } | null;
-    };
+  for (const event of events) {
     if (!event.expires_at || !event.profiles?.email) continue;
 
     const daysLeft = Math.ceil(
@@ -155,18 +142,14 @@ async function sendWarnings(summary: { warned: number }) {
       continue;
     }
 
-    const { count } = await admin
-      .from("media")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", event.id)
-      .eq("status", "ready");
+    const photoCount = await countReadyMedia(admin, event.id);
 
     await sendEmail(
       retentionWarningEmail({
         to: event.profiles.email,
         eventName: event.name,
         days: Math.max(1, daysLeft),
-        photoCount: count ?? 0,
+        photoCount,
         downloadUrl: `${env.siteUrl}/dashboard/events/${event.id}`,
       }),
     );
@@ -186,20 +169,9 @@ async function expireEvents(summary: { expired: number }) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
 
-  const { data: events } = await admin
-    .from("events")
-    .select("*, profiles!events_owner_id_fkey(email)")
-    .eq("status", "active")
-    .eq("keep_forever", false)
-    .not("expires_at", "is", null)
-    .lt("expires_at", now)
-    .limit(500);
+  const events = await listExpiredEvents(admin, now, 500);
 
-  for (const raw of events ?? []) {
-    const event = raw as unknown as EventRow & {
-      profiles: { email: string | null } | null;
-    };
-
+  for (const event of events) {
     await admin
       .from("events")
       .update({ status: "expired", deleted_at: now })
@@ -231,17 +203,9 @@ async function hardDelete(summary: {
     Date.now() - HARD_DELETE_GRACE_DAYS * 86_400_000,
   ).toISOString();
 
-  const { data: events } = await admin
-    .from("events")
-    // owner_id is part of the storage prefix, so it is not optional here.
-    .select("id, owner_id")
-    .eq("status", "expired")
-    .eq("keep_forever", false)
-    .not("deleted_at", "is", null)
-    .lt("deleted_at", cutoff)
-    .limit(50);
+  const events = await listEventsToPurge(admin, cutoff, 50);
 
-  for (const event of events ?? []) {
+  for (const event of events) {
     summary.objectsRemoved += await storage.removePrefix(
       eventPrefix(scopeOfEvent(event)),
     );

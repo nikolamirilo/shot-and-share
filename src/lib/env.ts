@@ -141,9 +141,9 @@ export const env = {
 };
     
 /**
- * Re-exported rather than recomputed. This used to have its own copy of the
- * key fallback, which is how it could report "configured" for a deployment the
- * Supabase client would then refuse to start against.
+ * Re-exported rather than recomputed: a second copy of the key fallback is how
+ * this reports "configured" for a deployment the client then refuses to start
+ * against.
  */
 export { hasSupabase };
 

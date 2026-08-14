@@ -19,12 +19,10 @@ export function createAdminClient() {
   if (!cached) {
     /*
      * Read through `env`, which accepts `SUPABASE_SERVICE_ROLE_KEY` as well as
-     * the current `SUPABASE_SECRET_KEY`. This used to demand the new name and
-     * nothing else, while the token encryption and the local storage driver
-     * both took either - so a deployment carrying only the older name passed
-     * every "is Supabase configured?" check, served the guest page, and then
-     * threw on presign and confirm. The same value under two names must not
-     * mean the upload works and the photo never arrives.
+     * the current `SUPABASE_SECRET_KEY` - as the token encryption and the local
+     * storage driver both do. Demanding only the new name here would let a
+     * deployment carrying the older one pass every "is Supabase configured?"
+     * check, serve the guest page, and then throw on presign and confirm.
      */
     const secretKey = env.supabase.secretKey;
     if (!secretKey) {

@@ -1,16 +1,10 @@
 /**
- * Three drawings of the three things a host does.
+ * Three drawings of the three things a host does, so the copy underneath can
+ * stop at one line.
  *
- * They are here because the step cards were three paragraphs explaining a
- * mechanism that is easier to look at than to read: a code comes out, it goes
- * on a table, the photographs come back. Each one is the middle of its own
- * sentence, so the copy underneath can stop at one line.
- *
- * Drawn rather than photographed, and in the product's own palette. The parts
- * that carry meaning - the code, the phone's beam, the arrow out - are claret;
- * everything holding them up is ink at low opacity, so the eye lands on the
- * thing the step is about. `aria-hidden` throughout: the heading beside them
- * already says what they say.
+ * The parts that carry meaning - the code, the phone's beam, the arrow out -
+ * are claret; everything holding them up is ink at low opacity.
+ * `aria-hidden` throughout: the heading beside them already says what they say.
  */
 
 const STROKE = {

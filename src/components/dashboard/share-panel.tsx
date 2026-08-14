@@ -37,11 +37,9 @@ export function SharePanel({
     opens > 0 ? Math.min(100, Math.round((uploaders / opens) * 100)) : null;
 
   /**
-   * The card comes back as a PDF, and it is fetched rather than navigated to.
-   * Pointing the window at the endpoint would download the file in the ordinary
-   * case and replace the dashboard with a page of JSON in the one case that
-   * matters - a link revoked in another tab since this panel was drawn. This
-   * way that lands in the same Alert as everything else here.
+   * Fetched rather than navigated to: pointing the window at the endpoint
+   * replaces the dashboard with a page of JSON in the case that matters - a
+   * link revoked in another tab since this panel was drawn.
    */
   async function downloadCard() {
     setBusy("card");
@@ -61,13 +59,9 @@ export function SharePanel({
   }
 
   /**
-   * The code on its own, as a PNG, for the host who is putting it in their own
-   * invitation rather than printing ours.
-   *
-   * The server draws it once, as SVG, and the browser rasterises that - so the
-   * PNG is the same artwork the panel is showing rather than a second renderer's
-   * version of it, and the endpoint stays a single vector source. 1024px is big
-   * enough to print a code the size of a beer mat.
+   * The code alone, for a host putting it in their own invitation. The server
+   * draws it once as SVG and the browser rasterises that, so the PNG is the
+   * same artwork the panel shows. 1024px prints at beer-mat size.
    */
   async function downloadPng() {
     setBusy("png");
@@ -129,24 +123,16 @@ export function SharePanel({
         </>
       ) : (
         <>
-          {/* The code and the three buttons are one block, and the two halves
-              are measured off each other rather than sized by eye.
-
-              Stacked on a phone, the code takes the buttons' width, so the
-              column has one edge rather than two. Side by side, it takes their
-              height: three `sm` buttons at their 2.5rem minimum with a 0.5rem
-              gap between them is 8.5rem, and the code is that square. Change
-              the button size or count and this number has to change with it -
-              which is the cost of the two halves lining up exactly. */}
+          {/* The two halves are measured off each other. Side by side the code
+              takes the buttons' height: three `sm` buttons at 2.5rem with
+              0.5rem gaps is 8.5rem, so change the size or count and this
+              number changes with it. */}
           <div className="mt-5 grid gap-4 sm:grid-cols-[8.5rem_1fr] sm:items-start sm:gap-5">
             <div className="mx-auto aspect-square w-10/12 max-w-[250px] rounded-xl bg-paper p-2 shadow-md sm:mx-0 sm:size-[8.5rem] sm:max-w-none">
-              {/* The code is generated per request rather than served from a
-                  file, so there is a moment on a slow connection where this box
-                  is empty. An empty white square on the panel that is the whole
-                  product reads as "there is no code" rather than "not yet", so
-                  the shape of one is drawn while it is coming: three corners
-                  and a field, which is the part of a QR a person recognises
-                  before they can read any of it. */}
+              {/* Generated per request, so on a slow connection this box is
+                  briefly empty - and an empty white square here reads as "there
+                  is no code" rather than "not yet". Three corners and a field
+                  is the part of a QR a person recognises first. */}
               <div className="relative size-full">
                 {!codeReady && (
                   <div
@@ -158,9 +144,7 @@ export function SharePanel({
                     <span className="absolute bottom-[8%] left-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
                   </div>
                 )}
-                {/* Same code the printable card carries, drawn from the same
-                    plan, so what is on screen is what comes out of the
-                    printer. */}
+                {/* Same plan the printable card is drawn from. */}
                 <img
                   src={`/api/events/${eventId}/qr?format=code`}
                   alt="QR code for this event"
@@ -171,16 +155,14 @@ export function SharePanel({
                   width={512}
                   height={512}
                   onLoad={() => setCodeReady(true)}
-                  /* A code that fails to load should not leave a skeleton
-                     pulsing forever - the alt text is the honest answer. */
+                  /* A failed code must not leave a skeleton pulsing forever. */
                   onError={() => setCodeReady(true)}
                 />
               </div>
             </div>
 
-            {/* Three things a host does with a code, in the order they do
-                them: send the link, print our card, or take the code away and
-                put it in something of their own. */}
+            {/* In the order a host does them: send the link, print our card,
+                or take the code into something of their own. */}
             <div className="flex flex-col items-center gap-2">
               <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
                 {copied ? "Copied" : "Copy link"}
@@ -216,10 +198,9 @@ export function SharePanel({
             to add more.
           </p>
 
-          {/* These two numbers are about the link, not about the party, which
-              is why they are here rather than in a panel of their own. A guest
-              who scans the code and does not upload is the clearest signal the
-              card is not working, and it is only legible next to the card. */}
+          {/* About the link rather than the party, which is why they sit here:
+              a guest who scans and does not upload is the clearest signal the
+              card is not working, and it only reads next to the card. */}
           <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-edge pt-5">
             <Stat label="Link opened" value={pluralise(opens, "time")} />
             <Stat
@@ -285,12 +266,10 @@ function save(blob: Blob, filename: string) {
 }
 
 /**
- * An SVG through a canvas and out as a PNG.
- *
- * The image has to have finished decoding before it is drawn - a canvas will
- * happily paint nothing at all from an <img> that is not ready and report no
- * error - and the SVG has to arrive as an object URL rather than as markup, so
- * that the canvas stays untainted and `toBlob` is allowed to read it back.
+ * An SVG through a canvas and out as a PNG. The image must have finished
+ * decoding first - a canvas paints nothing from an <img> that is not ready and
+ * reports no error - and the SVG must arrive as an object URL, or the canvas is
+ * tainted and `toBlob` refuses to read it back.
  */
 function rasterise(svgUrl: string, pixels: number): Promise<Blob> {
   return new Promise((resolve, reject) => {

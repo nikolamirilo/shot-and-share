@@ -2,14 +2,6 @@
 
 import type { PresignedUpload } from "@/lib/storage/types";
 
-/**
- * Client-side upload helpers.
- *
- * The browser does the image work. A canvas resize before upload costs nothing,
- * removes an entire asynchronous pipeline from the system, and the phone that
- * took the photo is the machine best placed to do it.
- */
-
 const FINGERPRINT_KEY = "say-cheese:fingerprint";
 const NAME_KEY = "say-cheese:name";
 
@@ -17,14 +9,13 @@ const NAME_KEY = "say-cheese:name";
  * A random identifier that does not need a secure context.
  *
  * `crypto.randomUUID` exists only on HTTPS and localhost. Over plain HTTP - a
- * phone opening the share link by IP on the venue wifi, a LAN preview, an
- * office proxy that has not been given a certificate - it is simply not there,
- * so calling it throws a TypeError rather than returning anything. That is the
- * whole upload gone, before the first byte, and the guest is told nothing.
+ * phone opening the share link by IP on the venue wifi - it is simply not
+ * there, so calling it throws and the whole upload is gone before the first
+ * byte. `getRandomValues` is available in those places, and this falls back
+ * again where even it is missing.
  *
- * `getRandomValues` is available in every one of those places, and where even
- * it is missing this falls back again. Nothing here is a security boundary:
- * the value identifies a browser to itself so it can delete its own photo.
+ * Not a security boundary: the value identifies a browser to itself so it can
+ * delete its own photo.
  */
 function randomId(): string {
   const c: Crypto | undefined = globalThis.crypto;
@@ -44,9 +35,8 @@ function randomId(): string {
 }
 
 /**
- * Not an account, and deliberately not one. A random id in localStorage is
- * exactly enough to let a guest remove the blurry photo they just uploaded,
- * and nothing more.
+ * Not an account, deliberately. A random id in localStorage is exactly enough
+ * to let a guest remove the blurry photo they just uploaded, and nothing more.
  */
 export function getFingerprint(): string {
   try {
@@ -93,13 +83,10 @@ export function markOpened(eventId: string): boolean {
 /* --- failures ------------------------------------------------------------- */
 
 /**
- * A failure the uploader knows something about.
- *
  * `retryable` is the whole point of the class. A dropped connection and a
  * bucket policy rejection both arrive as "the upload did not work", and the
- * right response to them is opposite: one deserves another go a second later,
- * the other will say exactly the same thing every time it is asked and retrying
- * it just makes the guest wait three times as long for the same bad news.
+ * right response is opposite: one deserves another go, the other will say the
+ * same thing every time and retrying only makes the guest wait longer for it.
  */
 export class UploadError extends Error {
   constructor(
@@ -124,12 +111,10 @@ const RETRY_DELAYS_MS = [600, 1800];
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Three attempts, then give up.
- *
- * Venue wifi drops one request in twenty and recovers by itself. Without this a
- * guest loses a photo to a blip that lasted less than a second, and the only
- * repair available to them is to find the file again in a camera roll of four
- * thousand pictures - which nobody does.
+ * Three attempts, then give up. Venue wifi drops one request in twenty and
+ * recovers by itself; without this a guest loses a photo to a blip that lasted
+ * under a second, and the only repair is finding the file again in a camera
+ * roll of four thousand pictures.
  */
 export async function withRetry<T>(task: () => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt++) {
@@ -143,14 +128,7 @@ export async function withRetry<T>(task: () => Promise<T>): Promise<T> {
   }
 }
 
-/**
- * A POST to our own API, with the error body turned into something throwable.
- *
- * The confirm call used to be `await fetch(...)` with the result dropped on the
- * floor, so a 500 from the server was indistinguishable from success: the guest
- * read "Thank you, your photo is with the host" while nothing had been written
- * at all.
- */
+/** A POST to our own API, with the error body turned into something throwable. */
 export async function postJson<T>(url: string, body: unknown): Promise<T> {
   let response: Response;
   try {
@@ -188,14 +166,12 @@ export async function postJson<T>(url: string, body: unknown): Promise<T> {
 /* --- the upload itself ----------------------------------------------------- */
 
 /**
- * S3 answers a rejected POST with an XML body naming the reason - AccessDenied,
- * EntityTooLarge, AccessControlListNotSupported. The status code alone does
- * not: three different misconfigurations all surface as 403, and telling them
- * apart from the outside means guessing.
+ * S3 answers a rejected POST with an XML body naming the reason. The status
+ * code alone does not: three different misconfigurations all surface as 403.
  *
- * Parsed with a regex rather than DOMParser because the body may be truncated
- * or empty, and a parser that throws on the malformed case would lose the one
- * piece of information worth having.
+ * Regex rather than DOMParser because the body may be truncated or empty, and a
+ * parser that throws on that would lose the one piece of information worth
+ * having.
  */
 function s3Reason(responseText: string): string | null {
   const code = /<Code>([^<]+)<\/Code>/.exec(responseText)?.[1];
@@ -205,29 +181,24 @@ function s3Reason(responseText: string): string | null {
 }
 
 /**
- * Uploads straight to storage. Files never pass through the application server,
- * which is what keeps the app on a free hosting tier no matter how many photos
- * move through it.
+ * How long an upload may make no progress before it is abandoned.
  *
- * Every failure path here is one the guest cannot act on and the operator can,
- * so the reason goes to the console verbatim while the guest gets a sentence.
- * An upload that fails at the bucket used to report only "Upload rejected
- * (403)", which is indistinguishable between a bad IAM policy, a policy
- * condition the blob violates, and a bucket that does not exist.
- */
-/**
- * How long an upload may make no progress at all before it is abandoned.
- *
- * A flat `xhr.timeout` is the obvious thing here and it is wrong: a 200 MB clip
- * on hotel wifi legitimately takes twenty minutes, and any ceiling generous
- * enough for that is no protection against a connection that has silently died.
- * Progress is the signal that matters, not elapsed time. (The previous code
- * carried an `ontimeout` handler and never set `xhr.timeout`, so it was
- * unreachable and a hung upload hung forever.)
+ * A flat `xhr.timeout` is the obvious thing and it is wrong: a 200 MB clip on
+ * hotel wifi legitimately takes twenty minutes, and any ceiling generous enough
+ * for that is no protection against a connection that has silently died.
+ * Progress is the signal that matters, not elapsed time.
  */
 const STALL_MS = 60_000;
 const STALL_CHECK_MS = 5_000;
 
+/**
+ * Uploads straight to storage. Files never pass through the application server,
+ * which is what keeps the app on a free hosting tier however many photos move
+ * through it.
+ *
+ * Every failure here is one the guest cannot act on and the operator can, so
+ * the reason goes to the console verbatim while the guest gets a sentence.
+ */
 export function uploadToPresigned(
   presigned: PresignedUpload,
   body: Blob,
@@ -328,16 +299,9 @@ export function uploadToPresigned(
 /**
  * A gate that lets `size` tasks through at once.
  *
- * Two of these are what make the uploader a pipeline rather than two phases.
- * Compressing is work for the processor and uploading is work for the radio, so
- * a file that has finished being compressed should be climbing out over the
- * network while the next one is still being re-encoded. Holding a separate gate
- * for each stage gets that for free: every file runs its own chain start to
- * finish, and the gates cap how many are in each stage at any moment.
- *
- * Three, not ten. A phone on venue wifi with ten parallel POSTs finishes all of
- * them slower than it finishes three, and shows the guest ten stalled progress
- * bars while it does.
+ * One per stage is what makes the uploader a pipeline: every file runs its own
+ * chain start to finish, and the gates cap how many are in each stage. See
+ * useUploadQueue for why compressing and uploading get separate ones.
  */
 export function gate(size: number) {
   let active = 0;

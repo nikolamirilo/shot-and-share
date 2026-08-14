@@ -18,17 +18,12 @@ import type { EventRow } from "@/lib/db/types";
 /**
  * The edits, the count of them, and the one write that clears it.
  *
- * This panel used to write every change by itself, a beat after it was made.
- * Six groups behind tabs is a lot of page to be saving silently: a host had no
- * way to tell a colour they had settled on from one they were still trying,
- * and no way to back out of either. Nothing reaches the database now until the
- * button is pressed, and the number beside it says how much is waiting.
- *
- * What a button costs is that a closed tab would lose the work, so the pending
- * edits live in local storage under the event's own key and are read back on
- * the way in. A successful save is the only thing that clears them: until then
- * the draft is what the host sees, and the row is only the baseline it is
- * measured against.
+ * Nothing reaches the database until the button is pressed, so a host can tell
+ * a colour they have settled on from one they are still trying. The cost is
+ * that a closed tab would lose the work, so pending edits live in local storage
+ * under the event's key. Only a successful save clears them: until then the
+ * draft is what the host sees and the row is the baseline it is measured
+ * against.
  */
 export function useAppearanceDraft(event: EventRow) {
   const initial = fromEvent(event);

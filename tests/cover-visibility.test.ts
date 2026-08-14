@@ -23,14 +23,11 @@ const EVENT = {
   gallery_visible: true,
 };
 
-vi.mock("@/lib/events", async () => {
-  const actual =
-    await vi.importActual<typeof import("@/lib/events")>("@/lib/events");
-  return {
-    ...actual,
-    resolveGuestToken: vi.fn(async () => ({ event: EVENT, tokenId: "t" })),
-  };
-});
+// The database lookup is stubbed; the gate and the gallery-visibility rules
+// around it are the real ones.
+vi.mock("@/lib/guards/guest-token", () => ({
+  resolveGuestToken: vi.fn(async () => ({ event: EVENT, tokenId: "t" })),
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => store.client,

@@ -3,15 +3,8 @@ import { formatBytes } from "@/lib/format";
 import { KEEP_FOREVER, TIER_ORDER, TIERS, approxPhotos } from "@/lib/tiers";
 
 /**
- * Three plans plus one add-on. The middle plan sits in Gouda, which is the only
- * place the pricing section spends colour.
- *
- * We are slightly cheaper than the benchmark and dramatically more generous.
- * The discount is visible at checkout and the value gap makes a side-by-side
- * comparison one-sided. Competing on price alone would be the wrong move: this
- * is a line item next to a wedding that costs tens of thousands, and cheap
- * reads as a hobby project rather than something you trust with the only copy
- * of your photos.
+ * Three plans plus one add-on. The middle plan sits in Gouda, the only place
+ * the pricing section spends colour.
  */
 
 function featureList(tierId: (typeof TIER_ORDER)[number]): string[] {
@@ -106,9 +99,8 @@ export function PricingTable({
         })}
       </div>
 
-      {/* The add-on is the one thing here that is not a plan, and it used to
-          say so with a dashed edge. It says it now by sitting *in* the page
-          while the three plans float above it. */}
+      {/* The one thing here that is not a plan, and it says so by sitting *in*
+          the page while the three plans float above it. */}
       <div className="inset-shadow-well mt-4 rounded-[1.25rem] bg-ink/5 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
         <div>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

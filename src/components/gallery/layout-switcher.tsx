@@ -45,10 +45,3 @@ export function LayoutSwitcher({
   );
 }
 
-/*
- * There was a LayoutChooser here - a radio-button version of the host's picker,
- * unused since the appearance form grew its own, and carrying the sentence
- * "they can switch it for themselves afterwards", which is no longer true of
- * any page in the product. Dead copy that contradicts the product is worse than
- * no copy, so it is gone rather than corrected.
- */

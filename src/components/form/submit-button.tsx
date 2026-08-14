@@ -6,12 +6,9 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui";
 
 /**
- * The button at the bottom of a server-action form.
- *
- * `useFormStatus` reads the nearest parent `<form>`, so this has to be rendered
- * inside one rather than beside it - which is what makes it a component and not
- * a prop on the form. Five forms each had their own copy of this, identical
- * apart from the two labels.
+ * The button at the bottom of a server-action form. `useFormStatus` reads the
+ * nearest parent `<form>`, so this must render inside one - which is what makes
+ * it a component rather than a prop on the form.
  */
 export function SubmitButton({
   idle,

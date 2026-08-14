@@ -118,15 +118,10 @@ export function Slideshow({
       <div className="relative flex-1 overflow-hidden">
         {current ? (
           items.map((item, i) => {
-            /*
-             * Only the current slide and its neighbours are mounted. Every
-             * item used to be in the DOM at once, which was affordable when
-             * the gallery had 720px thumbnails and is not now that the stored
-             * object is the full photo: sixty of them is tens of megabytes on
-             * a venue's wifi, and fifty-eight are invisible. The neighbours
-             * stay so the crossfade has something to fade from, and so the
-             * next photo is decoded before its turn.
-             */
+            // Only the current slide and its neighbours: the stored object is
+            // the full photo, so sixty in the DOM is tens of megabytes on venue
+            // wifi and fifty-eight are invisible. The neighbours stay so the
+            // crossfade has something to fade from.
             const gap = Math.abs(i - index);
             if (gap > 1 && gap < items.length - 1) return null;
 
@@ -147,9 +142,8 @@ export function Slideshow({
                     height={item.height ?? 1200}
                     sizes="100vw"
                     priority={i === index}
-                    // A Rind ring used to frame this against the near-black
-                    // room. A cast shadow would not show on that background, so
-                    // the frame stays - as a soft halo rather than a hard edge.
+                    // A soft halo rather than a cast shadow, which would not
+                    // show against the near-black room.
                     className="h-auto max-h-full w-auto max-w-full rounded-2xl object-contain shadow-[0_0_36px_rgba(0,0,0,0.55)]"
                   />
                 )}

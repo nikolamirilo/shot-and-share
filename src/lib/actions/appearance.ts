@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireOwnedEvent } from "@/lib/actions/guards";
+import { mediaExists } from "@/lib/db/media-repo";
 import type { ActionState } from "@/lib/actions/types";
 import { getTier } from "@/lib/tiers";
 
@@ -66,12 +67,10 @@ export async function updateAppearance(
   // A cover photo has to belong to this event. Without this check a host could
   // point their cover at any media id they could guess.
   if (parsed.data.cover_media_id) {
-    const { data: owned } = await supabase
-      .from("media")
-      .select("id")
-      .eq("id", parsed.data.cover_media_id)
-      .eq("event_id", eventId)
-      .maybeSingle();
+    const owned = await mediaExists(supabase, {
+      id: parsed.data.cover_media_id,
+      eventId,
+    });
     if (!owned) return { error: "That photo is not part of this event." };
   }
 
