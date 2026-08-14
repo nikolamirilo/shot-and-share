@@ -43,8 +43,9 @@ export interface Theme {
  * a birthday is a lit cake, and both sit in a dark frame like a mistake. Light
  * pages also print, screenshot and paste into a group chat without surprises.
  *
- * The six are the palettes events are actually held in: the house claret for
- * anything at night, ivory and gold, dusty rose, sage, dusty blue, and paper. A
+ * The ten are the colours events are actually held in, in the order a host
+ * meets them: the house claret for anything at night, ivory and gold, dusty
+ * rose, terracotta, butter yellow, sage, dusty blue, navy, lilac, and white. A
  * host who wants something else has the custom picker - which is held to the
  * same rule, see buildCustomPalette.
  */
@@ -101,6 +102,40 @@ export const THEMES: Theme[] = [
     },
   },
   {
+    id: "terracotta",
+    name: "Terracotta",
+    hint: "Burnt orange and clay. Autumn weddings, long tables, anything outdoors.",
+    palette: {
+      bg: "#FCF1E9",
+      surface: "#FFFAF6",
+      accent: "#B4531F",
+      accentSoft: "#E3A171",
+      accentDeep: "#8A3D13",
+      ink: "#2A1A12",
+      onAccent: "#FFF6EF",
+      muted: "#8A5133",
+      deep: "#5C3A28",
+      hole: "#352117",
+    },
+  },
+  {
+    id: "butter",
+    name: "Butter",
+    hint: "Soft yellow and honey. Summer parties, brunches, anything in daylight.",
+    palette: {
+      bg: "#FFF8E3",
+      surface: "#FFFDF6",
+      accent: "#EFB93F",
+      accentSoft: "#F8DB99",
+      accentDeep: "#B98A22",
+      ink: "#2A2213",
+      onAccent: "#2A2213",
+      muted: "#7C6426",
+      deep: "#4E4021",
+      hole: "#322915",
+    },
+  },
+  {
     id: "sage",
     name: "Sage",
     hint: "Sage green and cream. Quiet, and good with greenery.",
@@ -135,9 +170,43 @@ export const THEMES: Theme[] = [
     },
   },
   {
+    id: "navy",
+    name: "Navy",
+    hint: "Navy and pale grey. Black tie, receptions, anything with a dress code.",
+    palette: {
+      bg: "#EEF1F7",
+      surface: "#FBFCFF",
+      accent: "#2F4A75",
+      accentSoft: "#8199BE",
+      accentDeep: "#1F3454",
+      ink: "#141A24",
+      onAccent: "#F3F6FC",
+      muted: "#495B78",
+      deep: "#2E3B4E",
+      hole: "#1A2029",
+    },
+  },
+  {
+    id: "lilac",
+    name: "Lilac",
+    hint: "Lavender and violet. Spring weddings, showers, milestone birthdays.",
+    palette: {
+      bg: "#F4F0FA",
+      surface: "#FCFAFF",
+      accent: "#7059A8",
+      accentSoft: "#BFB0DF",
+      accentDeep: "#544082",
+      ink: "#221B2E",
+      onAccent: "#F8F5FE",
+      muted: "#5E4E80",
+      deep: "#3F3553",
+      hole: "#2A2138",
+    },
+  },
+  {
     id: "ink",
-    name: "Ink",
-    hint: "Paper and charcoal. Lets the photographs do everything.",
+    name: "White",
+    hint: "White and charcoal. Lets the photographs do everything.",
     palette: {
       bg: "#F4F2EE",
       surface: "#FFFFFF",

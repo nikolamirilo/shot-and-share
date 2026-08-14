@@ -8,6 +8,13 @@ import { cx } from "@/lib/cx";
  * rather than the group.
  */
 export const OPTION_GRID = "grid gap-2.5 @min-[26rem]:grid-cols-2";
+/**
+ * Colours are two to a row at every width, unlike the option grids above.
+ * A swatch is three dots and a word - it does not need the room a two-line
+ * choice does, and eleven of them in one column is a list to scroll rather than
+ * a palette to compare.
+ */
+export const SWATCH_GRID = "grid grid-cols-2 gap-2.5";
 // Height is the whole selected state, nothing being outlined, so the two
 // shadows are deliberately far apart rather than one step.
 export const OPTION_CARD =
@@ -40,12 +47,14 @@ export function Swatch({
   name,
   title,
   colors,
+  className,
 }: {
   selected: boolean;
   onClick: () => void;
   name: string;
   title: string;
   colors: string[];
+  className?: string;
 }) {
   return (
     <button
@@ -53,7 +62,11 @@ export function Swatch({
       onClick={onClick}
       title={title}
       aria-pressed={selected}
-      className={cx(OPTION_CARD, selected ? OPTION_SELECTED : "bg-linen shadow-sm")}
+      className={cx(
+        OPTION_CARD,
+        selected ? OPTION_SELECTED : "bg-linen shadow-sm",
+        className,
+      )}
     >
       {/* Big enough to judge a colour by. At the old size a theme was three
           dots about as wide as the full stop ending this sentence, and the

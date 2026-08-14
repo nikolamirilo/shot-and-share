@@ -144,11 +144,13 @@ describe("the printable card", () => {
 
     // Claret ground under the branded card, white under the plain one. Claret
     // itself appears on both - it is the plain card's wordmark - so the tell is
-    // claret-deep, which nothing but the hairline texture uses.
+    // the softened chalk the branded card sets its quiet lines in, which only a
+    // card with a claret ground has any use for.
+    const soft = cardColours(HOUSE, true).eyebrow.toLowerCase();
     expect(branded).toContain(CLARET);
-    expect(branded).toContain(CLARET_DEEP);
+    expect(branded).toContain(soft);
     expect(plain).toContain(PAPER);
-    expect(plain).not.toContain(CLARET_DEEP);
+    expect(plain).not.toContain(soft);
   });
 
   it("follows the event's theme rather than the house one", async () => {
@@ -196,7 +198,6 @@ describe("the printable card", () => {
 
 const PAPER = "#ffffff";
 const CLARET = "#7a1230";
-const CLARET_DEEP = "#5c0b23";
 
 /**
  * Every colour the page fills with, back as hex. PDF carries them as three
