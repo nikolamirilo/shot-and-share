@@ -144,7 +144,7 @@ describe("the printable card", () => {
 
     // Claret ground under the branded card, white under the plain one. Claret
     // itself appears on both - it is the plain card's wordmark - so the tell is
-    // claret-deep, which nothing but the punched holes uses.
+    // claret-deep, which nothing but the hairline texture uses.
     expect(branded).toContain(CLARET);
     expect(branded).toContain(CLARET_DEEP);
     expect(plain).toContain(PAPER);
