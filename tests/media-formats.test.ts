@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  COMPRESSED_MAX_EDGE,
+  FULL_BYTES_PER_MP,
+  FULL_IMAGE_FORMAT,
   MIN_QUALITY,
-  PREFERRED_IMAGE_FORMATS,
+  THUMB_BYTES_PER_MP,
+  THUMB_IMAGE_FORMATS,
+  THUMB_MAX_EDGE,
+  THUMB_MIN_BYTES,
   UNIVERSAL_VIDEO_FORMAT,
   imageFormatFromMime,
   isUniversallyViewable,
@@ -53,9 +57,16 @@ describe("universal viewability", () => {
   });
 
   it("only ever stores formats that open everywhere", () => {
-    for (const format of PREFERRED_IMAGE_FORMATS) {
+    for (const format of THUMB_IMAGE_FORMATS) {
       expect(isUniversallyViewable(format)).toBe(true);
     }
+  });
+
+  it("keeps the downloadable copy in the format that opens anywhere", () => {
+    // This is the file a host hands to a print shop or opens in photo
+    // software. WebP is fine in browsers and still refused by plenty of both.
+    expect(FULL_IMAGE_FORMAT).toBe("jpeg");
+    expect(isUniversallyViewable(FULL_IMAGE_FORMAT)).toBe(true);
   });
 
   it("targets the video container that plays on anything", () => {
@@ -81,10 +92,33 @@ describe("size budgeting", () => {
     expect(MIN_QUALITY).toBeGreaterThanOrEqual(0.6);
   });
 
-  it("keeps the stored copy big enough to be the only copy", () => {
-    // It is what a lightbox loads, what a projector shows and what the host
-    // prints from, so it cannot be sized like a thumbnail.
-    expect(COMPRESSED_MAX_EDGE).toBeGreaterThanOrEqual(2048);
+  it("lets the caller lower the floor for a thumbnail", () => {
+    // The default floor is larger than a thumbnail's whole budget, so without
+    // a parameter every thumbnail would be encoded to a bigger target than
+    // asked for.
+    expect(sizeBudget(50, 50, THUMB_BYTES_PER_MP)).toBe(30_000);
+    expect(sizeBudget(50, 50, THUMB_BYTES_PER_MP, THUMB_MIN_BYTES)).toBe(6_000);
+  });
+
+  it("budgets a 640px thumbnail into a few tens of kilobytes", () => {
+    // What the grid loads fifty of at once. If this creeps up, the whole
+    // reason for storing a second object is gone.
+    const budget = sizeBudget(640, 480, THUMB_BYTES_PER_MP, THUMB_MIN_BYTES);
+    expect(budget).toBeLessThan(40_000);
+    expect(budget).toBeGreaterThan(10_000);
+  });
+
+  it("budgets a full-size photo close to the HEIC it replaces", () => {
+    // A 12MP iPhone photo is roughly 2MB as HEIC. Converting to JPEG normally
+    // inflates it; the budget is what cancels that out.
+    const budget = sizeBudget(4032, 3024, FULL_BYTES_PER_MP);
+    expect(budget).toBeGreaterThan(1_600_000);
+    expect(budget).toBeLessThan(2_300_000);
+  });
+
+  it("keeps every pixel of the full-size copy", () => {
+    // There is no maximum edge any more. The thumbnail is what gets shrunk.
+    expect(THUMB_MAX_EDGE).toBe(640);
   });
 });
 
