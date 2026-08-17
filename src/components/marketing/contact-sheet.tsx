@@ -63,9 +63,13 @@ export function ContactSheet({ qrHref }: { qrHref?: string }) {
   }, [motion]);
 
   return (
+    // The padding is the room the card hangs into. It is on the wrapper rather
+    // than on the section, so the card can sit below and outside the sheet
+    // without either covering a frame or reaching past the column: the sheet
+    // gives up the width, and nothing downstream has to know.
     <div
       ref={wrapRef}
-      className="relative w-full select-none"
+      className="relative w-full select-none pb-24 pr-6 sm:pb-28 sm:pr-9"
       style={{ perspective: "1400px" }}
     >
       <div
@@ -83,10 +87,18 @@ export function ContactSheet({ qrHref }: { qrHref?: string }) {
         >
           {/* The strip a real sheet carries along its top edge: whose night
               it was, and how much of it there is. It sits above the frames so
-              the bottom corner is free for the card to rest on. */}
-          <p className="mb-3 flex items-center justify-between gap-3 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
-            <span>Marta &amp; Iva</span>
-            <span>96 guests · 2,140 frames</span>
+              the bottom corner is free for the card to rest on.
+
+              Both halves are 11px mono at 0.14em, which is 35 characters and
+              about 300px of strip - wider than the sheet is on a phone, where
+              it wrapped and broke the couple's own names across two lines. The
+              guest count is the half that goes: the frame count is the number
+              that says what the product did. */}
+          <p className="mb-3 flex items-center justify-between gap-3 font-mono text-micro uppercase tracking-[0.14em] text-mist">
+            <span className="whitespace-nowrap">Marta &amp; Iva</span>
+            <span className="whitespace-nowrap">
+              <span className="hidden xs:inline">96 guests · </span>2,140 frames
+            </span>
           </p>
 
           {/* Every frame the same size, in the order they were taken. A contact
@@ -111,16 +123,23 @@ export function ContactSheet({ qrHref }: { qrHref?: string }) {
         {/* The QR code is the actual product, so a visitor sees the thing they
             will print before reading a word about it.
 
-            Held clear of the right edge until the hero splits into two columns:
-            six degrees of rotation and 60px of translateZ put the painted corner
-            about thirty pixels outside its layout box, which at `right-0` lands
-            past the viewport on every phone. */}
+            It rests on the bottom-right corner and hangs off it. Sitting inside
+            the sheet it covered the sixth frame almost whole, which is a card
+            deleting a photograph in the one picture whose whole argument is
+            that the photographs arrive: about two thirds of it is now below and
+            outside the sheet, over a corner rather than over a frame.
+
+            Six degrees of rotation and the translateZ push the painted corner
+            roughly thirty pixels past its layout box, which is what the
+            wrapper's padding is sized for. */}
         <div
-          className="absolute -bottom-10 right-4 w-[30%] max-w-[132px] rounded-2xl bg-paper p-2.5 shadow-lg sm:-bottom-12 sm:right-6 sm:w-[27%] sm:p-2.5"
+          className="absolute -bottom-20 -right-3 w-[32%] max-w-33 rounded-2xl bg-paper p-2.5 shadow-lg sm:-bottom-24 sm:-right-4 sm:w-[30%]"
           style={{ transform: "rotate(6deg) translateZ(40px)" }}
         >
           <QrGlyph />
-          <p className="mt-2 text-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
+          {/* Tight leading, because on a phone the card is too narrow for this
+              on one line and 1.65 makes the wrap look like an accident. */}
+          <p className="mt-2 text-center font-mono text-micro uppercase leading-[1.3] tracking-widest text-mist">
             {qrHref ?? "scan to share"}
           </p>
         </div>

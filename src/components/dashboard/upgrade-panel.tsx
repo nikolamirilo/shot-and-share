@@ -69,41 +69,45 @@ export function UpgradePanel({
 
   return (
     <Panel title="More room, or more time">
-      <p className="mt-2 text-[0.9375rem] text-ash">
+      <p className="mt-2 max-w-prose text-[0.9375rem] text-ash">
         One payment per event. Upgrading during the night works fine - the limit
         lifts the moment the payment clears.
       </p>
 
+      {/* One offer, one row. On a phone the price sits against the title and
+          the button takes the width underneath it, which is what the two
+          columns and the spanning third cell say. A third column from `sm`
+          picks the button up onto the same line - the offer is then read left
+          to right and ends where you buy it, and nothing here is a 50rem-wide
+          "Buy for €29". */}
       <ul className="mt-5 space-y-3">
         {options.map((option) => (
           <li
             key={option.product}
-            className="note p-4"
+            className="note grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-x-6"
           >
-            <div className="flex items-start justify-between gap-3 sm:gap-4">
-              <div className="min-w-0">
-                <div className="flex items-start gap-2.5">
-                  <Hole size={10} className="mt-2" />
-                  <h3 className="text-[1.0625rem] font-bold leading-snug">
-                    {option.title}
-                  </h3>
-                </div>
-                <p className="mt-1.5 text-[0.9375rem] leading-snug text-ash">
-                  {option.body}
-                </p>
+            <div className="min-w-0">
+              <div className="flex items-start gap-2.5">
+                <Hole size={10} className="mt-2" />
+                <h3 className="text-[1.0625rem] font-bold leading-snug">
+                  {option.title}
+                </h3>
               </div>
-              <p
-                className="shrink-0 font-display text-[1.5rem] font-extrabold tracking-[-0.04em]"
-                style={{ fontStretch: "86%" }}
-              >
-                €{option.price}
+              <p className="mt-1.5 max-w-prose text-[0.9375rem] leading-snug text-ash">
+                {option.body}
               </p>
             </div>
+            <p
+              className="shrink-0 font-display text-[1.5rem] font-extrabold tracking-[-0.04em]"
+              style={{ fontStretch: "86%" }}
+            >
+              €{option.price}
+            </p>
             <Button
               onClick={() => buy(option.product)}
               disabled={pending}
               size="sm"
-              className="mt-3 w-full"
+              className="col-span-2 w-full sm:col-span-1 sm:w-auto"
             >
               {pending ? "Opening checkout…" : `Buy for €${option.price}`}
             </Button>

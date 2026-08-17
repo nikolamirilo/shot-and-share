@@ -5,6 +5,7 @@ import { useState } from "react";
 import { EmailForm } from "@/components/auth/email-form";
 import { Alert, Button, Card } from "@/components/ui";
 import { createClient } from "@/lib/supabase/browser";
+import { FcGoogle } from "react-icons/fc";
 
 export function LoginPanel({
   next,
@@ -86,6 +87,7 @@ export function LoginPanel({
         size="lg"
         className="w-full"
       >
+        <FcGoogle size={26} className="mr-1" />
         {pending ? "Opening Google…" : "Continue with Google"}
       </Button>
 

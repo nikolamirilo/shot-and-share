@@ -270,7 +270,10 @@ export function AppearanceForm({
                         {set.name}
                       </span>
                       <span
-                        className="mt-1.5 block text-[0.8125rem] leading-snug text-ash"
+                        className={cx(
+                          "mt-1.5 block text-[0.8125rem] leading-snug",
+                          settings.font === set.id ? "text-chalk/75" : "text-ash",
+                        )}
                         style={{ fontFamily: set.body }}
                       >
                         {set.hint}

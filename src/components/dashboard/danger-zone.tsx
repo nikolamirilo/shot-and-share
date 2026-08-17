@@ -55,7 +55,7 @@ export function DangerZone({ event }: { event: EventRow }) {
         </div>
       )}
 
-      <p className="mt-5 text-[0.9375rem] leading-relaxed text-ash">
+      <p className="mt-5 max-w-prose text-[0.9375rem] leading-relaxed text-ash">
         Deleting removes the event, every photo in it, and the share link
         immediately. There is no grace period on this one, because you asked for
         it directly. Type the event name to confirm.
@@ -69,7 +69,7 @@ export function DangerZone({ event }: { event: EventRow }) {
         onChange={(e) => setConfirmText(e.target.value)}
         placeholder={event.name}
         aria-label={`Type "${event.name}" to confirm deletion`}
-        className={cx(inputClass, "mt-4 font-mono")}
+        className={cx(inputClass, "mt-4 font-mono sm:max-w-sm")}
       />
 
       <Button

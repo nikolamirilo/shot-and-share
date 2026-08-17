@@ -4,22 +4,32 @@ import { ButtonLink, Eyebrow } from "@/components/ui";
 export function Hero({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="bg-linen">
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 sm:gap-12 sm:px-5 sm:py-14 lg:grid-cols-[1.05fr_1fr] lg:gap-8 lg:py-20">
+      {/* 1.2fr against 1fr, not 1.05. The headline is the widest thing on the
+          page and it sets the split - a column that cannot hold `your guests
+          take.` on one line is the wrong column, whatever it does for the
+          picture. */}
+      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-10 sm:gap-12 sm:px-5 sm:py-14 lg:grid-cols-[1.2fr_1fr] lg:gap-8 lg:py-20">
         <div className="rise">
           <Eyebrow>Photo collection for events</Eyebrow>
 
           {/* Four words and a full stop, made of the thing the product collects.
               The sentence under it is the whole mechanism, so somebody who
               reads nothing else still knows what this is. */}
-          {/* A phone does not get the two lines this is written as, and at
-              `leading-[0.9]` the third arrives inside the descenders of the
-              second. 1.02 is the smallest leading that cannot collide - the ink
-              height of the face, ascender to descender.
+          {/* Two lines, and the sizes are the ones at which the second one
+              fits. `your guests take.` is seventeen characters of Archivo at
+              82% width - about 0.4em each - so it needs roughly 6.8em of
+              column. At 100px in the old 1.05fr column it needed 680px and had
+              510: `text-wrap: balance` broke it again and left `take.` alone on
+              a third line, a full line of the largest type on the page spent on
+              one word. Every step below clears its own column with room to
+              spare, so the rag is a decision rather than an accident.
 
-              The padding is the other failure: where a background is clipped to
-              the text, Safari paints only inside the element's box and the last
-              line's descenders hang below it. */}
-          <h1 className="photo-type mt-4 pb-[0.06em] text-[3rem] leading-[1.02] xs:text-[3.5rem] sm:text-[5rem] lg:text-[6.25rem]">
+              1.02 leading is the smallest that cannot collide - the ink height
+              of the face, ascender to descender. The padding is the other
+              failure: where a background is clipped to the text, Safari paints
+              only inside the element's box and the last line's descenders hang
+              below it. */}
+          <h1 className="photo-type mt-4 pb-[0.06em] text-h1 leading-[1.02] xs:text-[3.25rem] sm:text-display xl:text-[5rem]">
             Every photo
             <br />
             your guests take.

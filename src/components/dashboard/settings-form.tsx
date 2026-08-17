@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { updateEventSettings } from "@/lib/actions/events";
 import type { ActionState } from "@/lib/actions/types";
 import { SubmitButton } from "@/components/form/submit-button";
-import { Alert, Field, inputClass } from "@/components/ui";
+import { Alert, Field, cx, inputClass } from "@/components/ui";
 import type { EventRow } from "@/lib/db/types";
 
 export function SettingsForm({ event }: { event: EventRow }) {
@@ -16,31 +16,36 @@ export function SettingsForm({ event }: { event: EventRow }) {
     <form action={formAction} className="card space-y-5 p-5 sm:p-6">
       <h2 className="text-h3">Settings</h2>
 
-      <Field label="Event name" htmlFor="name">
-        <input
-          id="name"
-          name="name"
-          defaultValue={event.name}
-          required
-          maxLength={120}
-          className={inputClass}
-        />
-      </Field>
+      {/* A name and a date are both short answers. Stacked they make two
+          40rem-wide fields on a laptop, which reads as a much longer form than
+          this is - so from `sm` they share a line. Below that, unchanged. */}
+      <div className="space-y-5 sm:grid sm:grid-cols-2 sm:gap-5 sm:space-y-0">
+        <Field label="Event name" htmlFor="name">
+          <input
+            id="name"
+            name="name"
+            defaultValue={event.name}
+            required
+            maxLength={120}
+            className={inputClass}
+          />
+        </Field>
 
-      <Field
-        label="Date"
-        htmlFor="event_date"
-        hint="Moving the date moves the expiry with it."
-      >
-        <input
-          id="event_date"
-          name="event_date"
-          type="date"
-          defaultValue={event.event_date}
-          required
-          className={inputClass}
-        />
-      </Field>
+        <Field
+          label="Date"
+          htmlFor="event_date"
+          hint="Moving the date moves the expiry with it."
+        >
+          <input
+            id="event_date"
+            name="event_date"
+            type="date"
+            defaultValue={event.event_date}
+            required
+            className={inputClass}
+          />
+        </Field>
+      </div>
 
       <Field
         label="Message for guests"
@@ -54,11 +59,11 @@ export function SettingsForm({ event }: { event: EventRow }) {
           maxLength={400}
           defaultValue={event.welcome_message ?? ""}
           placeholder="Thank you for coming. Please add anything you took tonight."
-          className={inputClass}
+          className={cx(inputClass, "sm:max-w-2xl")}
         />
       </Field>
 
-      <label className="flex items-start gap-3">
+      <label className="flex items-start gap-3 sm:max-w-2xl">
         <input
           type="checkbox"
           name="gallery_visible"

@@ -113,7 +113,7 @@ export function SharePanel({
 
       {revoked ? (
         <>
-          <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
+          <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-ash">
             There is no active link for this event. Guests who scan an old code
             see a page telling them the link has closed.
           </p>
@@ -126,8 +126,14 @@ export function SharePanel({
           {/* The two halves are measured off each other. Side by side the code
               takes the buttons' height: three `sm` buttons at 2.5rem with
               0.5rem gaps is 8.5rem, so change the size or count and this
-              number changes with it. */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-[8.5rem_1fr] sm:items-start sm:gap-5">
+              number changes with it.
+
+              A laptop takes a third column rather than a wider second one. The
+              code and its buttons are already the size they need to be, and a
+              `1fr` column with a 16rem button in the middle of it is half a
+              panel of nothing - so the room left over goes to the instruction,
+              which is the only thing here that wants a line length. */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-start sm:gap-5 lg:grid-cols-[8.5rem_16rem_minmax(0,1fr)] lg:gap-6">
             <div className="mx-auto aspect-square w-10/12 max-w-[250px] rounded-xl bg-paper p-2 shadow-md sm:mx-0 sm:size-[8.5rem] sm:max-w-none">
               {/* Generated per request, so on a slow connection this box is
                   briefly empty - and an empty white square here reads as "there
@@ -162,9 +168,16 @@ export function SharePanel({
             </div>
 
             {/* In the order a host does them: send the link, print our card,
-                or take the code into something of their own. */}
-            <div className="flex flex-col items-center gap-2">
-              <Button onClick={copy} size="sm" className="w-10/12 max-w-[250px]">
+                or take the code into something of their own. Centred under the
+                code on a phone; from `sm` they line up with its left edge and
+                stop growing, because a 40rem-wide "Copy link" is not a better
+                button than a 16rem one. */}
+            <div className="flex flex-col items-center gap-2 sm:max-w-64 sm:items-stretch">
+              <Button
+                onClick={copy}
+                size="sm"
+                className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
+              >
                 {copied ? "Copied" : "Copy link"}
               </Button>
               <Button
@@ -172,7 +185,7 @@ export function SharePanel({
                 variant="secondary"
                 size="sm"
                 disabled={busy !== null}
-                className="w-10/12 max-w-[250px]"
+                className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
               >
                 {busy === "card"
                   ? "Building…"
@@ -185,54 +198,64 @@ export function SharePanel({
                 variant="secondary"
                 size="sm"
                 disabled={busy !== null}
-                className="w-10/12 max-w-[250px]"
+                className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
               >
                 {busy === "png" ? "Saving…" : "Download the code (PNG)"}
               </Button>
             </div>
-          </div>
 
-          <p className="mt-5 text-[0.8125rem] leading-relaxed text-mist">
-            Print the card and put one on every table. Guests point a camera at
-            it - that is the whole instruction, and it is worth resisting the urge
-            to add more.
-          </p>
+            {/* Under both of them on a phone, beside both on a laptop - which
+                is why it is in the grid rather than after it. The extra top
+                margin below `sm` makes up the difference between the grid's own
+                gap and the margin this had when it stood outside. */}
+            <p className="mt-1 text-[0.8125rem] leading-relaxed text-mist sm:mt-0 sm:col-span-2 lg:col-span-1 lg:border-l lg:border-edge lg:pl-6">
+              Print the card and put one on every table. Guests point a camera
+              at it - that is the whole instruction, and it is worth resisting
+              the urge to add more.
+            </p>
+          </div>
 
           {/* About the link rather than the party, which is why they sit here:
               a guest who scans and does not upload is the clearest signal the
-              card is not working, and it only reads next to the card. */}
-          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-edge pt-5">
-            <Stat label="Link opened" value={pluralise(opens, "time")} />
-            <Stat
-              label="Opened then uploaded"
-              value={conversion === null ? "-" : `${conversion}%`}
-              hint={
-                conversion === null
-                  ? "No opens yet"
-                  : conversion < 40
-                    ? "Low. Check the code is easy to reach."
-                    : "Healthy"
-              }
-            />
-          </dl>
+              card is not working, and it only reads next to the card.
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Button
-              onClick={rotate}
-              variant="secondary"
-              size="sm"
-              disabled={pending}
-            >
-              Reissue link
-            </Button>
-            <Button
-              onClick={revoke}
-              variant="ghost"
-              size="sm"
-              disabled={pending}
-            >
-              Turn the link off
-            </Button>
+              The two numbers and the two things you can do to the link are one
+              footer on a laptop rather than two stacked rows - the numbers keep
+              their own measure and the controls take the end of the line. */}
+          <div className="mt-6 border-t border-edge pt-5 lg:flex lg:items-end lg:justify-between lg:gap-8">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-md lg:flex-1">
+              <Stat label="Link opened" value={pluralise(opens, "time")} />
+              <Stat
+                label="Opened then uploaded"
+                value={conversion === null ? "-" : `${conversion}%`}
+                hint={
+                  conversion === null
+                    ? "No opens yet"
+                    : conversion < 40
+                      ? "Low. Check the code is easy to reach."
+                      : "Healthy"
+                }
+              />
+            </dl>
+
+            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 lg:mt-0 lg:shrink-0">
+              <Button
+                onClick={rotate}
+                variant="secondary"
+                size="sm"
+                disabled={pending}
+              >
+                Reissue link
+              </Button>
+              <Button
+                onClick={revoke}
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+              >
+                Turn the link off
+              </Button>
+            </div>
           </div>
         </>
       )}

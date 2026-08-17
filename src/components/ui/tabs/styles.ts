@@ -110,7 +110,14 @@ export function tabButtonClass(
       "flex-1 rounded-full px-2 text-label font-semibold leading-tight transition-colors",
     segmented &&
       (selected ? "bg-ink text-linen shadow-md" : "text-ash hover:bg-ink/6"),
-    rail && "lg:w-full lg:px-4 lg:text-left",
+    /*
+     * `lg:justify-start` rather than `lg:text-left` alone: the bar shape leaves
+     * `justify-end` on the button, which is right for a column of icon over
+     * label and wrong the moment the same button is a full-width row in the
+     * rail - it pins every name to the far edge of its pill, which is what a
+     * rail with no icons looks broken as.
+     */
+    rail && "lg:w-full lg:justify-start lg:px-4 lg:text-left",
   );
 }
 

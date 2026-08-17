@@ -217,20 +217,21 @@
   }
 
   /* --- Photographs inside the type ------------------------------------------
-     The headline is not coloured, it is *filled*: six frames from an event laid
-     out behind the words and clipped to the letterforms, so the first thing a
-     visitor sees is the product's own material rather than a brand colour.
+     The headline is not coloured, it is *filled*: a frame from an event behind
+     the words and clipped to the letterforms, so the first thing a visitor sees
+     is the product's own material rather than a brand colour.
 
-     Three things make it read as photography rather than as a texture:
-       - the frames are tiled two rows by three, so a two-line headline crosses
-         six different pictures instead of one stretched image;
-       - a claret-to-ink wash is multiplied over them, which pulls every frame
-         into the same key and is what keeps the words legible at any crop. It
-         is heavier than it needs to be for a mid-tone frame, because the wash
-         has to hold the *lightest* pixel in six photographs above 4.5:1 on the
-         page - a headline that is only legible over the dark frames is not a
-         headline;
-       - saturation and contrast are lifted slightly, the way a print is graded.
+     One frame, not six. Six tiled two by three put a different picture inside
+     every word and dropped the seams mid-letter: the sentence went patchy, the
+     pale tiles fell under 4.5:1, and the whole thing read as a rendering fault
+     rather than as a photograph. `/hero/fill.svg` is one wide picture graded
+     for this job - nothing in it lighter than #8A4A52 - so the words hold one
+     continuous image and one contrast.
+
+     Over it, a claret-to-ink wash multiplied down the block. With the frame
+     already capped it no longer has to do the legibility work on its own, so it
+     is lighter than it used to be and the picture survives it. Saturation and
+     contrast are lifted a touch, the way a print is graded.
 
      `color` is set first and only given up inside the @supports, because a
      browser without background-clip would otherwise paint the headline in
@@ -245,34 +246,22 @@
       color: transparent;
       background-image:
         linear-gradient(
-          175deg,
-          rgba(122, 18, 48, 0.82),
-          rgba(24, 18, 20, 0.7)
+          172deg,
+          rgba(122, 18, 48, 0.58),
+          rgba(24, 18, 20, 0.66)
         ),
-        url("/hero/3.svg"), url("/hero/1.svg"), url("/hero/5.svg"),
-        url("/hero/6.svg"), url("/hero/4.svg"), url("/hero/2.svg");
+        url("/hero/fill.svg");
       background-size:
         100% 100%,
-        34% 51%,
-        34% 51%,
-        34% 51%,
-        34% 51%,
-        34% 51%,
-        34% 51%;
+        cover;
       background-position:
         0 0,
-        0% 0%,
-        50% 0%,
-        100% 0%,
-        0% 100%,
-        50% 100%,
-        100% 100%;
+        50% 50%;
       background-repeat: no-repeat;
-      background-blend-mode: multiply, normal, normal, normal, normal, normal,
-        normal;
+      background-blend-mode: multiply, normal;
       -webkit-background-clip: text;
       background-clip: text;
-      filter: saturate(1.18) contrast(1.1);
+      filter: saturate(1.12) contrast(1.04);
     }
   }
 
