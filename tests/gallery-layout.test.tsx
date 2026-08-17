@@ -22,10 +22,10 @@ function photos(count: number): MediaView[] {
     width: 1200,
     height: 900,
     createdAt: new Date(Date.UTC(2026, 0, 1, 0, count - i)).toISOString(),
-    uploaderName: null,
     uploaderFingerprint: null,
     sizeBytes: 1000,
     previewUrl: `/preview/${i + 1}.jpg`,
+    fullUrl: `/full/${i + 1}.jpg`,
     posterUrl: null,
     durationSeconds: null,
     processing: false,
@@ -58,9 +58,11 @@ function frames(html: string): number {
  * is the one `src` attribute per tile that says what is on the page.
  */
 function order(html: string): number[] {
-  return [...html.matchAll(/src="[^"]*%2Fpreview%2F(\d+)\.jpg/g)].map((m) =>
-    Number(m[1]),
-  );
+  // Either copy: the dense layouts render the thumbnail and Stack renders the
+  // full one, and this helper is only ever asking which photograph it is.
+  return [
+    ...html.matchAll(/src="[^"]*%2F(?:preview|full)%2F(\d+)\.jpg/g),
+  ].map((m) => Number(m[1]));
 }
 
 /** Which photo each column holds, in the order the column holds them. */
@@ -181,6 +183,30 @@ describe("the other layouts", () => {
     for (const layout of ["grid", "holes", "stack"] as const) {
       expect(order(markup(layout, photos(5))), layout).toEqual([1, 2, 3, 4, 5]);
     }
+  });
+});
+
+/**
+ * Which stored copy a layout loads.
+ *
+ * A wall of fifty photographs is the reason the thumbnail exists, so the dense
+ * layouts must not reach for the full-size copy. Stack is the exception on
+ * purpose: it shows one photograph per screen at up to 672px, which is wider
+ * than the thumbnail, so a 640px file there would be visibly soft.
+ */
+describe("thumbnail against full copy", () => {
+  it("loads the thumbnail in every layout that shows many at once", () => {
+    for (const layout of ["grid", "holes", "masonry"] as const) {
+      const html = markup(layout, photos(3));
+      expect(html, layout).toContain("%2Fpreview%2F1.jpg");
+      expect(html, layout).not.toContain("%2Ffull%2F");
+    }
+  });
+
+  it("loads the full copy in Stack, which shows one at a time", () => {
+    const html = markup("stack", photos(3));
+    expect(html).toContain("%2Ffull%2F1.jpg");
+    expect(html).not.toContain("%2Fpreview%2F");
   });
 });
 

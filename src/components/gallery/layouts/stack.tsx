@@ -34,6 +34,13 @@ export function StackLayout({
              * thumbnail and letterbox the photo in dark bars.
              */
             natural
+            /*
+             * One photograph per screen at up to 672px, which is wider than
+             * the stored thumbnail. The optimiser resizes the full copy and
+             * caches it at the edge, so this is one transform per photo rather
+             * than a couple of megabytes on the wire.
+             */
+            src={item.fullUrl ?? item.previewUrl}
             // mx-auto max-w-2xl, so 672px once there is room for it.
             sizes="(max-width: 704px) 100vw, 672px"
           />

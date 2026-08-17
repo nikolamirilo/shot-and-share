@@ -37,12 +37,18 @@ export async function toMediaView(
   // is not Safari, so the grid renders its placeholder until the JPEG lands.
   const viewable =
     !row.media_format || isUniversallyViewable(row.media_format as ImageFormat);
-  const previewUrl =
-    row.kind === "video"
-      ? posterUrl
-      : viewable
-        ? await cdn(row.media_key)
-        : null;
+
+  const fullUrl =
+    row.kind === "video" ? null : viewable ? await cdn(row.media_key) : null;
+
+  /*
+   * The thumbnail is what a wall of fifty photographs actually loads, at 1-2%
+   * of the full copy's bytes. It falls back rather than failing: rows written
+   * before migration 0015 have none, and neither does a photo for the seconds
+   * between its confirm and its thumbnail landing.
+   */
+  const thumbUrl = await cdn(row.thumb_key);
+  const previewUrl = row.kind === "video" ? posterUrl : (thumbUrl ?? fullUrl);
 
   const view: MediaView = {
     id: row.id,
@@ -50,10 +56,10 @@ export async function toMediaView(
     width: row.width,
     height: row.height,
     createdAt: row.created_at,
-    uploaderName: row.uploader_name,
     uploaderFingerprint: row.uploader_fingerprint,
     sizeBytes: row.size_bytes,
     previewUrl,
+    fullUrl,
     posterUrl,
     durationSeconds: row.duration_seconds,
     processing: row.processing === "pending",

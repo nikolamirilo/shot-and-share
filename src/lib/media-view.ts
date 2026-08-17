@@ -12,14 +12,19 @@ export interface MediaView {
   width: number | null;
   height: number | null;
   createdAt: string;
-  uploaderName: string | null;
   uploaderFingerprint: string | null;
   sizeBytes: number;
   /**
-   * What a grid shows: for a photo the stored image itself - there is no
-   * separate thumbnail - and for a video its poster frame.
+   * What a grid shows: for a photo its stored thumbnail, falling back to the
+   * full copy when there is not one, and for a video its poster frame.
    */
   previewUrl: string | null;
+  /**
+   * The full-size copy, for the one or two places that show a photograph
+   * large: the lightbox and the Stack layout. Still through the optimiser, not
+   * raw - the stored file is a couple of megabytes.
+   */
+  fullUrl: string | null;
   /** Poster frame for a video, so a grid never shows a grey box. */
   posterUrl: string | null;
   durationSeconds: number | null;

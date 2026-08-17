@@ -22,6 +22,11 @@ export interface TileProps {
    * a phone downloading four times what it needs.
    */
   sizes: string;
+  /**
+   * Overrides which stored copy this tile loads. Stack shows one photograph
+   * per screen, so it wants the full one rather than a 640px thumbnail.
+   */
+  src?: string | null;
   /** Let the image set the tile's height instead of cropping into a box. */
   natural?: boolean;
   /** Its turn has not come yet: an empty well, nothing asked of the network. */
@@ -45,10 +50,14 @@ export function Tile({
   style,
   className,
   sizes,
+  src,
   natural = false,
   hold = false,
   onSettled,
 }: TileProps) {
+  /** The thumbnail, unless a layout asked for a different copy. */
+  const source = src ?? item.previewUrl;
+
   /*
    * A photograph can finish loading before React has hydrated the page - the
    * host's wall is server-rendered, and a cached thumbnail arrives long before
@@ -68,11 +77,7 @@ export function Tile({
       type="button"
       onClick={() => onActivate(item)}
       aria-pressed={selectable ? selected : undefined}
-      aria-label={
-        selectable
-          ? `Select this ${item.kind}`
-          : `Open this ${item.kind}${item.uploaderName ? ` from ${item.uploaderName}` : ""}`
-      }
+      aria-label={selectable ? `Select this ${item.kind}` : `Open this ${item.kind}`}
       style={style}
       className={cx(
         shape,
@@ -84,7 +89,7 @@ export function Tile({
         className,
       )}
     >
-      {item.previewUrl && hold ? (
+      {source && hold ? (
         // Waiting its turn: the right shape, so the wall does not jump when the
         // photograph lands, and pulsing like any other frame with one on the
         // way. A still, empty well is what a *failed* photograph looks like.
@@ -101,16 +106,16 @@ export function Tile({
               : undefined
           }
         />
-      ) : item.previewUrl ? (
+      ) : source ? (
         /*
-         * The stored object is full size - there is no thumbnail in the bucket
-         * any more - so the tile asks the optimiser for something tile-sized.
-         * `sizes` decides that, and is passed in per layout rather than guessed
-         * here: a 96px hole and a full-width stack row want very different
-         * files out of the same photo.
+         * Usually the stored 640px thumbnail, which is already close to what a
+         * tile needs. It still goes through the optimiser, because `sizes`
+         * varies enormously per layout - a 96px hole and a full-width stack row
+         * want very different files - and a cache miss now costs 25 KB out of
+         * the bucket rather than two megabytes.
          */
         <Image
-          src={item.previewUrl}
+          src={source}
           alt=""
           {...(natural
             ? {

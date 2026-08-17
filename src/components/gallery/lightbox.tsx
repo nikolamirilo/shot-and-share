@@ -96,9 +96,10 @@ export function Lightbox({
     if (target) onStep(target);
   }
 
-  // A video waits for the signed URL; a photo already has one and waits only
-  // for its bytes, which is handled below.
-  const viewUrl = item.kind === "video" ? full?.url : item.previewUrl;
+  // A video waits for the signed URL; a photo shows the full copy through the
+  // optimiser, falling back to whatever the grid had if there is not one.
+  const viewUrl =
+    item.kind === "video" ? full?.url : (item.fullUrl ?? item.previewUrl);
 
   return (
     <div
@@ -141,8 +142,8 @@ export function Lightbox({
             )
           ) : viewUrl ? (
             /*
-             * Through the optimiser rather than a bare <img>: `previewUrl` is
-             * the stored original, several megabytes to fill 672 pixels.
+             * Through the optimiser rather than a bare <img>: `fullUrl` is the
+             * full-size copy, a couple of megabytes to fill 672 pixels.
              *
              * The shimmer sits *under* the image and the image is never faded
              * in, so if `onLoad` never fires the photo still shows.
