@@ -146,7 +146,9 @@ async function handleVideo(job, dir) {
 
   // This replaces the clip in the bucket rather than sitting beside it: the
   // app drops the object the guest uploaded once the row points here.
-  const outputs = { mediaBytes: 0, posterBytes: 0 };
+  //
+  // No thumbnail: a clip's poster frame is already its small copy.
+  const outputs = { mediaBytes: 0, thumbBytes: 0, posterBytes: 0 };
   outputs.mediaBytes = await upload(
     job.outputs.media,
     outputPath,
@@ -180,26 +182,52 @@ async function handleImage(job, dir) {
   await download(job.input, input);
 
   const info = await probe(input);
-  const outputPath = path.join(dir, "out.jpg");
+  const outputs = { mediaBytes: 0, thumbBytes: 0, posterBytes: 0 };
 
   // ffmpeg decodes HEIC where it was built with libheif, which is the case for
   // every current build. One codec toolchain instead of two.
-  await run(FFMPEG, [
-    "-y",
-    "-i", input,
-    "-vf", "scale='min(2560,iw)':-2:flags=lanczos",
-    "-q:v", "3",
-    outputPath,
-  ]);
+  //
+  // No scale filter: the photo keeps every pixel it was taken with. It used to
+  // be capped at 2560, which is fine on a phone and throws away about 60% of a
+  // 12MP photo for anyone who wants to print it or crop into it - and the
+  // guest cannot re-upload the good copy later, because by then it is gone.
+  const fullPath = path.join(dir, "full.jpg");
+  await run(FFMPEG, ["-y", "-i", input, "-q:v", "3", fullPath]);
 
-  // The compressed JPEG replaces the file the guest uploaded. There is no
-  // second rendition to write: the app deletes the HEIC once the row moves.
-  const outputs = { mediaBytes: 0, posterBytes: 0 };
+  // The JPEG replaces the file the guest uploaded; the app deletes the HEIC
+  // once the row moves.
   outputs.mediaBytes = await upload(
     job.outputs.media,
-    outputPath,
+    fullPath,
     job.outputs.media.contentType,
   );
+
+  // The small copy for the grid. Written second on purpose: if this fails the
+  // photo is already stored and viewable, and the grid falls back to the full
+  // copy through the optimiser.
+  if (job.outputs.thumb) {
+    try {
+      const thumbPath = path.join(dir, "thumb.webp");
+      await run(FFMPEG, [
+        "-y",
+        "-i", input,
+        "-vf", "scale='min(640,iw)':-2:flags=lanczos",
+        "-c:v", "libwebp",
+        "-quality", "78",
+        thumbPath,
+      ]);
+      outputs.thumbBytes = await upload(
+        job.outputs.thumb,
+        thumbPath,
+        job.outputs.thumb.contentType,
+      );
+    } catch (error) {
+      console.error(
+        `[worker] thumbnail failed for ${job.mediaId}:`,
+        error.message,
+      );
+    }
+  }
 
   return { ...outputs, ...info };
 }

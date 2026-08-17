@@ -9,7 +9,7 @@ import {
   UNIVERSAL_VIDEO_FORMAT,
   VIDEO_MIME,
 } from "@/lib/media/formats";
-import { mediaKey, posterKey, scopeOfMedia } from "@/lib/media";
+import { mediaKey, posterKey, scopeOfMedia, thumbKey } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { adjust } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -102,6 +102,22 @@ export async function GET(request: Request) {
                 expiresInSeconds: CLAIM_MINUTES * 60,
               }),
             },
+            /*
+             * Only for a photo. A clip's poster frame is already its small
+             * copy, and it is signed just below when the browser could not cut
+             * one.
+             */
+            thumb: isVideo
+              ? null
+              : {
+                  contentType: IMAGE_MIME.webp,
+                  upload: await storage.presignUpload({
+                    key: thumbKey(scope, row.id, IMAGE_EXT.webp),
+                    contentType: IMAGE_MIME.webp,
+                    maxBytes: 1024 * 1024,
+                    expiresInSeconds: CLAIM_MINUTES * 60,
+                  }),
+                },
             poster:
               isVideo && !row.poster_key
                 ? {
@@ -130,6 +146,7 @@ const completeSchema = z.object({
   ok: z.boolean(),
   /** Bytes actually written, so the quota reflects reality. */
   mediaBytes: z.number().int().nonnegative().optional(),
+  thumbBytes: z.number().int().nonnegative().optional(),
   posterBytes: z.number().int().nonnegative().optional(),
   width: z.number().int().positive().max(60_000).nullable().optional(),
   height: z.number().int().positive().max(60_000).nullable().optional(),
@@ -169,15 +186,20 @@ export async function POST(request: Request) {
     );
 
     const mediaBytes = body.mediaBytes ?? 0;
+    const thumbBytes = body.thumbBytes ?? 0;
     const posterBytes = body.posterBytes ?? 0;
     const replaced = mediaBytes > 0;
+    const wroteThumb = !isVideo && thumbBytes > 0;
     const wrotePoster = isVideo && !media.poster_key && posterBytes > 0;
+    const newThumbKey = thumbKey(scope, media.id, IMAGE_EXT.webp);
 
     // The converted file replaces the upload, so the folder never holds both.
     // The delta is usually negative. Reserving cannot happen before the size
-    // is known.
+    // is known. A rewritten thumbnail replaces its predecessor at the same key,
+    // so only the difference is charged.
     const added =
       (replaced ? mediaBytes - Number(media.size_bytes) : 0) +
+      (wroteThumb ? thumbBytes - Number(media.thumb_size_bytes) : 0) +
       (wrotePoster ? posterBytes : 0);
 
     if (!(await adjust(media.event_id, added))) {
@@ -185,6 +207,9 @@ export async function POST(request: Request) {
       // uploaded, drop what the worker wrote, and leave the row usable rather
       // than silently pushing the host over their quota.
       if (newKey !== media.media_key) await storage.remove([newKey]);
+      if (wroteThumb && newThumbKey !== media.thumb_key) {
+        await storage.remove([newThumbKey]);
+      }
       await admin
         .from("media")
         .update({ processing: "failed" })
@@ -207,6 +232,9 @@ export async function POST(request: Request) {
             ? VIDEO_MIME[UNIVERSAL_VIDEO_FORMAT]
             : IMAGE_MIME.jpeg
           : media.mime_type,
+        thumb_key: wroteThumb ? newThumbKey : media.thumb_key,
+        thumb_size_bytes: wroteThumb ? thumbBytes : media.thumb_size_bytes,
+        thumb_format: wroteThumb ? "webp" : media.thumb_format,
         poster_key: wrotePoster
           ? posterKey(scope, media.id, IMAGE_EXT.jpeg)
           : media.poster_key,
