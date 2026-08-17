@@ -183,7 +183,21 @@ export interface Compression {
   needsServer: boolean;
 }
 
-export async function compressImage(file: File): Promise<Compression> {
+/**
+ * Roughly how far through the encoding we are, 0 to 1.
+ *
+ * Coarse on purpose: there are three real checkpoints - decoded, full copy
+ * encoded, thumbnail encoded - and no way to see inside `toBlob`. Three steps
+ * is still enough that the bar moves while a phone is working, which is the
+ * whole point. Without it the bar sits at zero through the slowest part of the
+ * wait and reads as stuck.
+ */
+export type OnEncodeProgress = (fraction: number) => void;
+
+export async function compressImage(
+  file: File,
+  onProgress?: OnEncodeProgress,
+): Promise<Compression> {
   const empty: Compression = {
     full: null,
     thumb: null,
@@ -200,6 +214,9 @@ export async function compressImage(file: File): Promise<Compression> {
     // converts it, so the guest never sees a failure.
     return empty;
   }
+
+  // Decoding a 48MP photo is a real part of the wait, so it is worth saying so.
+  onProgress?.(0.25);
 
   try {
     const sourceWidth = bitmap.width;
@@ -227,6 +244,9 @@ export async function compressImage(file: File): Promise<Compression> {
     // An encode that came back empty is not a photo, so the source has to go up
     // and the worker has to finish the job.
     if (!full) return { ...empty, sourceWidth, sourceHeight };
+
+    // The expensive one is behind us: the thumbnail is a fraction of the pixels.
+    onProgress?.(0.85);
 
     const thumbFormat = await bestEncodableFormat(THUMB_IMAGE_FORMATS);
     const thumb = thumbSurface
@@ -295,7 +315,10 @@ export interface VideoProbe {
  * frame in a few hundred milliseconds, so the gallery has something to show
  * immediately instead of a grey box.
  */
-export async function probeVideo(file: File): Promise<VideoProbe> {
+export async function probeVideo(
+  file: File,
+  onProgress?: OnEncodeProgress,
+): Promise<VideoProbe> {
   const empty: VideoProbe = {
     poster: null,
     width: null,
@@ -324,6 +347,8 @@ export async function probeVideo(file: File): Promise<VideoProbe> {
 
     if (!metadata || !video.videoWidth) return empty;
 
+    onProgress?.(0.4);
+
     const width = video.videoWidth;
     const height = video.videoHeight;
     const durationSeconds = Number.isFinite(video.duration)
@@ -347,6 +372,8 @@ export async function probeVideo(file: File): Promise<VideoProbe> {
     if (!seeked) {
       return { ...empty, width, height, durationSeconds };
     }
+
+    onProgress?.(0.75);
 
     const format = await bestEncodableFormat(THUMB_IMAGE_FORMATS);
     const longest = Math.max(width, height);

@@ -57,9 +57,18 @@ export function estimate(files: File[]): number {
  * decode it, shrink it, re-encode it into a format that opens anywhere, and -
  * for a video - pull a poster frame out of it.
  */
-export async function prepare(file: File): Promise<Prepared> {
+export async function prepare(
+  file: File,
+  /**
+   * Roughly how far through the encoding this file is, 0 to 1. Coarse - there
+   * is no way to see inside `toBlob` - but enough that the bar moves while a
+   * phone is working rather than sitting at zero looking stuck.
+   */
+  onProgress?: (fraction: number) => void,
+): Promise<Prepared> {
   if (file.type.startsWith("video/")) {
-    const probe = await probeVideo(file);
+    const probe = await probeVideo(file, onProgress);
+    onProgress?.(1);
     return {
       compressed: null,
       // A clip's poster frame is already its small copy.
@@ -86,7 +95,8 @@ export async function prepare(file: File): Promise<Prepared> {
     };
   }
 
-  const result = await compressImage(file);
+  const result = await compressImage(file, onProgress);
+  onProgress?.(1);
   return {
     compressed: result.full?.blob ?? null,
     thumb: result.thumb?.blob ?? null,

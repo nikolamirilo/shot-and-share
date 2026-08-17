@@ -21,8 +21,7 @@ import {
  *
  * Every extra field here is a guest who does not upload, and a guest who opens
  * the link without uploading is the clearest signal that the product is broken.
- * So: no sign-in, no explanation, one big button, and the name field is
- * optional and remembered.
+ * So: no sign-in, no explanation, no fields at all - one big button.
  *
  * The queue itself is in useUploadQueue. This is what it looks like.
  */
@@ -100,21 +99,19 @@ export function Uploader({
         captureLabel={wording.capture}
         chooseLabel={wording.choose}
         hint={`${wording.hint} ${formatBytes(remainingBytes)} of room left.`}
-        name={queue.name}
-        onNameChange={queue.setName}
         onPick={() => inputRef.current?.click()}
         onCapture={() => cameraRef.current?.click()}
         onDropFiles={handleFiles}
       >
-        {/* The whole batch as one line. While the batch is being re-encoded
-            there is no number to show - the bar drifts instead of sitting at
-            zero looking stuck - and it starts filling once bytes are moving. */}
+        {/* The whole batch as one line, and one bar that only ever fills.
+            It used to drift while the batch was being encoded and switch to a
+            real measurement the moment the first file started uploading - at
+            which point the measurement was still near zero, so a bar that
+            looked 40% full became an empty one. Encoding now carries its own
+            share of the same bar instead. */}
         {queue.busy && queue.batch.length > 0 && (
           <div className="mt-6">
-            <ProgressBar
-              percent={queue.overall}
-              indeterminate={queue.phase === "preparing"}
-            />
+            <ProgressBar percent={queue.overall} />
             {/* Spoken by the live region below instead, so the count does not
                 get read out again on every file that lands. */}
             <div
@@ -123,7 +120,10 @@ export function Uploader({
             >
               <span className="min-w-0 flex-1 truncate">{working}…</span>
               <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
-                {queue.phase === "preparing"
+                {/* The count is what a guest checks against; the percentage is
+                    on the bar itself. Before anything has landed there is no
+                    honest count to give, so it says what is in the queue. */}
+                {queue.sent === 0 && queue.phase === "preparing"
                   ? countLabel(queue.batch.length)
                   : `${queue.sent} of ${queue.batch.length}`}
               </span>

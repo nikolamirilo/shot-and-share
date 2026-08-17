@@ -64,6 +64,29 @@ export async function sendUpload<T extends { confirmed: boolean }>(
       ? prepared.compressed
       : file;
 
+  /*
+   * Progress across every object this file stores, not just the first.
+   *
+   * A photo posts two objects and a clip posts two, and measuring only the
+   * media one left the bar frozen through the rest. Weighted by bytes so the
+   * thumbnail moves it about as much as it costs - which is barely.
+   *
+   * `peak` is what stops it going backwards. withRetry restarts a failed
+   * upload from zero, and a bar that falls back to a third tells a guest their
+   * photograph is being lost when it is being resent.
+   */
+  const thumbBytes = upload.thumb && prepared.thumb ? prepared.thumb.size : 0;
+  const posterBytes = upload.poster && prepared.poster ? prepared.poster.size : 0;
+  const totalBytes = Math.max(1, body.size + thumbBytes + posterBytes);
+
+  let sentBytes = 0;
+  let peak = 0;
+  const report = (loadedNow: number) => {
+    if (!onProgress) return;
+    peak = Math.max(peak, Math.min(1, (sentBytes + loadedNow) / totalBytes));
+    onProgress(peak);
+  };
+
   const confirm = (fields: Record<string, unknown>) =>
     postJson<T>(endpoints.confirm, {
       ...identity,
@@ -77,7 +100,13 @@ export async function sendUpload<T extends { confirmed: boolean }>(
   let thumbUploaded = false;
 
   try {
-    await withRetry(() => uploadToPresigned(upload.media, body, onProgress));
+    await withRetry(() =>
+      uploadToPresigned(upload.media, body, (fraction) =>
+        report(fraction * body.size),
+      ),
+    );
+    sentBytes += body.size;
+    report(0);
 
     /*
      * Neither of the small copies may cost the photograph. A thumbnail that
@@ -86,23 +115,33 @@ export async function sendUpload<T extends { confirmed: boolean }>(
      *
      * Both are logged rather than swallowed: one failing at every event is a
      * bucket problem, and a silent catch is how it stays invisible for a month.
+     * Either way their bytes are counted as sent afterwards - the bar tracks
+     * the wait, and a failed small copy is a wait that is over.
      */
     if (upload.thumb && prepared.thumb) {
       try {
-        await uploadToPresigned(upload.thumb, prepared.thumb);
+        await uploadToPresigned(upload.thumb, prepared.thumb, (fraction) =>
+          report(fraction * thumbBytes),
+        );
         thumbUploaded = true;
       } catch (e) {
         console.error("[upload] thumbnail failed, keeping the photo", e);
       }
+      sentBytes += thumbBytes;
+      report(0);
     }
 
     if (upload.poster && prepared.poster) {
       try {
-        await uploadToPresigned(upload.poster, prepared.poster);
+        await uploadToPresigned(upload.poster, prepared.poster, (fraction) =>
+          report(fraction * posterBytes),
+        );
         posterUploaded = true;
       } catch (e) {
         console.error("[upload] poster failed, keeping the clip", e);
       }
+      sentBytes += posterBytes;
+      report(0);
     }
   } catch (e) {
     /*
