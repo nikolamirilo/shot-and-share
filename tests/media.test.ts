@@ -13,6 +13,7 @@ import {
   publicImageType,
   scopeOfEvent,
   scopeOfMedia,
+  thumbKey,
 } from "@/lib/media";
 import { formatBytes, describeRetention, pluralise } from "@/lib/format";
 
@@ -142,12 +143,8 @@ describe("key layout", () => {
     }
   });
 
-  it("keeps one object per upload, directly in the event folder", () => {
-    // No originals/ or thumbs/ subfolder, because there is no original and no
-    // thumbnail - the compressed photo is the photo.
-    expect(mediaKey(scope, media, "jpg")).toBe(
-      `${owner}/${event}/${media}.jpg`,
-    );
+  it("keeps the archive where it has always been", () => {
+    // Photos gained folders in migration 0015; the archive did not move.
     expect(archiveKey(scope)).toBe(`${owner}/${event}/archive/${event}.zip`);
   });
 
@@ -157,13 +154,20 @@ describe("key layout", () => {
     );
   });
 
-  it("gives an event folder one level of files and no rendition folders", () => {
+  it("keeps an event folder shallow: one level of folders, never more", () => {
     // The regression this guards: the layout used to nest originals/, display/
     // and thumbs/ under a `u/` root, so an event was four folders deep and held
-    // three copies of every photo. A host opening their own folder in the
-    // console should see one file per upload.
-    for (const key of [mediaKey(scope, media, "webp"), posterKey(scope, media)]) {
-      expect(key.slice(eventPrefix(scope).length)).not.toContain("/");
+    // three copies of every photo. Two copies live in named folders now, but a
+    // host opening their own folder should still see the whole event at a
+    // glance rather than digging.
+    for (const key of [
+      mediaKey(scope, media, "jpg"),
+      thumbKey(scope, media),
+      posterKey(scope, media),
+      archiveKey(scope),
+    ]) {
+      const withinEvent = key.slice(eventPrefix(scope).length);
+      expect(withinEvent.split("/").length).toBeLessThanOrEqual(2);
     }
   });
 
@@ -185,9 +189,44 @@ describe("key layout", () => {
     expect(publicImageType(posterKey(scope, media))).toBe("image/webp");
   });
 
+  it("puts the two copies of a photo in their own folders", () => {
+    expect(mediaKey(scope, media, "jpg")).toBe(
+      `${owner}/${event}/full/${media}.jpg`,
+    );
+    expect(thumbKey(scope, media)).toBe(
+      `${owner}/${event}/thumb/${media}.webp`,
+    );
+    expect(thumbKey(scope, media, "jpg")).toBe(
+      `${owner}/${event}/thumb/${media}.jpg`,
+    );
+  });
+
+  it("serves both copies without a token", () => {
+    expect(publicImageType(thumbKey(scope, media))).toBe("image/webp");
+    expect(publicImageType(mediaKey(scope, media, "jpg"))).toBe("image/jpeg");
+  });
+
+  it("still serves the flat keys written before the folders existed", () => {
+    // Old rows are not backfilled, so their keys have three segments.
+    expect(publicImageType(`${owner}/${event}/${media}.webp`)).toBe(
+      "image/webp",
+    );
+    expect(publicImageType(posterKey(scope, media))).toBe("image/webp");
+  });
+
+  it("allows only the two folders it knows, not any folder", () => {
+    // The rule is a named allowlist, not "one more segment is fine". Anything
+    // else under an event stays unreachable.
+    expect(publicImageType(`${owner}/${event}/secret/${media}.jpg`)).toBeNull();
+    expect(
+      publicImageType(`${owner}/${event}/full/nested/${media}.jpg`),
+    ).toBeNull();
+  });
+
   it("refuses the archive, however the URL is spelled", () => {
-    // Four segments, not three. Getting this wrong means a stranger can pull a
-    // 30 GB ZIP through the app process by guessing two uuids.
+    // `archive` is not one of the two allowed folders. Getting this wrong means
+    // a stranger can pull a 30 GB ZIP through the app process by guessing two
+    // uuids.
     expect(publicImageType(archiveKey(scope))).toBeNull();
     expect(publicImageType(`${owner}/${event}/archive/${event}.zip`)).toBeNull();
     expect(publicImageType(`${owner}/${event}/archive/x.jpg`)).toBeNull();

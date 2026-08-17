@@ -123,25 +123,34 @@ describe("size budgeting", () => {
 });
 
 describe("object bookkeeping", () => {
+  const photo = {
+    media_key: "o/e/full/m.jpg",
+    thumb_key: "o/e/thumb/m.webp",
+    size_bytes: 1_950_000,
+    thumb_size_bytes: 25_000,
+  };
+
   const video = {
-    media_key: "o/e/m.mp4",
+    media_key: "o/e/full/m.mp4",
     poster_key: "o/e/m-poster.webp",
     size_bytes: 4_000_000,
     poster_size_bytes: 40_000,
   };
 
   it("enumerates every object a row owns", () => {
-    // Missing one here means paying to store the poster frames of videos that
-    // were deleted months ago.
-    expect(mediaKeys(video)).toEqual(["o/e/m.mp4", "o/e/m-poster.webp"]);
+    // Missing one here means paying to store the thumbnails and poster frames
+    // of photos that were deleted months ago.
+    expect(mediaKeys(photo)).toEqual(["o/e/full/m.jpg", "o/e/thumb/m.webp"]);
+    expect(mediaKeys(video)).toEqual(["o/e/full/m.mp4", "o/e/m-poster.webp"]);
   });
 
-  it("is a single object for a photo", () => {
+  it("copes with a row written before thumbnails existed", () => {
     expect(mediaKeys({ media_key: "o/e/m.webp" })).toEqual(["o/e/m.webp"]);
+    expect(mediaBytes({ size_bytes: 100 })).toBe(100);
   });
 
-  it("charges the event for the poster as well as the video", () => {
+  it("charges the event for every object, not just the photo", () => {
+    expect(mediaBytes(photo)).toBe(1_975_000);
     expect(mediaBytes(video)).toBe(4_040_000);
-    expect(mediaBytes({ size_bytes: 100 })).toBe(100);
   });
 });
