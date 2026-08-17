@@ -10,7 +10,10 @@ import { formatBytes } from "@/lib/format";
 import {
   ACCEPT_ATTRIBUTE_ALL,
   ACCEPT_ATTRIBUTE_PHOTO,
-  MAX_FILES_PER_PICK,
+  PREPARING,
+  UPLOADING,
+  countLabel,
+  uploadWording,
 } from "@/lib/media";
 
 /**
@@ -57,17 +60,11 @@ export function Uploader({
   }
 
   // One line, in the guest's terms. "Compressing" and "presigning" are our
-  // words for our problems.
-  const one = queue.batch.length === 1;
-  const working =
-    queue.phase === "preparing"
-      ? one
-        ? "Optimising your photo"
-        : "Optimising your photos"
-      : one
-        ? "Uploading your photo"
-        : "Uploading your photos";
+  // words for our problems - and neither is the noun, because one tap can put
+  // four photos and a clip in the same queue.
+  const working = queue.phase === "preparing" ? PREPARING : UPLOADING;
 
+  const wording = uploadWording(allowVideo);
   const accept = allowVideo ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO;
 
   return (
@@ -99,25 +96,17 @@ export function Uploader({
       <UploadPanel
         variant={variant}
         busy={queue.busy}
-        label={
-          queue.busy
-            ? queue.phase === "preparing"
-              ? "Optimising…"
-              : "Uploading…"
-            : "Add your photos"
-        }
-        hint={`${
-          allowVideo
-            ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
-            : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
-        } ${formatBytes(remainingBytes)} of room left.`}
+        label={queue.busy ? `${working}…` : wording.action}
+        captureLabel={wording.capture}
+        chooseLabel={wording.choose}
+        hint={`${wording.hint} ${formatBytes(remainingBytes)} of room left.`}
         name={queue.name}
         onNameChange={queue.setName}
         onPick={() => inputRef.current?.click()}
         onCapture={() => cameraRef.current?.click()}
         onDropFiles={handleFiles}
       >
-        {/* The whole batch as one line. While the photos are being re-encoded
+        {/* The whole batch as one line. While the batch is being re-encoded
             there is no number to show - the bar drifts instead of sitting at
             zero looking stuck - and it starts filling once bytes are moving. */}
         {queue.busy && queue.batch.length > 0 && (
@@ -127,7 +116,7 @@ export function Uploader({
               indeterminate={queue.phase === "preparing"}
             />
             {/* Spoken by the live region below instead, so the count does not
-                get read out again on every photo that lands. */}
+                get read out again on every file that lands. */}
             <div
               aria-hidden
               className="mt-3 flex items-center gap-3 text-[0.9375rem]"
@@ -135,7 +124,7 @@ export function Uploader({
               <span className="min-w-0 flex-1 truncate">{working}…</span>
               <span className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-mist">
                 {queue.phase === "preparing"
-                  ? `${queue.batch.length} ${queue.batch.length === 1 ? "photo" : "photos"}`
+                  ? countLabel(queue.batch.length)
                   : `${queue.sent} of ${queue.batch.length}`}
               </span>
             </div>
@@ -191,7 +180,7 @@ export function Uploader({
           <p className="mt-5 rounded-xl bg-blush shadow-sm p-4 text-center">
             <strong>Thank you.</strong>{" "}
             {queue.completed === 1
-              ? "Your photo is with the host."
+              ? "It is with the host."
               : `All ${queue.completed} are with the host.`}{" "}
             Add more any time tonight.
             {queue.saved.from > queue.saved.to && queue.saved.to > 0 && (

@@ -1,0 +1,55 @@
+import { MAX_FILES_PER_PICK } from "@/lib/media/accept";
+
+/**
+ * What the upload section calls the things it is asking for.
+ *
+ * A guest on a plan that includes video was asked for "photos" in six places,
+ * and then told their clip was "1 photo" while it uploaded. The noun has to
+ * follow what the plan actually accepts, so it is decided once here instead of
+ * being written inline at each label - the host's preview renders the same
+ * panel, and its copy had already drifted from the guest page's.
+ */
+export interface UploadWording {
+  /** The primary button, when nothing is happening. */
+  action: string;
+  /** The camera half of the split variant. */
+  capture: string;
+  /** The library half of the split variant. */
+  choose: string;
+  /** What may be sent, and how many at once. */
+  hint: string;
+}
+
+export function uploadWording(allowVideo: boolean): UploadWording {
+  return allowVideo
+    ? {
+        action: "Add your photos and video",
+        // Not "Take a photo": the same button starts a recording, because the
+        // accept list lets the camera offer both.
+        capture: "Open camera",
+        choose: "Choose files",
+        hint: `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`,
+      }
+    : {
+        action: "Add your photos",
+        capture: "Take a photo",
+        choose: "Choose photos",
+        hint: `Photos, up to ${MAX_FILES_PER_PICK} at a time.`,
+      };
+}
+
+/**
+ * Progress, deliberately without a noun.
+ *
+ * Mid-batch there is no honest one to use: a guest can pick four photos and a
+ * clip in a single tap, which makes "Optimising your photos" simply wrong. The
+ * question that line answers is "is this still going", and that can be said
+ * without naming what is in the queue.
+ */
+export const PREPARING = "Processing";
+export const UPLOADING = "Uploading";
+
+/** A count that does not commit to what was counted. */
+export function countLabel(count: number): string {
+  return `${count} ${count === 1 ? "item" : "items"}`;
+}
