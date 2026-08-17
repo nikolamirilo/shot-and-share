@@ -92,8 +92,13 @@ export async function GET(request: Request) {
                 key: outKey,
                 contentType: outMime,
                 // Generous: the worker's output size is not known in advance,
-                // and the quota is reconciled when it reports back.
-                maxBytes: Math.max(Number(row.size_bytes) * 2, 32 * 1024 * 1024),
+                // and the quota is reconciled when it reports back. Three times
+                // rather than two because video keeps its original dimensions
+                // now - an iPhone clip is HEVC, H.264 at the same size needs
+                // more bytes for the same picture, and a ceiling the output
+                // does not fit under fails the job and leaves the guest holding
+                // a file that Chrome cannot play.
+                maxBytes: Math.max(Number(row.size_bytes) * 3, 32 * 1024 * 1024),
                 expiresInSeconds: CLAIM_MINUTES * 60,
               }),
             },

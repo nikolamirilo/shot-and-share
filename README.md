@@ -207,9 +207,11 @@ watching a spinner at a party. What the browser *can* usefully do is pull a
 poster frame in a few hundred milliseconds, so the gallery shows the video
 instead of a grey box while the rest happens elsewhere.
 
-The clip itself goes to `workers/transcode`: ffmpeg to H.264/AAC MP4, max 1080p,
-`+faststart` so playback begins before the download finishes. That typically
-halves a phone clip, because phones encode for speed rather than size.
+The clip itself goes to `workers/transcode`: ffmpeg to H.264/AAC MP4 at the
+resolution it was filmed at, `+faststart` so playback begins before the download
+finishes. The container and codec change so it plays everywhere; the dimensions
+do not, because a 4K clip downscaled to 1080p cannot be got back and the
+original is deleted once the converted copy lands.
 
 The worker **holds no AWS credentials**. It asks the app for jobs and receives
 presigned URLs for the input and each permitted output. A process running ffmpeg

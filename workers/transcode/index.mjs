@@ -36,8 +36,6 @@ const BATCH = Number(process.env.BATCH ?? 3);
 const FFMPEG = process.env.FFMPEG_PATH ?? "ffmpeg";
 const FFPROBE = process.env.FFPROBE_PATH ?? "ffprobe";
 
-/** Long edge of the transcoded video. 1080p is plenty for a phone clip. */
-const VIDEO_MAX_EDGE = 1920;
 /**
  * Constant Rate Factor. 23 is ffmpeg's default and visually transparent for
  * this material; 26 would halve the size again and start showing on a
@@ -122,12 +120,18 @@ async function handleVideo(job, dir) {
   await run(FFMPEG, [
     "-y",
     "-i", input,
-    // Never upscale, and keep dimensions even - H.264 requires it.
-    "-vf", `scale='min(${VIDEO_MAX_EDGE},iw)':-2:flags=lanczos`,
+    // The clip keeps the dimensions it was filmed at. It used to be capped at
+    // 1080p, which is fine on a phone and visibly soft on the projector these
+    // get played through - and the guest cannot re-upload the good copy later,
+    // because by then the original is gone. The only change made here is
+    // rounding to an even width and height, which H.264 requires.
+    "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
     "-c:v", "libx264",
     // Baseline-ish profile: old Android and smart TVs refuse High 10.
     "-profile:v", "high",
-    "-level", "4.0",
+    // No fixed -level. It was pinned to 4.0, which tops out just above 1080p:
+    // now that a 4K clip stays 4K, the level has to follow the footage, and
+    // x264 works out the right one from the dimensions and frame rate.
     "-pix_fmt", "yuv420p",
     "-preset", "medium",
     "-crf", String(VIDEO_CRF),

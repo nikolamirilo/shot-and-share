@@ -40,8 +40,33 @@ const PHOTO_EXT = [
 
 const VIDEO_EXT = [".mp4", ".mov", ".m4v", ".webm"];
 
-export const ACCEPT_ATTRIBUTE_PHOTO = [...PHOTO_MIME, ...PHOTO_EXT].join(",");
+/**
+ * The wildcards come first, and they are the half that actually works on a
+ * phone.
+ *
+ * A mobile picker reads an exact list as "only these", and matches it against
+ * the type the operating system reports for each item in the camera roll -
+ * which for video is frequently not one of ours, and for HEIC is frequently
+ * nothing at all. The symptom is a guest on a plan that includes video opening
+ * the picker at a party and finding every clip greyed out.
+ *
+ * `image/*` and `video/*` are the form phones handle reliably. The exact types
+ * and the extensions stay behind them for desktop file managers, which match on
+ * whichever half they happen to support.
+ *
+ * This widens what can be *picked*, not what can be *stored*: the presign route
+ * is still the allowlist, and something exotic gets a clear refusal instead of
+ * a file that cannot be selected at all.
+ */
+export const ACCEPT_ATTRIBUTE_PHOTO = [
+  "image/*",
+  ...PHOTO_MIME,
+  ...PHOTO_EXT,
+].join(",");
+
 export const ACCEPT_ATTRIBUTE_ALL = [
+  "image/*",
+  "video/*",
   ...ACCEPTED_MIME,
   ...PHOTO_EXT,
   ...VIDEO_EXT,
