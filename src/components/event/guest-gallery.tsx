@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Lightbox } from "@/components/gallery/lightbox";
 import { PhotoGallery } from "@/components/gallery/photo-gallery";
 import { Button, Hole } from "@/components/ui";
-import { getFingerprint } from "@/lib/client/upload";
 import type { MediaView } from "@/lib/media-view";
 import {
   type GalleryLayout,
@@ -59,7 +58,6 @@ export function GuestGallery({
    * wall, and holding the object would keep a deleted photo on screen.
    */
   const [openId, setOpenId] = useState<string | null>(null);
-  const [fingerprint, setFingerprint] = useState("");
   /**
    * A refresh that did not land. The wall keeps what it has - a guest
    * mid-scroll must not have it emptied - but says so rather than going quiet.
@@ -67,8 +65,6 @@ export function GuestGallery({
   const [staleSince, setStaleSince] = useState(false);
   /** Refreshes this component asks for itself, on top of the ones it is told about. */
   const [tick, setTick] = useState(0);
-
-  useEffect(() => setFingerprint(getFingerprint()), []);
 
   /*
    * Readable from inside `load` without making `load` change identity on every
@@ -146,22 +142,6 @@ export function GuestGallery({
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
-
-  async function removeOwn(item: MediaView) {
-    if (!confirm("Remove this photo?")) return;
-    const res = await fetch("/api/guest/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, fingerprint, mediaId: item.id }),
-    });
-    const body = await res.json();
-    if (!res.ok) {
-      setError(body?.error?.message ?? "Could not remove it.");
-      return;
-    }
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    setOpenId(null);
-  }
 
   const openIndex = openId ? items.findIndex((i) => i.id === openId) : -1;
   const open = openIndex === -1 ? null : items[openIndex];
@@ -254,14 +234,12 @@ export function GuestGallery({
         <Lightbox
           token={token}
           item={open}
-          mine={open.uploaderFingerprint === fingerprint}
           prevId={step.prev}
           nextId={step.next}
           position={openIndex + 1}
           total={items.length}
           onStep={setOpenId}
           onClose={() => setOpenId(null)}
-          onRemove={() => removeOwn(open)}
         />
       )}
     </section>

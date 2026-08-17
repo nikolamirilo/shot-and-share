@@ -183,3 +183,37 @@ describe("the other layouts", () => {
     }
   });
 });
+
+/**
+ * Telling a clip apart from a photograph, before opening it.
+ *
+ * The wall used to say so with the word "video" on a pill in one corner, which
+ * is our label rather than the one every camera roll on earth already uses -
+ * and on a busy frame it disappeared into the picture. A triangle in a circle,
+ * in the middle, is the thing people already know.
+ */
+describe("marking a video on the wall", () => {
+  function clip(): MediaView {
+    return { ...photos(1)[0], kind: "video", durationSeconds: 12 };
+  }
+
+  /** The play triangle's path data, which only the video overlay draws. */
+  const PLAY = "M8 5v14l11-7z";
+
+  it("puts a play button on a video in every layout", () => {
+    for (const layout of ["grid", "masonry", "holes", "stack"] as const) {
+      expect(markup(layout, [clip()]), layout).toContain(PLAY);
+    }
+  });
+
+  it("leaves photographs alone", () => {
+    expect(markup("grid", photos(3))).not.toContain(PLAY);
+  });
+
+  it("no longer labels it in words", () => {
+    const html = markup("grid", [clip()]);
+    // The aria-label still says "video" - that is the accessible name, not a
+    // badge drawn over the picture.
+    expect(html).not.toContain(">video<");
+  });
+});
