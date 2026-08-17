@@ -25,6 +25,12 @@ export interface ConfirmRequest {
   claim: (media: ReservedMedia) => boolean;
   mediaUploaded: boolean;
   posterUploaded: boolean;
+  /**
+   * A thumbnail that failed is not a failed upload. The grid falls back to the
+   * full copy, which is what an older row does anyway - but the bytes reserved
+   * for it have to go back.
+   */
+  thumbUploaded: boolean;
   width?: number | null;
   height?: number | null;
   /** Why the browser gave up, for the log. Only the guest route sends one. */
@@ -83,7 +89,9 @@ export async function confirmReservation(
   }
 
   const totalBytes =
-    Number(reservation.size_bytes) + Number(reservation.poster_size_bytes);
+    Number(reservation.size_bytes) +
+    Number(reservation.thumb_size_bytes) +
+    Number(reservation.poster_size_bytes);
 
   // The stored object is the photo. Without it there is nothing to keep, so
   // the whole promise goes back, poster and all.
@@ -106,15 +114,19 @@ export async function confirmReservation(
   }
 
   const posterOk = request.posterUploaded && Boolean(reservation.poster_key);
+  const thumbOk = request.thumbUploaded && Boolean(reservation.thumb_key);
 
   const row: MediaInsert = {
     id: reservation.id,
     event_id: reservation.event_id,
     media_key: reservation.media_key,
+    thumb_key: thumbOk ? reservation.thumb_key : null,
     poster_key: posterOk ? reservation.poster_key : null,
     size_bytes: reservation.size_bytes,
+    thumb_size_bytes: thumbOk ? reservation.thumb_size_bytes : 0,
     poster_size_bytes: posterOk ? reservation.poster_size_bytes : 0,
     media_format: media.media_format,
+    thumb_format: thumbOk ? media.thumb_format : null,
     duration_seconds: media.duration_seconds,
     processing: media.processing,
     mime_type: media.mime_type,
@@ -122,7 +134,6 @@ export async function confirmReservation(
     width: request.width ?? media.width,
     height: request.height ?? media.height,
     uploader_fingerprint: media.uploader_fingerprint,
-    uploader_name: media.uploader_name,
     source: request.source,
     status: "ready",
   };
@@ -147,9 +158,12 @@ export async function confirmReservation(
   // Only now that the photo is a row does the promise get torn up.
   await discard(request.log, reservation.id);
 
-  // A poster that never arrived was still charged for at presign time.
+  // Anything that never arrived was still charged for at presign time.
   if (!posterOk) {
     await release(eventId, Number(reservation.poster_size_bytes));
+  }
+  if (!thumbOk) {
+    await release(eventId, Number(reservation.thumb_size_bytes));
   }
 
   return { confirmed: true };

@@ -16,6 +16,7 @@ const bodySchema = z.object({
   height: z.number().int().positive().max(60_000).nullable().optional(),
   /** Whether the signed object actually made it into the bucket. */
   mediaUploaded: z.boolean().default(true),
+  thumbUploaded: z.boolean().default(false),
   failed: z.boolean().default(false),
 });
 
@@ -51,6 +52,7 @@ export async function POST(
       claim: (media) => media.uploader_fingerprint === null,
       mediaUploaded: body.mediaUploaded && !body.failed,
       posterUploaded: false,
+      thumbUploaded: body.thumbUploaded,
       width: body.width,
       height: body.height,
       log: "cover",

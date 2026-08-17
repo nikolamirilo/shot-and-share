@@ -48,20 +48,22 @@ function reserve(over: Record<string, unknown> = {}) {
     id: MEDIA_ID,
     event_id: EVENT.id,
     owner_id: EVENT.owner_id,
-    media_key: `${EVENT.owner_id}/${EVENT.id}/${MEDIA_ID}.webp`,
+    media_key: `${EVENT.owner_id}/${EVENT.id}/full/${MEDIA_ID}.jpg`,
+    thumb_key: `${EVENT.owner_id}/${EVENT.id}/thumb/${MEDIA_ID}.webp`,
     poster_key: null,
-    size_bytes: 900_000,
+    size_bytes: 1_950_000,
+    thumb_size_bytes: 25_000,
     poster_size_bytes: 0,
     media: {
       kind: "photo",
-      mime_type: "image/webp",
-      media_format: "webp",
+      mime_type: "image/jpeg",
+      media_format: "jpeg",
+      thumb_format: "webp",
       duration_seconds: null,
       width: 4032,
       height: 3024,
       processing: "done",
       uploader_fingerprint: FINGERPRINT,
-      uploader_name: "Guest",
     },
     created_at: new Date().toISOString(),
     ...over,
@@ -71,20 +73,23 @@ function reserve(over: Record<string, unknown> = {}) {
 /** A video, whose poster is a second object that can fail on its own. */
 function reserveVideo() {
   reserve({
-    media_key: `${EVENT.owner_id}/${EVENT.id}/${MEDIA_ID}.mov`,
+    media_key: `${EVENT.owner_id}/${EVENT.id}/full/${MEDIA_ID}.mov`,
+    // A clip has no thumbnail of its own: its poster frame is the small copy.
+    thumb_key: null,
     poster_key: `${EVENT.owner_id}/${EVENT.id}/${MEDIA_ID}-poster.webp`,
     size_bytes: 8_000_000,
+    thumb_size_bytes: 0,
     poster_size_bytes: 40_000,
     media: {
       kind: "video",
       mime_type: "video/quicktime",
       media_format: "mov",
+      thumb_format: null,
       duration_seconds: 12,
       width: 1920,
       height: 1080,
       processing: "pending",
       uploader_fingerprint: FINGERPRINT,
-      uploader_name: "Guest",
     },
   });
 }
@@ -113,7 +118,12 @@ describe("confirming an upload", () => {
   it("writes the media row and tears up the reservation", async () => {
     reserve();
     const res = await POST(
-      request({ mediaUploaded: true, width: 4032, height: 3024 }),
+      request({
+        mediaUploaded: true,
+        thumbUploaded: true,
+        width: 4032,
+        height: 3024,
+      }),
     );
 
     expect(res.status).toBe(200);
@@ -123,9 +133,9 @@ describe("confirming an upload", () => {
     const row = media()[0];
     expect(row.id).toBe(MEDIA_ID);
     expect(row.status).toBe("ready");
-    expect(row.size_bytes).toBe(900_000);
+    expect(row.size_bytes).toBe(1_950_000);
     expect(row.media_key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/${MEDIA_ID}.webp`,
+      `${EVENT.owner_id}/${EVENT.id}/full/${MEDIA_ID}.jpg`,
     );
     // owner_id is filled by a trigger; writing it here would be rejected.
     expect(row).not.toHaveProperty("owner_id");
@@ -218,6 +228,51 @@ describe("confirming an upload", () => {
     );
     expect(row.poster_size_bytes).toBe(40_000);
     expect(store.released()).toBe(0);
+  });
+
+  it("writes the thumbnail onto the media row", async () => {
+    reserve();
+    await POST(request({ mediaUploaded: true, thumbUploaded: true }));
+
+    const row = media()[0];
+    expect(row.thumb_key).toBe(
+      `${EVENT.owner_id}/${EVENT.id}/thumb/${MEDIA_ID}.webp`,
+    );
+    expect(row.thumb_size_bytes).toBe(25_000);
+    expect(row.thumb_format).toBe("webp");
+    expect(store.released()).toBe(0);
+  });
+
+  it("keeps the photo when only the thumbnail failed, and refunds it", async () => {
+    // The grid falls back to the full copy, which is what a row written before
+    // migration 0015 does anyway. Losing the photograph over its 25 KB
+    // thumbnail would be the worst trade in the system.
+    reserve();
+    const res = await POST(
+      request({ mediaUploaded: true, thumbUploaded: false }),
+    );
+
+    expect(await res.json()).toEqual({ confirmed: true });
+
+    const row = media()[0];
+    expect(row.thumb_key).toBeNull();
+    expect(row.thumb_size_bytes).toBe(0);
+    expect(row.thumb_format).toBeNull();
+    expect(row.size_bytes).toBe(1_950_000);
+    expect(store.released()).toBe(25_000);
+  });
+
+  it("refunds both copies when the photo itself never reached storage", async () => {
+    // The whole promise goes back, thumbnail included. Refunding only the full
+    // copy leaks 25 KB of a host's quota per abandoned upload.
+    reserve();
+    const res = await POST(
+      request({ mediaUploaded: false, thumbUploaded: false, failed: true }),
+    );
+
+    expect(await res.json()).toEqual({ confirmed: false });
+    expect(media()).toHaveLength(0);
+    expect(store.released()).toBe(1_975_000);
   });
 
   /**

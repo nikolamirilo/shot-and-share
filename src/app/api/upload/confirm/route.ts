@@ -17,6 +17,7 @@ const bodySchema = z.object({
   /** Which of the signed objects actually made it into the bucket. */
   mediaUploaded: z.boolean().default(true),
   posterUploaded: z.boolean().default(false),
+  thumbUploaded: z.boolean().default(false),
   failed: z.boolean().default(false),
   /**
    * Why the browser gave up, in the app's own words.
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
       claim: (media) => media.uploader_fingerprint === body.fingerprint,
       mediaUploaded: body.mediaUploaded && !body.failed,
       posterUploaded: body.posterUploaded,
+      thumbUploaded: body.thumbUploaded,
       width: body.width,
       height: body.height,
       reason: body.reason,
