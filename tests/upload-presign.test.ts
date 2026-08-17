@@ -68,20 +68,34 @@ function request(file: unknown) {
     body: JSON.stringify({
       token: `${requests}`.padStart(32, "a"),
       fingerprint: "f".repeat(16),
-      uploaderName: "Guest",
       file,
     }),
   });
 }
 
-/** What the browser sends for a photo it managed to compress. */
+/**
+ * What the browser sends for a photo it managed to encode: the full-size copy
+ * at every pixel the camera captured, and a small one for the grid.
+ */
 const compressedPhoto = {
   size: 4_000_000,
   type: "image/jpeg",
-  compressed: { size: 900_000, format: "webp", width: 2560, height: 1707 },
+  compressed: { size: 1_950_000, format: "jpeg", width: 4032, height: 3024 },
+  thumb: { size: 25_000, format: "webp", width: 640, height: 480 },
   sourceWidth: 4032,
   sourceHeight: 3024,
   needsServer: false,
+};
+
+/** A HEIC outside Safari: the browser decoded nothing, so the worker owes both. */
+const undecodablePhoto = {
+  size: 2_000_000,
+  type: "image/heic",
+  compressed: null,
+  thumb: null,
+  sourceWidth: null,
+  sourceHeight: null,
+  needsServer: true,
 };
 
 const video = {
@@ -103,20 +117,58 @@ beforeEach(() => {
 });
 
 describe("presigning an upload", () => {
-  it("signs exactly one object for a photo", async () => {
+  it("signs the full copy and its thumbnail, and nothing else", async () => {
     const res = await POST(request(compressedPhoto));
     const body = await res.json();
 
     expect(res.status).toBe(200);
 
     const { upload } = body;
-    // One object, and the browser is told to send the compressed blob.
+    // Two objects for a photo, and the browser is told to send the encoded
+    // blob rather than the file off the disk.
     expect(upload.source).toBe("compressed");
     expect(upload.media).toBeTruthy();
+    expect(upload.thumb).toBeTruthy();
     expect(upload.poster).toBeNull();
     expect(Object.keys(upload).sort()).toEqual(
-      ["mediaId", "media", "poster", "source"].sort(),
+      ["mediaId", "media", "thumb", "poster", "source"].sort(),
     );
+  });
+
+  it("puts each copy in its own folder and charges for both", async () => {
+    const res = await POST(request(compressedPhoto));
+    const { upload } = await res.json();
+
+    expect(upload.media.fields.key).toMatch(/\/full\/[^/]+\.jpg$/);
+    expect(upload.thumb.fields.key).toMatch(/\/thumb\/[^/]+\.webp$/);
+
+    // Both objects are promised, so both are charged for before a URL is
+    // issued. Charging afterwards means the bytes are already billable.
+    const reservation = reservations().at(-1)!;
+    expect(Number(reservation.size_bytes)).toBe(1_950_000);
+    expect(Number(reservation.thumb_size_bytes)).toBe(25_000);
+    expect(reservation.thumb_key).toBe(upload.thumb.fields.key);
+  });
+
+  it("signs no thumbnail for a photo the browser could not decode", async () => {
+    // A HEIC outside Safari. Nothing may be signed for a thumbnail that will
+    // never be posted - the worker cuts it instead.
+    const res = await POST(request(undecodablePhoto));
+    const { upload } = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(upload.source).toBe("file");
+    expect(upload.thumb).toBeNull();
+    expect(reservations().at(-1)!.thumb_key).toBeNull();
+  });
+
+  it("signs no thumbnail for a video, whose poster already is one", async () => {
+    EVENT.tier = "wedding";
+    const res = await POST(request(video));
+    const { upload } = await res.json();
+
+    expect(upload.thumb).toBeNull();
+    expect(upload.poster).toBeTruthy();
   });
 
   it("keys that object inside the owner's event folder, at the root", async () => {
@@ -124,7 +176,10 @@ describe("presigning an upload", () => {
     const { upload } = await res.json();
 
     expect(upload.media.fields.key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/${upload.mediaId}.webp`,
+      `${EVENT.owner_id}/${EVENT.id}/full/${upload.mediaId}.jpg`,
+    );
+    expect(upload.thumb.fields.key).toBe(
+      `${EVENT.owner_id}/${EVENT.id}/thumb/${upload.mediaId}.webp`,
     );
   });
 
@@ -147,17 +202,20 @@ describe("presigning an upload", () => {
     expect(row.owner_id).toBe(EVENT.owner_id);
   });
 
-  it("charges the compressed size, not what came off the phone", async () => {
+  it("charges the encoded size, not what came off the phone", async () => {
     await POST(request(compressedPhoto));
     const row = reservations()[0];
 
-    expect(row.size_bytes).toBe(900_000);
-    expect(store.reserved()).toBe(900_000);
+    expect(row.size_bytes).toBe(1_950_000);
+    // The thumbnail is charged for too, or a host is billed for one object and
+    // stores two.
+    expect(store.reserved()).toBe(1_975_000);
 
     const media = row.media as Record<string, unknown>;
-    expect(media.media_format).toBe("webp");
-    expect(media.mime_type).toBe("image/webp");
-    // Nothing left for the worker: the object in the bucket is already right.
+    expect(media.media_format).toBe("jpeg");
+    expect(media.mime_type).toBe("image/jpeg");
+    expect(media.thumb_format).toBe("webp");
+    // Nothing left for the worker: the objects in the bucket are already right.
     expect(media.processing).toBe("done");
   });
 
@@ -200,8 +258,8 @@ describe("presigning an upload", () => {
     // Stored as what the browser actually produced, which is all that is going
     // up: the source type was never going to describe the stored object.
     expect(upload.source).toBe("compressed");
-    expect(upload.media.fields.key).toMatch(/\.webp$/);
-    expect(reservations()[0].size_bytes).toBe(900_000);
+    expect(upload.media.fields.key).toMatch(/\.jpg$/);
+    expect(reservations()[0].size_bytes).toBe(1_950_000);
   });
 
   it("still refuses a type it does not know and cannot see a photo behind", async () => {
@@ -256,13 +314,15 @@ describe("presigning an upload", () => {
     expect(upload.source).toBe("file");
     expect(upload.poster).toBeTruthy();
 
-    // Poster sits beside the clip in the same folder, named after it.
+    // The clip goes in full/ like a photo; its poster stays in the event
+    // folder, named after the clip rather than filed under it.
     expect(row.media_key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/${upload.mediaId}.mov`,
+      `${EVENT.owner_id}/${EVENT.id}/full/${upload.mediaId}.mov`,
     );
     expect(row.poster_key).toBe(
       `${EVENT.owner_id}/${EVENT.id}/${upload.mediaId}-poster.webp`,
     );
+    expect(row.thumb_key).toBeNull();
     expect(row.poster_size_bytes).toBe(40_000);
     // Both objects are charged for up front, or a guest could send a poster
     // into an event with no room for it.
@@ -277,7 +337,7 @@ describe("presigning an upload", () => {
 
     // The guest sees a generic failure; the operator sees the cause in the log.
     expect(res.status).toBe(500);
-    expect(store.released()).toBe(900_000);
+    expect(store.released()).toBe(1_975_000);
   });
 
   /**
@@ -291,7 +351,7 @@ describe("presigning an upload", () => {
 
     expect(res.status).toBe(500);
     expect(reservations()).toHaveLength(0);
-    expect(store.released()).toBe(900_000);
+    expect(store.released()).toBe(1_975_000);
   });
 
   it("refuses when the event is full, without writing anything", async () => {

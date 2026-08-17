@@ -16,12 +16,20 @@ export interface PosterTarget {
   mime: string;
 }
 
+/** The small copy for the grid, signed beside the photo it belongs to. */
+export interface ThumbTarget {
+  key: string;
+  bytes: number;
+  mime: string;
+}
+
 export interface ReservationRequest {
   event: Pick<EventRow, "id" | "owner_id">;
   mediaId: string;
   key: string;
   contentType: string;
   bytes: number;
+  thumb: ThumbTarget | null;
   poster: PosterTarget | null;
   media: ReservedMedia;
   /** Tagged on the object so the S3 lifecycle rules can filter on it. */
@@ -36,7 +44,12 @@ export interface ReservationRequest {
 }
 
 export type ReservationResult =
-  | { ok: true; media: PresignedUpload; poster: PresignedUpload | null }
+  | {
+      ok: true;
+      media: PresignedUpload;
+      thumb: PresignedUpload | null;
+      poster: PresignedUpload | null;
+    }
   | { ok: false; reason: "quota" };
 
 /**
@@ -58,8 +71,8 @@ export type ReservationResult =
 export async function createReservation(
   request: ReservationRequest,
 ): Promise<ReservationResult> {
-  const { event, mediaId, poster } = request;
-  const totalBytes = request.bytes + (poster?.bytes ?? 0);
+  const { event, mediaId, poster, thumb } = request;
+  const totalBytes = request.bytes + (thumb?.bytes ?? 0) + (poster?.bytes ?? 0);
 
   if (!(await reserve(event.id, totalBytes))) {
     return { ok: false, reason: "quota" };
@@ -70,8 +83,10 @@ export async function createReservation(
     event_id: event.id,
     owner_id: event.owner_id,
     media_key: request.key,
+    thumb_key: thumb?.key ?? null,
     poster_key: poster?.key ?? null,
     size_bytes: request.bytes,
+    thumb_size_bytes: thumb?.bytes ?? 0,
     poster_size_bytes: poster?.bytes ?? 0,
     media: request.media,
   };
@@ -99,11 +114,17 @@ export async function createReservation(
       request.tierId,
       request.slack ?? 0,
     );
+    // 8 KB of slack: a browser encoder is not byte-deterministic between the
+    // measuring encode and the upload, and at 25 KB a percentage would be
+    // smaller than that wobble.
+    const thumbUpload = thumb
+      ? await sign(thumb.key, thumb.mime, thumb.bytes, request.tierId, 8 * 1024)
+      : null;
     const posterUpload = poster
       ? await sign(poster.key, poster.mime, poster.bytes, request.tierId, 32 * 1024)
       : null;
 
-    return { ok: true, media, poster: posterUpload };
+    return { ok: true, media, thumb: thumbUpload, poster: posterUpload };
   } catch (error) {
     await admin.from("upload_reservations").delete().eq("id", mediaId);
     await release(event.id, totalBytes);

@@ -102,3 +102,12 @@ export const COVER_PAGE_SIZE = 20;
 /** The poster frame pulled out of a video. Small enough for a grid. */
 export const POSTER_MAX_EDGE = 720;
 export const MAX_POSTER_BYTES = 2 * MB;
+
+/**
+ * A ceiling on the thumbnail a browser may claim it produced.
+ *
+ * Generous against a real 640px thumbnail, which is 20-40 KB. It exists so a
+ * crafted request cannot reserve a host's whole quota by declaring a 2 GB
+ * thumbnail, not to police the encoder.
+ */
+export const MAX_THUMB_BYTES = 512 * 1024;

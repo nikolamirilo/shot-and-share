@@ -6,7 +6,8 @@ import { storageSummary } from "@/lib/events";
 import { formatBytes } from "@/lib/format";
 import { enforceRateLimit } from "@/lib/guards";
 import { requireOwnedEvent } from "@/lib/host";
-import { mediaKey, scopeOfEvent } from "@/lib/media";
+import { mediaKey, scopeOfEvent, thumbKey } from "@/lib/media";
+import { IMAGE_EXT, IMAGE_MIME, type ImageFormat } from "@/lib/media/formats";
 import { LIMITS } from "@/lib/ratelimit";
 import { getTier } from "@/lib/tiers";
 import { classifyUpload, decideStoredObject } from "@/lib/uploads/classify";
@@ -78,12 +79,27 @@ export async function POST(
     const scope = scopeOfEvent(event);
     const stored = decideStoredObject(file, classified);
 
+    // The cover picker renders the same grid the gallery does, so it wants the
+    // same small copy.
+    const thumb = file.thumb
+      ? {
+          key: thumbKey(
+            scope,
+            mediaId,
+            IMAGE_EXT[file.thumb.format as ImageFormat],
+          ),
+          bytes: file.thumb.size,
+          mime: IMAGE_MIME[file.thumb.format as ImageFormat],
+        }
+      : null;
+
     const result = await createReservation({
       event,
       mediaId,
       key: mediaKey(scope, mediaId, stored.ext),
       contentType: stored.contentType,
       bytes: stored.bytes,
+      thumb,
       poster: null,
       tierId: tier.id,
       slack: 32 * 1024,
@@ -91,19 +107,19 @@ export async function POST(
         kind: "photo",
         mime_type: stored.contentType,
         media_format: stored.format,
+        thumb_format: file.thumb?.format ?? null,
         duration_seconds: null,
         width: file.sourceWidth ?? null,
         height: file.sourceHeight ?? null,
         processing: stored.useCompressed ? "done" : "pending",
         /*
-         * No fingerprint and no name, and both are load-bearing. A null
-         * fingerprint is what the guest confirm compares against and always
-         * fails, so this reservation cannot be turned into a guest photo by
-         * anyone holding the share link - and it is what the cover confirm
-         * checks to be sure it is finishing an upload this endpoint started.
+         * No fingerprint, and it is load-bearing. A null fingerprint is what
+         * the guest confirm compares against and always fails, so this
+         * reservation cannot be turned into a guest photo by anyone holding the
+         * share link - and it is what the cover confirm checks to be sure it is
+         * finishing an upload this endpoint started.
          */
         uploader_fingerprint: null,
-        uploader_name: null,
       },
     });
 
@@ -128,6 +144,7 @@ export async function POST(
           ? ("compressed" as const)
           : ("file" as const),
         media: result.media,
+        thumb: result.thumb,
       },
     });
   });

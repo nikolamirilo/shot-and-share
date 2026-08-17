@@ -133,8 +133,10 @@ describe("presigning a cover image", () => {
     expect(store.reserved()).toBe(300_000);
 
     const key = body.upload.media.fields.key;
-    expect(key).toMatch(new RegExp(`^${OWNER}/${event.id}/[0-9a-f-]+\\.webp$`));
-    // The compressed copy is what goes up, never the six-megapixel original.
+    expect(key).toMatch(
+      new RegExp(`^${OWNER}/${event.id}/full/[0-9a-f-]+\\.webp$`),
+    );
+    // The encoded copy is what goes up, never the six-megapixel original.
     expect(body.upload.source).toBe("compressed");
   });
 
@@ -268,7 +270,6 @@ describe("confirming a cover image", () => {
     expect(row.kind).toBe("photo");
     expect(row.status).toBe("ready");
     expect(row.uploader_fingerprint).toBeNull();
-    expect(row.uploader_name).toBeNull();
     expect(row.poster_key).toBeNull();
 
     expect(store.rows("upload_reservations")).toHaveLength(0);

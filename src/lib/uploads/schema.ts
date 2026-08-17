@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { MAX_POSTER_BYTES } from "@/lib/media/accept";
+import { MAX_POSTER_BYTES, MAX_THUMB_BYTES } from "@/lib/media/accept";
 
 /** A copy the browser produced from the file the guest picked. */
 export const renditionSchema = z.object({
@@ -23,6 +23,11 @@ export const fileSchema = z.object({
   size: z.number().int().positive(),
   type: z.string().max(120),
   compressed: renditionSchema.optional().nullable(),
+  /** The small copy for the grid. Absent when the browser could not decode. */
+  thumb: renditionSchema
+    .extend({ size: z.number().int().positive().max(MAX_THUMB_BYTES) })
+    .optional()
+    .nullable(),
   sourceWidth: dimension,
   sourceHeight: dimension,
   /** The browser could not decode it; the worker has to finish the job. */

@@ -5,7 +5,7 @@ import { ApiError, fail, handle, ok, parseBody } from "@/lib/api";
 import { requireGuestEvent, storageSummary } from "@/lib/events";
 import { formatBytes } from "@/lib/format";
 import { enforceRateLimit } from "@/lib/guards";
-import { mediaKey, posterKey, scopeOfEvent } from "@/lib/media";
+import { mediaKey, posterKey, scopeOfEvent, thumbKey } from "@/lib/media";
 import { IMAGE_EXT, IMAGE_MIME, type ImageFormat } from "@/lib/media/formats";
 import { LIMITS, clientIp } from "@/lib/ratelimit";
 import { getTier } from "@/lib/tiers";
@@ -23,7 +23,6 @@ export const dynamic = "force-dynamic";
 const bodySchema = z.object({
   token: shareTokenSchema,
   fingerprint: fingerprintSchema,
-  uploaderName: z.string().trim().max(60).optional().nullable(),
   /** One file, so uploading can start before the slowest has compressed. */
   file: guestFileSchema,
 });
@@ -86,18 +85,35 @@ export async function POST(request: Request) {
           }
         : null;
 
+    // Photos only. A video's poster frame is already the small copy, and the
+    // worker cuts one when the browser could not.
+    const thumb =
+      classified.kind === "photo" && file.thumb
+        ? {
+            key: thumbKey(
+              scope,
+              mediaId,
+              IMAGE_EXT[file.thumb.format as ImageFormat],
+            ),
+            bytes: file.thumb.size,
+            mime: IMAGE_MIME[file.thumb.format as ImageFormat],
+          }
+        : null;
+
     const result = await createReservation({
       event,
       mediaId,
       key: mediaKey(scope, mediaId, stored.ext),
       contentType: stored.contentType,
       bytes: stored.bytes,
+      thumb,
       poster,
       tierId: tier.id,
       media: {
         kind: stored.kind,
         mime_type: stored.contentType,
         media_format: stored.format,
+        thumb_format: file.thumb?.format ?? null,
         duration_seconds: file.durationSeconds ?? null,
         width: file.sourceWidth ?? null,
         height: file.sourceHeight ?? null,
@@ -105,7 +121,6 @@ export async function POST(request: Request) {
         // is not already a compressed, universally viewable file.
         processing: stored.useCompressed ? "done" : "pending",
         uploader_fingerprint: body.fingerprint,
-        uploader_name: body.uploaderName || null,
       },
     });
 
@@ -130,6 +145,7 @@ export async function POST(request: Request) {
           ? ("compressed" as const)
           : ("file" as const),
         media: result.media,
+        thumb: result.thumb,
         poster: result.poster,
       },
     });
