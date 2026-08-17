@@ -44,7 +44,7 @@ export async function toMediaView(
   /*
    * The thumbnail is what a wall of fifty photographs actually loads, at 1-2%
    * of the full copy's bytes. It falls back rather than failing: rows written
-   * before migration 0015 have none, and neither does a photo for the seconds
+   * before migration 0016 have none, and neither does a photo for the seconds
    * between its confirm and its thumbnail landing.
    */
   const thumbUrl = await cdn(row.thumb_key);

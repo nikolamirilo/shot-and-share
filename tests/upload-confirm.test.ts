@@ -245,7 +245,7 @@ describe("confirming an upload", () => {
 
   it("keeps the photo when only the thumbnail failed, and refunds it", async () => {
     // The grid falls back to the full copy, which is what a row written before
-    // migration 0015 does anyway. Losing the photograph over its 25 KB
+    // migration 0016 does anyway. Losing the photograph over its 25 KB
     // thumbnail would be the worst trade in the system.
     reserve();
     const res = await POST(

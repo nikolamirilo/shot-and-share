@@ -5,7 +5,7 @@ import type { MediaRow } from "@/lib/db/types";
 /**
  * Which stored copy each surface is handed.
  *
- * This is where the two-object layout of migration 0015 actually shows up. Get
+ * This is where the two-object layout of migration 0016 actually shows up. Get
  * it wrong in one direction and a wall of fifty photographs pulls fifty
  * full-size JPEGs; get it wrong in the other and the lightbox shows a 640px
  * thumbnail blown up to fill the screen.

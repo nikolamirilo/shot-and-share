@@ -88,7 +88,7 @@ export type MediaRow = {
   media_key: string;
   /**
    * The small copy the gallery grid loads. Null on a video, whose poster frame
-   * already does this job, and on rows written before migration 0015.
+   * already does this job, and on rows written before migration 0016.
    */
   thumb_key: string | null;
   /** A video's poster frame. Always null for a photo. */

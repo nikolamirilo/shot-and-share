@@ -16,7 +16,7 @@
  *
  * S3 has no row level security, so this layout is the tenant boundary and
  * application code is what keeps to it. Migration 0008 enforces the owner
- * prefix a second time as a CHECK constraint, and 0015 extends it to the
+ * prefix a second time as a CHECK constraint, and 0016 extends it to the
  * thumbnail.
  */
 

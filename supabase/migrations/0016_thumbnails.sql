@@ -37,7 +37,7 @@ alter table public.media
   add column if not exists thumb_format     text;
 
 comment on column public.media.thumb_key is
-  'Small copy for the gallery grid. Null on rows written before migration 0015, and on video - a clip''s poster frame already does this job.';
+  'Small copy for the gallery grid. Null on rows written before migration 0016, and on video - a clip''s poster frame already does this job.';
 
 alter table public.upload_reservations
   add column if not exists thumb_key        text,
