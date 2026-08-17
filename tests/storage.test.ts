@@ -8,6 +8,7 @@ import {
   archiveKey,
   eventPrefix,
   mediaKey,
+  thumbKey,
   ownerPrefix,
   posterKey,
 } from "@/lib/media";
@@ -172,7 +173,14 @@ describe("key safety", () => {
   });
 
   it("allows the keys the application actually generates", () => {
-    expect(safeKey(mediaKey(SCOPE, "m", "jpg"))).toBe(`${OWNER}/${EVENT}/m.jpg`);
+    // Folders included: a key with one legitimate slash in it must survive the
+    // traversal check, or every photo since migration 0015 is unreadable.
+    expect(safeKey(mediaKey(SCOPE, "m", "jpg"))).toBe(
+      `${OWNER}/${EVENT}/full/m.jpg`,
+    );
+    expect(safeKey(thumbKey(SCOPE, "m"))).toBe(
+      `${OWNER}/${EVENT}/thumb/m.webp`,
+    );
     expect(safeKey(posterKey(SCOPE, "m"))).toBe(
       `${OWNER}/${EVENT}/m-poster.webp`,
     );

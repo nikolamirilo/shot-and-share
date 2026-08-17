@@ -14,7 +14,9 @@ import { compressImage, probeVideo } from "@/lib/client/codec";
 
 /** Everything the browser managed to produce for one selected file. */
 export interface Prepared {
+  /** The full-size copy. Still called `compressed` because it is re-encoded. */
   compressed: Blob | null;
+  thumb: Blob | null;
   poster: Blob | null;
   sourceWidth: number | null;
   sourceHeight: number | null;
@@ -26,12 +28,13 @@ export interface Prepared {
  *
  * A guest who picks two gigabytes into an event with two hundred megabytes left
  * should hear about it in the half second after tapping, not after thirty
- * seconds of compressing. It is deliberately optimistic - compression usually
- * does better than a quarter - because the cost of being wrong in this
- * direction is one wasted upload attempt, and the cost of being wrong in the
- * other is refusing a batch that would have fitted.
+ * seconds of compressing. It is deliberately optimistic - because the cost of
+ * being wrong in this direction is one wasted upload attempt, and the cost of
+ * being wrong in the other is refusing a batch that would have fitted.
+ *
+ * Halved, not quartered, since the full copy stopped being downscaled.
  */
-const OPTIMISTIC_COMPRESSION = 4;
+const OPTIMISTIC_COMPRESSION = 2;
 
 /**
  * The smallest these files could plausibly become, for the fail-fast check.
@@ -59,6 +62,8 @@ export async function prepare(file: File): Promise<Prepared> {
     const probe = await probeVideo(file);
     return {
       compressed: null,
+      // A clip's poster frame is already its small copy.
+      thumb: null,
       poster: probe.poster?.blob ?? null,
       sourceWidth: probe.width,
       sourceHeight: probe.height,
@@ -83,19 +88,28 @@ export async function prepare(file: File): Promise<Prepared> {
 
   const result = await compressImage(file);
   return {
-    compressed: result.compressed?.blob ?? null,
+    compressed: result.full?.blob ?? null,
+    thumb: result.thumb?.blob ?? null,
     poster: null,
     sourceWidth: result.sourceWidth,
     sourceHeight: result.sourceHeight,
     descriptor: {
       size: file.size,
       type: file.type,
-      compressed: result.compressed
+      compressed: result.full
         ? {
-            size: result.compressed.blob.size,
-            format: result.compressed.format,
-            width: result.compressed.width,
-            height: result.compressed.height,
+            size: result.full.blob.size,
+            format: result.full.format,
+            width: result.full.width,
+            height: result.full.height,
+          }
+        : null,
+      thumb: result.thumb
+        ? {
+            size: result.thumb.blob.size,
+            format: result.thumb.format,
+            width: result.thumb.width,
+            height: result.thumb.height,
           }
         : null,
       sourceWidth: result.sourceWidth,

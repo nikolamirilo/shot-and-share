@@ -1,15 +1,18 @@
 "use client";
 
 import {
-  COMPRESSED_BYTES_PER_MP,
-  COMPRESSED_MAX_EDGE,
+  FULL_BYTES_PER_MP,
+  FULL_IMAGE_FORMAT,
   type ImageFormat,
   IMAGE_MIME,
   MAX_QUALITY,
   MIN_QUALITY,
   POSTER_BYTES_PER_MP,
-  PREFERRED_IMAGE_FORMATS,
   START_QUALITY,
+  THUMB_BYTES_PER_MP,
+  THUMB_IMAGE_FORMATS,
+  THUMB_MAX_EDGE,
+  THUMB_MIN_BYTES,
   sizeBudget,
 } from "@/lib/media/formats";
 import { POSTER_MAX_EDGE } from "@/lib/media";
@@ -54,9 +57,11 @@ export function canEncode(format: ImageFormat): Promise<boolean> {
   return probe;
 }
 
-/** The best format this browser can produce, from our preference order. */
-export async function bestEncodableFormat(): Promise<ImageFormat> {
-  for (const format of PREFERRED_IMAGE_FORMATS) {
+/** The best format this browser can produce, from a preference order. */
+export async function bestEncodableFormat(
+  order: ImageFormat[] = THUMB_IMAGE_FORMATS,
+): Promise<ImageFormat> {
+  for (const format of order) {
     if (await canEncode(format)) return format;
   }
   // JPEG encoding is required by the HTML specification, so this is the floor
@@ -80,7 +85,8 @@ export interface Encoded {
 
 function draw(
   bitmap: ImageBitmap,
-  maxEdge: number,
+  /** Infinity keeps every pixel, which is what the full-size copy wants. */
+  maxEdge: number = Number.POSITIVE_INFINITY,
 ): { canvas: HTMLCanvasElement; width: number; height: number } | null {
   const longest = Math.max(bitmap.width, bitmap.height);
   const scale = Math.min(1, maxEdge / longest);
@@ -121,9 +127,10 @@ async function encodeToBudget(
   width: number,
   height: number,
   bytesPerMp: number,
+  floor?: number,
 ): Promise<{ blob: Blob; quality: number } | null> {
   const mime = IMAGE_MIME[format];
-  const budget = sizeBudget(width, height, bytesPerMp);
+  const budget = sizeBudget(width, height, bytesPerMp, floor);
 
   let quality = START_QUALITY;
   let best: { blob: Blob; quality: number } | null = null;
@@ -157,11 +164,18 @@ async function encodeToBudget(
 
 export interface Compression {
   /**
-   * The copy that gets stored, and the only one. Null when the browser could
-   * not decode the file, in which case the source goes up untouched and the
-   * worker compresses it server-side.
+   * Every pixel the camera captured, as a JPEG. This is what a host downloads,
+   * prints from and gets in the ZIP. Null when the browser could not decode
+   * the file, in which case the source goes up untouched and the worker
+   * produces both copies server-side.
    */
-  compressed: Encoded | null;
+  full: Encoded | null;
+  /**
+   * The small copy the gallery grid loads. Null whenever the full copy is, and
+   * independently null if only the thumbnail encode failed - a photo without
+   * one still works, it just falls back to the full copy in the grid.
+   */
+  thumb: Encoded | null;
   /** True pixel dimensions of the source, whatever we managed to encode. */
   sourceWidth: number | null;
   sourceHeight: number | null;
@@ -171,7 +185,8 @@ export interface Compression {
 
 export async function compressImage(file: File): Promise<Compression> {
   const empty: Compression = {
-    compressed: null,
+    full: null,
+    thumb: null,
     sourceWidth: null,
     sourceHeight: null,
     needsServer: true,
@@ -187,35 +202,64 @@ export async function compressImage(file: File): Promise<Compression> {
   }
 
   try {
-    const format = await bestEncodableFormat();
     const sourceWidth = bitmap.width;
     const sourceHeight = bitmap.height;
 
-    const surface = draw(bitmap, COMPRESSED_MAX_EDGE);
+    /*
+     * Both surfaces are drawn before the bitmap is closed. Closing it after the
+     * first draw - which is what this did when there was only one copy - leaves
+     * the second with nothing to read.
+     */
+    const fullSurface = draw(bitmap);
+    const thumbSurface = draw(bitmap, THUMB_MAX_EDGE);
     bitmap.close();
 
-    if (!surface) return { ...empty, sourceWidth, sourceHeight };
+    if (!fullSurface) return { ...empty, sourceWidth, sourceHeight };
 
-    const encoded = await encodeToBudget(
-      surface.canvas,
-      format,
-      surface.width,
-      surface.height,
-      COMPRESSED_BYTES_PER_MP,
+    const full = await encodeToBudget(
+      fullSurface.canvas,
+      FULL_IMAGE_FORMAT,
+      fullSurface.width,
+      fullSurface.height,
+      FULL_BYTES_PER_MP,
     );
 
-    // An encode that came back empty is not a compressed photo, so the source
-    // has to go up and the worker has to finish the job.
-    if (!encoded) return { ...empty, sourceWidth, sourceHeight };
+    // An encode that came back empty is not a photo, so the source has to go up
+    // and the worker has to finish the job.
+    if (!full) return { ...empty, sourceWidth, sourceHeight };
+
+    const thumbFormat = await bestEncodableFormat(THUMB_IMAGE_FORMATS);
+    const thumb = thumbSurface
+      ? await encodeToBudget(
+          thumbSurface.canvas,
+          thumbFormat,
+          thumbSurface.width,
+          thumbSurface.height,
+          THUMB_BYTES_PER_MP,
+          THUMB_MIN_BYTES,
+        )
+      : null;
 
     return {
-      compressed: {
-        blob: encoded.blob,
-        format,
-        width: surface.width,
-        height: surface.height,
-        quality: encoded.quality,
+      full: {
+        blob: full.blob,
+        format: FULL_IMAGE_FORMAT,
+        width: fullSurface.width,
+        height: fullSurface.height,
+        quality: full.quality,
       },
+      // Deliberately not fatal. The grid falls back to the full copy through
+      // the optimiser, which is exactly what an older row does.
+      thumb:
+        thumb && thumbSurface
+          ? {
+              blob: thumb.blob,
+              format: thumbFormat,
+              width: thumbSurface.width,
+              height: thumbSurface.height,
+              quality: thumb.quality,
+            }
+          : null,
       sourceWidth,
       sourceHeight,
       needsServer: false,
@@ -304,7 +348,7 @@ export async function probeVideo(file: File): Promise<VideoProbe> {
       return { ...empty, width, height, durationSeconds };
     }
 
-    const format = await bestEncodableFormat();
+    const format = await bestEncodableFormat(THUMB_IMAGE_FORMATS);
     const longest = Math.max(width, height);
     const scale = Math.min(1, POSTER_MAX_EDGE / longest);
     const canvas = document.createElement("canvas");
