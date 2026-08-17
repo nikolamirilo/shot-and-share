@@ -146,9 +146,32 @@ export function Tile({
         </span>
       )}
 
+      {/*
+       * A play button in the middle rather than the word "video" in a corner.
+       * The badge was ours to read and easy to miss on a busy frame; a triangle
+       * in a circle is what every camera roll uses, and it lands where the eye
+       * is already looking.
+       *
+       * Sized as a share of the tile, so it survives a 96px hole and a
+       * full-width row of the stack without a size passed in per layout.
+       */}
       {item.kind === "video" && (
-        <span className="absolute bottom-1 left-1 rounded-full bg-ink px-2 py-0.5 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-linen">
-          video
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 grid place-items-center"
+        >
+          <span className="grid aspect-square w-[28%] min-w-7 max-w-14 place-items-center rounded-full bg-ink/55 text-linen shadow-md">
+            {/* Nudged right by an eighth: a triangle centred on its bounding
+                box reads as sitting left of centre inside a circle. */}
+            <svg
+              viewBox="0 0 24 24"
+              className="ml-[8%] w-[42%]"
+              fill="currentColor"
+              role="presentation"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
         </span>
       )}
 

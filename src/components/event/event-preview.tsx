@@ -5,6 +5,7 @@ import type { Palette } from "@/lib/appearance/themes";
 import type { CoverVariant, UploadVariant } from "@/lib/appearance/variants";
 import type { FontSet } from "@/lib/fonts";
 import { type GalleryLayout, holeSize } from "@/lib/gallery";
+import type { UploadWording } from "@/lib/media";
 
 /**
  * A drawing of the whole guest page, at the size of a console panel.
@@ -34,8 +35,8 @@ export interface EventPreviewProps {
   cover: CoverVariant;
   upload: UploadVariant;
   layout: GalleryLayout;
-  /** What may be sent, worded exactly as the guest page words it. */
-  uploadHint: string;
+  /** How the guest page words the ask, so the drawing says the same thing. */
+  wording: UploadWording;
   /** The host's own switch: no gallery on the page, none in the drawing. */
   galleryVisible: boolean;
   /** Whether a cover photo has been chosen, which the empty frame says. */
@@ -53,7 +54,7 @@ export function EventPreview({
   cover,
   upload,
   layout,
-  uploadHint,
+  wording,
   galleryVisible,
   coverChosen,
   coverUrl,
@@ -80,8 +81,10 @@ export function EventPreview({
           <main className="mx-auto max-w-3xl px-3 pb-4 pt-3 @sm:px-4 @sm:pb-5 @sm:pt-4">
             <UploadPanel
               variant={upload}
-              label="Add your photos"
-              hint={uploadHint}
+              label={wording.action}
+              captureLabel={wording.capture}
+              chooseLabel={wording.choose}
+              hint={wording.hint}
               name=""
               preview
             />

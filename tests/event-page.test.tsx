@@ -7,6 +7,7 @@ import { UploadPanel } from "@/components/upload/upload-panel";
 import { THEMES, buildCustomPalette } from "@/lib/appearance";
 import { findFontSet } from "@/lib/fonts";
 import { GALLERY_LAYOUTS, type GalleryLayout } from "@/lib/gallery";
+import { uploadWording } from "@/lib/media";
 
 /**
  * The host's preview, which is the one screen where a setting can look broken
@@ -223,7 +224,7 @@ function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
       cover="classic"
       upload="button"
       layout="grid"
-      uploadHint="Photos, up to 20 at a time."
+      wording={uploadWording(false)}
       galleryVisible
       coverChosen
       {...props}
@@ -240,8 +241,21 @@ describe("the drawing of the guest page", () => {
     expect(html).toContain("Ana and Marko");
     expect(html).toContain("Send us the ones you took.");
     expect(html).toContain("Add your photos");
-    expect(html).toContain("Photos, up to 20 at a time.");
+    expect(html).toContain(uploadWording(false).hint);
     expect(html).toContain("Everyone&#x27;s photos");
+  });
+
+  /**
+   * The preview is the only place a host sees the wording before their guests
+   * do, so a plan with video has to be drawn asking for video. It said "Add
+   * your photos" on every plan, which is the same copy the guest page itself
+   * was showing to people holding a clip they could not send.
+   */
+  it("asks for video on a plan that takes video", () => {
+    const html = preview({ wording: uploadWording(true) });
+
+    expect(html).toContain("Add your photos and video");
+    expect(html).toContain("Photos and video");
   });
 
   it("carries nothing of ours above the cover or below the gallery", () => {

@@ -32,7 +32,7 @@ import type { EventRow } from "@/lib/db/types";
 import type { MediaView } from "@/lib/media-view";
 import { FONT_SETS, findFontSet, googleFontsHref } from "@/lib/fonts";
 import { GALLERY_LAYOUTS } from "@/lib/gallery";
-import { MAX_FILES_PER_PICK } from "@/lib/media";
+import { uploadWording } from "@/lib/media";
 import { getTier } from "@/lib/tiers";
 
 /**
@@ -178,11 +178,7 @@ export function AppearanceForm({
             galleryVisible={event.gallery_visible}
             coverChosen={settings.coverMediaId !== null}
             coverUrl={coverUrl}
-            uploadHint={
-              getTier(event.tier).video
-                ? `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`
-                : `Photos, up to ${MAX_FILES_PER_PICK} at a time.`
-            }
+            wording={uploadWording(getTier(event.tier).video)}
           />
         </div>
 

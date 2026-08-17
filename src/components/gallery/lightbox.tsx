@@ -12,18 +12,15 @@ const SWIPE_MIN_PX = 50;
 export function Lightbox({
   token,
   item,
-  mine,
   prevId,
   nextId,
   position,
   total,
   onStep,
   onClose,
-  onRemove,
 }: {
   token: string;
   item: MediaView;
-  mine: boolean;
   /** The photo on each side, or null at either end of what has loaded. */
   prevId: string | null;
   nextId: string | null;
@@ -32,7 +29,6 @@ export function Lightbox({
   total: number;
   onStep: (id: string) => void;
   onClose: () => void;
-  onRemove: () => void;
 }) {
   const [full, setFull] = useState<MediaView | null>(null);
   /**
@@ -113,12 +109,20 @@ export function Lightbox({
       aria-modal="true"
       onClick={onClose}
     >
+      {/*
+       * A column with the picture given whatever is left, rather than a block
+       * that scrolls. A portrait photo is taller than the phone holding it, so
+       * laid out at full width it pushed Close and Download off the bottom of
+       * the screen - reachable only by scrolling a container most people did
+       * not know was scrollable. The picture is now bounded by the room
+       * available and the buttons keep their place under it.
+       */}
       <div
-        className="max-h-full w-full max-w-2xl overflow-y-auto"
+        className="flex max-h-full w-full max-w-2xl flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="relative"
+          className="relative flex min-h-0 flex-1 items-center justify-center"
           onTouchStart={item.kind === "video" ? undefined : onTouchStart}
           onTouchEnd={item.kind === "video" ? undefined : onTouchEnd}
         >
@@ -130,7 +134,7 @@ export function Lightbox({
                 controls
                 playsInline
                 preload="metadata"
-                className="w-full rounded-xl"
+                className="h-auto max-h-full w-auto max-w-full rounded-xl"
               />
             ) : (
               <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-well" />
@@ -159,7 +163,11 @@ export function Lightbox({
                 onLoad={() => setLoaded(true)}
                 // The point of the screen, so never lazy.
                 priority
-                className="relative h-auto w-full rounded-xl"
+                // Bounded both ways: a landscape photo is held by the width, a
+                // portrait one by the height it is allowed, and neither ends up
+                // taller than the space between the top of the screen and the
+                // buttons.
+                className="relative h-auto max-h-full w-auto max-w-full rounded-xl"
               />
             </>
           ) : (
@@ -176,45 +184,43 @@ export function Lightbox({
           )}
         </div>
 
-        {total > 1 && (
-          <p className="mt-3 text-center font-mono text-micro uppercase tracking-[0.16em] text-linen/70">
-            {position} of {total}
-          </p>
-        )}
-
-        {item.processing && (
-          <p className="mt-3 rounded-xl bg-linen/12 px-3 py-2 text-center text-label text-linen/80">
-            Still being converted so it plays everywhere. Check back shortly.
-          </p>
-        )}
-
-        <div className="mt-4 flex flex-wrap justify-center gap-2.5 sm:gap-3">
-          <Button onClick={onClose} variant="onDark" size="sm">
-            Close
-          </Button>
-          {/* One anchor in two states rather than one that appears when the
-              link lands: stepping re-fetches, and a button that vanishes and
-              returns moves the two beside it every time. Absent entirely once
-              the request finishes with no link, since there is nothing to wait
-              for. */}
-          {(linkPending || full?.downloadUrl) && (
-            <a
-              href={full?.downloadUrl}
-              download={full?.downloadUrl ? true : undefined}
-              aria-disabled={full?.downloadUrl ? undefined : true}
-              className={cx(
-                "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-chalk px-3.5 py-2 text-small font-semibold leading-tight text-ink",
-                !full?.downloadUrl && "opacity-45",
-              )}
-            >
-              Download
-            </a>
+        {/* Never squeezed: whatever the picture does, this keeps its height. */}
+        <div className="shrink-0">
+          {total > 1 && (
+            <p className="mt-3 text-center font-mono text-micro uppercase tracking-[0.16em] text-linen/70">
+              {position} of {total}
+            </p>
           )}
-          {mine && (
-            <Button onClick={onRemove} variant="onDark" size="sm">
-              Remove mine
+
+          {item.processing && (
+            <p className="mt-3 rounded-xl bg-linen/12 px-3 py-2 text-center text-label text-linen/80">
+              Still being converted so it plays everywhere. Check back shortly.
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-wrap justify-center gap-2.5 sm:gap-3">
+            <Button onClick={onClose} variant="onDark" size="sm">
+              Close
             </Button>
-          )}
+            {/* One anchor in two states rather than one that appears when the
+                link lands: stepping re-fetches, and a button that vanishes and
+                returns moves the two beside it every time. Absent entirely once
+                the request finishes with no link, since there is nothing to
+                wait for. */}
+            {(linkPending || full?.downloadUrl) && (
+              <a
+                href={full?.downloadUrl}
+                download={full?.downloadUrl ? true : undefined}
+                aria-disabled={full?.downloadUrl ? undefined : true}
+                className={cx(
+                  "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-chalk px-3.5 py-2 text-small font-semibold leading-tight text-ink",
+                  !full?.downloadUrl && "opacity-45",
+                )}
+              >
+                Download
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -244,11 +250,12 @@ function StepArrow({
       aria-label={back ? "Previous photo" : "Next photo"}
       className={cx(
         /*
-         * `min(50%, 35vh)` rather than a plain half: a tall portrait photo is
-         * taller than the window, so its true middle can sit below the fold -
-         * an arrow you have to scroll to find.
+         * A plain half. It used to be `min(50%, 35vh)`, because a portrait
+         * photo laid out at full width ran off the bottom of the screen and
+         * took its own middle with it. The picture is bounded by the window
+         * now, so half of it is always somewhere a thumb can reach.
          */
-        "absolute top-[min(50%,35vh)] grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-chalk text-ink transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
+        "absolute top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-chalk text-ink transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
         back ? "left-2" : "right-2",
       )}
     >

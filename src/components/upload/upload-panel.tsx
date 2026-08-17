@@ -19,6 +19,13 @@ export interface UploadPanelProps {
   variant: UploadVariant;
   /** The primary action's label. Carries the progress text while busy. */
   label: string;
+  /**
+   * The two halves of the split variant. They follow the plan the same way
+   * `label` does - a plan with video asks for files and opens a camera, not for
+   * photographs - so they are passed in rather than written here.
+   */
+  captureLabel?: string;
+  chooseLabel?: string;
   /** What may be sent, and how much room is left. */
   hint: string;
   busy?: boolean;
@@ -232,6 +239,8 @@ function SlimBar({
  */
 function SplitButtons({
   label,
+  captureLabel = "Take a photo",
+  chooseLabel = "Choose photos",
   hint,
   busy,
   onPick,
@@ -255,14 +264,14 @@ function SplitButtons({
         )}
       >
         <Action
-          label={busy ? label : "Take a photo"}
+          label={busy ? label : captureLabel}
           busy={busy}
           onClick={onCapture}
           preview={preview}
           className={preview ? "py-2" : "py-4"}
         />
         <Action
-          label="Choose photos"
+          label={chooseLabel}
           busy={busy}
           onClick={onPick}
           preview={preview}
