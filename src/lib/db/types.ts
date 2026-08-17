@@ -81,16 +81,23 @@ export type MediaRow = {
    */
   owner_id: string;
   /**
-   * The one stored object: the compressed photo, or the video. Its extension
-   * can change when the worker replaces a format the browser could not read,
-   * so it is read from here rather than assumed.
+   * The full-size copy: every pixel the camera captured, or the video. Its
+   * extension can change when the worker replaces a format the browser could
+   * not read, so it is read from here rather than assumed.
    */
   media_key: string;
+  /**
+   * The small copy the gallery grid loads. Null on a video, whose poster frame
+   * already does this job, and on rows written before migration 0015.
+   */
+  thumb_key: string | null;
   /** A video's poster frame. Always null for a photo. */
   poster_key: string | null;
   size_bytes: number;
+  thumb_size_bytes: number;
   poster_size_bytes: number;
   media_format: string | null;
+  thumb_format: string | null;
   duration_seconds: number | null;
   processing: MediaProcessing;
   mime_type: string;
@@ -98,7 +105,6 @@ export type MediaRow = {
   width: number | null;
   height: number | null;
   uploader_fingerprint: string | null;
-  uploader_name: string | null;
   /** Has a database default of 'guest', so an insert may leave it out. */
   source: MediaSource;
   status: MediaStatus;
@@ -117,12 +123,12 @@ export type ReservedMedia = {
   kind: MediaKind;
   mime_type: string;
   media_format: string | null;
+  thumb_format: string | null;
   duration_seconds: number | null;
   width: number | null;
   height: number | null;
   processing: MediaProcessing;
   uploader_fingerprint: string | null;
-  uploader_name: string | null;
 };
 
 /**
@@ -137,8 +143,10 @@ export type UploadReservationRow = {
   event_id: string;
   owner_id: string;
   media_key: string;
+  thumb_key: string | null;
   poster_key: string | null;
   size_bytes: number;
+  thumb_size_bytes: number;
   poster_size_bytes: number;
   media: ReservedMedia;
   created_at: string;
@@ -213,18 +221,32 @@ export interface Database {
           // Derived by trigger from events.owner_id. Supplying it would be
           // ignored, so the type refuses it outright.
           | "owner_id"
+          // Have database defaults, so an insert may leave them out.
+          | "thumb_size_bytes"
           | "poster_size_bytes"
           | "processing"
           | "source"
         > &
           Partial<
-            Pick<MediaRow, "id" | "poster_size_bytes" | "processing" | "source">
+            Pick<
+              MediaRow,
+              | "id"
+              | "thumb_size_bytes"
+              | "poster_size_bytes"
+              | "processing"
+              | "source"
+            >
           >
       >;
       upload_reservations: Table<
         UploadReservationRow,
-        Omit<UploadReservationRow, "created_at" | "poster_size_bytes"> &
-          Partial<Pick<UploadReservationRow, "poster_size_bytes">>
+        Omit<
+          UploadReservationRow,
+          "created_at" | "thumb_size_bytes" | "poster_size_bytes"
+        > &
+          Partial<
+            Pick<UploadReservationRow, "thumb_size_bytes" | "poster_size_bytes">
+          >
       >;
       purchases: Table<
         PurchaseRow,
