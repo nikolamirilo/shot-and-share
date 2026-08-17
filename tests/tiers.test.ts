@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   GB,
   KEEP_FOREVER,
+  MB,
   TIERS,
   approxPhotos,
   computeExpiry,
@@ -60,8 +61,22 @@ describe("tiers", () => {
     expect(getTier("nonsense").id).toBe("free");
   });
 
-  it("estimates photo counts at 4 MB each", () => {
-    expect(approxPhotos(1 * GB)).toBe(256);
-    expect(approxPhotos(10 * GB)).toBe(2560);
+  it("estimates photo counts at 7 MB each", () => {
+    // Photos are stored at full resolution now, so the average is a great deal
+    // larger than it was - and a modern phone shooting 48MP is most of why.
+    expect(approxPhotos(1 * GB)).toBe(150);
+    expect(approxPhotos(10 * GB)).toBe(1500);
+    expect(approxPhotos(30 * GB)).toBe(4400);
+  });
+
+  it("rounds to something a pricing page can print", () => {
+    // "about 146 photos" reads as a measurement nobody took. Two significant
+    // figures is the most precision the estimate can honestly carry.
+    expect(approxPhotos(1 * GB) % 10).toBe(0);
+    expect(approxPhotos(10 * GB) % 100).toBe(0);
+    // Small numbers keep their precision - rounding 7 up to 10 would be a lie
+    // in the expensive direction.
+    expect(approxPhotos(7 * MB)).toBe(1);
+    expect(approxPhotos(56 * MB)).toBe(8);
   });
 });

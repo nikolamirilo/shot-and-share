@@ -186,10 +186,10 @@ const README_TEXT = `Your photos from Shot & Share
 
 Everything guests uploaded is in this folder, named by the time it was taken.
 
-Photos are stored compressed: full resolution for any screen and for printing
-up to A4, at about a quarter of the size a phone would have produced. Anything
-that arrived in Apple's HEIC format has been converted to JPEG, so every file
-here opens on Windows, Chrome and Firefox as well as on an iPhone.
+Photos are here at the full resolution they were taken at, as JPEGs - so they
+print at any size, crop without falling apart, and open on Windows, Chrome and
+Firefox as well as on an iPhone. Anything that arrived in Apple's HEIC format
+has been converted.
 
 Videos have been converted to MP4 so they play on anything.
 `;
@@ -197,8 +197,7 @@ Videos have been converted to MP4 so they play on anything.
 function entryName(event: EventRow, row: MediaRow, index: number): string {
   const ext = row.media_key.split(".").pop() ?? "jpg";
   const stamp = row.created_at.slice(0, 19).replace(/[:T]/g, "-");
-  const who = row.uploader_name ? `-${slug(row.uploader_name)}` : "";
-  return `${slug(event.name)}/${String(index + 1).padStart(4, "0")}-${stamp}${who}.${ext}`;
+  return `${slug(event.name)}/${String(index + 1).padStart(4, "0")}-${stamp}.${ext}`;
 }
 
 function slug(value: string): string {

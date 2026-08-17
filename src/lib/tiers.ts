@@ -13,8 +13,17 @@
 export const GB = 1024 ** 3;
 export const MB = 1024 ** 2;
 
-/** 4 MB average photo. HEIC runs ~2 MB, a 12 MP JPEG ~4 MB. Conservative. */
-export const AVG_PHOTO_BYTES = 4 * MB;
+/**
+ * What one stored photo actually costs, averaged over the phones people bring.
+ *
+ * 7 MB, not the 4 MB this was. Two things moved it: the stored copy is no
+ * longer capped at 2560px, so a photo keeps every pixel it was taken with, and
+ * a current flagship shoots 24-48MP rather than 12. A 48MP photo at full
+ * resolution is around 9 MB; a 12MP one is around 2 MB. This sits between them
+ * and leans high, because a count on a pricing page that turns out optimistic
+ * is worse than one that turns out generous.
+ */
+export const AVG_PHOTO_BYTES = 7 * MB;
 
 export type TierId = "free" | "event" | "wedding";
 
@@ -137,9 +146,18 @@ export function isUpgrade(from: TierId, to: TierId): boolean {
   return TIER_ORDER.indexOf(to) > TIER_ORDER.indexOf(from);
 }
 
-/** Rough photo count for a byte budget. Used for copy, never for enforcement. */
+/**
+ * Rough photo count for a byte budget. Used for copy, never for enforcement.
+ *
+ * Rounded to two significant figures, because the input is an estimate and
+ * "about 146 photos" claims a precision nobody measured. Small counts are left
+ * alone - rounding 7 up to 10 would be a lie in the expensive direction.
+ */
 export function approxPhotos(bytes: number): number {
-  return Math.round(bytes / AVG_PHOTO_BYTES);
+  const exact = bytes / AVG_PHOTO_BYTES;
+  if (exact < 10) return Math.round(exact);
+  const magnitude = 10 ** (Math.floor(Math.log10(exact)) - 1);
+  return Math.round(exact / magnitude) * magnitude;
 }
 
 /**
