@@ -8,7 +8,7 @@ here and runs anywhere with ffmpeg, but it needs a host.
 | Input | Output | Why |
 |---|---|---|
 | HEIC photo the browser could not decode | A compressed JPEG that **replaces** it | An iPhone photo uploaded from desktop Chrome is otherwise a file most guests and half the hosts cannot open |
-| Any video | H.264 / AAC MP4, faststart, max 1080p, **replacing** the upload | The one combination that plays everywhere, and usually about half the size of what a phone produces |
+| Any video | H.264 / AAC MP4, faststart, **original resolution**, **replacing** the upload | The one combination that plays everywhere. The clip keeps the dimensions it was filmed at: a 4K memory is not re-shootable, and these get played through a projector |
 | Any video without a poster | A single JPEG frame | So a grid never shows a grey box |
 
 Outputs replace the object in the bucket rather than sitting beside it: an event

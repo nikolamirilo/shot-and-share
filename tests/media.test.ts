@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ACCEPT_ATTRIBUTE_ALL,
   ACCEPT_ATTRIBUTE_PHOTO,
   ACCEPTED_MIME,
   archiveKey,
@@ -56,6 +57,31 @@ describe("media types", () => {
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".jpeg");
     // The types stay: an iOS camera capture matches on type, not on a name.
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/jpeg");
+  });
+
+  /**
+   * The reported symptom: a guest on a plan that includes video opens the
+   * picker on their phone and can only choose photos.
+   *
+   * The exact-type list is matched against whatever the phone reports for each
+   * item in the camera roll, and for video that is routinely something not on
+   * our list - so every clip greys out. The wildcards are the half phones
+   * handle reliably, and they have to be present for video to be pickable at
+   * all.
+   */
+  it("offers video to the picker on a phone, not just exact types", () => {
+    expect(ACCEPT_ATTRIBUTE_ALL).toContain("video/*");
+    expect(ACCEPT_ATTRIBUTE_ALL).toContain("image/*");
+    // The exact types and extensions stay for desktop file managers.
+    expect(ACCEPT_ATTRIBUTE_ALL).toContain("video/mp4");
+    expect(ACCEPT_ATTRIBUTE_ALL).toContain(".mov");
+  });
+
+  it("keeps the photo-only picker photo-only", () => {
+    // Free plan, and a cover photo. Widening the video half must not leak here.
+    expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/*");
+    expect(ACCEPT_ATTRIBUTE_PHOTO).not.toContain("video/");
+    expect(ACCEPT_ATTRIBUTE_PHOTO).not.toContain(".mp4");
   });
 
   it("is an allowlist, not a blocklist", () => {
