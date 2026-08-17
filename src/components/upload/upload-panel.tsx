@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, Hole, cx, inputClass } from "@/components/ui";
+import { Button, Hole, cx } from "@/components/ui";
 import type { UploadVariant } from "@/lib/appearance/variants";
 
 /**
@@ -10,9 +10,9 @@ import type { UploadVariant } from "@/lib/appearance/variants";
  * compression, presigning, retries and progress; this owns what a guest looks
  * at - which is what lets the host's preview render the real thing.
  *
- * Every variant keeps the same three parts: one obvious action, the line saying
- * what may be sent, and the optional name field. They differ in how much of the
- * screen they take, because that is the choice a host is making.
+ * Every variant keeps the same two parts: one obvious action, and the line
+ * saying what may be sent. They differ in how much of the screen they take,
+ * because that is the choice a host is making.
  */
 
 export interface UploadPanelProps {
@@ -29,8 +29,6 @@ export interface UploadPanelProps {
   /** What may be sent, and how much room is left. */
   hint: string;
   busy?: boolean;
-  name: string;
-  onNameChange?: (value: string) => void;
   onPick?: () => void;
   /** Only "Camera or library" offers the camera as its own button. */
   onCapture?: () => void;
@@ -75,8 +73,6 @@ function BigButton({
   hint,
   busy,
   onPick,
-  name,
-  onNameChange,
   preview,
   children,
 }: UploadPanelProps) {
@@ -93,12 +89,6 @@ function BigButton({
         )}
       />
       <Hint text={hint} preview={preview} className="text-center" />
-      <NameField
-        name={name}
-        onNameChange={onNameChange}
-        preview={preview}
-        className={preview ? "mt-3" : "mt-4 sm:mt-5"}
-      />
       {children}
     </div>
   );
@@ -114,8 +104,6 @@ function DropPanel({
   busy,
   onPick,
   onDropFiles,
-  name,
-  onNameChange,
   preview,
   children,
 }: UploadPanelProps) {
@@ -179,12 +167,6 @@ function DropPanel({
           {inside}
         </button>
       )}
-      <NameField
-        name={name}
-        onNameChange={onNameChange}
-        preview={preview}
-        className={preview ? "mt-3" : "mt-4"}
-      />
       {children}
     </div>
   );
@@ -196,37 +178,21 @@ function SlimBar({
   hint,
   busy,
   onPick,
-  name,
-  onNameChange,
   preview,
   children,
 }: UploadPanelProps) {
   return (
     <div className={cx("card", preview ? "p-2.5" : "p-4")}>
-      {/* Side by side leaves the name field about sixty pixels on a small
-          phone, so below 480 the two stack. */}
-      <div
-        className={cx(
-          preview
-            ? "flex items-center gap-2"
-            : "flex flex-col gap-2.5 xs:flex-row xs:items-center xs:gap-3",
-        )}
-      >
-        <Action
-          label={label}
-          busy={busy}
-          onClick={onPick}
-          preview={preview}
-          className={preview ? "shrink-0" : "w-full shrink-0 xs:w-auto"}
-        />
-        <NameField
-          name={name}
-          onNameChange={onNameChange}
-          preview={preview}
-          className="min-w-0 flex-1"
-          inline
-        />
-      </div>
+      {/* Full width now that nothing sits beside it. A button that stops short
+          of the card's edge on a phone reads as half a row waiting for the
+          other half, which is what this used to be. */}
+      <Action
+        label={label}
+        busy={busy}
+        onClick={onPick}
+        preview={preview}
+        className="w-full"
+      />
       <Hint text={hint} preview={preview} />
       {children}
     </div>
@@ -245,8 +211,6 @@ function SplitButtons({
   busy,
   onPick,
   onCapture,
-  name,
-  onNameChange,
   preview,
   children,
 }: UploadPanelProps) {
@@ -280,12 +244,6 @@ function SplitButtons({
         />
       </div>
       <Hint text={hint} preview={preview} className="text-center" />
-      <NameField
-        name={name}
-        onNameChange={onNameChange}
-        preview={preview}
-        className={preview ? "mt-3" : "mt-4 sm:mt-5"}
-      />
       {children}
     </div>
   );
@@ -358,62 +316,5 @@ function Hint({
     >
       {text}
     </p>
-  );
-}
-
-function NameField({
-  name,
-  onNameChange,
-  preview,
-  inline,
-  className,
-}: {
-  name?: string;
-  onNameChange?: (value: string) => void;
-  preview?: boolean;
-  /** Sitting beside the button rather than under it: no label above. */
-  inline?: boolean;
-  className?: string;
-}) {
-  const label = "Your name - optional";
-
-  if (preview) {
-    return (
-      <div className={className}>
-        {!inline && (
-          <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-mist">
-            {label}
-          </p>
-        )}
-        <div
-          className={cx(
-            "inset-shadow-well rounded-lg bg-linen",
-            inline ? "h-6" : "mt-1 h-6",
-          )}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className={className}>
-      {!inline && (
-        <label
-          htmlFor="guest-name"
-          className="block font-mono text-micro uppercase tracking-[0.16em] text-mist"
-        >
-          {label}
-        </label>
-      )}
-      <input
-        id="guest-name"
-        value={name}
-        onChange={(e) => onNameChange?.(e.target.value)}
-        maxLength={60}
-        aria-label={inline ? label : undefined}
-        placeholder={inline ? "Your name - optional" : "So the host knows who to thank"}
-        className={cx(inputClass, inline ? undefined : "mt-1.5")}
-      />
-    </div>
   );
 }

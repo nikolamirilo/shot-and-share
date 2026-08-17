@@ -63,7 +63,6 @@ function seed(count: number, source: "guest" | "cover" = "guest") {
       width: 2560,
       height: 1707,
       uploader_fingerprint: source === "guest" ? "f".repeat(16) : null,
-      uploader_name: null,
       source,
       status: "ready",
       created_at: `2026-08-0${1}T00:${String(i).padStart(2, "0")}:00.000Z`,

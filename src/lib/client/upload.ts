@@ -3,7 +3,6 @@
 import type { PresignedUpload } from "@/lib/storage/types";
 
 const FINGERPRINT_KEY = "say-cheese:fingerprint";
-const NAME_KEY = "say-cheese:name";
 
 /**
  * A random identifier that does not need a secure context.
@@ -49,23 +48,6 @@ export function getFingerprint(): string {
     // Private mode, or storage disabled. Uploads still work; only the
     // remove-my-own-photo affordance is lost.
     return randomId();
-  }
-}
-
-export function getSavedName(): string {
-  try {
-    return localStorage.getItem(NAME_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-export function saveName(name: string) {
-  try {
-    if (name) localStorage.setItem(NAME_KEY, name);
-    else localStorage.removeItem(NAME_KEY);
-  } catch {
-    /* ignore */
   }
 }
 

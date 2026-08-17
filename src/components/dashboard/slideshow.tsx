@@ -163,12 +163,6 @@ export function Slideshow({
           </div>
         )}
       </div>
-
-      {current?.uploaderName && (
-        <p className="px-4 pb-5 text-center font-mono text-[0.8125rem] uppercase tracking-[0.16em] text-linen/60 sm:px-6">
-          {current.uploaderName}
-        </p>
-      )}
     </div>
   );
 }

@@ -85,7 +85,6 @@ export function EventPreview({
               captureLabel={wording.capture}
               chooseLabel={wording.choose}
               hint={wording.hint}
-              name=""
               preview
             />
 

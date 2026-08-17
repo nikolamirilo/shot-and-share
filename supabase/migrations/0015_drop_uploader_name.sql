@@ -1,0 +1,35 @@
+-- ---------------------------------------------------------------------------
+-- The guest's name comes off the photograph.
+--
+-- Every upload panel carried an optional "Your name" field, remembered in the
+-- browser and written onto each row. It bought three small things - a caption
+-- under the slideshow, a word in a tile's aria-label, and a suffix on the
+-- filename inside the ZIP - and cost the one thing the guest page cannot
+-- afford: a second field between a guest and the button.
+--
+-- The column goes rather than being left to fill with nulls. A column nothing
+-- writes is a column the next person reads and believes, and the names already
+-- in it are personal data with no remaining purpose - keeping them would mean
+-- keeping them in every backup and every export as well.
+--
+-- uploader_fingerprint stays. It is not a name and never was: a random id in
+-- the guest's own localStorage, which is what lets them delete a photo they
+-- just uploaded, and what event_stats counts to say how many people came.
+--
+-- Per 0009, a column drop has to go looking for the function bodies that name
+-- it, because Postgres does not record them as dependencies:
+--
+--   select p.proname
+--     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--    where n.nspname = 'public' and p.prosrc ~ 'uploader_name';
+--
+-- That returns nothing here. event_stats and event_media_count read
+-- uploader_fingerprint, kind, source, status and the byte counts, none of
+-- which this touches.
+--
+-- upload_reservations.media keeps whatever keys it was written with - it is
+-- jsonb, and a reservation lives for minutes. Any in-flight one carrying a
+-- name simply has it ignored when confirm builds the media row.
+-- ---------------------------------------------------------------------------
+
+alter table public.media drop column if exists uploader_name;

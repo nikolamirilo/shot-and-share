@@ -124,7 +124,6 @@ describe("the colours a host is shown", () => {
           variant="button"
           label="Add your photos"
           hint="Photos, up to 20 at a time."
-          name=""
           preview
         />
       </EventThemeRoot>,
@@ -147,34 +146,48 @@ describe("the colours a host is shown", () => {
 });
 
 describe("the upload panel", () => {
-  it("keeps the same three parts in every variant", () => {
-    // Shape is the only thing a host is choosing here. What may be sent, how
-    // much room is left and the optional name field survive all four - the
-    // slim bar labels its name field with a placeholder rather than a heading,
-    // which is the one difference the markup is allowed to have.
+  it("keeps the same two parts in every variant", () => {
+    // Shape is the only thing a host is choosing here. The action and the line
+    // saying what may be sent and how much room is left survive all four.
     for (const variant of ["button", "panel", "bar", "split"] as const) {
       const guest = renderToStaticMarkup(
         <UploadPanel
           variant={variant}
           label="Add your photos"
           hint="Photos, up to 20 at a time."
-          name=""
         />,
       );
       expect(guest).toContain("Photos, up to 20 at a time.");
-      expect(guest).toContain('id="guest-name"');
-      expect(guest).toContain("Your name");
+      // Not the label itself: the split variant names its two halves instead,
+      // which is the one difference the markup is allowed to have.
+      expect(guest).toContain("<button");
 
       const preview = renderToStaticMarkup(
         <UploadPanel
           variant={variant}
           label="Add your photos"
           hint="Photos, up to 20 at a time."
-          name=""
           preview
         />,
       );
       expect(preview).toContain("Photos, up to 20 at a time.");
+    }
+  });
+
+  it("asks the guest for nothing but the photos", () => {
+    // The name field is gone from every variant, and it is the only field the
+    // panel ever had. A text input reappearing here is a guest deciding whether
+    // to fill it in before they can send anything.
+    for (const variant of ["button", "panel", "bar", "split"] as const) {
+      const html = renderToStaticMarkup(
+        <UploadPanel
+          variant={variant}
+          label="Add your photos"
+          hint="Photos, up to 20 at a time."
+        />,
+      );
+      expect(html).not.toContain("<input");
+      expect(html).not.toContain("Your name");
     }
   });
 
@@ -187,12 +200,10 @@ describe("the upload panel", () => {
         variant="panel"
         label="Add your photos"
         hint="Photos, up to 20 at a time."
-        name=""
         preview
       />,
     );
     expect(html).not.toContain("<button");
-    expect(html).not.toContain("<input");
   });
 
   it("is a real control when it is the guest's", () => {
@@ -201,11 +212,9 @@ describe("the upload panel", () => {
         variant="panel"
         label="Add your photos"
         hint="Photos, up to 20 at a time."
-        name=""
       />,
     );
     expect(html).toContain("<button");
-    expect(html).toContain("<input");
   });
 });
 
