@@ -23,6 +23,7 @@ interface PresignResponse {
     /** "compressed" means send the re-encoded copy, not the file off the disk. */
     source: "file" | "compressed";
     media: PresignedUpload;
+    thumb?: PresignedUpload | null;
     poster?: PresignedUpload | null;
   };
 }
@@ -73,20 +74,33 @@ export async function sendUpload<T extends { confirmed: boolean }>(
     });
 
   let posterUploaded = false;
+  let thumbUploaded = false;
 
   try {
     await withRetry(() => uploadToPresigned(upload.media, body, onProgress));
 
-    // A video's poster is cosmetic and the worker can cut another one. It
-    // failing must never cost the clip.
+    /*
+     * Neither of the small copies may cost the photograph. A thumbnail that
+     * fails means the grid falls back to the full copy through the optimiser;
+     * a poster that fails means the worker cuts another one.
+     *
+     * Both are logged rather than swallowed: one failing at every event is a
+     * bucket problem, and a silent catch is how it stays invisible for a month.
+     */
+    if (upload.thumb && prepared.thumb) {
+      try {
+        await uploadToPresigned(upload.thumb, prepared.thumb);
+        thumbUploaded = true;
+      } catch (e) {
+        console.error("[upload] thumbnail failed, keeping the photo", e);
+      }
+    }
+
     if (upload.poster && prepared.poster) {
       try {
         await uploadToPresigned(upload.poster, prepared.poster);
         posterUploaded = true;
       } catch (e) {
-        // Logged rather than swallowed: a poster that never uploads at any
-        // event is a bucket problem, and a silent catch is how it stays
-        // invisible for a month.
         console.error("[upload] poster failed, keeping the clip", e);
       }
     }
@@ -102,6 +116,7 @@ export async function sendUpload<T extends { confirmed: boolean }>(
     const reason = e instanceof Error ? e.message : String(e);
     await confirm({
       mediaUploaded: false,
+      thumbUploaded: false,
       posterUploaded: false,
       failed: true,
       reason: reason.slice(0, 300),
@@ -117,7 +132,7 @@ export async function sendUpload<T extends { confirmed: boolean }>(
    * acknowledgement did not get through would be the worst trade in the system.
    */
   const confirmation = await withRetry(() =>
-    confirm({ mediaUploaded: true, posterUploaded, failed: false }),
+    confirm({ mediaUploaded: true, thumbUploaded, posterUploaded, failed: false }),
   );
 
   if (!confirmation.confirmed) {

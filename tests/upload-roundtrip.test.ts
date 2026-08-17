@@ -54,7 +54,6 @@ async function presignFor(file: unknown) {
       body: JSON.stringify({
         token: token(),
         fingerprint: FINGERPRINT,
-        uploaderName: "Guest",
         file,
       }),
     }),
@@ -186,22 +185,52 @@ describe("a video with a poster", () => {
   });
 });
 
-describe("the whole handshake", () => {
-  it("ends with a media row the gallery can read", async () => {
-    const compressed = new Blob([new Uint8Array(90_000)], {
-      type: "image/webp",
-    });
+describe("a photo and its thumbnail", () => {
+  it("accepts both objects at the sizes the route signed for", async () => {
+    const full = new Blob([new Uint8Array(1_950_000)], { type: "image/jpeg" });
+    const thumb = new Blob([new Uint8Array(25_000)], { type: "image/webp" });
 
-    const { body } = await presignFor({
-      size: 2_000_000,
+    const { status, body } = await presignFor({
+      size: 4_000_000,
       type: "image/jpeg",
-      compressed: { size: compressed.size, format: "webp" },
+      compressed: {
+        size: full.size,
+        format: "jpeg",
+        width: 4032,
+        height: 3024,
+      },
+      thumb: { size: thumb.size, format: "webp", width: 640, height: 480 },
       sourceWidth: 4032,
       sourceHeight: 3024,
       needsServer: false,
     });
 
-    expect((await sendBytes(body.upload.media, compressed)).status).toBe(204);
+    expect(status).toBe(200);
+    expect((await sendBytes(body.upload.media, full)).status).toBe(204);
+    expect((await sendBytes(body.upload.thumb, thumb)).status).toBe(204);
+  });
+});
+
+describe("the whole handshake", () => {
+  /** Presign, post the bytes, confirm. Returns the confirm response body. */
+  async function handshake(opts: { sendThumb: boolean }) {
+    const full = new Blob([new Uint8Array(90_000)], { type: "image/jpeg" });
+    const thumb = new Blob([new Uint8Array(9_000)], { type: "image/webp" });
+
+    const { body } = await presignFor({
+      size: 2_000_000,
+      type: "image/jpeg",
+      compressed: { size: full.size, format: "jpeg" },
+      thumb: { size: thumb.size, format: "webp" },
+      sourceWidth: 4032,
+      sourceHeight: 3024,
+      needsServer: false,
+    });
+
+    expect((await sendBytes(body.upload.media, full)).status).toBe(204);
+    if (opts.sendThumb) {
+      expect((await sendBytes(body.upload.thumb, thumb)).status).toBe(204);
+    }
 
     const response = await confirm(
       new Request("http://localhost/api/upload/confirm", {
@@ -214,13 +243,33 @@ describe("the whole handshake", () => {
           width: 4032,
           height: 3024,
           mediaUploaded: true,
+          thumbUploaded: opts.sendThumb,
           posterUploaded: false,
           failed: false,
         }),
       }),
     );
 
-    expect(await response.json()).toEqual({ confirmed: true });
-    expect(store.rows("media")).toHaveLength(1);
+    return await response.json();
+  }
+
+  it("ends with a media row the gallery can read", async () => {
+    expect(await handshake({ sendThumb: true })).toEqual({ confirmed: true });
+
+    const rows = store.rows("media");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].thumb_key).toMatch(/\/thumb\/[^/]+\.webp$/);
+    expect(rows[0].media_key).toMatch(/\/full\/[^/]+\.jpg$/);
+  });
+
+  it("still ends with a photo when the thumbnail never made it", async () => {
+    // The one that matters: a guest at a venue whose thumbnail POST failed
+    // still has their photograph, and the grid falls back to the full copy.
+    expect(await handshake({ sendThumb: false })).toEqual({ confirmed: true });
+
+    const rows = store.rows("media");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].thumb_key).toBeNull();
+    expect(rows[0].media_key).toMatch(/\/full\/[^/]+\.jpg$/);
   });
 });
