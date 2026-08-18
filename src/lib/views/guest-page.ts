@@ -51,7 +51,15 @@ export async function loadGuestPage(token: string): Promise<GuestPage> {
   let coverUrl: string | null = null;
   if (event.cover_media_id && appearance.cover !== "type") {
     const row = await findReadyMedia(createAdminClient(), event.cover_media_id);
-    if (row) coverUrl = (await toMediaView(row)).previewUrl;
+    if (row) {
+      const view = await toMediaView(row);
+      // The full copy, not `previewUrl`. That one is the 640px thumbnail the
+      // gallery grid loads fifty of, and the cover is the opposite case: one
+      // photograph across a whole phone, where 640px is visibly soft. The
+      // thumbnail is only the fallback, for a row with no full copy - one
+      // still waiting on the worker, or written before the folders existed.
+      coverUrl = view.fullUrl ?? view.previewUrl;
+    }
   }
 
   return {
