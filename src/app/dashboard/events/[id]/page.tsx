@@ -189,10 +189,6 @@ export default async function EventPage({
               a panel: the gallery underneath is the real answer. */}
           <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-md">
             <Stat label="Photos" value={photoCount.toLocaleString("en-GB")} />
-            <Stat
-              label="People who uploaded"
-              value={view.uploaderCount.toLocaleString("en-GB")}
-            />
           </dl>
 
           {media.length < photoCount && (
