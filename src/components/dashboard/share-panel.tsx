@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import {
+  MdOutlineAutorenew,
+  MdOutlineCheck,
+  MdOutlineContentCopy,
+  MdOutlineFileDownload,
+  MdOutlineLinkOff,
+} from "react-icons/md";
 
 import { useServerAction } from "@/hooks/use-server-action";
 
@@ -118,6 +125,7 @@ export function SharePanel({
             see a page telling them the link has closed.
           </p>
           <Button onClick={rotate} disabled={pending} className="mt-5 w-full sm:w-auto">
+            <MdOutlineAutorenew aria-hidden className="shrink-0 text-[1.25em]" />
             {pending ? "Issuing…" : "Issue a new link"}
           </Button>
         </>
@@ -178,6 +186,11 @@ export function SharePanel({
                 size="sm"
                 className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
               >
+                {copied ? (
+                  <MdOutlineCheck aria-hidden className="shrink-0 text-[1.25em]" />
+                ) : (
+                  <MdOutlineContentCopy aria-hidden className="shrink-0 text-[1.25em]" />
+                )}
                 {copied ? "Copied" : "Copy link"}
               </Button>
               <Button
@@ -187,6 +200,7 @@ export function SharePanel({
                 disabled={busy !== null}
                 className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
               >
+                <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
                 {busy === "card"
                   ? "Building…"
                   : brandedQr
@@ -200,6 +214,7 @@ export function SharePanel({
                 disabled={busy !== null}
                 className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
               >
+                <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
                 {busy === "png" ? "Saving…" : "Download the code (PNG)"}
               </Button>
             </div>
@@ -245,6 +260,7 @@ export function SharePanel({
                 size="sm"
                 disabled={pending}
               >
+                <MdOutlineAutorenew aria-hidden className="shrink-0 text-[1.25em]" />
                 Reissue link
               </Button>
               <Button
@@ -253,6 +269,7 @@ export function SharePanel({
                 size="sm"
                 disabled={pending}
               >
+                <MdOutlineLinkOff aria-hidden className="shrink-0 text-[1.25em]" />
                 Turn the link off
               </Button>
             </div>

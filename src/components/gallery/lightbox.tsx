@@ -2,6 +2,12 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import {
+  MdChevronLeft,
+  MdChevronRight,
+  MdClose,
+  MdOutlineFileDownload,
+} from "react-icons/md";
 
 import { Button, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
@@ -201,6 +207,7 @@ export function Lightbox({
 
           <div className="mt-4 flex flex-wrap justify-center gap-2.5 sm:gap-3">
             <Button onClick={onClose} variant="onDark" size="sm">
+              <MdClose aria-hidden className="shrink-0 text-[1.25em]" />
               Close
             </Button>
             {/* One anchor in two states rather than one that appears when the
@@ -218,6 +225,7 @@ export function Lightbox({
                   !full?.downloadUrl && "opacity-45",
                 )}
               >
+                <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
                 Download
               </a>
             )}
@@ -260,18 +268,11 @@ function StepArrow({
         back ? "left-2" : "right-2",
       )}
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="h-5 w-5"
-        role="presentation"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d={back ? "M15 4 7 12l8 8" : "M9 4l8 8-8 8"} />
-      </svg>
+      {back ? (
+        <MdChevronLeft aria-hidden className="h-7 w-7" />
+      ) : (
+        <MdChevronRight aria-hidden className="h-7 w-7" />
+      )}
     </button>
   );
 }

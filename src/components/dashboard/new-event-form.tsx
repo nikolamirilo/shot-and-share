@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { createEvent } from "@/lib/actions/events";
 import type { ActionState } from "@/lib/actions/types";
@@ -52,7 +53,13 @@ export function NewEventForm() {
 
       {state.error && <Alert>{state.error}</Alert>}
 
-      <SubmitButton idle="Create an event" pending="Creating…" size="lg" className="w-full" />
+      <SubmitButton
+        idle="Create an event"
+        pending="Creating…"
+        icon={<MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />}
+        size="lg"
+        className="w-full"
+      />
     </form>
   );
 }

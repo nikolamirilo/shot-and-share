@@ -1,3 +1,5 @@
+import { MdOutlineWorkspacePremium } from "react-icons/md";
+
 import { Badge, ButtonLink } from "@/components/ui";
 import { TIERS } from "@/lib/tiers";
 
@@ -34,6 +36,7 @@ export function LockedPanel({ eventId }: { eventId: string }) {
       </ul>
 
       <ButtonLink href={`/dashboard/events/${eventId}#upgrade`} className="mt-5">
+        <MdOutlineWorkspacePremium aria-hidden className="shrink-0 text-[1.25em]" />
         See the plans
       </ButtonLink>
     </section>

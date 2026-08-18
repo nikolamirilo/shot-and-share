@@ -14,20 +14,21 @@ export function Steps() {
     {
       n: "01",
       art: <CreateArt />,
-      title: "Create the event",
-      body: "A link and a printable card, before you pay anything.",
+      title: "Make the link",
+      body: "You get a link and a card to print. Nothing to pay yet.",
     },
     {
       n: "02",
       art: <TableArt />,
-      title: "Put the code on the tables",
+      title: "Put it on the tables",
       body: "Guests point a camera at it. That is the whole instruction.",
     },
     {
       n: "03",
       art: <KeepArt />,
-      title: "Keep everything",
-      body: "One gallery as they arrive, one ZIP the morning after.",
+      title: "Take them home",
+      body:
+        "They land in one gallery all night, and come down as one file in the morning.",
     },
   ];
 

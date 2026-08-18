@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import {
+  MdOutlineAddAPhoto,
+  MdOutlinePhotoCamera,
+  MdOutlinePhotoLibrary,
+} from "react-icons/md";
 
 import { Button, Hole, cx } from "@/components/ui";
 import type { UploadVariant } from "@/lib/appearance/variants";
@@ -80,6 +85,7 @@ function BigButton({
     <div className={cx("card", preview ? "p-3" : "p-5 sm:p-6")}>
       <Action
         label={label}
+        icon={<MdOutlineAddAPhoto aria-hidden className="shrink-0 text-[1.25em]" />}
         busy={busy}
         onClick={onPick}
         preview={preview}
@@ -188,6 +194,7 @@ function SlimBar({
           other half, which is what this used to be. */}
       <Action
         label={label}
+        icon={<MdOutlineAddAPhoto aria-hidden className="shrink-0 text-[1.25em]" />}
         busy={busy}
         onClick={onPick}
         preview={preview}
@@ -229,6 +236,7 @@ function SplitButtons({
       >
         <Action
           label={busy ? label : captureLabel}
+          icon={<MdOutlinePhotoCamera aria-hidden className="shrink-0 text-[1.25em]" />}
           busy={busy}
           onClick={onCapture}
           preview={preview}
@@ -236,6 +244,7 @@ function SplitButtons({
         />
         <Action
           label={chooseLabel}
+          icon={<MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />}
           busy={busy}
           onClick={onPick}
           preview={preview}
@@ -253,6 +262,7 @@ function SplitButtons({
 
 function Action({
   label,
+  icon,
   busy,
   onClick,
   preview,
@@ -260,6 +270,11 @@ function Action({
   className,
 }: {
   label: string;
+  /**
+   * Names the action beside the label. Drawn in the preview too - a host
+   * looking at a picture of their guest page has to see what the guests get.
+   */
+  icon?: React.ReactNode;
   busy?: boolean;
   onClick?: () => void;
   preview?: boolean;
@@ -272,13 +287,14 @@ function Action({
     return (
       <span
         className={cx(
-          "inline-flex items-center justify-center rounded-xl px-3 text-label font-semibold",
+          "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 text-label font-semibold",
           variant === "primary"
             ? "bg-ink text-linen shadow-md"
             : "bg-paper text-ink shadow-md",
           className,
         )}
       >
+        {icon}
         {label}
       </span>
     );
@@ -292,6 +308,7 @@ function Action({
       onClick={onClick}
       className={className}
     >
+      {icon}
       {label}
     </Button>
   );

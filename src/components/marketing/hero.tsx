@@ -1,3 +1,5 @@
+import { MdOutlineAddCircleOutline, MdOutlineSell } from "react-icons/md";
+
 import { ContactSheet } from "@/components/marketing/contact-sheet";
 import { ButtonLink, Eyebrow } from "@/components/ui";
 
@@ -30,9 +32,9 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               only inside the element's box and the last line's descenders hang
               below it. */}
           <h1 className="photo-type mt-4 pb-[0.06em] text-h1 leading-[1.02] xs:text-[3.25rem] sm:text-display xl:text-[5rem]">
-            Every photo
+            Let your guests
             <br />
-            your guests take.
+            capture the moments you miss
           </h1>
 
           <p className="mt-5 max-w-md text-body sm:mt-6 sm:text-lead">
@@ -50,6 +52,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               variant="primary"
               className="w-full sm:w-auto"
             >
+              <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
               Create an event
             </ButtonLink>
             <ButtonLink
@@ -58,6 +61,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               variant="secondary"
               className="w-full sm:w-auto"
             >
+              <MdOutlineSell aria-hidden className="shrink-0 text-[1.25em]" />
               See pricing
             </ButtonLink>
           </div>

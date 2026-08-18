@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { MdOutlineImage } from "react-icons/md";
 
 import { CoverDialog } from "@/components/dashboard/appearance/cover-dialog";
 import { useCoverPhotos } from "@/components/dashboard/appearance/use-cover-photos";
@@ -110,6 +111,7 @@ export function CoverPicker({
             variant="secondary"
             onClick={() => setOpen(true)}
           >
+            <MdOutlineImage aria-hidden className="shrink-0 text-[1.25em]" />
             {selectedUrl ? "Change the cover photo" : "Choose a cover photo"}
           </Button>
           <p className="mt-1.5 text-label text-ash">

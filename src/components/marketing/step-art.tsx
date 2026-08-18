@@ -2,8 +2,8 @@
  * Three drawings of the three things a host does, so the copy underneath can
  * stop at one line.
  *
- * The parts that carry meaning - the code, the phone's beam, the arrow out -
- * are claret; everything holding them up is ink at low opacity.
+ * The parts that carry meaning - the code, the phone's beam, the band round
+ * the bundle - are claret; everything holding them up is ink at low opacity.
  * `aria-hidden` throughout: the heading beside them already says what they say.
  */
 
@@ -17,7 +17,6 @@ function Frame({ children }: { children: React.ReactNode }) {
   return (
     <svg
       viewBox="0 0 200 132"
-      role="img"
       aria-hidden
       className="h-auto w-full max-w-[15rem]"
     >
@@ -140,76 +139,72 @@ export function TableArt() {
   );
 }
 
-/** Photographs landing in one place, and one arrow out of it. */
+/** Photographs landing in one gallery, and the night leaving as one bundle. */
 export function KeepArt() {
   return (
     <Frame>
-      {/* Three arriving, at three angles, because they come from three phones. */}
-      <g opacity="0.4">
-        <rect
-          x="20"
-          y="16"
-          width="40"
-          height="32"
-          rx="5"
-          fill="var(--color-paper)"
-          stroke="var(--color-ink)"
-          strokeOpacity="0.3"
-          strokeWidth="2"
-          transform="rotate(-12 40 32)"
-        />
-        <rect
-          x="82"
-          y="10"
-          width="40"
-          height="32"
-          rx="5"
-          fill="var(--color-paper)"
-          stroke="var(--color-ink)"
-          strokeOpacity="0.3"
-          strokeWidth="2"
-          transform="rotate(6 102 26)"
-        />
-        <rect
-          x="142"
-          y="18"
-          width="40"
-          height="32"
-          rx="5"
-          fill="var(--color-paper)"
-          stroke="var(--color-ink)"
-          strokeOpacity="0.3"
-          strokeWidth="2"
-          transform="rotate(14 162 34)"
-        />
+      {/* Still arriving: cropped by the frame and tucked behind the gallery.
+          A photograph that ends off-screen is one of many; a photograph
+          floating whole in the corner is just another card. */}
+      <g
+        fill="var(--color-paper)"
+        stroke="var(--color-ink)"
+        strokeOpacity="0.22"
+        strokeWidth="2"
+      >
+        <rect x="-14" y="30" width="58" height="34" rx="5" transform="rotate(-12 15 47)" />
+        <rect x="-18" y="72" width="58" height="34" rx="5" transform="rotate(10 13 89)" />
       </g>
 
       {/* The one place they land. */}
       <rect
-        x="26"
-        y="54"
-        width="148"
-        height="52"
+        x="40"
+        y="26"
+        width="84"
+        height="82"
         rx="10"
         fill="var(--color-paper)"
         stroke="var(--color-ink)"
         strokeOpacity="0.2"
         strokeWidth="2"
       />
+      {/* The newest frame, still warm - the live half of the step, said with
+          one tile rather than with a second drawing. */}
+      <rect x="50" y="38" width="18" height="22" rx="3" fill="var(--color-claret)" />
       <g fill="var(--color-ink)" opacity="0.14">
-        <rect x="38" y="64" width="34" height="24" rx="4" />
-        <rect x="80" y="64" width="34" height="24" rx="4" />
-        <rect x="122" y="64" width="34" height="24" rx="4" />
-        <rect x="38" y="94" width="118" height="5" rx="2.5" />
+        <rect x="73" y="38" width="18" height="22" rx="3" />
+        <rect x="96" y="38" width="18" height="22" rx="3" />
+        <rect x="50" y="65" width="18" height="22" rx="3" />
+        <rect x="73" y="65" width="18" height="22" rx="3" />
+        <rect x="96" y="65" width="18" height="22" rx="3" />
+        <rect x="50" y="95" width="64" height="5" rx="2.5" />
       </g>
 
-      {/* Out again, as one file, clear of the gallery's own edge - an arrow that
-          starts inside the box it is leaving reads as a scratch on it. The only
-          claret in the drawing, because taking them home is what the step is
-          for. */}
+      {/* Out again, along the same short claret connector the first drawing
+          uses, so all three read left to right: form to code, card to phone,
+          gallery to bundle. */}
       <g stroke="var(--color-claret)" strokeWidth="2.5" {...STROKE}>
-        <path d="M100 112v14M93 119l7 7 7-7" />
+        <path d="M124 67h8M128 63l4 4-4 4" />
       </g>
+
+      {/* What you carry out: a stack of prints with a band round it. A file
+          icon would be the wrong language on a page made of paper. */}
+      <rect
+        x="142"
+        y="42"
+        width="42"
+        height="50"
+        rx="6"
+        fill="var(--color-paper)"
+        stroke="var(--color-ink)"
+        strokeOpacity="0.28"
+        strokeWidth="2"
+      />
+      <g fill="var(--color-ink)">
+        <rect x="145" y="94" width="36" height="3.5" rx="1.75" opacity="0.2" />
+        <rect x="148" y="99" width="30" height="3.5" rx="1.75" opacity="0.13" />
+      </g>
+      <rect x="138" y="62" width="50" height="11" rx="3.5" fill="var(--color-claret)" />
     </Frame>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { MdOutlineSend } from "react-icons/md";
 
 import { requestReset, type AuthState } from "@/lib/actions/auth";
 import { SubmitButton } from "@/components/form/submit-button";
@@ -41,7 +42,13 @@ export function ForgotForm() {
 
       {state.error && <Alert>{state.error}</Alert>}
 
-      <SubmitButton idle="Send the link" pending="Sending…" size="lg" className="w-full" />
+      <SubmitButton
+        idle="Send the link"
+        pending="Sending…"
+        icon={<MdOutlineSend aria-hidden className="shrink-0 text-[1.25em]" />}
+        size="lg"
+        className="w-full"
+      />
     </form>
   );
 }

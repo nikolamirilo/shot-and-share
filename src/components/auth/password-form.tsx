@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { MdOutlineLockReset } from "react-icons/md";
 
 import { updatePassword, type AuthState } from "@/lib/actions/auth";
 import { SubmitButton } from "@/components/form/submit-button";
@@ -45,7 +46,13 @@ export function PasswordForm() {
 
       {state.error && <Alert>{state.error}</Alert>}
 
-      <SubmitButton idle="Save the password" pending="Saving…" size="lg" className="w-full" />
+      <SubmitButton
+        idle="Save the password"
+        pending="Saving…"
+        icon={<MdOutlineLockReset aria-hidden className="shrink-0 text-[1.25em]" />}
+        size="lg"
+        className="w-full"
+      />
     </form>
   );
 }

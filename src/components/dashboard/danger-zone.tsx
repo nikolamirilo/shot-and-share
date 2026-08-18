@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MdOutlineDeleteForever, MdOutlineRestore } from "react-icons/md";
 
 import { useServerAction } from "@/hooks/use-server-action";
 
@@ -50,6 +51,7 @@ export function DangerZone({ event }: { event: EventRow }) {
             disabled={pending}
             className="mt-3 w-full sm:w-auto"
           >
+            <MdOutlineRestore aria-hidden className="shrink-0 text-[1.25em]" />
             {pending ? "Restoring…" : "Restore this event"}
           </Button>
         </div>
@@ -78,6 +80,7 @@ export function DangerZone({ event }: { event: EventRow }) {
         disabled={pending || confirmText.trim() !== event.name}
         className="mt-3 w-full sm:w-auto"
       >
+        <MdOutlineDeleteForever aria-hidden className="shrink-0 text-[1.25em]" />
         {pending ? "Deleting…" : "Delete this event and everything in it"}
       </Button>
 

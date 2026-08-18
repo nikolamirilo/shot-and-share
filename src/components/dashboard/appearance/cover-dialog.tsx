@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import {
+  MdClose,
+  MdOutlineExpandMore,
+  MdOutlineFileUpload,
+} from "react-icons/md";
 
 import {
   Chosen,
@@ -95,9 +100,11 @@ export function CoverDialog({
               disabled={Boolean(uploading)}
               onClick={onPickFile}
             >
+              <MdOutlineFileUpload aria-hidden className="shrink-0 text-[1.25em]" />
               {uploading ? `Uploading… ${uploading.percent}%` : "Upload your own"}
             </Button>
             <Button type="button" size="sm" autoFocus onClick={onClose}>
+              <MdClose aria-hidden className="shrink-0 text-[1.25em]" />
               Close
             </Button>
           </div>
@@ -164,7 +171,7 @@ export function CoverDialog({
                   onClick={() => onRemove(item)}
                   className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-paper text-label font-bold leading-none shadow-md disabled:opacity-45"
                 >
-                  ×
+                  <MdClose aria-hidden />
                 </button>
               </div>
             ))}
@@ -194,6 +201,7 @@ export function CoverDialog({
               disabled={loading}
               onClick={onLoadMore}
             >
+              <MdOutlineExpandMore aria-hidden className="shrink-0 text-[1.25em]" />
               {loading ? "Loading…" : `Load ${COVER_PAGE_SIZE} more`}
             </Button>
           )}

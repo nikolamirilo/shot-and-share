@@ -2,6 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import {
+  MdOutlineClose,
+  MdOutlineDelete,
+  MdOutlineImage,
+} from "react-icons/md";
 
 import { useServerAction } from "@/hooks/use-server-action";
 
@@ -134,6 +139,7 @@ export function HostGallery({
                 variant="secondary"
                 disabled={pending}
               >
+                <MdOutlineDelete aria-hidden className="shrink-0 text-[1.25em]" />
                 {pending ? "Deleting…" : "Delete selected"}
               </Button>
               {selected.size === 1 && (
@@ -143,6 +149,7 @@ export function HostGallery({
                   variant="ghost"
                   disabled={pending}
                 >
+                  <MdOutlineImage aria-hidden className="shrink-0 text-[1.25em]" />
                   Use as cover
                 </Button>
               )}
@@ -151,6 +158,7 @@ export function HostGallery({
                 size="sm"
                 variant="ghost"
               >
+                <MdOutlineClose aria-hidden className="shrink-0 text-[1.25em]" />
                 Clear
               </Button>
             </>

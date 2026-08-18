@@ -18,6 +18,8 @@ import {
   softwareApplicationSchema,
 } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
+import { HeroVariant3 } from "@/components/marketing/HeroVariant3";
+import { HeroVariant2 } from "@/components/marketing/HeroVariant2";
 
 export const metadata: Metadata = {
   title: `${SITE.name} - every photo your guests take`,
@@ -42,8 +44,8 @@ export default async function LandingPage() {
 
       <SiteHeader signedIn={signedIn} />
       <main>
-        <Hero signedIn={signedIn} />
-        <LogoStrip />
+        <HeroVariant2 signedIn={false} />
+        {/* <LogoStrip /> */}
         <Steps />
         <Why />
         <PricingSection />

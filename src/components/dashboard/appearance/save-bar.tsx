@@ -1,5 +1,7 @@
 "use client";
 
+import { MdOutlineSave } from "react-icons/md";
+
 import type { SaveState } from "@/components/dashboard/appearance/settings";
 import { Button } from "@/components/ui";
 import { pluralise } from "@/lib/format";
@@ -55,6 +57,7 @@ export function SaveBar({
           aria-live="polite"
           className="toast-in pointer-events-auto whitespace-nowrap shadow-lg"
         >
+          <MdOutlineSave aria-hidden className="shrink-0 text-[1.25em]" />
           {saving ? "Saving…" : `Save ${pluralise(changes, "change")}`}
         </Button>
       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { MdOutlineShoppingCartCheckout } from "react-icons/md";
+
 import { useServerAction } from "@/hooks/use-server-action";
 
 import { startCheckout } from "@/lib/actions/billing";
@@ -111,6 +113,7 @@ export function UpgradePanel({
               size="sm"
               className="col-span-2 w-full sm:col-span-1 sm:w-auto"
             >
+              <MdOutlineShoppingCartCheckout aria-hidden className="shrink-0 text-[1.25em]" />
               {pending ? "Opening checkout…" : `Buy for €${option.price}`}
             </Button>
           </li>

@@ -265,6 +265,35 @@
     }
   }
 
+  /* --- The same trick, image supplied per instance -------------------------
+     `.photo-type` hard-codes /hero/fill.svg because the old hero only ever had
+     one headline. The variants each want their own material - a mosaic of
+     twelve frames for one, a single continuous photograph for the other - so
+     this takes the picture from `--fill` and the caller sets it.
+
+     Both images are graded before they are ever written to disk: no pixel in
+     either clears a relative luminance of 0.105, which puts the lightest part
+     of a letterform at 5.6:1 on linen. That grading is the whole reason this
+     reads as type rather than as a smear, and it is why `.photo-type`'s own
+     comment warns against tiling a picture per word.
+
+     `color` is set first and only surrendered inside the @supports, so a
+     browser without background-clip paints claret rather than nothing. */
+  .photo-fill {
+    color: var(--color-claret);
+  }
+
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    .photo-fill {
+      color: transparent;
+      background-image: var(--fill);
+      background-size: cover;
+      background-position: 50% 50%;
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+  }
+
   /* A note inside a card. White on white is nothing without an outline, so the
      surface steps down a shade and the shadow does the separating.
      Errors and confirmations across the product go through this. */
@@ -407,6 +436,92 @@
   animation: progress-drift 1.4s ease-in-out infinite;
 }
 
+
+/* --- The arc, unlayered ------------------------------------------------------
+   Deliberately outside `@layer components`: Tailwind v4 emits utilities into a
+   later layer, so a layered `width` here loses to `lg:w-auto` and every card
+   collapses to nothing. Unlayered rules outrank layered ones, which is exactly
+   the escape hatch this needs.
+   -------------------------------------------------------------------------- */
+@media (min-width: 64rem) {
+  .arc {
+    display: block;
+    position: relative;
+    overflow: visible;
+  }
+
+  .arc > * {
+    position: absolute;
+    top: 50%;
+    left: var(--x);
+    width: var(--w);
+    margin: 0;
+    transform: translate(-50%, -50%) scale(var(--sc)) rotate(var(--rot));
+    opacity: var(--op);
+    z-index: var(--z);
+  }
+}
+
+/* --- The variants arriving -------------------------------------------------
+   Three behaviours, each tied to what the thing actually is. Frames are dealt
+   outward from the centre of the arc, the way a hand of cards is put down. The
+   mosaic floor lands tile by tile in a diagonal wave. The ribbon is wiped in
+   from 19:00 towards 03:00, which is the direction the night ran.
+
+   Every one is off under prefers-reduced-motion, and every one resolves to the
+   element's resting state, so a page that never animates is still correct.
+   -------------------------------------------------------------------------- */
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 26px)) scale(calc(var(--sc, 1) * 0.88))
+      rotate(0deg);
+  }
+  to {
+    opacity: var(--op, 1);
+    transform: translate(-50%, -50%) scale(var(--sc, 1)) rotate(var(--rot, 0deg));
+  }
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Wiped rather than faded: a fade says "loading", a wipe says "the night ran
+   left to right". */
+@keyframes ribbon-reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.tile-in {
+  animation: tile-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ribbon-reveal {
+  animation: ribbon-reveal 1100ms cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+/* The deal only exists where the arc exists. Below `lg` the cards are a rail
+   and they simply rise. */
+@media (min-width: 64rem) {
+  .deal {
+    animation: deal 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -415,6 +530,9 @@
   .punch,
   .rise,
   .toast-in,
+  .deal,
+  .tile-in,
+  .ribbon-reveal,
   .shimmer::after {
     animation: none !important;
   }

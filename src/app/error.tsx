@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { MdOutlineHome, MdOutlineRefresh } from "react-icons/md";
 
 import { Button, ButtonLink, Hole } from "@/components/ui";
 
@@ -32,9 +33,11 @@ export default function GlobalError({
 
       <div className="mt-8 flex w-full max-w-xs flex-col justify-center gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:flex-wrap">
         <Button onClick={reset} className="w-full sm:w-auto">
+          <MdOutlineRefresh aria-hidden className="shrink-0 text-[1.25em]" />
           Try again
         </Button>
         <ButtonLink href="/" variant="secondary" className="w-full sm:w-auto">
+          <MdOutlineHome aria-hidden className="shrink-0 text-[1.25em]" />
           Back to the start
         </ButtonLink>
       </div>

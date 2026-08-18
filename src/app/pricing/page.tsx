@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { ComparisonTable } from "@/components/marketing/comparison-table";
 import { PricingDetail } from "@/components/marketing/pricing-detail";
@@ -79,6 +80,7 @@ export default async function PricingPage() {
               size="lg"
               className="mt-8 w-full sm:w-auto"
             >
+              <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
               Create an event
             </ButtonLink>
           </div>

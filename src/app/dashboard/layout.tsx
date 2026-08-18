@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { MdAdd } from "react-icons/md";
 
 import { AccountMenu } from "@/components/layout/account-menu";
 import { Wordmark } from "@/components/layout/logo";
@@ -69,6 +70,7 @@ export default async function DashboardLayout({
             size="sm"
             className="whitespace-nowrap"
           >
+            <MdAdd aria-hidden className="shrink-0 text-[1.25em]" />
             New event
           </ButtonLink>
           <AccountMenu

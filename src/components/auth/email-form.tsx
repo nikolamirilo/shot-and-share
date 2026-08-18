@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { MdOutlineLogin, MdOutlinePersonAddAlt } from "react-icons/md";
 
 import { signIn, signUp, type AuthState } from "@/lib/actions/auth";
 import { SubmitButton } from "@/components/form/submit-button";
@@ -97,6 +98,13 @@ export function EmailForm({ next }: { next?: string }) {
       <SubmitButton
         idle={creating ? "Create account" : "Sign in"}
         pending={creating ? "Creating…" : "Signing in…"}
+        icon={
+          creating ? (
+            <MdOutlinePersonAddAlt aria-hidden className="shrink-0 text-[1.25em]" />
+          ) : (
+            <MdOutlineLogin aria-hidden className="shrink-0 text-[1.25em]" />
+          )
+        }
         size="lg"
         className="w-full"
       />

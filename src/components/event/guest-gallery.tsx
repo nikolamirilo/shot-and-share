@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MdOutlineExpandMore } from "react-icons/md";
 
 import { Lightbox } from "@/components/gallery/lightbox";
 import { PhotoGallery } from "@/components/gallery/photo-gallery";
@@ -226,6 +227,7 @@ export function GuestGallery({
           disabled={loading}
           className="mt-6 w-full"
         >
+          <MdOutlineExpandMore aria-hidden className="shrink-0 text-[1.25em]" />
           {loading ? "Loading…" : "Show more"}
         </Button>
       )}

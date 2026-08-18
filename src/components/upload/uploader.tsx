@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { MdOutlineRefresh } from "react-icons/md";
 
 import { Button, Hole, ProgressBar } from "@/components/ui";
 import { UploadPanel } from "@/components/upload/upload-panel";
@@ -194,6 +195,7 @@ export function Uploader({
                 onClick={queue.retryFailed}
                 className="mt-3"
               >
+                <MdOutlineRefresh aria-hidden className="shrink-0 text-[1.25em]" />
                 {queue.failed.length === 1
                   ? "Try again"
                   : `Try ${queue.failed.length} again`}

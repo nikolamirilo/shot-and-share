@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  MdOutlineAddCircleOutline,
+  MdOutlinePhotoLibrary,
+} from "react-icons/md";
 
 import { Wordmark } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui";
@@ -58,6 +62,11 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
           variant="primary"
           className="whitespace-nowrap"
         >
+          {signedIn ? (
+            <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
+          ) : (
+            <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
+          )}
           {signedIn ? "My events" : "Create an event"}
         </ButtonLink>
       </nav>

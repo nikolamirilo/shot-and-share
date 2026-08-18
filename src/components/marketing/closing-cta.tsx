@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { ButtonLink } from "@/components/ui";
 
@@ -26,6 +27,7 @@ export function ClosingCta({ signedIn }: { signedIn: boolean }) {
             variant="onDark"
             className="w-full sm:w-auto"
           >
+            <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
             Create an event
           </ButtonLink>
           <Link

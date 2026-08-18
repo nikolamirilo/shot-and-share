@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
+import { MdClose } from "react-icons/md";
 
 import { cx } from "@/lib/cx";
 
@@ -69,7 +70,7 @@ export function Toast({
             aria-label="Dismiss"
             className="-mr-1 shrink-0 rounded-full px-2 py-1 text-chalk/70 transition-colors hover:text-chalk"
           >
-            ✕
+            <MdClose aria-hidden className="text-[1.25em]" />
           </button>
         </div>
       )}

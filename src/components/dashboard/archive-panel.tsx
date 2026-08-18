@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  MdOutlineArchive,
+  MdOutlineFileDownload,
+  MdOutlineRefresh,
+} from "react-icons/md";
 
 import { Alert, Button, Panel } from "@/components/ui";
 import { formatBytes, formatDateTime } from "@/lib/format";
@@ -100,6 +105,7 @@ export function ArchivePanel({
                 }}
                 className="w-full sm:w-auto"
               >
+                <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
                 Download the ZIP
               </Button>
             )}
@@ -109,6 +115,11 @@ export function ArchivePanel({
               disabled={building || buildsLeft <= 0}
               className="w-full sm:w-auto"
             >
+              {state?.ready ? (
+                <MdOutlineRefresh aria-hidden className="shrink-0 text-[1.25em]" />
+              ) : (
+                <MdOutlineArchive aria-hidden className="shrink-0 text-[1.25em]" />
+              )}
               {building
                 ? "Packaging…"
                 : state?.ready

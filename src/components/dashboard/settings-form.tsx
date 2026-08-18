@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { MdOutlineSave } from "react-icons/md";
 
 import { updateEventSettings } from "@/lib/actions/events";
 import type { ActionState } from "@/lib/actions/types";
@@ -88,7 +89,12 @@ export function SettingsForm({ event }: { event: EventRow }) {
       {state.error && <Alert>{state.error}</Alert>}
       {state.ok && <Alert tone="ok">Saved.</Alert>}
 
-      <SubmitButton idle="Save settings" pending="Saving…" className="w-full sm:w-auto" />
+      <SubmitButton
+        idle="Save settings"
+        pending="Saving…"
+        icon={<MdOutlineSave aria-hidden className="shrink-0 text-[1.25em]" />}
+        className="w-full sm:w-auto"
+      />
     </form>
   );
 }

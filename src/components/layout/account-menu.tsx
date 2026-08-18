@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MdOutlineLogout } from "react-icons/md";
 
 import { Button, cx } from "@/components/ui";
 
@@ -102,6 +103,7 @@ export function AccountMenu({
 
           <form action="/auth/signout" method="post" className="mt-4">
             <Button type="submit" size="sm" className="w-full">
+              <MdOutlineLogout aria-hidden className="shrink-0 text-[1.25em]" />
               Sign out
             </Button>
           </form>

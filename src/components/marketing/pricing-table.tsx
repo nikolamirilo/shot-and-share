@@ -1,3 +1,5 @@
+import { MdOutlineAddCircleOutline } from "react-icons/md";
+
 import { Badge, ButtonLink, Hole, cx } from "@/components/ui";
 import { formatBytes } from "@/lib/format";
 import { KEEP_FOREVER, TIER_ORDER, TIERS, approxPhotos } from "@/lib/tiers";
@@ -94,6 +96,7 @@ export function PricingTable({
                 variant={highlighted ? "secondary" : "primary"}
                 className="mt-6 w-full"
               >
+                <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
                 {tier.priceEur === 0 ? "Start free" : ctaLabel}
               </ButtonLink>
             </article>

@@ -1,3 +1,5 @@
+import { MdOutlineAddCircleOutline } from "react-icons/md";
+
 import { ButtonLink } from "@/components/ui";
 
 /** Empty states are invitations, not apologies. */
@@ -13,6 +15,7 @@ export function EventsEmptyState() {
         size="lg"
         className="mt-7 w-full sm:w-auto"
       >
+        <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
         Create an event
       </ButtonLink>
     </div>

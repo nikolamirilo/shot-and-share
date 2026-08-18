@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MdOutlineHome } from "react-icons/md";
 
 import { ButtonLink, Hole } from "@/components/ui";
 
@@ -19,6 +20,7 @@ export default function NotFound() {
 
       <div className="mt-8 flex w-full max-w-xs flex-col items-center justify-center gap-4 sm:w-auto sm:max-w-none sm:flex-row sm:flex-wrap sm:gap-3">
         <ButtonLink href="/" className="w-full sm:w-auto">
+          <MdOutlineHome aria-hidden className="shrink-0 text-[1.25em]" />
           Back to the start
         </ButtonLink>
         <Link
