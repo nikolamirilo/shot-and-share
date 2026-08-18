@@ -23,6 +23,30 @@ export const SITE = {
 } as const;
 
 /**
+ * The promise the landing page opens with, in the words it uses.
+ *
+ * Here rather than inline in the hero because the social card has to say the
+ * same thing: a card promising one headline and a page opening with another is
+ * exactly the drift this file exists to stop. The hero sets the headline over
+ * two lines, so it is kept as its lines and joined for anywhere that wants one
+ * string - the card, an alt attribute.
+ *
+ * Distinct from `SITE.tagline`, which is what the product calls itself in a
+ * browser tab and in structured data. This is what the page says out loud, and
+ * the two are allowed to differ.
+ */
+export const HERO = {
+  kicker: "Final touch to event organization",
+  headlineLines: ["Let your guests", "capture the moments you miss"],
+  subline: "One code on the table. No app, no account.",
+} as const;
+
+/** The headline as one line, for a card or an alt attribute. */
+export function heroHeadline(): string {
+  return HERO.headlineLines.join(" ");
+}
+
+/**
  * Never hard-coded: a canonical tag pointing at production from a preview
  * deployment is how a staging site ends up in the index.
  */

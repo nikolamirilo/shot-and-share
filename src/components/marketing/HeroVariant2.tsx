@@ -1,10 +1,12 @@
 import Image from "next/image";
+import { Fragment } from "react";
 import {
   MdOutlineAddCircleOutline,
   MdOutlinePlayCircleOutline,
 } from "react-icons/md";
 
 import { ButtonLink } from "@/components/ui";
+import { HERO } from "@/lib/seo";
 
 /**
  * Variant 2 - centred type over a mosaic floor.
@@ -42,7 +44,7 @@ export function HeroVariant2({ signedIn }: { signedIn: boolean }) {
 
       <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-12 text-center sm:px-5 sm:pb-14 sm:pt-20">
         <p className="eyebrow rise" style={{ letterSpacing: "0.34em" }}>
-          Final touch to event organization
+          {HERO.kicker}
         </p>
 
         {/* Uppercase, and the sizes are the ones at which `your guests take.`
@@ -58,16 +60,19 @@ export function HeroVariant2({ signedIn }: { signedIn: boolean }) {
             animationDelay: "80ms",
           } as React.CSSProperties}
         >
-        Let your guests
-          <br />
-        capture the moments you miss
+          {HERO.headlineLines.map((line, i) => (
+            <Fragment key={line}>
+              {i > 0 && <br />}
+              {line}
+            </Fragment>
+          ))}
         </h1>
 
         <p
           className="rise mx-auto mt-5 max-w-sm text-body sm:mt-6 sm:max-w-md sm:text-lead"
           style={{ animationDelay: "160ms" }}
         >
-          One code on the table. No app, no account.
+          {HERO.subline}
         </p>
 
         <div
