@@ -178,7 +178,7 @@ export function AppearanceForm({
             galleryVisible={event.gallery_visible}
             coverChosen={settings.coverMediaId !== null}
             coverUrl={coverUrl}
-            wording={uploadWording(getTier(event.tier).video)}
+            wording={uploadWording(getTier(event.tier))}
           />
         </div>
 

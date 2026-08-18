@@ -103,8 +103,8 @@ export function websiteSchema(): Json {
  * list without pretending there is a thing being shipped.
  */
 export function softwareApplicationSchema(): Json {
-  const offers = TIER_ORDER.map((id) => {
-    const tier = TIERS[id];
+  const offers = TIER_ORDER.map((key) => {
+    const tier = TIERS[key];
     return {
       "@type": "Offer",
       name: tier.name,

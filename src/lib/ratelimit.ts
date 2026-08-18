@@ -59,13 +59,15 @@ export const LIMITS = {
   /**
    * Presign requests per link, per minute.
    *
-   * One per file now, not one per batch. A guest picking the maximum of 30
-   * photos makes 30 of these, and may reasonably do that twice in a minute -
-   * so the old limit of 20 would have cut them off mid-batch. Still bounded:
-   * the cost of a presign is a signature, and the quota check inside it is what
-   * actually stops anyone filling the bucket.
+   * One per file now, not one per batch. A guest picking the maximum of 100
+   * photos (`MAX_FILES_PER_PICK` in lib/tiers - the top plan's pick) makes
+   * 100 of these, and may reasonably do that twice in a minute -
+   * so a limit near the batch size would cut them off mid-batch. Sized at
+   * four batches, and there is a test holding it there should the batch size
+   * move again. Still bounded: the cost of a presign is a signature, and the
+   * quota check inside it is what actually stops anyone filling the bucket.
    */
-  presign: { limit: 120, window: 60 },
+  presign: { limit: 400, window: 60 },
   /** Guest page loads per IP, per minute. */
   guestPage: { limit: 60, window: 60 },
   /**

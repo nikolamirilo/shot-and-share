@@ -4,8 +4,7 @@ import { useServerAction } from "@/hooks/use-server-action";
 
 import { startCheckout } from "@/lib/actions/billing";
 import { Alert, Button, Hole, Panel } from "@/components/ui";
-import type { TierId } from "@/lib/tiers";
-import { KEEP_FOREVER, type PurchasableId, TIERS } from "@/lib/tiers";
+import { KEEP_FOREVER, type PurchasableId, TIERS, getTier } from "@/lib/tiers";
 import { formatBytes } from "@/lib/format";
 
 export function UpgradePanel({
@@ -14,7 +13,8 @@ export function UpgradePanel({
   keepForever,
 }: {
   eventId: string;
-  tier: TierId;
+  /** The variant id off the event row, not a plan key. */
+  tier: string;
   keepForever: boolean;
 }) {
   const { pending, error, run } = useServerAction();
@@ -30,20 +30,22 @@ export function UpgradePanel({
   const options: Array<{ product: PurchasableId; title: string; body: string; price: number }> =
     [];
 
-  if (tier === "free") {
+  const current = getTier(tier);
+
+  if (current.rank < TIERS.plus.rank) {
     options.push({
-      product: "event",
-      title: `Move up to ${TIERS.event.name}`,
-      body: `${formatBytes(TIERS.event.quotaBytes, 0)}, video, a custom event page, and photos kept for six months.`,
-      price: TIERS.event.priceEur,
+      product: "plus",
+      title: `Move up to ${TIERS.plus.name}`,
+      body: `${formatBytes(TIERS.plus.quotaBytes, 0)}, video, a custom event page, and photos kept for six months.`,
+      price: TIERS.plus.priceEur,
     });
   }
-  if (tier !== "wedding") {
+  if (current.rank < TIERS.pro.rank) {
     options.push({
-      product: "wedding",
-      title: `Move up to ${TIERS.wedding.name}`,
-      body: `${formatBytes(TIERS.wedding.quotaBytes, 0)}, twelve months, a branded print-ready card, and the live slideshow.`,
-      price: TIERS.wedding.priceEur,
+      product: "pro",
+      title: `Move up to ${TIERS.pro.name}`,
+      body: `${formatBytes(TIERS.pro.quotaBytes, 0)}, twelve months, a branded print-ready card, and the live slideshow.`,
+      price: TIERS.pro.priceEur,
     });
   }
   if (!keepForever) {
@@ -59,7 +61,7 @@ export function UpgradePanel({
     return (
       <Panel title="Nothing left to buy">
         <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
-          This event is on {TIERS.wedding.name} with {KEEP_FOREVER.name} added.
+          This event is on {TIERS.pro.name} with {KEEP_FOREVER.name} added.
           The photos are kept permanently and there is no subscription running
           in the background.
         </p>

@@ -101,6 +101,20 @@ describe("sweeping abandoned uploads", () => {
     expect(store.rows("upload_reservations")).toHaveLength(1);
   });
 
+  it("waits long enough for the largest clip any plan takes", async () => {
+    // A 500 MB clip on genuinely bad wifi is a few hours, not one. Sweeping
+    // its reservation at two would fail the upload at the finish line, after
+    // the guest had waited the whole time.
+    store
+      .rows("upload_reservations")
+      .push(reservation("aaaaaaaa-0000-0000-0000-000000000004", hoursAgo(3)));
+
+    const body = await (await run()).json();
+
+    expect(body.reservationsSwept).toBe(0);
+    expect(store.rows("upload_reservations")).toHaveLength(1);
+  });
+
   /**
    * The dangerous case. A confirm that wrote the media row and then failed to
    * delete its own reservation leaves one pointing at a photo the host can see

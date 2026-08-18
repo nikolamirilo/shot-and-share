@@ -8,7 +8,7 @@ import { requireOwnedEvent, requireUser } from "@/lib/actions/guards";
 import type { ActionState } from "@/lib/actions/types";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { issueTokenFor } from "@/lib/share-tokens";
-import { TIERS, computeExpiry } from "@/lib/tiers";
+import { TIERS, computeExpiry, getTier } from "@/lib/tiers";
 
 const createSchema = z.object({
   name: z
@@ -55,7 +55,7 @@ export async function createEvent(
       keep_forever: false,
       storage_quota_bytes: tier.quotaBytes,
       storage_used_bytes: 0,
-      expires_at: computeExpiry(parsed.data.event_date, tier.id).toISOString(),
+      expires_at: computeExpiry(parsed.data.event_date, tier).toISOString(),
       status: "active",
       gallery_visible: true,
       welcome_message: null,
@@ -106,7 +106,7 @@ export async function updateEventSettings(
   // Retention is measured from the event date, so moving the date moves expiry.
   const expiresAt = event.keep_forever
     ? null
-    : computeExpiry(parsed.data.event_date, event.tier).toISOString();
+    : computeExpiry(parsed.data.event_date, getTier(event.tier)).toISOString();
 
   const { error } = await supabase
     .from("events")

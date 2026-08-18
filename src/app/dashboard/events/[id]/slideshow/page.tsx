@@ -7,7 +7,7 @@ import { findEvent } from "@/lib/db/event-repo";
 import { listGuestMedia } from "@/lib/db/media-repo";
 import { toMediaViews } from "@/lib/events";
 import { createClient } from "@/lib/supabase/server";
-import { getTier } from "@/lib/tiers";
+import { TIERS, getTier } from "@/lib/tiers";
 
 export const metadata: Metadata = { title: "Live slideshow" };
 export const dynamic = "force-dynamic";
@@ -29,7 +29,9 @@ export default async function SlideshowPage({
   if (!getTier(event.tier).slideshow) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center sm:px-5 sm:py-20">
-        <h1 className="text-[2.25rem] sm:text-h1">The slideshow is on Reel</h1>
+        <h1 className="text-[2.25rem] sm:text-h1">
+          The slideshow is on {TIERS.pro.name}
+        </h1>
         <p className="mt-4 text-body text-ash">
           It runs full screen on a laptop plugged into a projector and adds each
           photo as it arrives. No venue software, no special hardware.

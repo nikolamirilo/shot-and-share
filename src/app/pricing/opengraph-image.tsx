@@ -19,7 +19,7 @@ export default function PricingOpengraphImage() {
       <OgCard
         kicker="Pricing"
         headline="One payment, per event. Then nothing."
-        footnote={`Free plan, then €${TIERS.event.priceEur} or €${TIERS.wedding.priceEur} once. No subscription.`}
+        footnote={`Free plan, then €${TIERS.plus.priceEur} or €${TIERS.pro.priceEur} once. No subscription.`}
       />
     ),
     size,

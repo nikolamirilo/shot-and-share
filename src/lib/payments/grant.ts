@@ -51,7 +51,7 @@ export async function grantPurchase(args: {
     throw insertError;
   }
 
-  if (args.product === KEEP_FOREVER.id) {
+  if (args.product === KEEP_FOREVER.key) {
     await admin
       .from("events")
       .update({
@@ -65,8 +65,8 @@ export async function grantPurchase(args: {
     return { applied: true };
   }
 
-  const target = args.product;
-  if (!isUpgrade(current.tier, target)) {
+  const target = TIERS[args.product];
+  if (!isUpgrade(current.tier, target.id)) {
     // Paid for something at or below what they already have. The purchase row
     // is still recorded; the entitlement simply does not move backwards.
     return { applied: true, reason: "no_downgrade" };
@@ -75,8 +75,8 @@ export async function grantPurchase(args: {
   await admin
     .from("events")
     .update({
-      tier: target,
-      storage_quota_bytes: TIERS[target].quotaBytes,
+      tier: target.id,
+      storage_quota_bytes: target.quotaBytes,
       expires_at: current.keep_forever
         ? null
         : computeExpiry(current.event_date, target).toISOString(),

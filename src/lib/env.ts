@@ -107,17 +107,12 @@ export const env = {
     get webhookSecret() {
       return opt("LEMONSQUEEZY_WEBHOOK_SECRET");
     },
-    variants: {
-      get event() {
-        return opt("LEMONSQUEEZY_VARIANT_EVENT");
-      },
-      get wedding() {
-        return opt("LEMONSQUEEZY_VARIANT_WEDDING");
-      },
-      get keep_forever() {
-        return opt("LEMONSQUEEZY_VARIANT_KEEP_FOREVER");
-      },
-    },
+    /**
+     * Variant ids deliberately do not live here. They are read in
+     * `@/lib/tiers` from `NEXT_PUBLIC_` names instead, because that module is
+     * imported by client components and this one is server-only. A variant id
+     * is not a secret - it appears in every checkout URL.
+     */
   },
 
   get resendApiKey() {

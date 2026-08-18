@@ -39,9 +39,9 @@ export async function GET(request: Request) {
     await requireOwnedEvent(eventId);
 
     const priceEur =
-      product === KEEP_FOREVER.id
+      product === KEEP_FOREVER.key
         ? KEEP_FOREVER.priceEur
-        : TIERS[product as "event" | "wedding"].priceEur;
+        : TIERS[product].priceEur;
 
     await grantPurchase({
       eventId,

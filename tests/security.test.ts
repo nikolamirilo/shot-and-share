@@ -109,7 +109,7 @@ describe("payment webhooks", () => {
     const parsed = parseWebhook({
       meta: {
         event_name: "order_created",
-        custom_data: { event_id: "evt-1", product: "wedding" },
+        custom_data: { event_id: "evt-1", product: "pro" },
       },
       data: {
         id: "12345",
@@ -121,7 +121,7 @@ describe("payment webhooks", () => {
       eventName: "order_created",
       txnId: "12345",
       eventId: "evt-1",
-      product: "wedding",
+      product: "pro",
       amountCents: 3900,
       currency: "EUR",
     });

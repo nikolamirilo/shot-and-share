@@ -1,3 +1,6 @@
+import { formatBytes } from "@/lib/format";
+import { KEEP_FOREVER, TIERS, approxPhotos } from "@/lib/tiers";
+
 /**
  * The questions on the landing page.
  *
@@ -14,7 +17,7 @@ export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
     ],
     [
       "What happens when the storage window ends?",
-      "You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. Add The Archive at any point and nothing is ever removed.",
+      `You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. Add ${KEEP_FOREVER.name} at any point and nothing is ever removed.`,
     ],
     [
       "Can I stop people uploading?",
@@ -22,7 +25,7 @@ export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
     ],
     [
       "How many photos actually fit?",
-      "Roll holds about 2,500 and Reel about 7,500, based on a 4 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.",
+      `${TIERS.plus.name} holds about ${approxPhotos(TIERS.plus.quotaBytes).toLocaleString("en-GB")} and ${TIERS.pro.name} about ${approxPhotos(TIERS.pro.quotaBytes).toLocaleString("en-GB")}, based on a 7 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.`,
     ],
     [
       "Can guests see the photos everyone else uploaded?",
@@ -30,6 +33,6 @@ export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
     ],
     [
       "Is video included?",
-      "On the paid plans, up to 200 MB a clip. The free plan is photos only: one large video can eat the entire free allowance, which would make the free plan useless for what it is meant to prove.",
+      `On the paid plans: up to ${formatBytes(TIERS.plus.maxFileBytes, 0)} a clip on ${TIERS.plus.name}, and up to ${formatBytes(TIERS.pro.maxFileBytes, 0)} on ${TIERS.pro.name}. The free plan is photos only: one large video can eat the entire free allowance, which would make the free plan useless for what it is meant to prove.`,
     ],
   ];

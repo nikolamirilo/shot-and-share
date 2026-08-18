@@ -238,9 +238,9 @@ poster frame, because a clip has no still of itself to show in a grid.
 ### The custom event page
 
 What a guest sees when they scan the code. Paid plans only - it is the "custom
-event page" the Roll and Reel tiers already promise.
+event page" the Plus and Pro tiers already promise.
 
-| | Free | Roll / Reel |
+| | Free | Plus / Pro |
 |---|---|---|
 | Theme | House palette | 5 presets, or pick your own colours |
 | Type | House pairing | 5 pairings, heading face and body face |
@@ -318,7 +318,7 @@ warn at 14, 7 and 1 days  →  expire (nothing removed)  →  14-day grace  → 
 `/api/cron/retention` runs daily (see `vercel.json`) behind `CRON_SECRET`. Losing
 someone's wedding photos to a scheduling bug is the failure this product cannot
 survive, so the destructive step is always last and always delayed. A host can
-restore, or buy The Archive, at any point before the final arrow.
+restore, or buy Keep Forever, at any point before the final arrow.
 
 ### Share tokens
 
@@ -336,18 +336,35 @@ role key.
 
 | Plan | Price | Storage | Kept for |
 |---|---|---|---|
-| **Frame** | Free | 1 GB, ~250 photos | 30 days |
-| **Roll** | €19 once | 10 GB, ~2,500 photos | 6 months |
-| **Reel** | €39 once | 30 GB, ~7,500 photos | 12 months |
-| **The Archive** | €29 once | - | permanently |
+| **Free** | Free | 1 GB, ~150 photos | 30 days |
+| **Plus** | €19 once | 10 GB, ~1,500 photos | 6 months |
+| **Pro** | €39 once | 30 GB, ~4,400 photos | 12 months |
+| **Keep Forever** | €29 once | - | permanently |
+
+Photo counts assume 7 MB each, which is what a current phone shooting 24-48MP
+produces once the stored copy keeps every pixel it was taken with. They are
+derived from `AVG_PHOTO_BYTES`, never typed out.
 
 The unit is gigabytes, not photo counts: a count limit punishes anyone with a
 recent phone and rewards nobody, while storage is what actually costs money and
 lets us look far more generous for the same spend. Nothing is a subscription -
 people plan one wedding, not twelve.
 
-Reel stops at twelve months deliberately. If retention were unlimited, the
-Archive add-on would have no job to do.
+Pro stops at twelve months deliberately. If retention were unlimited, the
+Keep Forever add-on would have no job to do.
+
+**A plan has two identifiers.** `key` - `free`, `plus`, `pro` - is fixed forever
+and is what code says: `TIERS.pro`. `id` is the Lemon Squeezy variant the plan
+is sold under, and is what `events.tier` stores. Renaming a plan is a one-line
+change in `tiers.ts` because no row holds a name.
+
+The cost of keying rows on the payment provider's id is that a test store and a
+live store issue different numbers, so the same plan reads differently in a
+development database than in production. `getTier()` answers an unrecognised id
+with Free, which is the only safe direction to be wrong in. Variant ids are read
+from `NEXT_PUBLIC_LS_VARIANT_*` rather than from `lib/env.ts`, because `tiers.ts`
+is imported by client components and `env.ts` is server-only; a variant id is
+already visible in every checkout URL, so there is nothing there to keep back.
 
 ---
 
@@ -448,7 +465,7 @@ Stated plainly rather than left to be discovered:
   archive will outrun it and belongs in a Lambda or a small Fargate task. Moving
   it is a change of host, not of logic.
 - **`retention=forever` is not applied retroactively** to objects when a host
-  buys The Archive after the event. Nothing is at risk - those events are excluded
+  buys Keep Forever after the event. Nothing is at risk - those events are excluded
   from expiry - but the objects sit in Glacier IR rather than Deep Archive, which
   leaks about a dollar a year per event. Fixing it needs an S3 Batch Operations
   job. See `infra/README.md`.

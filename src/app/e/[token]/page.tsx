@@ -99,6 +99,7 @@ export default async function GuestPage({
           uploadVariant={appearance.upload}
           allowVideo={tier.video}
           maxFileBytes={tier.maxFileBytes}
+          filesPerPick={tier.filesPerPick}
           remainingBytes={page.remainingBytes}
         />
       </main>

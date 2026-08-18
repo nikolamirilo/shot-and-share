@@ -7,8 +7,8 @@ import { KEEP_FOREVER, TIER_ORDER, TIERS, approxPhotos } from "@/lib/tiers";
  * the pricing section spends colour.
  */
 
-function featureList(tierId: (typeof TIER_ORDER)[number]): string[] {
-  const t = TIERS[tierId];
+function featureList(key: (typeof TIER_ORDER)[number]): string[] {
+  const t = TIERS[key];
   const retention =
     t.retentionDays >= 365
       ? "12 months"
@@ -20,7 +20,9 @@ function featureList(tierId: (typeof TIER_ORDER)[number]): string[] {
     `${formatBytes(t.quotaBytes, 0)} of storage, about ${approxPhotos(t.quotaBytes).toLocaleString("en-GB")} photos`,
     "Unlimited guests",
     `Photos kept for ${retention}`,
-    t.video ? "Video, up to 200 MB a clip" : "Photos only",
+    t.video
+      ? `Video, up to ${formatBytes(t.maxFileBytes, 0)} a clip`
+      : "Photos only",
     "Bulk ZIP download",
     t.brandedQr
       ? "Branded, print-ready QR card"
@@ -42,13 +44,13 @@ export function PricingTable({
   return (
     <div>
       <div className="grid gap-4 sm:gap-5 md:grid-cols-3">
-        {TIER_ORDER.map((id) => {
-          const tier = TIERS[id];
-          const highlighted = id === "event";
+        {TIER_ORDER.map((planKey) => {
+          const tier = TIERS[planKey];
+          const highlighted = planKey === "plus";
 
           return (
             <article
-              key={id}
+              key={planKey}
               className={cx(
                 "flex flex-col rounded-[1.25rem] p-5 sm:p-6",
                 // The recommended plan is the one that comes furthest off the
@@ -79,7 +81,7 @@ export function PricingTable({
               </p>
 
               <ul className="mt-5 flex-1 space-y-2.5">
-                {featureList(id).map((line) => (
+                {featureList(planKey).map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
                     <Hole size={9} className="mt-2" />
                     <span className="text-[0.9375rem] leading-snug">{line}</span>

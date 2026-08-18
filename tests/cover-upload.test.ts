@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/lib/api";
+import { TIERS } from "@/lib/tiers";
 import { createStore } from "./stubs/supabase";
 
 /**
@@ -33,7 +34,7 @@ function freshEvent() {
   return {
     id: `11111111-2222-3333-4444-${String(events).padStart(12, "0")}`,
     owner_id: OWNER,
-    tier: "event",
+    tier: TIERS.plus.id,
     status: "active",
     storage_quota_bytes: 2 * 1024 ** 3,
     storage_used_bytes: 0,
@@ -214,7 +215,7 @@ describe("presigning a cover image", () => {
   });
 
   it("refuses on the free plan, and reserves nothing", async () => {
-    event = { ...event, tier: "free" };
+    event = { ...event, tier: TIERS.free.id };
     const response = await presignRequest(compressedImage);
 
     expect(response.status).toBe(403);

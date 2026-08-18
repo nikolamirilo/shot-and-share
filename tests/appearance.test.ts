@@ -40,6 +40,7 @@ import {
   tint,
   toHex,
 } from "@/lib/color";
+import { TIERS } from "@/lib/tiers";
 
 describe("colour parsing", () => {
   it("handles both shorthand and full hex", () => {
@@ -245,7 +246,7 @@ describe("plan gating", () => {
   it("gives a free event the house theme whatever its row says", () => {
     // The gate is applied on read. A stale row, a downgrade, or any future
     // path that skips the form must not serve paid styling.
-    const appearance = resolveAppearance({ tier: "free", ...customised });
+    const appearance = resolveAppearance({ tier: TIERS.free.id, ...customised });
     expect(appearance.themeId).toBe(DEFAULT_THEME_ID);
     expect(appearance.palette).toEqual(THEMES[0].palette);
     expect(appearance.font.id).toBe(DEFAULT_FONT_ID);
@@ -256,24 +257,24 @@ describe("plan gating", () => {
   });
 
   it("puts the platform header and footer only on free events", () => {
-    expect(resolveAppearance({ tier: "free" }).platformBranding).toBe(true);
-    expect(resolveAppearance({ tier: "event" }).platformBranding).toBe(false);
-    expect(resolveAppearance({ tier: "wedding" }).platformBranding).toBe(false);
+    expect(resolveAppearance({ tier: TIERS.free.id }).platformBranding).toBe(true);
+    expect(resolveAppearance({ tier: TIERS.plus.id }).platformBranding).toBe(false);
+    expect(resolveAppearance({ tier: TIERS.pro.id }).platformBranding).toBe(false);
   });
 
   it("fixes the gallery on free, whatever the row says", () => {
     // The layout is the host's decision on a paid event and ours on a free
     // one. Either way it is a decision about the event: no guest overrides it.
-    expect(resolveAppearance({ tier: "free", ...customised }).layout).toBe(
+    expect(resolveAppearance({ tier: TIERS.free.id, ...customised }).layout).toBe(
       "grid",
     );
-    expect(resolveAppearance({ tier: "event", ...customised }).layout).toBe(
+    expect(resolveAppearance({ tier: TIERS.plus.id, ...customised }).layout).toBe(
       "masonry",
     );
   });
 
   it("honours everything on a paid event", () => {
-    const appearance = resolveAppearance({ tier: "wedding", ...customised });
+    const appearance = resolveAppearance({ tier: TIERS.pro.id, ...customised });
     expect(appearance.themeId).toBe("sage");
     expect(appearance.font.id).toBe("loud");
     expect(appearance.cover).toBe("half");
@@ -284,7 +285,7 @@ describe("plan gating", () => {
 
   it("builds the custom palette for a paid event", () => {
     const appearance = resolveAppearance({
-      tier: "event",
+      tier: TIERS.plus.id,
       theme: CUSTOM_THEME_ID,
       theme_custom: { bg: "#2A5F3A", accent: "#22DD88", ink: "#101010" },
     });

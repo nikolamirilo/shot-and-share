@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Eyebrow } from "@/components/ui";
 import { breadcrumbSchema, graph } from "@/lib/seo";
-import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
+import { HARD_DELETE_GRACE_DAYS, KEEP_FOREVER, TIERS } from "@/lib/tiers";
 
 /**
  * The terms and the privacy policy.
@@ -68,7 +68,7 @@ const TERMS: LegalPage = {
     {
       heading: "Plans and payment",
       body: [
-        `Plans are a one-time payment per event, not a subscription. ${TIERS.event.name} is €${TIERS.event.priceEur} and ${TIERS.wedding.name} is €${TIERS.wedding.priceEur}. The Archive add-on is €29, also paid once, and keeps that event's photos permanently.`,
+        `Plans are a one-time payment per event, not a subscription. ${TIERS.plus.name} is €${TIERS.plus.priceEur} and ${TIERS.pro.name} is €${TIERS.pro.priceEur}. The ${KEEP_FOREVER.name} add-on is €${KEEP_FOREVER.priceEur}, also paid once, and keeps that event's photos permanently.`,
         "There is nothing to cancel and nothing that renews. Payment is handled by Lemon Squeezy, who act as merchant of record - your card details never reach us, and your receipt comes from them.",
         "Prices include VAT where it applies. Upgrading an event mid-way charges the difference rather than the full price again.",
       ],

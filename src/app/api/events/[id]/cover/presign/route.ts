@@ -9,7 +9,7 @@ import { requireOwnedEvent } from "@/lib/host";
 import { mediaKey, scopeOfEvent, thumbKey } from "@/lib/media";
 import { IMAGE_EXT, IMAGE_MIME, type ImageFormat } from "@/lib/media/formats";
 import { LIMITS } from "@/lib/ratelimit";
-import { getTier } from "@/lib/tiers";
+import { TIERS, getTier } from "@/lib/tiers";
 import { classifyUpload, decideStoredObject } from "@/lib/uploads/classify";
 import { createReservation } from "@/lib/uploads/reservation";
 import { fileSchema } from "@/lib/uploads/schema";
@@ -53,7 +53,7 @@ export async function POST(
     if (!tier.customPage) {
       throw new ApiError(
         "forbidden",
-        "Your own cover image is on Roll and Reel.",
+        `Your own cover image is on ${TIERS.plus.name} and ${TIERS.pro.name}.`,
         { upgrade: true },
       );
     }

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStore } from "./stubs/supabase";
+import { TIERS } from "@/lib/tiers";
 
 /**
  * The presign endpoint, end to end with the database and the bucket mocked.
@@ -21,7 +22,7 @@ let signThrows = false;
 const EVENT = {
   id: "11111111-2222-3333-4444-555555555555",
   owner_id: "00000000-1111-2222-3333-444444444444",
-  tier: "free",
+  tier: TIERS.free.id,
   status: "active",
   storage_quota_bytes: 2 * 1024 ** 3,
   storage_used_bytes: 0,
@@ -113,7 +114,7 @@ const reservations = () => store.rows("upload_reservations");
 beforeEach(() => {
   store.reset();
   signThrows = false;
-  EVENT.tier = "free";
+  EVENT.tier = TIERS.free.id;
 });
 
 describe("presigning an upload", () => {
@@ -163,7 +164,7 @@ describe("presigning an upload", () => {
   });
 
   it("signs no thumbnail for a video, whose poster already is one", async () => {
-    EVENT.tier = "wedding";
+    EVENT.tier = TIERS.pro.id;
     const res = await POST(request(video));
     const { upload } = await res.json();
 
@@ -305,7 +306,7 @@ describe("presigning an upload", () => {
   });
 
   it("signs a poster beside a video on a tier that allows it", async () => {
-    EVENT.tier = "event";
+    EVENT.tier = TIERS.plus.id;
     const res = await POST(request(video));
     const { upload } = await res.json();
     const row = reservations()[0];

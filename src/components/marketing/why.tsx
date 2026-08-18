@@ -1,4 +1,5 @@
 import { Eyebrow, Hole } from "@/components/ui";
+import { TIERS } from "@/lib/tiers";
 
 export function Why() {
   const items = [
@@ -24,7 +25,7 @@ export function Why() {
     },
     {
       title: "Live slideshow on the night",
-      body: "Point a laptop at the projector and photos appear as guests upload them. On the Reel plan, no venue software needed.",
+      body: `Point a laptop at the projector and photos appear as guests upload them. On the ${TIERS.pro.name} plan, no venue software needed.`,
     },
   ];
 

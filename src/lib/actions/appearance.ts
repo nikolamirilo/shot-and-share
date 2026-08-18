@@ -6,7 +6,7 @@ import { z } from "zod";
 import { requireOwnedEvent } from "@/lib/actions/guards";
 import { mediaExists } from "@/lib/db/media-repo";
 import type { ActionState } from "@/lib/actions/types";
-import { getTier } from "@/lib/tiers";
+import { TIERS, getTier } from "@/lib/tiers";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -43,7 +43,7 @@ export async function updateAppearance(
   if (!getTier(event.tier).customPage) {
     return {
       error:
-        "Custom event pages are on Roll and Reel. Your event still works exactly the same on the free plan.",
+        `Custom event pages are on ${TIERS.plus.name} and ${TIERS.pro.name}. Your event still works exactly the same on the free plan.`,
     };
   }
 

@@ -5,7 +5,7 @@
  */
 
 import type { GalleryLayout } from "@/lib/gallery";
-import type { PurchasableId, TierId } from "@/lib/tiers";
+import type { PurchasableId } from "@/lib/tiers";
 
 export type EventStatus = "active" | "expired" | "deleted";
 export type MediaStatus = "pending" | "ready" | "deleted";
@@ -36,7 +36,14 @@ export type EventRow = {
   owner_id: string;
   name: string;
   event_date: string;
-  tier: TierId;
+  /**
+   * The Lemon Squeezy variant id of the plan. Resolve it with `getTier`.
+   *
+   * A plain string rather than a union: the valid values come from the
+   * payment provider at runtime, so there is nothing here for the compiler
+   * to check against.
+   */
+  tier: string;
   keep_forever: boolean;
   storage_quota_bytes: number;
   storage_used_bytes: number;

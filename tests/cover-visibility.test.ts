@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStore } from "./stubs/supabase";
+import { TIERS } from "@/lib/tiers";
 
 /**
  * What guests are shown.
@@ -17,7 +18,7 @@ const store = createStore();
 const EVENT = {
   id: "11111111-2222-3333-4444-555555555555",
   owner_id: "00000000-1111-2222-3333-444444444444",
-  tier: "event",
+  tier: TIERS.plus.id,
   status: "active",
   expires_at: null,
   gallery_visible: true,

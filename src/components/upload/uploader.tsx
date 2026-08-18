@@ -30,6 +30,7 @@ export function Uploader({
   variant,
   allowVideo,
   maxFileBytes,
+  filesPerPick,
   remainingBytes,
   onUploaded,
 }: {
@@ -38,6 +39,8 @@ export function Uploader({
   variant: UploadVariant;
   allowVideo: boolean;
   maxFileBytes: number;
+  /** How many one tap of the button takes. Follows the plan. */
+  filesPerPick: number;
   remainingBytes: number;
   onUploaded: () => void;
 }) {
@@ -47,6 +50,7 @@ export function Uploader({
   const queue = useUploadQueue({
     token,
     maxFileBytes,
+    filesPerPick,
     remainingBytes,
     onUploaded,
   });
@@ -63,8 +67,13 @@ export function Uploader({
   // four photos and a clip in the same queue.
   const working = queue.phase === "preparing" ? PREPARING : UPLOADING;
 
-  const wording = uploadWording(allowVideo);
+  const wording = uploadWording({ video: allowVideo, filesPerPick });
   const accept = allowVideo ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO;
+
+  // One list for both: a clip that was too big to send and a photo that fell
+  // off the wifi are the same thing to the guest - "that one is not with the
+  // host". Only the button below tells them apart.
+  const refused = [...queue.failed, ...queue.skipped];
 
   return (
     <>
@@ -139,17 +148,24 @@ export function Uploader({
           {queue.busy ? working : ""}
         </p>
 
+        {/* More were picked than one tap takes. Said while the batch runs, so
+            the guest is not left counting a "58 of 100" against the 160 they
+            chose. */}
+        {queue.notice && (
+          <p className="mt-5 note p-4 text-[0.9375rem]">{queue.notice}</p>
+        )}
+
         {/* The one place a filename earns its keep: "one did not make it" is
             useless if the guest cannot tell which one. */}
-        {queue.failed.length > 0 && !queue.busy && (
+        {refused.length > 0 && !queue.busy && (
           <div className="mt-5 note p-4">
             <p className="text-[0.9375rem] font-semibold">
-              {queue.failed.length === 1
+              {refused.length === 1
                 ? "One did not make it."
-                : `${queue.failed.length} did not make it.`}
+                : `${refused.length} did not make it.`}
             </p>
             <ul className="mt-2 space-y-2">
-              {queue.failed.map((item) => (
+              {refused.map((item) => (
                 <li key={item.key} className="text-[0.9375rem]">
                   <span className="flex items-center gap-2.5">
                     <Hole size={11} className="opacity-40" />
@@ -163,16 +179,26 @@ export function Uploader({
                 </li>
               ))}
             </ul>
-            <Button
-              size="md"
-              variant="secondary"
-              onClick={queue.retryFailed}
-              className="mt-3"
-            >
-              {queue.failed.length === 1
-                ? "Try again"
-                : `Try ${queue.failed.length} again`}
-            </Button>
+            {queue.upgradeHint && (
+              <p className="mt-2 text-[0.9375rem] text-ash">
+                The host needs to make more room. Let them know - they can raise
+                the limit from their phone in under a minute.
+              </p>
+            )}
+            {/* Only what can be tried. A file over the size limit would fail
+                the same way a second time, so it is named but not offered. */}
+            {queue.failed.length > 0 && (
+              <Button
+                size="md"
+                variant="secondary"
+                onClick={queue.retryFailed}
+                className="mt-3"
+              >
+                {queue.failed.length === 1
+                  ? "Try again"
+                  : `Try ${queue.failed.length} again`}
+              </Button>
+            )}
           </div>
         )}
 
@@ -195,12 +221,6 @@ export function Uploader({
         {queue.error && (
           <div className="mt-5 note p-4">
             <p className="text-[0.9375rem] font-semibold">{queue.error}</p>
-            {queue.upgradeHint && (
-              <p className="mt-1.5 text-[0.9375rem] text-ash">
-                The host needs to make more room. Let them know - they can raise
-                the limit from their phone in under a minute.
-              </p>
-            )}
           </div>
         )}
       </UploadPanel>

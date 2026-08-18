@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import type { Product } from "@/lib/db/types";
 import { env, hasLemonSqueezy } from "@/lib/env";
-import { PURCHASABLE_IDS } from "@/lib/tiers";
+import { LS_VARIANTS, PURCHASABLE_IDS } from "@/lib/tiers";
 
 /**
  * Lemon Squeezy acts as merchant of record.
@@ -21,11 +21,19 @@ function asPurchasable(value: unknown): Product | null {
   return PURCHASABLE_IDS.includes(value as Product) ? (value as Product) : null;
 }
 
+/**
+ * The configured variant per product, or undefined where there is none.
+ *
+ * Deliberately not `TIERS.plus.id`: a tier falls back to its plan key when the
+ * variant is unset, and a fallback is exactly what must not be sent to a
+ * checkout. This asks whether a real variant exists, which is the question
+ * `isCheckoutConfigured` and the webhook fallback are both really asking.
+ */
 function variants(): Record<Product, string | undefined> {
   return {
-    event: env.lemonSqueezy.variants.event,
-    wedding: env.lemonSqueezy.variants.wedding,
-    keep_forever: env.lemonSqueezy.variants.keep_forever,
+    plus: LS_VARIANTS.plus,
+    pro: LS_VARIANTS.pro,
+    keep_forever: LS_VARIANTS.keep_forever,
   };
 }
 

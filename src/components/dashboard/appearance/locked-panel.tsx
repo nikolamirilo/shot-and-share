@@ -1,11 +1,14 @@
 import { Badge, ButtonLink } from "@/components/ui";
+import { TIERS } from "@/lib/tiers";
 
 export function LockedPanel({ eventId }: { eventId: string }) {
   return (
     <section className="card p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-h3">The event page</h2>
-        <Badge tone="outline">Roll and Reel</Badge>
+        <Badge tone="outline">
+          {TIERS.plus.name} and {TIERS.pro.name}
+        </Badge>
       </div>
 
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">

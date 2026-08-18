@@ -2,14 +2,25 @@
 
 import { useRef, useState } from "react";
 
-import { type Prepared, estimate, prepare } from "@/lib/client/prepare";
+import { type Prepared, prepare } from "@/lib/client/prepare";
 import { START, type Stages, runPercent } from "@/lib/client/progress";
 import { sendUpload } from "@/lib/client/send-upload";
+import { triage } from "@/lib/client/triage";
 import { UploadError, gate, getFingerprint } from "@/lib/client/upload";
-import { formatBytes } from "@/lib/format";
-import { MAX_FILES_PER_PICK } from "@/lib/media";
 
-export type ItemStatus = "waiting" | "preparing" | "uploading" | "done" | "failed";
+/**
+ * "skipped" is a file that was never sent: over the size limit, or no room
+ * for it. Named in the same list as the failures, so the guest can see which
+ * one and why, but kept apart from them because retrying it would only fail
+ * again the same way.
+ */
+export type ItemStatus =
+  | "waiting"
+  | "preparing"
+  | "uploading"
+  | "done"
+  | "failed"
+  | "skipped";
 
 export interface Item {
   key: string;
@@ -42,6 +53,8 @@ const UPLOAD_AT_ONCE = 3;
 export interface UploadQueueOptions {
   token: string;
   maxFileBytes: number;
+  /** How many one tap takes; the rest are named and left for the next tap. */
+  filesPerPick: number;
   remainingBytes: number;
   onUploaded: () => void;
 }
@@ -53,6 +66,7 @@ export interface UploadQueueOptions {
 export function useUploadQueue({
   token,
   maxFileBytes,
+  filesPerPick,
   remainingBytes,
   onUploaded,
 }: UploadQueueOptions) {
@@ -60,6 +74,8 @@ export function useUploadQueue({
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Something worth saying that is not a failure: "the first 100 are going". */
+  const [notice, setNotice] = useState<string | null>(null);
   const [upgradeHint, setUpgradeHint] = useState(false);
   const [completed, setCompleted] = useState(0);
   const [saved, setSaved] = useState({ from: 0, to: 0 });
@@ -206,42 +222,46 @@ export function useUploadQueue({
   async function addFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0 || busy) return;
 
-    const files = Array.from(fileList).slice(0, MAX_FILES_PER_PICK);
     setError(null);
+    setNotice(null);
     setUpgradeHint(false);
 
-    const oversized = files.find((f) => f.size > maxFileBytes);
-    if (oversized) {
-      setError(
-        `“${oversized.name}” is bigger than ${formatBytes(maxFileBytes, 0)}, which is the most we can take in one file.`,
-      );
-      return;
-    }
+    // File by file, never all-or-nothing: one clip over the limit used to
+    // stop sixty photographs going anywhere. See lib/client/triage.
+    const { accepted, skipped, leftOut } = triage(Array.from(fileList), {
+      maxFileBytes,
+      room: remainingBytes - saved.to,
+      maxCount: filesPerPick,
+    });
 
-    // The server checks this again once it knows the real compressed size, and
-    // its answer is the one that counts. This is only here so a hopeless batch
-    // fails in half a second instead of after a minute of compressing.
-    const room = remainingBytes - saved.to;
-    if (estimate(files) > room) {
-      setError(
-        `There is only ${formatBytes(Math.max(0, room))} of room left at this event, which is not enough for what you picked.`,
+    if (leftOut > 0) {
+      setNotice(
+        `That was ${fileList.length}. The first ${filesPerPick} are on their way - add the other ${leftOut} once these are done.`,
       );
-      setUpgradeHint(true);
-      return;
     }
+    if (skipped.some((s) => s.upgrade)) setUpgradeHint(true);
 
-    const batch: Item[] = files.map((file, i) => ({
-      key: `${picks.current}-${i}-${file.name}`,
+    const pick = picks.current;
+    picks.current += 1;
+
+    const batch: Item[] = accepted.map((file, i) => ({
+      key: `${pick}-${i}-${file.name}`,
       file,
       status: "waiting",
       stages: START,
     }));
-    picks.current += 1;
+    const refused: Item[] = skipped.map(({ file, reason }, i) => ({
+      key: `${pick}-skipped-${i}-${file.name}`,
+      file,
+      status: "skipped",
+      stages: START,
+      error: reason,
+    }));
 
     // Appended, not replaced: a guest adding a second handful should still see
     // the first one sitting there marked "added".
-    setItems((prev) => [...prev, ...batch]);
-    await runBatch(batch);
+    setItems((prev) => [...prev, ...batch, ...refused]);
+    if (batch.length > 0) await runBatch(batch);
   }
 
   async function retryFailed() {
@@ -264,8 +284,10 @@ export function useUploadQueue({
   }
 
   const failed = items.filter((i) => i.status === "failed");
+  const skipped = items.filter((i) => i.status === "skipped");
   const inFlight = items.filter(
-    (i) => i.status !== "done" && i.status !== "failed",
+    (i) =>
+      i.status !== "done" && i.status !== "failed" && i.status !== "skipped",
   ).length;
 
   const batch = items.filter((i) => running.includes(i.key));
@@ -297,10 +319,12 @@ export function useUploadQueue({
     busy,
     phase,
     error,
+    notice,
     upgradeHint,
     completed,
     saved,
     failed,
+    skipped,
     inFlight,
     batch,
     sent,

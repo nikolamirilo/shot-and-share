@@ -1,4 +1,5 @@
 import { Badge, Eyebrow } from "@/components/ui";
+import { KEEP_FOREVER } from "@/lib/tiers";
 
 export function PricingDetail() {
   const points: Array<[string, string]> = [
@@ -11,7 +12,7 @@ export function PricingDetail() {
       "You cannot judge this product on fifty photos. The thing you most want to test is what happens when a hundred arrive at once, so the free plan lets you do exactly that.",
     ],
     [
-      "Why The Archive is not a subscription",
+      `Why ${KEEP_FOREVER.name} is not a subscription`,
       "A wedding happens once. An annual charge for storage is the wrong shape for it: people forget, cards expire, and one day the photos are gone. €29, paid once, and they stay.",
     ],
     [

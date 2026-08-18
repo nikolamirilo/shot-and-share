@@ -23,6 +23,7 @@ import { findEventName } from "@/lib/db/event-repo";
 import { formatEventDate } from "@/lib/format";
 import { coerceLayout } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/server";
+import { KEEP_FOREVER } from "@/lib/tiers";
 import { loadEventConsole } from "@/lib/views/event-console";
 
 export const dynamic = "force-dynamic";
@@ -129,7 +130,7 @@ export default async function EventPage({
         <Alert tone="notice" className="mt-5 sm:mt-6">
           The storage window for this event has ended.{" "}
           <strong>Nothing has been deleted.</strong> Restore it under Settings,
-          or add The Archive to keep the photos permanently.
+          or add {KEEP_FOREVER.name} to keep the photos permanently.
         </Alert>
       )}
 

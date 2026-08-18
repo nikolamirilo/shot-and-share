@@ -1,4 +1,4 @@
-import { MAX_FILES_PER_PICK } from "@/lib/media/accept";
+import type { Tier } from "@/lib/tiers";
 
 /**
  * What the upload section calls the things it is asking for.
@@ -20,21 +20,27 @@ export interface UploadWording {
   hint: string;
 }
 
-export function uploadWording(allowVideo: boolean): UploadWording {
-  return allowVideo
+/**
+ * Takes the plan rather than two flags, because both things the copy needs -
+ * whether video is in, and how many files one tap takes - come from it.
+ */
+export function uploadWording(
+  tier: Pick<Tier, "video" | "filesPerPick">,
+): UploadWording {
+  return tier.video
     ? {
         action: "Add your photos and video",
         // Not "Take a photo": the same button starts a recording, because the
         // accept list lets the camera offer both.
         capture: "Open camera",
         choose: "Choose files",
-        hint: `Photos and video, up to ${MAX_FILES_PER_PICK} at a time.`,
+        hint: `Photos and video, up to ${tier.filesPerPick} at a time.`,
       }
     : {
         action: "Add your photos",
         capture: "Take a photo",
         choose: "Choose photos",
-        hint: `Photos, up to ${MAX_FILES_PER_PICK} at a time.`,
+        hint: `Photos, up to ${tier.filesPerPick} at a time.`,
       };
 }
 

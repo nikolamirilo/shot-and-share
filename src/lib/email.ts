@@ -1,6 +1,7 @@
 import "server-only";
 
 import { env } from "@/lib/env";
+import { KEEP_FOREVER } from "@/lib/tiers";
 
 /**
  * Transactional email. Without an API key it logs instead of sending, so the
@@ -77,7 +78,7 @@ export function retentionWarningEmail(args: {
   const body = `
     <h1 style="font-size:27px;margin:14px 0 12px;line-height:1.15">Your photos come down ${when}</h1>
     <p style="font-size:16px;line-height:1.6">You collected <strong>${args.photoCount}</strong> ${args.photoCount === 1 ? "photo" : "photos"} at <strong>${escapeHtml(args.eventName)}</strong>. The storage window for this event ends ${when}.</p>
-    <p style="font-size:16px;line-height:1.6">Download everything as a ZIP now, or add <strong>The Archive</strong> and keep them permanently for a single €29 payment. Not per year - once.</p>`;
+    <p style="font-size:16px;line-height:1.6">Download everything as a ZIP now, or add <strong>${KEEP_FOREVER.name}</strong> and keep them permanently for a single €${KEEP_FOREVER.priceEur} payment. Not per year - once.</p>`;
 
   const text = `Your photos for ${args.eventName} are deleted ${when}. Download them: ${args.downloadUrl}`;
   return { to: args.to, subject, html: layout(body, { label: "Download my photos", url: args.downloadUrl }), text };
@@ -93,7 +94,7 @@ export function eventExpiredEmail(args: {
   const body = `
     <h1 style="font-size:27px;margin:14px 0 12px;line-height:1.15">We have paused, not deleted</h1>
     <p style="font-size:16px;line-height:1.6">The storage window for <strong>${escapeHtml(args.eventName)}</strong> has ended. Nothing has been removed yet.</p>
-    <p style="font-size:16px;line-height:1.6">Your photos sit in a holding state for <strong>${args.graceDays} more days</strong>. Restore the event or add The Archive within that window and everything comes straight back.</p>`;
+    <p style="font-size:16px;line-height:1.6">Your photos sit in a holding state for <strong>${args.graceDays} more days</strong>. Restore the event or add ${KEEP_FOREVER.name} within that window and everything comes straight back.</p>`;
   const text = `The storage window for ${args.eventName} ended. Nothing is deleted for ${args.graceDays} days: ${args.restoreUrl}`;
   return { to: args.to, subject, html: layout(body, { label: "Restore this event", url: args.restoreUrl }), text };
 }

@@ -16,6 +16,7 @@ export function GuestExperience({
   uploadVariant,
   allowVideo,
   maxFileBytes,
+  filesPerPick,
   remainingBytes,
 }: {
   token: string;
@@ -25,6 +26,7 @@ export function GuestExperience({
   uploadVariant: UploadVariant;
   allowVideo: boolean;
   maxFileBytes: number;
+  filesPerPick: number;
   remainingBytes: number;
 }) {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -48,6 +50,7 @@ export function GuestExperience({
         variant={uploadVariant}
         allowVideo={allowVideo}
         maxFileBytes={maxFileBytes}
+        filesPerPick={filesPerPick}
         remainingBytes={remainingBytes}
         onUploaded={() => setRefreshKey((k) => k + 1)}
       />

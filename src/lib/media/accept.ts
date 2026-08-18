@@ -89,9 +89,6 @@ export function displayName(mime: string): string {
   return classify(mime)?.kind === "video" ? "video" : "photo";
 }
 
-/** How many files a guest may pick in one tap of the button. */
-export const MAX_FILES_PER_PICK = 30;
-
 /**
  * How many photographs the cover picker asks for at a time. Small on purpose:
  * a host is scanning for one picture they already have in mind, so another tap

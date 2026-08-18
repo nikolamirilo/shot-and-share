@@ -8,6 +8,7 @@ import { THEMES, buildCustomPalette } from "@/lib/appearance";
 import { findFontSet } from "@/lib/fonts";
 import { GALLERY_LAYOUTS, type GalleryLayout } from "@/lib/gallery";
 import { uploadWording } from "@/lib/media";
+import { TIERS } from "@/lib/tiers";
 
 /**
  * The host's preview, which is the one screen where a setting can look broken
@@ -233,7 +234,7 @@ function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
       cover="classic"
       upload="button"
       layout="grid"
-      wording={uploadWording(false)}
+      wording={uploadWording(TIERS.free)}
       galleryVisible
       coverChosen
       {...props}
@@ -250,7 +251,7 @@ describe("the drawing of the guest page", () => {
     expect(html).toContain("Ana and Marko");
     expect(html).toContain("Send us the ones you took.");
     expect(html).toContain("Add your photos");
-    expect(html).toContain(uploadWording(false).hint);
+    expect(html).toContain(uploadWording(TIERS.free).hint);
     expect(html).toContain("Everyone&#x27;s photos");
   });
 
@@ -261,7 +262,7 @@ describe("the drawing of the guest page", () => {
    * was showing to people holding a clip they could not send.
    */
   it("asks for video on a plan that takes video", () => {
-    const html = preview({ wording: uploadWording(true) });
+    const html = preview({ wording: uploadWording(TIERS.pro) });
 
     expect(html).toContain("Add your photos and video");
     expect(html).toContain("Photos and video");

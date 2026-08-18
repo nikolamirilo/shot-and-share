@@ -32,7 +32,7 @@ export const maxDuration = 300;
  *   warn at 14, 7 and 1 days  ->  expire (nothing removed)  ->  wait 14 days
  *   ->  hard delete
  *
- * A host can restore the event, or buy The Archive, at any point before the last
+ * A host can restore the event, or buy Keep Forever, at any point before the last
  * arrow.
  */
 export async function GET(request: Request) {
@@ -74,14 +74,15 @@ async function run(request: Request) {
 /**
  * How long a promise of storage outlives the guest who was given it.
  *
- * Two hours rather than the day the old pending-row sweep waited, because a
+ * Hours rather than the day the old pending-row sweep waited, because a
  * reservation is now cheap bookkeeping instead of a media row, and quota held
  * by an upload that will never happen is quota the host paid for. It still has
- * to clear the slowest real upload: 200 MB is the largest single file any tier
- * allows, which is about an hour on genuinely bad wifi, and the client's own
- * stall watchdog gives up long before that if the connection has actually died.
+ * to clear the slowest real upload: 500 MB is the largest single file any tier
+ * allows (the Pro clip cap), which is a few hours on genuinely bad wifi, and
+ * the client's own stall watchdog gives up long before that if the connection
+ * has actually died. Was two hours when the largest file was 200 MB.
  */
-const RESERVATION_TTL_MS = 2 * 3600_000;
+const RESERVATION_TTL_MS = 4 * 3600_000;
 
 /**
  * Uploads that reserved quota and never confirmed - a phone that died halfway,
