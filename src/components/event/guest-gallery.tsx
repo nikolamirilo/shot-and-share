@@ -242,6 +242,15 @@ export function GuestGallery({
           total={items.length}
           onStep={setOpenId}
           onClose={() => setOpenId(null)}
+          onReported={(id) => {
+            /* Dropped locally rather than waiting for the next refresh. The
+               guest who just reported it is looking straight at it, and three
+               seconds of it still being there is the whole of their impression
+               of whether the button worked. */
+            setItems((current) => current.filter((i) => i.id !== id));
+            setTotal((count) => (count === null ? null : Math.max(0, count - 1)));
+            setOpenId(null);
+          }}
         />
       )}
     </section>

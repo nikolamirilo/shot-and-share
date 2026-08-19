@@ -78,6 +78,14 @@ export function useUploadQueue({
   const [notice, setNotice] = useState<string | null>(null);
   const [upgradeHint, setUpgradeHint] = useState(false);
   const [completed, setCompleted] = useState(0);
+  /**
+   * How many of this guest's uploads are waiting on the host.
+   *
+   * Counted so the thank-you note can say so. A photo that uploaded, said
+   * "thank you", and then never appears on the wall reads to a guest as a
+   * failure, and they upload it again.
+   */
+  const [held, setHeld] = useState(0);
   const [saved, setSaved] = useState({ from: 0, to: 0 });
   const [phase, setPhase] = useState<Phase>("preparing");
   /**
@@ -149,7 +157,10 @@ export function useUploadQueue({
         // so a phase derived from what is happening right now would flip back
         // to "optimising" every time a file finished climbing out.
         setPhase("uploading");
-        await sendUpload(
+        const result = await sendUpload<{
+          confirmed: boolean;
+          held?: boolean;
+        }>(
           {
             presign: "/api/upload/presign",
             confirm: "/api/upload/confirm",
@@ -159,6 +170,8 @@ export function useUploadQueue({
           prepared,
           (fraction) => advance(item.key, { upload: fraction }),
         );
+
+        if (result.confirmation.held) setHeld((prev) => prev + 1);
       });
 
       update(item.key, {
@@ -322,6 +335,7 @@ export function useUploadQueue({
     notice,
     upgradeHint,
     completed,
+    held,
     saved,
     failed,
     skipped,

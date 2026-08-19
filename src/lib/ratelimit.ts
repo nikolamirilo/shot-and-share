@@ -71,6 +71,15 @@ export const LIMITS = {
   /** Guest page loads per IP, per minute. */
   guestPage: { limit: 60, window: 60 },
   /**
+   * Reports per IP, per hour.
+   *
+   * A report hides a photograph immediately, which is the point of it and also
+   * the obvious way to vandalise somebody's wedding gallery. Low enough that
+   * one phone cannot clear a wall, high enough that a guest genuinely upset by
+   * three photographs is not cut off after the first.
+   */
+  report: { limit: 10, window: 3600 },
+  /**
    * Cover images a host may upload to one event, per minute.
    *
    * Deliberately much lower than `presign`: a host picks one cover, looks at

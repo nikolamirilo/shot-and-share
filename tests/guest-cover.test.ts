@@ -75,6 +75,9 @@ function pushCover(over: Record<string, unknown> = {}) {
     height: 1707,
     uploader_fingerprint: null,
     source: "cover",
+    // Postgres defaults this on every insert - see migration 0018.
+    review_state: "approved",
+    report_count: 0,
     status: "ready",
     created_at: "2026-08-01T00:00:00.000Z",
     ...over,

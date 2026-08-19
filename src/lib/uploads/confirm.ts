@@ -7,6 +7,7 @@ import type {
   ReservedMedia,
   UploadReservationRow,
 } from "@/lib/db/types";
+import { decideReview, screenableKey } from "@/lib/moderation/review";
 import { release } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -37,10 +38,22 @@ export interface ConfirmRequest {
   reason?: string;
   /** Prefix for the log lines, so a failure names the side it came from. */
   log: string;
+  /**
+   * The event's approve-before-visible switch.
+   *
+   * Passed in rather than read here, because every caller already holds the
+   * event row. Covers pass false: a host approving their own cover image is a
+   * step with nothing on the other side of it.
+   */
+  requireApproval?: boolean;
 }
 
 export type ConfirmResult =
-  | { confirmed: true }
+  /**
+   * `held` means the photo is safely stored but is waiting on the host, so the
+   * guest can be told that rather than watching it never appear in the wall.
+   */
+  | { confirmed: true; held?: boolean }
   | { confirmed: false; because: "refused" | "gone" | "failed" };
 
 /**
@@ -138,7 +151,34 @@ export async function confirmReservation(
     status: "ready",
   };
 
-  const { error: insertError } = await admin.from("media").insert(row);
+  /*
+   * Screened before the row exists, so nothing is ever visible for the moment
+   * between insert and verdict. It costs the guest a few hundred milliseconds
+   * at the end of an upload that already took seconds.
+   *
+   * The object is in the bucket by now - that is what a confirm means - so the
+   * checker is handed a key rather than any bytes.
+   */
+  const review = await decideReview({
+    key: screenableKey({
+      kind: row.kind,
+      media_key: row.media_key,
+      poster_key: row.poster_key ?? null,
+    }),
+    requireApproval: request.requireApproval ?? false,
+  });
+
+  if (review.review_state === "held") {
+    console.warn(`[${request.log}] held for review`, {
+      eventId,
+      mediaId: reservation.id,
+      labels: review.moderation_labels?.map((label) => label.name) ?? [],
+    });
+  }
+
+  const { error: insertError } = await admin
+    .from("media")
+    .insert({ ...row, ...review });
 
   if (insertError) {
     // A duplicate key means a previous attempt got further than it managed to
@@ -166,7 +206,7 @@ export async function confirmReservation(
     await release(eventId, Number(reservation.thumb_size_bytes));
   }
 
-  return { confirmed: true };
+  return { confirmed: true, held: review.review_state === "held" };
 }
 
 async function discard(log: string, id: string) {

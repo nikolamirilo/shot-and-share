@@ -82,6 +82,29 @@ export function SettingsForm({ event }: { event: EventRow }) {
         </span>
       </label>
 
+      <label className="flex items-start gap-3 sm:max-w-2xl">
+        <input
+          type="checkbox"
+          name="require_approval"
+          defaultChecked={event.require_approval}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-[#1F1607]"
+        />
+        <span>
+          <span className="block font-semibold">
+            Check every photo before guests see it
+          </span>
+          {/* Warned about rather than recommended. A host who switches this on
+              for a wedding and then spends the reception approving photographs
+              one at a time will blame the product, and they will be right. */}
+          <span className="block text-[0.9375rem] text-ash">
+            Off by default. Everything guests upload waits for you under Photos
+            instead of appearing straight away. Sensible for a company event,
+            hard work at a wedding. Photos the automatic check flags wait for
+            you either way.
+          </span>
+        </span>
+      </label>
+
       {/* No photo-quality choice, deliberately: photos are always stored
         compressed, and the alternative is a setting whose only effect is
         filling the event four times faster for a difference nobody can see. */}

@@ -9,6 +9,7 @@ import {
   MdOutlineFileDownload,
 } from "react-icons/md";
 
+import { ReportButton } from "@/components/gallery/report-button";
 import { Button, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
@@ -24,6 +25,7 @@ export function Lightbox({
   total,
   onStep,
   onClose,
+  onReported,
 }: {
   token: string;
   item: MediaView;
@@ -35,6 +37,12 @@ export function Lightbox({
   total: number;
   onStep: (id: string) => void;
   onClose: () => void;
+  /**
+   * A guest reported this one. The wall drops it and closes behind itself, so
+   * the photograph is gone from the screen of the person who objected to it
+   * rather than sitting there until the next refresh.
+   */
+  onReported?: (id: string) => void;
 }) {
   const [full, setFull] = useState<MediaView | null>(null);
   /**
@@ -228,6 +236,13 @@ export function Lightbox({
                 <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
                 Download
               </a>
+            )}
+            {onReported && (
+              <ReportButton
+                token={token}
+                mediaId={item.id}
+                onReported={() => onReported(item.id)}
+              />
             )}
           </div>
         </div>

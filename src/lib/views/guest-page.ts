@@ -51,7 +51,9 @@ export async function loadGuestPage(token: string): Promise<GuestPage> {
   let coverUrl: string | null = null;
   if (event.cover_media_id && appearance.cover !== "type") {
     const row = await findReadyMedia(createAdminClient(), event.cover_media_id);
-    if (row) {
+    // A cover held by the automated check falls back to the typographic header
+    // rather than filling a guest's whole screen with it.
+    if (row && row.review_state === "approved") {
       const view = await toMediaView(row);
       // The full copy, not `previewUrl`. That one is the 640px thumbnail the
       // gallery grid loads fifty of, and the cover is the opposite case: one

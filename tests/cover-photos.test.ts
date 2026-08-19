@@ -64,6 +64,9 @@ function seed(count: number, source: "guest" | "cover" = "guest") {
       height: 1707,
       uploader_fingerprint: source === "guest" ? "f".repeat(16) : null,
       source,
+      // Postgres defaults this on every insert - see migration 0018.
+      review_state: "approved",
+      report_count: 0,
       status: "ready",
       created_at: `2026-08-0${1}T00:${String(i).padStart(2, "0")}:00.000Z`,
     });

@@ -43,6 +43,18 @@ export interface MediaView {
   downloadUrl?: string;
   /** Format of the stored object. */
   format: string | null;
+  /**
+   * Why this is not on the wall, when it is not. Absent on an approved
+   * photograph, which is almost all of them, so the guest gallery's payload
+   * does not grow a field it would never read.
+   */
+  review?: {
+    state: "held" | "reported";
+    /** Category names from the automated check. Empty when a person reported it. */
+    labels: string[];
+    /** How many guests pressed report. Zero unless somebody did. */
+    reports: number;
+  };
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   VIDEO_MIME,
 } from "@/lib/media/formats";
 import { mediaKey, posterKey, scopeOfMedia, thumbKey } from "@/lib/media";
+import { decideReview, screenableKey } from "@/lib/moderation/review";
 import { storage } from "@/lib/storage";
 import { adjust } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -254,6 +255,61 @@ export async function POST(request: Request) {
       await storage.remove([media.media_key]);
     }
 
+    await screenLate(media.id, {
+      moderated_at: media.moderated_at,
+      kind: media.kind,
+      media_key: replaced ? newKey : media.media_key,
+      poster_key: wrotePoster
+        ? posterKey(scope, media.id, IMAGE_EXT.jpeg)
+        : media.poster_key,
+    });
+
     return ok({ recorded: true });
   });
+}
+
+/**
+ * The second chance to screen a photograph.
+ *
+ * A HEIC from desktop Chrome reaches the bucket in a format Rekognition cannot
+ * read, so it arrives unscreened and stays visible - the deliberate fail-open.
+ * The worker has just written a JPEG of it, which is the first copy anything
+ * could look at, so this is where that upload finally gets checked.
+ *
+ * Only rows nobody has screened. A photograph the host has already looked at
+ * and approved must not be pulled back down by a conversion job hours later.
+ */
+async function screenLate(
+  mediaId: string,
+  row: {
+    moderated_at: string | null;
+    kind: string;
+    media_key: string;
+    poster_key: string | null;
+  },
+) {
+  if (row.moderated_at) return;
+
+  const key = screenableKey(row);
+  if (!key) return;
+
+  try {
+    /* requireApproval is false on purpose. The event's hold-everything switch
+       was already applied when the row was written; asking again here would
+       hold a photograph the host has released. */
+    const review = await decideReview({ key, requireApproval: false });
+    if (!review.moderated_at) return;
+
+    await createAdminClient()
+      .from("media")
+      .update(review)
+      .eq("id", mediaId)
+      // Nothing the host has since acted on. Between the upload and now they
+      // may have approved or a guest may have reported it, and this job is the
+      // least informed party in either case.
+      .eq("review_state", "approved")
+      .is("moderated_at", null);
+  } catch (error) {
+    console.error("[transcode] late screening failed", mediaId, error);
+  }
 }

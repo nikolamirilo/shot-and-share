@@ -58,6 +58,10 @@ export async function createEvent(
       expires_at: computeExpiry(parsed.data.event_date, tier).toISOString(),
       status: "active",
       gallery_visible: true,
+      // Off, and it stays off unless a host asks for it. Making somebody
+      // approve four hundred wedding photographs one at a time would ruin the
+      // product for the people who never think about moderation at all.
+      require_approval: false,
       welcome_message: null,
       cover_media_id: null,
       archive_key: null,
@@ -82,6 +86,7 @@ const settingsSchema = z.object({
   name: z.string().trim().min(1).max(120),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gallery_visible: z.boolean(),
+  require_approval: z.boolean(),
   welcome_message: z.string().trim().max(400).nullable(),
 });
 
@@ -97,6 +102,7 @@ export async function updateEventSettings(
     name: formData.get("name"),
     event_date: formData.get("event_date"),
     gallery_visible: formData.get("gallery_visible") === "on",
+    require_approval: formData.get("require_approval") === "on",
     welcome_message: welcome.length > 0 ? welcome : null,
   });
   if (!parsed.success) {
@@ -114,6 +120,7 @@ export async function updateEventSettings(
       name: parsed.data.name,
       event_date: parsed.data.event_date,
       gallery_visible: parsed.data.gallery_visible,
+      require_approval: parsed.data.require_approval,
       welcome_message: parsed.data.welcome_message,
       expires_at: expiresAt,
     })

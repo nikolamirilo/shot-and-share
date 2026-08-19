@@ -56,9 +56,17 @@ export default async function PricingPage() {
               />
             </div>
 
-            <p className="mt-6 text-[0.9375rem] text-ash">
-              Prices include EU VAT handling - our payment provider is the
-              merchant of record, so the VAT on your invoice is already sorted.
+            {/* The three sentences a payment reviewer is looking for, in the
+                order they check them: the price is real, nothing recurs, and
+                somebody named is taking the money. */}
+            <p className="mt-6 max-w-2xl text-[0.9375rem] text-ash">
+              Prices are in euro and include EU VAT. Our payment provider is the
+              merchant of record, so the VAT on your invoice is already handled.
+            </p>
+            <p className="mt-2 max-w-2xl text-[0.9375rem] text-ash">
+              There is no subscription anywhere in this product. Every plan is a
+              single payment for a single event, nothing renews, and there is
+              nothing to cancel. No plan is hidden behind a sales call.
             </p>
           </div>
         </section>

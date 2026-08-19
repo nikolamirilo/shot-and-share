@@ -113,6 +113,43 @@ export function eventReadyEmail(args: {
   return { to: args.to, subject, html: layout(body, { label: "Open my event", url: args.shareUrl }), text };
 }
 
+/**
+ * A guest pressed report and the photograph is already hidden.
+ *
+ * Sent at once rather than batched, because the only person who can put it back
+ * or delete it for good is the host, and until they look the wall is one photo
+ * short. The reason is the guest's own words from a short list, so it says
+ * "someone in it" rather than a category id.
+ */
+export function photoReportedEmail(args: {
+  to: string;
+  eventId: string;
+  eventName: string;
+  reason: string;
+  reviewUrl: string;
+}): Email {
+  const said: Record<string, string> = {
+    not_allowed: "it should not be here",
+    someone_in_it: "somebody in it did not want it shared",
+    mistake: "it was uploaded by mistake",
+    other: "no reason given",
+  };
+
+  const subject = `${args.eventName}: a guest reported a photo`;
+  const body = `
+    <h1 style="font-size:27px;margin:14px 0 12px;line-height:1.15">One photo is hidden</h1>
+    <p style="font-size:16px;line-height:1.6">A guest at <strong>${escapeHtml(args.eventName)}</strong> reported a photo, and it came off the gallery straight away. Nobody else can see it.</p>
+    <p style="font-size:16px;line-height:1.6">They said <strong>${escapeHtml(said[args.reason] ?? said.other)}</strong>.</p>
+    <p style="font-size:16px;line-height:1.6">Have a look and either put it back or delete it. Nothing else on the event has changed.</p>`;
+  const text = `A guest reported a photo at ${args.eventName}. It is hidden until you look: ${args.reviewUrl}`;
+  return {
+    to: args.to,
+    subject,
+    html: layout(body, { label: "Review this photo", url: args.reviewUrl }),
+    text,
+  };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

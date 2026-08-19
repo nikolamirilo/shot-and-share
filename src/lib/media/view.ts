@@ -66,6 +66,14 @@ export async function toMediaView(
     format: row.media_format,
   };
 
+  if (row.review_state !== "approved") {
+    view.review = {
+      state: row.review_state,
+      labels: (row.moderation_labels ?? []).map((label) => label.name),
+      reports: row.report_count,
+    };
+  }
+
   if (opts.withUrl) {
     view.url = await storage.presignDownload({
       key: row.media_key,

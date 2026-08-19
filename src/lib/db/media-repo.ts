@@ -31,6 +31,18 @@ export function guestMedia(client: Client, eventId: string) {
     .order("created_at", { ascending: false });
 }
 
+/**
+ * The same, narrowed to what a guest may actually see.
+ *
+ * Held and reported photographs are real rows on a real event, and the host has
+ * to be able to look at them, so the difference between the host's view and the
+ * guest's is one predicate rather than two tables. Everything guest-facing goes
+ * through here; the console goes through `guestMedia` above and sees the lot.
+ */
+export function visibleGuestMedia(client: Client, eventId: string) {
+  return guestMedia(client, eventId).eq("review_state", "approved");
+}
+
 /** Covers the host uploaded themselves, newest first. */
 export function coverMedia(client: Client, eventId: string) {
   return client
@@ -61,7 +73,12 @@ export async function listCoverMedia(
   return (data ?? []) as MediaRow[];
 }
 
-/** Guest photographs oldest first, which is the order the ZIP is built in. */
+/**
+ * Guest photographs oldest first, which is the order the ZIP is built in.
+ *
+ * Approved only. A held photograph is one the host has not looked at yet, and
+ * putting it into the download would quietly undo the holding.
+ */
 export async function listGuestMediaOldestFirst(
   client: Client,
   eventId: string,
@@ -72,19 +89,25 @@ export async function listGuestMediaOldestFirst(
     .eq("event_id", eventId)
     .eq("status", "ready")
     .eq("source", "guest")
+    .eq("review_state", "approved")
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as MediaRow[];
 }
 
-/** Guest photographs that arrived after a timestamp. Drives the slideshow. */
+/**
+ * Guest photographs that arrived after a timestamp. Drives the slideshow.
+ *
+ * Approved only, and this is the one where it matters most: the slideshow is
+ * projected on a wall in front of everybody.
+ */
 export async function listGuestMediaSince(
   client: Client,
   eventId: string,
   since: string | null,
   limit: number,
 ): Promise<MediaRow[]> {
-  let query = guestMedia(client, eventId).limit(limit);
+  let query = visibleGuestMedia(client, eventId).limit(limit);
   if (since) query = query.gt("created_at", since);
 
   const { data, error } = await query;
@@ -114,7 +137,7 @@ export async function listGuestPage(
     pageSize,
   }: { eventId: string; before?: string | null; pageSize: number },
 ): Promise<MediaPage> {
-  let query = guestMedia(client, eventId).limit(pageSize);
+  let query = visibleGuestMedia(client, eventId).limit(pageSize);
   if (before) query = query.lt("created_at", before);
 
   const { data, error } = await query;
@@ -168,6 +191,28 @@ export async function countGuestMediaExact(
     .eq("status", "ready")
     .eq("source", "guest");
   return count ?? 0;
+}
+
+/**
+ * Guest photographs waiting on the host: flagged by the automated check, held
+ * because the event holds everything, or reported by a guest.
+ *
+ * Oldest first. The one that has been waiting longest is the one to look at.
+ */
+export async function listMediaAwaitingReview(
+  client: Client,
+  eventId: string,
+): Promise<MediaRow[]> {
+  const { data, error } = await client
+    .from("media")
+    .select("*")
+    .eq("event_id", eventId)
+    .eq("status", "ready")
+    .eq("source", "guest")
+    .neq("review_state", "approved")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as MediaRow[];
 }
 
 /** One media row, but only if it belongs to the event named. */

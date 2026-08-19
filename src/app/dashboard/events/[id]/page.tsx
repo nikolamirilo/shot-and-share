@@ -13,6 +13,7 @@ import { AppearanceForm } from "@/components/dashboard/appearance/appearance-for
 import { ArchivePanel } from "@/components/dashboard/archive-panel";
 import { DangerZone } from "@/components/dashboard/danger-zone";
 import { HostGallery } from "@/components/dashboard/host-gallery";
+import { ReviewPanel } from "@/components/dashboard/review-panel";
 import { SettingsForm } from "@/components/dashboard/settings-form";
 import { SharePanel } from "@/components/dashboard/share-panel";
 import { StoragePanel } from "@/components/dashboard/storage-panel";
@@ -24,6 +25,8 @@ import { formatEventDate } from "@/lib/format";
 import { coerceLayout } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/server";
 import { KEEP_FOREVER } from "@/lib/tiers";
+import { recoverPurchases } from "@/lib/payments/recover";
+import { getSessionUser } from "@/lib/supabase/server";
 import { loadEventConsole } from "@/lib/views/event-console";
 
 export const dynamic = "force-dynamic";
@@ -88,10 +91,31 @@ export default async function EventPage({
   const { id } = await params;
   const { purchase } = await searchParams;
 
-  const view = await loadEventConsole(id);
+  let view = await loadEventConsole(id);
   if (!view) notFound();
 
-  const { event, tier, summary, media, covers, photoCount } = view;
+  /*
+   * Coming back from checkout, verify rather than wait.
+   *
+   * The webhook is still the only thing that grants an entitlement, and it
+   * usually beats the browser back here by seconds. When it does not - it was
+   * slow, it was lost, the deployment was restarting - this asks the provider
+   * whether the order exists and applies it through the same code path. The
+   * alternative is the customer refreshing a page that never changes, which is
+   * how "I paid and got nothing" becomes a chargeback.
+   *
+   * Only on the return from checkout, never on an ordinary page load: it is an
+   * outbound API call and every other visit has nothing to find.
+   */
+  if (purchase === "complete") {
+    const user = await getSessionUser();
+    const { applied } = await recoverPurchases(view.event, user?.email);
+    if (applied > 0) {
+      view = (await loadEventConsole(id)) ?? view;
+    }
+  }
+
+  const { event, tier, summary, media, covers, photoCount, review } = view;
 
   return (
     /* The bottom padding is the bar's own height plus room to breathe. Without
@@ -120,9 +144,10 @@ export default async function EventPage({
 
       {purchase && (
         <Alert tone="notice" className="mt-5 sm:mt-6">
-          Payment received. If the plan still looks the same, give the provider
-          a few seconds - the upgrade lands when their webhook does, not when
-          your browser comes back.
+          Payment received. If the plan still looks the same, wait a few seconds
+          and reload - and if it still has not moved, use{" "}
+          <strong>Find my payment</strong> under Plan. Nothing is lost either
+          way.
         </Alert>
       )}
 
@@ -196,6 +221,13 @@ export default async function EventPage({
               Showing the {media.length} most recent of {photoCount}.
             </p>
           )}
+
+          {/* Above the wall, because anything waiting on the host is the one
+              thing on this tab that will not resolve itself. Draws nothing
+              when the queue is empty, which is nearly always. */}
+          <div className="mt-6">
+            <ReviewPanel eventId={event.id} items={review} />
+          </div>
 
           <div className="mt-6">
             <HostGallery

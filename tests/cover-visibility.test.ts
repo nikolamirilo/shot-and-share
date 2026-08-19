@@ -63,6 +63,9 @@ function push(id: string, source: "guest" | "cover", minute: number) {
     height: 1707,
     uploader_fingerprint: source === "guest" ? "f".repeat(16) : null,
     source,
+    // Postgres defaults this on every insert - see migration 0018.
+    review_state: "approved",
+    report_count: 0,
     status: "ready",
     created_at: `2026-08-01T00:${String(minute).padStart(2, "0")}:00.000Z`,
   });
