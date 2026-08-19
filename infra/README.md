@@ -10,7 +10,7 @@ GDPR conversation simple. It costs roughly 5 to 8 percent more than `us-east-1`,
 which is worth it.
 
 ```bash
-BUCKET=say-cheese-prod
+BUCKET=shot-and-share-application
 REGION=eu-central-1
 
 aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" \
@@ -176,12 +176,12 @@ The application needs exactly this much and no more.
         "s3:DeleteObject",
         "s3:AbortMultipartUpload"
       ],
-      "Resource": "arn:aws:s3:::say-cheese-prod/*"
+      "Resource": "arn:aws:s3:::shot-and-share-application/*"
     },
     {
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::say-cheese-prod"
+      "Resource": "arn:aws:s3:::shot-and-share-application"
     }
   ]
 }
@@ -210,7 +210,7 @@ silent apart from the logs. Check for `[moderation] rekognition failed` after
 turning it on.
 
 ```bash
-aws iam put-user-policy --user-name shot-and-share-app \
+aws iam put-user-policy --user-name shot-and-share-application \
   --policy-name shot-and-share-moderation \
   --policy-document '{
     "Version": "2012-10-17",
