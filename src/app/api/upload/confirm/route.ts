@@ -50,8 +50,15 @@ export async function POST(request: Request) {
       height: body.height,
       reason: body.reason,
       log: "confirm",
+      requireApproval: event.require_approval,
     });
 
-    return ok({ confirmed: result.confirmed });
+    /* The guest is told when their photo is waiting on the host. A photo that
+       uploaded successfully and then never appears in the wall reads as a
+       failed upload, and the guest tries again. */
+    return ok({
+      confirmed: result.confirmed,
+      held: result.confirmed ? Boolean(result.held) : false,
+    });
   });
 }

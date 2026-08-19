@@ -1,11 +1,12 @@
 "use client";
 
-import { MdOutlineShoppingCartCheckout } from "react-icons/md";
+import { MdOutlineReceiptLong, MdOutlineShoppingCartCheckout } from "react-icons/md";
 
 import { useServerAction } from "@/hooks/use-server-action";
 
-import { startCheckout } from "@/lib/actions/billing";
+import { recoverPurchase, startCheckout } from "@/lib/actions/billing";
 import { Alert, Button, Hole, Panel } from "@/components/ui";
+import { useState } from "react";
 import { KEEP_FOREVER, type PurchasableId, TIERS, getTier } from "@/lib/tiers";
 import { formatBytes } from "@/lib/format";
 
@@ -121,6 +122,63 @@ export function UpgradePanel({
       </ul>
 
       {error && <Alert className="mt-4">{error}</Alert>}
+
+      <RecoverPurchase eventId={eventId} />
     </Panel>
+  );
+}
+
+/**
+ * The way out for somebody who has paid and is looking at a plan that did not
+ * change.
+ *
+ * Entitlement is granted by the provider's signed webhook and by nothing else,
+ * which is right, and which means a webhook that is slow or lost leaves a
+ * paying customer stuck. That customer opens a ticket, and if the ticket sits
+ * for a day they open a dispute with their bank instead - the chargeback a
+ * payment reviewer is trying to predict when they look at one-time purchases.
+ *
+ * Quiet and always present rather than appearing after a failure, because the
+ * person who needs it is already annoyed and should not have to find it.
+ */
+function RecoverPurchase({ eventId }: { eventId: string }) {
+  const { pending, error, run } = useServerAction();
+  const [outcome, setOutcome] = useState<string | null>(null);
+
+  return (
+    <div className="mt-6 border-t border-ink/10 pt-4">
+      <p className="text-[0.9375rem] text-ash">
+        Paid and nothing changed? Payment providers occasionally take a few
+        minutes to tell us.
+      </p>
+
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={pending}
+        className="mt-3"
+        onClick={() =>
+          run(() => recoverPurchase(eventId), {
+            onSuccess: (result) => {
+              setOutcome(
+                result.applied && result.applied > 0
+                  ? "Found it. Your plan is up to date."
+                  : "No unclaimed payment found under your email. If you were charged, write to us and we will sort it by hand.",
+              );
+            },
+          })
+        }
+      >
+        <MdOutlineReceiptLong aria-hidden className="shrink-0 text-[1.25em]" />
+        {pending ? "Checking with the provider…" : "Find my payment"}
+      </Button>
+
+      {outcome && (
+        <p className="mt-3 text-[0.9375rem] text-ash" role="status">
+          {outcome}
+        </p>
+      )}
+      {error && <Alert className="mt-3">{error}</Alert>}
+    </div>
   );
 }

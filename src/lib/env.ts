@@ -126,6 +126,17 @@ export const env = {
     return opt("CRON_SECRET");
   },
 
+  /**
+   * Who screens uploads. "rekognition" or nothing at all.
+   *
+   * Opt-in rather than inferred from the AWS keys being present: turning on a
+   * per-image cost and a call on the upload path should be a decision someone
+   * made, not a side effect of configuring storage.
+   */
+  get moderationProvider(): "rekognition" | "none" {
+    return opt("MODERATION_PROVIDER") === "rekognition" ? "rekognition" : "none";
+  },
+
   get mockCheckout() {
     return opt("ENABLE_MOCK_CHECKOUT") === "1";
   },

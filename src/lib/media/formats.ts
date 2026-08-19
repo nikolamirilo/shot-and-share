@@ -75,6 +75,19 @@ export const THUMB_IMAGE_FORMATS: ImageFormat[] = ["webp", "jpeg"];
 export const FULL_IMAGE_FORMAT: ImageFormat = "jpeg";
 
 /**
+ * A video's poster frame is always JPEG, never WebP.
+ *
+ * It used to follow the thumbnail's preference order, which meant WebP almost
+ * everywhere. The poster is the only still frame a clip has, so it is also the
+ * only thing the moderation check can look at, and Amazon Rekognition reads
+ * JPEG and PNG and nothing else. A WebP poster is an unscreenable video.
+ *
+ * The cost is one slightly larger file per clip, which against a video is
+ * nothing.
+ */
+export const POSTER_IMAGE_FORMATS: ImageFormat[] = ["jpeg"];
+
+/**
  * H.264 in an MP4 container with AAC audio. Not the most efficient combination
  * available, and that is the point: it is the only one that plays on every
  * phone, browser, smart TV and laptop without a codec conversation.

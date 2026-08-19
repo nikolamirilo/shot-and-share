@@ -1,7 +1,11 @@
 import "server-only";
 
 import { findEvent } from "@/lib/db/event-repo";
-import { listCoverMedia, listGuestMedia } from "@/lib/db/media-repo";
+import {
+  listCoverMedia,
+  listGuestMedia,
+  listMediaAwaitingReview,
+} from "@/lib/db/media-repo";
 import type { EventRow } from "@/lib/db/types";
 import { env } from "@/lib/env";
 import { getActiveShareToken, storageSummary } from "@/lib/events";
@@ -28,6 +32,11 @@ export interface EventConsole {
   summary: ReturnType<typeof storageSummary>;
   media: MediaView[];
   covers: MediaView[];
+  /**
+   * Held, flagged or reported uploads, oldest first. Almost always empty, and
+   * the panel that renders it is not drawn at all when it is.
+   */
+  review: MediaView[];
   /** Every guest photograph at the event, not only the loaded ones. */
   photoCount: number;
   uploaderCount: number;
@@ -43,12 +52,16 @@ export async function loadEventConsole(
   const event = await findEvent(supabase, id);
   if (!event) return null;
 
-  const [{ data: stats }, mediaRows, coverRows, active] = await Promise.all([
+  const [{ data: stats }, mediaRows, coverRows, reviewRows, active] =
+    await Promise.all([
     supabase.rpc("event_stats", { p_event: event.id }),
     listGuestMedia(supabase, event.id, GALLERY_SEED),
     // All of them: there are only ever a handful, and they get their own row at
     // the top of the picker so a host can go back to one from last week.
     listCoverMedia(supabase, event.id),
+    // All of them, always. The queue is meant to be short, and a host who has
+    // to page through things waiting on them will not clear it.
+    listMediaAwaitingReview(supabase, event.id),
     getActiveShareToken(event.id),
   ]);
 
@@ -65,6 +78,7 @@ export async function loadEventConsole(
     summary: storageSummary(event),
     media: await toMediaViews(mediaRows),
     covers: await toMediaViews(coverRows),
+    review: await toMediaViews(reviewRows),
     photoCount: Number(counts.photo_count) + Number(counts.video_count),
     uploaderCount: Number(counts.uploader_count),
     shareLink: active ? shareUrl(env.siteUrl, active.token) : null,

@@ -8,6 +8,7 @@ import {
   MAX_QUALITY,
   MIN_QUALITY,
   POSTER_BYTES_PER_MP,
+  POSTER_IMAGE_FORMATS,
   START_QUALITY,
   THUMB_BYTES_PER_MP,
   THUMB_IMAGE_FORMATS,
@@ -375,7 +376,8 @@ export async function probeVideo(
 
     onProgress?.(0.75);
 
-    const format = await bestEncodableFormat(THUMB_IMAGE_FORMATS);
+    // JPEG, not the thumbnail order: see POSTER_IMAGE_FORMATS.
+    const format = await bestEncodableFormat(POSTER_IMAGE_FORMATS);
     const longest = Math.max(width, height);
     const scale = Math.min(1, POSTER_MAX_EDGE / longest);
     const canvas = document.createElement("canvas");

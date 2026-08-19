@@ -66,7 +66,34 @@ export function UploadPanel(props: UploadPanelProps) {
       ) : (
         <BigButton {...props} />
       )}
+      {!preview && <Consent />}
     </section>
+  );
+}
+
+/**
+ * The line that has to be on the screen before anyone uploads a photograph of
+ * somebody else.
+ *
+ * Outside the panel and under all four variants, so a host cannot pick a layout
+ * that loses it. Quiet on purpose: it is a reminder at a party, not a checkbox
+ * to be clicked through, and a modal here would be dismissed without reading
+ * by every guest at every event.
+ */
+function Consent() {
+  return (
+    <p className="mt-3 px-1 text-center text-[0.8125rem] leading-relaxed text-ash">
+      By uploading you confirm you have permission from the people in your
+      photos.{" "}
+      <a
+        href="/acceptable-use"
+        target="_blank"
+        rel="noreferrer"
+        className="underline underline-offset-2"
+      >
+        What is not allowed
+      </a>
+    </p>
   );
 }
 

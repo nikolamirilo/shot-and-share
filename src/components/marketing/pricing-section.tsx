@@ -25,12 +25,18 @@ export function PricingSection() {
           <PricingTable />
         </div>
 
+        {/* This used to invite photographers to write in for a plan of their
+            own. A "talk to us" line is the single clearest signal that a
+            business sells services rather than software, and it is the thing
+            that got this store read as an agency. Every price is on the page
+            now, and nothing here asks anyone to negotiate. */}
         <p className="mt-6 text-[0.9375rem] text-ash">
-          Wedding photographer running fifteen events a year?{" "}
-          <Link href="mailto:hello@shotandshare.co" className="underline">
-            Talk to us
-          </Link>{" "}
-          - a plan for you is next.
+          Every price is on this page. One payment for one event, nothing
+          renews, nothing to cancel.{" "}
+          <Link href="/pricing" className="underline">
+            See what each plan includes
+          </Link>
+          .
         </p>
       </div>
     </section>

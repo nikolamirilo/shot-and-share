@@ -17,6 +17,14 @@ export type MediaProcessing = "done" | "pending" | "failed";
  * slideshow, the ZIP and the photo counts. See migration 0013.
  */
 export type MediaSource = "guest" | "cover";
+/** See migration 0018 and `@/lib/moderation/review`. */
+export type ReviewState = "approved" | "held" | "reported";
+/** One category the automated check returned. Stored as jsonb. */
+export type ModerationLabelRecord = {
+  name: string;
+  confidence: number;
+  parent?: string;
+};
 /**
  * What the `purchases.product` column records. Historical rows only, so it is
  * the purchasable set and nothing wider.
@@ -50,6 +58,11 @@ export type EventRow = {
   expires_at: string | null;
   status: EventStatus;
   gallery_visible: boolean;
+  /**
+   * Hold every guest upload for the host rather than only the flagged ones.
+   * Off by default and it has to stay that way - see migration 0018.
+   */
+  require_approval: boolean;
   gallery_layout: GalleryLayout;
   theme: string;
   theme_custom: unknown;
@@ -114,6 +127,23 @@ export type MediaRow = {
   uploader_fingerprint: string | null;
   /** Has a database default of 'guest', so an insert may leave it out. */
   source: MediaSource;
+  /**
+   * Whether this may appear in a gallery. See migration 0018.
+   *
+   * `approved` is the default and the only state a guest ever sees. `held` is
+   * waiting on the host, either because the automated check flagged it or
+   * because the event holds everything. `reported` is a guest having pressed
+   * report, and is hidden before anyone has looked.
+   */
+  review_state: ReviewState;
+  /**
+   * What the automated check returned, or null when nobody screened this. An
+   * empty array is a clean pass and is not the same as null.
+   */
+  moderation_labels: ModerationLabelRecord[] | null;
+  moderated_at: string | null;
+  reported_at: string | null;
+  report_count: number;
   status: MediaStatus;
   created_at: string;
 };
@@ -159,16 +189,27 @@ export type UploadReservationRow = {
   created_at: string;
 };
 
+/**
+ * What happened to the money. A refund or an expiry takes the entitlement back
+ * down, so this is not decoration - see migration 0019.
+ */
+export type PurchaseStatus = "paid" | "refunded" | "expired" | "failed";
+
 export type PurchaseRow = {
   id: string;
   event_id: string | null;
   owner_id: string | null;
   provider: string;
+  /** The webhook idempotency key. Not the id a refund arrives under. */
   provider_txn_id: string;
+  /** The provider's order id, which is what a refund names. */
+  order_id: string | null;
+  /** Null on everything sold today. Nothing recurring exists yet. */
+  subscription_id: string | null;
   product: Product;
   amount_cents: number | null;
   currency: string | null;
-  status: string;
+  status: PurchaseStatus;
   raw: unknown;
   created_at: string;
 };
@@ -199,6 +240,7 @@ export interface Database {
           | "theme_font"
           | "cover_variant"
           | "upload_variant"
+          | "require_approval"
         > &
           Partial<
             Pick<
@@ -211,6 +253,7 @@ export interface Database {
               | "theme_font"
               | "cover_variant"
               | "upload_variant"
+              | "require_approval"
             >
           >
       >;
@@ -233,6 +276,11 @@ export interface Database {
           | "poster_size_bytes"
           | "processing"
           | "source"
+          | "review_state"
+          | "moderation_labels"
+          | "moderated_at"
+          | "reported_at"
+          | "report_count"
         > &
           Partial<
             Pick<
@@ -242,6 +290,11 @@ export interface Database {
               | "poster_size_bytes"
               | "processing"
               | "source"
+              | "review_state"
+              | "moderation_labels"
+              | "moderated_at"
+              | "reported_at"
+              | "report_count"
             >
           >
       >;
@@ -257,7 +310,8 @@ export interface Database {
       >;
       purchases: Table<
         PurchaseRow,
-        Omit<PurchaseRow, "id" | "created_at">
+        Omit<PurchaseRow, "id" | "created_at" | "status"> &
+          Partial<Pick<PurchaseRow, "status">>
       >;
     };
     Views: { [_ in never]: never };

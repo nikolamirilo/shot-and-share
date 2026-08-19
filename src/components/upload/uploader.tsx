@@ -211,6 +211,17 @@ export function Uploader({
               ? "It is with the host."
               : `All ${queue.completed} are with the host.`}{" "}
             Add more any time tonight.
+            {queue.held > 0 && (
+              /* Never phrased as an accusation. Most held photos are a check
+                 being cautious, the host releases them in a tap, and a guest
+                 told their photo was "flagged" at a wedding will assume they
+                 did something wrong. */
+              <span className="mt-2 block text-[0.9375rem] text-ash">
+                {queue.held === 1 && queue.completed === 1
+                  ? "The host is checking it before it goes on the wall."
+                  : `${queue.held} of them are with the host to check before they go on the wall.`}
+              </span>
+            )}
             {queue.saved.from > queue.saved.to && queue.saved.to > 0 && (
               <span className="mt-1 block font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-ash">
                 sent {formatBytes(queue.saved.to)} instead of{" "}

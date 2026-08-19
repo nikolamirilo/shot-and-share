@@ -36,6 +36,11 @@ class Query {
     return this;
   }
 
+  neq(column: string, value: unknown) {
+    this.filters.push((row) => row[column] !== value);
+    return this;
+  }
+
   lt(column: string, value: string) {
     this.filters.push((row) => String(row[column]) < value);
     return this;

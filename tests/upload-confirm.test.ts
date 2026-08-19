@@ -128,7 +128,7 @@ describe("confirming an upload", () => {
     );
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ confirmed: true });
+    expect(await res.json()).toEqual({ confirmed: true, held: false });
 
     expect(media()).toHaveLength(1);
     const row = media()[0];
@@ -149,7 +149,7 @@ describe("confirming an upload", () => {
     reserveVideo();
     const res = await POST(request({ failed: true, mediaUploaded: false }));
 
-    expect(await res.json()).toEqual({ confirmed: false });
+    expect(await res.json()).toEqual({ confirmed: false, held: false });
     expect(media()).toHaveLength(0);
     expect(reservations()).toHaveLength(0);
     // The clip and its poster were both charged for at presign time.
@@ -209,7 +209,7 @@ describe("confirming an upload", () => {
       request({ mediaUploaded: true, posterUploaded: false }),
     );
 
-    expect(await res.json()).toEqual({ confirmed: true });
+    expect(await res.json()).toEqual({ confirmed: true, held: false });
 
     const row = media()[0];
     expect(row.poster_key).toBeNull();
@@ -253,7 +253,7 @@ describe("confirming an upload", () => {
       request({ mediaUploaded: true, thumbUploaded: false }),
     );
 
-    expect(await res.json()).toEqual({ confirmed: true });
+    expect(await res.json()).toEqual({ confirmed: true, held: false });
 
     const row = media()[0];
     expect(row.thumb_key).toBeNull();
@@ -271,7 +271,7 @@ describe("confirming an upload", () => {
       request({ mediaUploaded: false, thumbUploaded: false, failed: true }),
     );
 
-    expect(await res.json()).toEqual({ confirmed: false });
+    expect(await res.json()).toEqual({ confirmed: false, held: false });
     expect(media()).toHaveLength(0);
     expect(store.released()).toBe(1_975_000);
   });
@@ -286,7 +286,7 @@ describe("confirming an upload", () => {
     await POST(request({ mediaUploaded: true }));
     const again = await POST(request({ mediaUploaded: true }));
 
-    expect(await again.json()).toEqual({ confirmed: true });
+    expect(await again.json()).toEqual({ confirmed: true, held: false });
     expect(media()).toHaveLength(1);
   });
 
@@ -299,7 +299,7 @@ describe("confirming an upload", () => {
 
     const res = await POST(request({ mediaUploaded: true }));
 
-    expect(await res.json()).toEqual({ confirmed: true });
+    expect(await res.json()).toEqual({ confirmed: true, held: false });
     expect(reservations()).toHaveLength(0);
   });
 
@@ -327,7 +327,7 @@ describe("confirming an upload", () => {
       request({ fingerprint: "0".repeat(16), mediaUploaded: true }),
     );
 
-    expect(await res.json()).toEqual({ confirmed: false });
+    expect(await res.json()).toEqual({ confirmed: false, held: false });
     expect(media()).toHaveLength(0);
     // And it does not refund somebody else's reservation either.
     expect(reservations()).toHaveLength(1);
@@ -337,7 +337,7 @@ describe("confirming an upload", () => {
   it("reports honestly when the reservation has already been swept", async () => {
     const res = await POST(request({ mediaUploaded: true }));
 
-    expect(await res.json()).toEqual({ confirmed: false });
+    expect(await res.json()).toEqual({ confirmed: false, held: false });
     expect(media()).toHaveLength(0);
   });
 });

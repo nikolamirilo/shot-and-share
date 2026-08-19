@@ -141,6 +141,14 @@ async function handleVideo(job, dir) {
     // Put the index at the front so the video starts playing before it has
     // finished downloading. Without this a guest stares at a black rectangle.
     "-movflags", "+faststart",
+    // Drop everything the phone wrote into the container: the GPS location of
+    // the party, the device, the creation time. A guest filming inside
+    // somebody's house is handing over that address otherwise, and the privacy
+    // policy promises this happens.
+    //
+    // Photos need no equivalent: they are re-encoded through a canvas in the
+    // browser before they are uploaded, which drops the EXIF block on the way.
+    "-map_metadata", "-1",
     outputPath,
   ]);
 
@@ -192,7 +200,16 @@ async function handleImage(job, dir) {
   // 12MP photo for anyone who wants to print it or crop into it - and the
   // guest cannot re-upload the good copy later, because by then it is gone.
   const fullPath = path.join(dir, "full.jpg");
-  await run(FFMPEG, ["-y", "-i", input, "-q:v", "3", fullPath]);
+  // -map_metadata -1 for the same reason it is on the video: this is the one
+  // photo path that does not go through the browser's canvas, so it is the one
+  // place an EXIF GPS tag could still reach the bucket.
+  await run(FFMPEG, [
+    "-y",
+    "-i", input,
+    "-q:v", "3",
+    "-map_metadata", "-1",
+    fullPath,
+  ]);
 
   // The JPEG replaces the file the guest uploaded; the app deletes the HEIC
   // once the row moves.

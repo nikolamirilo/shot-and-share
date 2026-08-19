@@ -191,3 +191,44 @@ The application needs exactly this much and no more.
 the end of its life. The application never uses it to read a gallery - LIST is
 billed at the expensive request rate, and Postgres is the source of truth for
 what exists.
+
+## Upload moderation
+
+Every photo is screened as it arrives, before it is visible in any gallery. The
+driver is chosen by `MODERATION_PROVIDER`; leave it blank and nothing is
+screened, which is the state every laptop and preview deployment runs in.
+
+`MODERATION_PROVIDER=rekognition` uses Amazon Rekognition against the object
+already sitting in the bucket, so nothing leaves the region and the call is a
+key rather than an upload.
+
+The IAM user the app already uses for S3 needs one more permission. Without it
+every call fails, and because the upload path fails open, every photo goes
+through unscreened and `moderated_at` stays null. That is deliberate - an AWS
+outage must not stop a wedding - but it also means a missing permission is
+silent apart from the logs. Check for `[moderation] rekognition failed` after
+turning it on.
+
+```bash
+aws iam put-user-policy --user-name shot-and-share-app \
+  --policy-name shot-and-share-moderation \
+  --policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [{
+      "Effect": "Allow",
+      "Action": "rekognition:DetectModerationLabels",
+      "Resource": "*"
+    }]
+  }'
+```
+
+`DetectModerationLabels` takes no resource ARN, which is why `Resource` is `*`.
+Reading the object is covered by the `s3:GetObject` grant the app already holds.
+
+Rekognition has to be available in the bucket's region. `eu-central-1` has it.
+Moving the bucket to a region that does not would leave uploads unscreened
+rather than broken, for the same fail-open reason.
+
+Cost is roughly $1 per 1,000 images, so a 300-photo wedding is about 30 cents.
+Video is screened on its poster frame rather than through the video API, which
+is a different order of money.

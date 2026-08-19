@@ -48,6 +48,16 @@ const nextConfig: NextConfig = {
     // Lint is run explicitly in CI; a lint warning should not fail a deploy build.
     ignoreDuringBuilds: true,
   },
+  /* The legal documents moved out from under /legal so they sit on the paths a
+     payment reviewer types. Anything already printed, linked or filed keeps
+     working. Permanent, because these are not coming back. */
+  async redirects() {
+    return [
+      { source: "/legal/terms", destination: "/terms", permanent: true },
+      { source: "/legal/privacy", destination: "/privacy", permanent: true },
+      { source: "/legal", destination: "/terms", permanent: true },
+    ];
+  },
   async headers() {
     /* Applied to everything a crawler must never keep: the guest share links
        and everything the API serves. A header rather than a meta tag, because

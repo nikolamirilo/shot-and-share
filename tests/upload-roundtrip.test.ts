@@ -255,7 +255,7 @@ describe("the whole handshake", () => {
   }
 
   it("ends with a media row the gallery can read", async () => {
-    expect(await handshake({ sendThumb: true })).toEqual({ confirmed: true });
+    expect(await handshake({ sendThumb: true })).toEqual({ confirmed: true, held: false });
 
     const rows = store.rows("media");
     expect(rows).toHaveLength(1);
@@ -266,7 +266,7 @@ describe("the whole handshake", () => {
   it("still ends with a photo when the thumbnail never made it", async () => {
     // The one that matters: a guest at a venue whose thumbnail POST failed
     // still has their photograph, and the grid falls back to the full copy.
-    expect(await handshake({ sendThumb: false })).toEqual({ confirmed: true });
+    expect(await handshake({ sendThumb: false })).toEqual({ confirmed: true, held: false });
 
     const rows = store.rows("media");
     expect(rows).toHaveLength(1);
