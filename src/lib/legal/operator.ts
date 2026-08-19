@@ -14,7 +14,7 @@
 
 export const OPERATOR = {
   /** The short business name as registered. */
-  legalName: "Nikola Mirilo preduzetnik Reactify Solutions",
+  legalName: "Reactify Solutions",
   /** What the entity is, in words a reader outside Serbia will recognise. */
   form: "sole proprietorship registered in the Republic of Serbia",
   /** Shorter, for a footer line where the full sentence will not fit. */
