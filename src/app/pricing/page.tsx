@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { MdOutlineAddCircleOutline } from "react-icons/md";
+import {
+  MdOutlineAddCircleOutline,
+  MdOutlinePhotoLibrary,
+} from "react-icons/md";
 
 import { ComparisonTable } from "@/components/marketing/comparison-table";
 import { PricingDetail } from "@/components/marketing/pricing-detail";
@@ -9,7 +12,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { ButtonLink, Eyebrow } from "@/components/ui";
 import { JsonLd } from "@/components/seo/json-ld";
 import { hasSupabase } from "@/lib/env";
-import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
+import { KEEP_FOREVER, TIERS, VAT_NOTE, photoCountLabel } from "@/lib/tiers";
 import { breadcrumbSchema, graph, softwareApplicationSchema } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
 
@@ -62,10 +65,14 @@ export default async function PricingPage() {
 
             {/* The three sentences a payment reviewer is looking for, in the
                 order they check them: the price is real, nothing recurs, and
-                somebody named is taking the money. */}
+                somebody named is taking the money.
+
+                The VAT sentence comes from the constant every other place
+                quotes, because saying it three slightly different ways is the
+                same as saying three different things. */}
             <p className="mt-6 max-w-2xl text-[0.9375rem] text-ash">
-              Prices are in euro and include EU VAT. Our payment provider is the
-              merchant of record, so the VAT on your invoice is already handled.
+              {VAT_NOTE} Our payment provider is the merchant of record, so the
+              VAT on your invoice is already handled.
             </p>
             <p className="mt-2 max-w-2xl text-[0.9375rem] text-ash">
               There is no subscription anywhere in this product. Every plan is a
@@ -87,14 +94,27 @@ export default async function PricingPage() {
               The free plan is a working product, not a demo. Clean QR code, bulk
               download, unlimited guests. Upgrade when you know it works.
             </p>
-            <ButtonLink
-              href={user ? "/dashboard/events/new" : "/login"}
-              size="lg"
-              className="mt-8 w-full sm:w-auto"
-            >
-              <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-              Create an event
-            </ButtonLink>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+              <ButtonLink
+                href={user ? "/dashboard/events/new" : "/login"}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
+                Create an event
+              </ButtonLink>
+              {/* Somebody who arrived straight at the prices has still not seen
+                  what they are pricing. */}
+              <ButtonLink
+                href="/demo"
+                variant="secondary"
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
+                See a real gallery
+              </ButtonLink>
+            </div>
           </div>
         </section>
       </main>
