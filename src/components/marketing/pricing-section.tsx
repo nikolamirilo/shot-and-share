@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { PricingTable } from "@/components/marketing/pricing-table";
 import { Badge, Eyebrow } from "@/components/ui";
+import { KEEP_FOREVER, VAT_BADGE } from "@/lib/tiers";
 
 export function PricingSection() {
   return (
@@ -14,11 +15,16 @@ export function PricingSection() {
               Paid once, per event.
             </h2>
             <p className="mt-3 max-w-xl text-body text-ash">
-              No subscription. Buy the size you need for the day, and add The
-              Archive later if you want the photos kept permanently.
+              No subscription. Buy the size you need for the day, and add{" "}
+              {/* Named from the constant. This said "The Archive", which is
+                  what the add-on used to be called, while the card directly
+                  below it said Keep Forever. Two names for one product on one
+                  screen. */}
+              {KEEP_FOREVER.name} later if you want the photos kept
+              permanently.
             </p>
           </div>
-          <Badge tone="outline">VAT handled at checkout</Badge>
+          <Badge tone="outline">{VAT_BADGE}</Badge>
         </div>
 
         <div className="mt-8 sm:mt-10">

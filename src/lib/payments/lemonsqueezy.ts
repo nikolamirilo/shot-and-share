@@ -14,6 +14,20 @@ import { LS_VARIANTS, PURCHASABLE_IDS } from "@/lib/tiers";
  * 5% + $0.50 against Stripe's 2.9% + $0.30, which is roughly a euro more on a
  * €39 sale - cheap next to running VAT returns in every member state you sell
  * into. The unit economics are modelled on this fee, not the cheaper one.
+ *
+ * ---------------------------------------------------------------------------
+ * The variants must be configured TAX-INCLUSIVE.
+ *
+ * Every price this product shows a customer is quoted inclusive of EU VAT - see
+ * `VAT_NOTE` in `@/lib/tiers`, which is the single sentence the homepage, the
+ * pricing page and the terms all print. EU consumer rules require the figure
+ * shown to a consumer to be the figure they are charged.
+ *
+ * Nothing here can enforce that. It is a per-product setting in the Lemon
+ * Squeezy dashboard, and if a variant is left tax-exclusive then €19 on the
+ * pricing page becomes €22.80 at checkout and the published price is a
+ * misleading one. Check it whenever a variant is created or replaced.
+ * ---------------------------------------------------------------------------
  */
 
 /** A value off the wire, only if it names something that can be bought. */

@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Fragment } from "react";
 import {
   MdOutlineAddCircleOutline,
-  MdOutlinePlayCircleOutline,
+  MdOutlinePhotoLibrary,
 } from "react-icons/md";
 
 import { ButtonLink } from "@/components/ui";
@@ -88,14 +88,18 @@ export function HeroVariant2({ signedIn }: { signedIn: boolean }) {
             <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
             Create an event
           </ButtonLink>
+          {/* Was "See how it works", which scrolled three sections down the
+              same page to an explanation. This opens the actual guest page
+              instead. Every button on this site used to end at a sign-in form,
+              which meant nobody could see the product without an account. */}
           <ButtonLink
-            href="/#how"
+            href="/demo"
             size="lg"
             variant="secondary"
             className="w-full sm:w-auto"
           >
-            <MdOutlinePlayCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-            See how it works
+            <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
+            See a real gallery
           </ButtonLink>
         </div>
       </div>

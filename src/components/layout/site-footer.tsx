@@ -34,6 +34,7 @@ export function SiteFooter() {
           title="Product"
           links={[
             ["How it works", "/#how"],
+            ["See a demo", "/demo"],
             ["Pricing", "/pricing"],
             ["Questions", "/#faq"],
           ]}

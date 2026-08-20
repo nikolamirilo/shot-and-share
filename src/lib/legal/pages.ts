@@ -5,7 +5,7 @@ import {
   addressLine,
 } from "@/lib/legal/operator";
 import { SITE } from "@/lib/seo";
-import { HARD_DELETE_GRACE_DAYS, KEEP_FOREVER, TIERS } from "@/lib/tiers";
+import { HARD_DELETE_GRACE_DAYS, KEEP_FOREVER, TIERS, VAT_NOTE } from "@/lib/tiers";
 
 /**
  * The four documents a merchant of record looks for.
@@ -90,7 +90,7 @@ const TERMS: LegalPage = {
       body: [
         `Every plan is a one-time payment for one event. ${TIERS.plus.name} is €${TIERS.plus.priceEur} and ${TIERS.pro.name} is €${TIERS.pro.priceEur}. The ${KEEP_FOREVER.name} add-on is €${KEEP_FOREVER.priceEur}, also paid once, and keeps that event's photos permanently.`,
         "Nothing renews and nothing needs cancelling. There is no subscription, no trial that turns into a charge, and no card of yours stored by us.",
-        "Payment is handled by Lemon Squeezy, who act as merchant of record. Your card details never reach us and your receipt comes from them. Prices include VAT where it applies. Upgrading an event mid-way charges the difference rather than the full price again.",
+        `Payment is handled by Lemon Squeezy, who act as merchant of record. Your card details never reach us and your receipt comes from them. ${VAT_NOTE} Upgrading an event mid-way charges the difference rather than the full price again.`,
       ],
     },
     {

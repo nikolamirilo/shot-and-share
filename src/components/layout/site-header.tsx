@@ -47,6 +47,16 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
         >
           How it works
         </Link>
+        {/* Ahead of Pricing, and it keeps its place down to the same width.
+            Somebody who has not worked out what this is yet should be able to
+            meet the product before the price list, and until this existed the
+            only way in was a sign-in form. */}
+        <Link
+          href="/demo"
+          className="text-[0.9375rem] font-semibold hover:underline"
+        >
+          Demo
+        </Link>
         {/* Pricing survives to the smallest screen where "How it works" does
             not. It is the question a visitor on a phone actually has, and the
             landing page repeats how it works three sections in. */}

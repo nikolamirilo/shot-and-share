@@ -184,6 +184,28 @@ export const KEEP_FOREVER = {
 };
 
 /**
+ * How prices are quoted, in one sentence, in every place that quotes one.
+ *
+ * This was said three different ways: a badge on the homepage reading "VAT
+ * handled at checkout", a line under the pricing table reading "include EU
+ * VAT", and a clause in the terms reading "include VAT where it applies".
+ * Those are not three phrasings of one fact. "Handled at checkout" reads like
+ * tax might be added on top, and if it were, the pricing page would be a
+ * misleading price: EU consumer rules require the figure shown to a consumer to
+ * be the figure they pay.
+ *
+ * So there is one claim, written once, and it is the inclusive one. The Lemon
+ * Squeezy variants have to be configured tax-inclusive to match, which is a
+ * setting in their dashboard rather than anything this repository can enforce -
+ * see the note in `@/lib/payments/lemonsqueezy`.
+ */
+export const VAT_NOTE =
+  "Every price includes EU VAT. The number you see is the number you pay.";
+
+/** The same fact where only two or three words fit. */
+export const VAT_BADGE = "VAT included";
+
+/**
  * What can actually be bought.
  *
  * `PlanKey` includes "free", which nobody purchases - which is why four places

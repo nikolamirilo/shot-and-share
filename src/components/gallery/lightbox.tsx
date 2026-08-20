@@ -26,6 +26,7 @@ export function Lightbox({
   onStep,
   onClose,
   onReported,
+  demo,
 }: {
   token: string;
   item: MediaView;
@@ -43,6 +44,12 @@ export function Lightbox({
    * rather than sitting there until the next refresh.
    */
   onReported?: (id: string) => void;
+  /**
+   * The demo gallery, whose photographs are files in `public` rather than rows
+   * in a bucket. There is no signed URL to go and fetch, so the request is
+   * skipped rather than fired and allowed to fail.
+   */
+  demo?: boolean;
 }) {
   const [full, setFull] = useState<MediaView | null>(null);
   /**
@@ -67,6 +74,14 @@ export function Lightbox({
      */
     let live = true;
     setFull(null);
+
+    if (demo) {
+      // The file is already the full copy, and it is public.
+      setFull({ ...item, downloadUrl: item.fullUrl ?? undefined });
+      setLinkPending(false);
+      return;
+    }
+
     setLinkPending(true);
     const params = new URLSearchParams({ token, id: item.id });
     fetch(`/api/photo?${params}`)
@@ -77,7 +92,7 @@ export function Lightbox({
     return () => {
       live = false;
     };
-  }, [token, item.id]);
+  }, [token, item, demo]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

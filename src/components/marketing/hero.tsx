@@ -1,4 +1,7 @@
-import { MdOutlineAddCircleOutline, MdOutlineSell } from "react-icons/md";
+import {
+  MdOutlineAddCircleOutline,
+  MdOutlinePhotoLibrary,
+} from "react-icons/md";
 
 import { ContactSheet } from "@/components/marketing/contact-sheet";
 import { ButtonLink, Eyebrow } from "@/components/ui";
@@ -56,14 +59,18 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
               Create an event
             </ButtonLink>
+            {/* Was "See pricing", which is one click away in the header and
+                again in the section below. The thing a stranger cannot get to
+                without an account is the product itself, and that was every
+                button on the site leading to a sign-in form. */}
             <ButtonLink
-              href="/pricing"
+              href="/demo"
               size="lg"
               variant="secondary"
               className="w-full sm:w-auto"
             >
-              <MdOutlineSell aria-hidden className="shrink-0 text-[1.25em]" />
-              See pricing
+              <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
+              See a real gallery
             </ButtonLink>
           </div>
 
