@@ -14,7 +14,7 @@ import { TIERS } from "@/lib/tiers";
  */
 
 const store = createStore();
-const sendEmail = vi.fn(async (_email: Record<string, unknown>) => true);
+const sendEmail = vi.fn(async (email: Record<string, unknown>) => Boolean(email));
 
 const EVENT = {
   id: "11111111-2222-3333-4444-555555555555",

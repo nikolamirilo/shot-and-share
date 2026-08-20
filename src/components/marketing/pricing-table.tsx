@@ -2,7 +2,7 @@ import { MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { Badge, ButtonLink, Hole, cx } from "@/components/ui";
 import { formatBytes } from "@/lib/format";
-import { KEEP_FOREVER, TIER_ORDER, TIERS, approxPhotos } from "@/lib/tiers";
+import { KEEP_FOREVER, TIER_ORDER, TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * Three plans plus one add-on. The middle plan sits in Gouda, the only place
@@ -19,7 +19,7 @@ function featureList(key: (typeof TIER_ORDER)[number]): string[] {
         : `${t.retentionDays} days`;
 
   return [
-    `${formatBytes(t.quotaBytes, 0)} of storage, about ${approxPhotos(t.quotaBytes).toLocaleString("en-GB")} photos`,
+    `${formatBytes(t.quotaBytes, 0)} of storage, about ${photoCountLabel(t.quotaBytes)} photos`,
     "Unlimited guests",
     `Photos kept for ${retention}`,
     t.video

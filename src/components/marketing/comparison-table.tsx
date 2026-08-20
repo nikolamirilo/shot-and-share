@@ -1,4 +1,5 @@
 import { Eyebrow } from "@/components/ui";
+import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * The comparison against the obvious alternative. Every line here is a fact
@@ -6,12 +7,27 @@ import { Eyebrow } from "@/components/ui";
  */
 export function ComparisonTable() {
   const rows: Array<[string, string, string]> = [
-    ["Photos on the free plan", "50", "About 250"],
+    // Computed, not typed. These said 250 and 2,500 - figures from when a photo
+    // was assumed to be 4 MB - while the plan cards three sections up said 150
+    // and 1,500. Same page, two answers.
+    [
+      "Photos on the free plan",
+      "50",
+      `About ${photoCountLabel(TIERS.free.quotaBytes)}`,
+    ],
     ["Bulk download when free", "No", "Yes"],
     ["Free QR code", "Watermarked", "Clean"],
-    ["Mid tier", "$24.99 for 200 photos, 30 days", "€19 for ~2,500, 6 months"],
-    ["Top tier", "$49.99, 90 days", "€39, 12 months"],
-    ["Keep photos permanently", "$49 every year", "€29 once"],
+    [
+      "Mid tier",
+      "$24.99 for 200 photos, 30 days",
+      `€${TIERS.plus.priceEur} for ~${photoCountLabel(TIERS.plus.quotaBytes)}, 6 months`,
+    ],
+    ["Top tier", "$49.99, 90 days", `€${TIERS.pro.priceEur}, 12 months`],
+    [
+      "Keep photos permanently",
+      "$49 every year",
+      `€${KEEP_FOREVER.priceEur} once`,
+    ],
   ];
 
   return (

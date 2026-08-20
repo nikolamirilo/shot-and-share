@@ -5,6 +5,7 @@ import {
 } from "react-icons/md";
 
 import { ButtonLink } from "@/components/ui";
+import { TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * Variant 3 - the same headline, over one minute of a real night.
@@ -164,7 +165,7 @@ export function HeroVariant3({ signedIn }: { signedIn: boolean }) {
               Open all 2,140 photos
             </ButtonLink>
             <p className="mt-1 font-mono text-micro uppercase tracking-[0.14em] text-mist lg:text-right">
-              Free to 250 photos &middot; no card
+              Free to {photoCountLabel(TIERS.free.quotaBytes)} photos &middot; no card
             </p>
           </div>
         </div>

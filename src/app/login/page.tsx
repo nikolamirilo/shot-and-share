@@ -8,6 +8,7 @@ import { Eyebrow, Hole } from "@/components/ui";
 import { loginErrorMessage } from "@/lib/auth";
 import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";
+import { TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * Crawlable but never indexed. A sign-in page has nothing a searcher wants -
@@ -56,7 +57,7 @@ export default async function LoginPage({
             <ul className="mt-7 space-y-3 sm:mt-8">
               {[
                 "Create an event in under a minute",
-                "Free plan holds about 250 photos",
+                `Free plan holds about ${photoCountLabel(TIERS.free.quotaBytes)} photos`,
                 "No card needed to start",
               ].map((line) => (
                 <li key={line} className="flex items-start gap-3">

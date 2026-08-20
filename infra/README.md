@@ -10,7 +10,7 @@ GDPR conversation simple. It costs roughly 5 to 8 percent more than `us-east-1`,
 which is worth it.
 
 ```bash
-BUCKET=say-cheese-prod
+BUCKET=shot-and-share-application
 REGION=eu-central-1
 
 aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" \
@@ -161,13 +161,22 @@ whether the free plan stays as generous as it is.
 
 ## The IAM policy
 
-The application needs exactly this much and no more.
+The application needs exactly this much and no more. Storage and moderation are
+one policy on one user, because Rekognition reads the object with these same
+credentials.
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "BucketLevel",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": "arn:aws:s3:::shot-and-share-application"
+    },
+    {
+      "Sid": "ObjectLevel",
       "Effect": "Allow",
       "Action": [
         "s3:PutObject",
@@ -176,12 +185,16 @@ The application needs exactly this much and no more.
         "s3:DeleteObject",
         "s3:AbortMultipartUpload"
       ],
-      "Resource": "arn:aws:s3:::say-cheese-prod/*"
+      "Resource": "arn:aws:s3:::shot-and-share-application/*"
     },
     {
+      "Sid": "UploadModeration",
       "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::say-cheese-prod"
+      "Action": "rekognition:DetectModerationLabels",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": "eu-central-1" }
+      }
     }
   ]
 }
@@ -191,6 +204,24 @@ The application needs exactly this much and no more.
 the end of its life. The application never uses it to read a gallery - LIST is
 billed at the expensive request rate, and Postgres is the source of truth for
 what exists.
+
+`PutObjectTagging` is not optional. Uploads carry a `Tagging` header, and S3
+refuses a tagged PutObject outright without it, so leaving it out breaks every
+upload rather than just the tags.
+
+`GetObject` is also what makes moderation work. Rekognition reads the object
+using these credentials rather than a service role of its own, so a narrower
+object statement fails with an access error that reads like a Rekognition
+problem and is not one.
+
+`DetectModerationLabels` takes no resource ARN, which is why its resource is
+`*`. The region condition is what stops these credentials calling Rekognition
+somewhere else, and it is the line that turns "no photograph leaves the EU" from
+a configuration habit into something enforced.
+
+Nothing here grants bucket configuration - CORS, lifecycle, the public access
+block. That is deliberate. Those are one-time operations you run yourself, and
+the application should not be able to undo them.
 
 ## Upload moderation
 
@@ -202,28 +233,12 @@ screened, which is the state every laptop and preview deployment runs in.
 already sitting in the bucket, so nothing leaves the region and the call is a
 key rather than an upload.
 
-The IAM user the app already uses for S3 needs one more permission. Without it
-every call fails, and because the upload path fails open, every photo goes
-through unscreened and `moderated_at` stays null. That is deliberate - an AWS
-outage must not stop a wedding - but it also means a missing permission is
-silent apart from the logs. Check for `[moderation] rekognition failed` after
-turning it on.
-
-```bash
-aws iam put-user-policy --user-name shot-and-share-app \
-  --policy-name shot-and-share-moderation \
-  --policy-document '{
-    "Version": "2012-10-17",
-    "Statement": [{
-      "Effect": "Allow",
-      "Action": "rekognition:DetectModerationLabels",
-      "Resource": "*"
-    }]
-  }'
-```
-
-`DetectModerationLabels` takes no resource ARN, which is why `Resource` is `*`.
-Reading the object is covered by the `s3:GetObject` grant the app already holds.
+The IAM user the app already uses for S3 needs `rekognition:DetectModerationLabels`,
+which is in the policy above. Without it every call fails, and because the upload
+path fails open, every photo goes through unscreened while `moderated_at` stays
+null. That is deliberate - an AWS outage must not stop a wedding - but it does
+mean a missing permission is silent apart from the logs. Check for
+`[moderation] rekognition failed` after turning it on.
 
 Rekognition has to be available in the bucket's region. `eu-central-1` has it.
 Moving the bucket to a region that does not would leave uploads unscreened
