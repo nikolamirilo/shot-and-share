@@ -253,6 +253,22 @@ export function approxPhotos(bytes: number): number {
 }
 
 /**
+ * The same number as `approxPhotos`, written the way a page says it out loud.
+ *
+ * Exists because the count was being spelled out by hand in five places - a
+ * hero, a sign-in page, a comparison table, a meta description - and every one
+ * of them was still quoting figures from when a photo was assumed to be 4 MB.
+ * The plan cards computed theirs and said 150; the comparison table two
+ * sections below said 250. A pricing page that contradicts itself is worse than
+ * one that is wrong, because a reader who spots it stops believing any of it.
+ *
+ * Anything user-facing that names a photo count goes through here.
+ */
+export function photoCountLabel(bytes: number): string {
+  return approxPhotos(bytes).toLocaleString("en-GB");
+}
+
+/**
  * Expiry is measured from the event date, not the purchase date. A host who
  * buys six months ahead of the wedding should not lose half their window.
  *

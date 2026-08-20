@@ -18,8 +18,15 @@ export const SITE = {
   description:
     "Guests scan a code and hand you their photos. No app, no account, nothing to install. Weddings, birthdays, offsites - anything with people and phones.",
   locale: "en",
-  /** Where support and legal notices actually go. */
-  email: "hello@shotandshare.co",
+  /**
+   * Where support, legal notices, takedowns and erasure requests all go.
+   *
+   * One address on purpose. Four published addresses that all forward to the
+   * same inbox look like a bigger company and behave like a worse one: the
+   * legal pages promise a reply within a stated time, and a promise is only
+   * kept by an address somebody actually reads.
+   */
+  email: "support@shotandshare.com",
 } as const;
 
 /**

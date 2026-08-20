@@ -9,13 +9,17 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { ButtonLink, Eyebrow } from "@/components/ui";
 import { JsonLd } from "@/components/seo/json-ld";
 import { hasSupabase } from "@/lib/env";
+import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
 import { breadcrumbSchema, graph, softwareApplicationSchema } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description:
-    "One payment per event. No subscription. A free plan that holds about 250 photos, and a €29 add-on that keeps them permanently.",
+  // Built from the tier table rather than typed, for the same reason the
+  // comparison table now is: this said 250 while the plan cards below it said
+  // 150, and a search result that disagrees with the page it opens is the
+  // worst place of all to be caught contradicting yourself.
+  description: `One payment per event. No subscription. A free plan that holds about ${photoCountLabel(TIERS.free.quotaBytes)} photos, and a €${KEEP_FOREVER.priceEur} add-on that keeps them permanently.`,
   alternates: { canonical: "/pricing" },
 };
 

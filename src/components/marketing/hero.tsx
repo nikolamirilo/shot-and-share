@@ -2,6 +2,7 @@ import { MdOutlineAddCircleOutline, MdOutlineSell } from "react-icons/md";
 
 import { ContactSheet } from "@/components/marketing/contact-sheet";
 import { ButtonLink, Eyebrow } from "@/components/ui";
+import { TIERS, photoCountLabel } from "@/lib/tiers";
 
 export function Hero({ signedIn }: { signedIn: boolean }) {
   return (
@@ -67,7 +68,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           </div>
 
           <p className="mt-5 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-            Free · 250 photos · no card
+            Free · {photoCountLabel(TIERS.free.quotaBytes)} photos · no card
           </p>
         </div>
 

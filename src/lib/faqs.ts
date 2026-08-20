@@ -1,5 +1,5 @@
 import { formatBytes } from "@/lib/format";
-import { KEEP_FOREVER, TIERS, approxPhotos } from "@/lib/tiers";
+import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * The questions on the landing page.
@@ -25,7 +25,7 @@ export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
     ],
     [
       "How many photos actually fit?",
-      `${TIERS.plus.name} holds about ${approxPhotos(TIERS.plus.quotaBytes).toLocaleString("en-GB")} and ${TIERS.pro.name} about ${approxPhotos(TIERS.pro.quotaBytes).toLocaleString("en-GB")}, based on a 7 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.`,
+      `${TIERS.plus.name} holds about ${photoCountLabel(TIERS.plus.quotaBytes)} and ${TIERS.pro.name} about ${photoCountLabel(TIERS.pro.quotaBytes)}, based on a 7 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.`,
     ],
     [
       "Can guests see the photos everyone else uploaded?",
