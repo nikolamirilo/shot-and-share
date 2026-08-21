@@ -361,6 +361,17 @@ describe("the drawing of the guest page", () => {
     expect(html).toContain("--color-well:");
   });
 
+  it("paints the drawn upload button in the accent colour", () => {
+    // The drawing had its own fill - ink - so the one button on the guest page
+    // was the one thing on the drawing that ignored the accent the host was
+    // picking. Every variant that draws a button takes Button's own fill now.
+    for (const upload of ["button", "bar", "split"] as const) {
+      const html = preview({ upload });
+      expect(html).toContain("bg-claret");
+      expect(html).not.toContain("bg-ink");
+    }
+  });
+
   it("puts nothing focusable inside the host's form", () => {
     for (const layout of GALLERY_LAYOUTS) {
       const html = preview({ layout: layout.id, upload: "panel" });
