@@ -7,7 +7,7 @@ import {
   MdOutlinePhotoLibrary,
 } from "react-icons/md";
 
-import { Button, Hole, cx } from "@/components/ui";
+import { BUTTON_FILL, Button, Hole, cx } from "@/components/ui";
 import type { UploadVariant } from "@/lib/appearance/variants";
 
 /**
@@ -309,15 +309,15 @@ function Action({
   className?: string;
 }) {
   // A preview must not put a second "Add your photos" button in the host's tab
-  // order, so it renders the same box without being one.
+  // order, so it renders the same box without being one. The fill comes from
+  // Button itself: a drawn button painted by hand stops following the theme,
+  // and the primary one is the loudest thing the accent colour touches.
   if (preview) {
     return (
       <span
         className={cx(
-          "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 text-label font-semibold",
-          variant === "primary"
-            ? "bg-ink text-linen shadow-md"
-            : "bg-paper text-ink shadow-md",
+          "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 text-label font-semibold shadow-md",
+          BUTTON_FILL[variant],
           className,
         )}
       >

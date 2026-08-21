@@ -68,6 +68,7 @@ export type EventRow = {
   theme_custom: unknown;
   theme_font: string;
   cover_variant: string;
+  cover_position: string;
   upload_variant: string;
   welcome_message: string | null;
   cover_media_id: string | null;
@@ -239,6 +240,7 @@ export interface Database {
           | "theme_custom"
           | "theme_font"
           | "cover_variant"
+          | "cover_position"
           | "upload_variant"
           | "require_approval"
         > &
@@ -252,6 +254,7 @@ export interface Database {
               | "theme_custom"
               | "theme_font"
               | "cover_variant"
+              | "cover_position"
               | "upload_variant"
               | "require_approval"
             >

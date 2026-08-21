@@ -232,6 +232,7 @@ function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
       palette={palette}
       font={findFontSet("cheese")}
       cover="classic"
+      coverPosition="bottom-left"
       upload="button"
       layout="grid"
       wording={uploadWording(TIERS.free)}
@@ -361,6 +362,31 @@ describe("the drawing of the guest page", () => {
     expect(html).toContain("--color-well:");
   });
 
+  it("paints the drawn upload button in the accent colour", () => {
+    // The drawing had its own fill - ink - so the one button on the guest page
+    // was the one thing on the drawing that ignored the accent the host was
+    // picking. Every variant that draws a button takes Button's own fill now.
+    for (const upload of ["button", "bar", "split"] as const) {
+      const html = preview({ upload });
+      expect(html).toContain("bg-claret");
+      expect(html).not.toContain("bg-ink");
+    }
+  });
+
+  it("moves the name to where the host put it", () => {
+    // The drawing renders the real cover, so this is the guest page's own
+    // markup: the type block is pinned to the edge the setting names.
+    expect(preview({ cover: "full", coverPosition: "bottom-left" })).toContain(
+      "inset-x-0 bottom-0",
+    );
+    expect(preview({ cover: "full", coverPosition: "top-left" })).toContain(
+      "inset-x-0 top-0",
+    );
+    expect(preview({ cover: "full", coverPosition: "centre" })).toContain(
+      "justify-center",
+    );
+  });
+
   it("puts nothing focusable inside the host's form", () => {
     for (const layout of GALLERY_LAYOUTS) {
       const html = preview({ layout: layout.id, upload: "panel" });
@@ -368,5 +394,109 @@ describe("the drawing of the guest page", () => {
       expect(html).not.toContain("<input");
       expect(html).not.toContain("<a ");
     }
+  });
+});
+
+/**
+ * Where the name sits on the photograph. The wash under it is the reason this
+ * has its own block of tests: the type can move and still be unreadable.
+ */
+describe("the name's position on the cover", () => {
+  function cover(props: Partial<Parameters<typeof EventCover>[0]> = {}) {
+    return renderToStaticMarkup(
+      <EventCover
+        variant="full"
+        name="Ana and Marko"
+        date="2026-09-12"
+        coverUrl="https://media.example.com/photo.jpg"
+        palette={palette}
+        {...props}
+      />,
+    );
+  }
+
+  it("leaves the cover alone when nothing was chosen", () => {
+    // Every event that existed before this setting did renders exactly the
+    // page it rendered before: type at the foot, under the foot-heavy wash.
+    const before = cover();
+    expect(before).toBe(cover({ position: "bottom-left" }));
+    expect(before).toContain("linear-gradient(to top");
+    expect(before).toContain("inset-x-0 bottom-0");
+  });
+
+  it("turns the wash over when the name goes to the top", () => {
+    // The whole point. White type at the head of a bright photograph under a
+    // gradient that is heaviest at the foot is white type on a white sky.
+    const html = cover({ position: "top-left" });
+
+    expect(html).toContain("linear-gradient(to bottom");
+    expect(html).not.toContain("linear-gradient(to top,");
+    expect(html).toContain("inset-x-0 top-0");
+  });
+
+  it("puts a scrim under a name in the middle", () => {
+    const html = cover({ position: "centre" });
+
+    expect(html).toContain("radial-gradient");
+    expect(html).toContain("text-center");
+  });
+
+  it("keeps the scroll cue at the foot when the name leaves it", () => {
+    // The cue points at what is below the cover, not at the name, so it is
+    // pinned to the foot in its own box once the name is no longer down there.
+    for (const position of ["centre", "top-left"] as const) {
+      const html = cover({ position });
+      expect(html).toContain("add your photos");
+      expect(html).toContain("absolute inset-x-0 bottom-0");
+    }
+
+    // At the foot it still trails the name, in the same box, as it always has.
+    const foot = cover({ position: "bottom-left" });
+    expect(foot).toContain("add your photos");
+    expect(foot).not.toContain("absolute inset-x-0 bottom-0 mx-auto max-w-3xl text-white");
+
+    // The half cover has never carried one: the ask is already on the screen.
+    expect(cover({ variant: "half", position: "top-left" })).not.toContain(
+      "add your photos",
+    );
+  });
+
+  it("carries the same choice on the half and banner covers", () => {
+    for (const variant of ["half", "classic"] as const) {
+      expect(cover({ variant, position: "top-left" })).toContain(
+        "linear-gradient(to bottom",
+      );
+      expect(cover({ variant, position: "bottom-left" })).toContain(
+        "linear-gradient(to top",
+      );
+    }
+  });
+
+  it("keeps the banner's own lighter wash", () => {
+    // A strip is a fifth of the height and carries a fifth of the type. The
+    // full cover's wash on it reads as a darkened photo, not a legible one.
+    expect(cover({ variant: "classic", position: "bottom-left" })).toContain(
+      "rgba(0,0,0,0.72)",
+    );
+    expect(cover({ variant: "full", position: "bottom-left" })).toContain(
+      "rgba(0,0,0,0.8)",
+    );
+  });
+
+  it("ignores the setting on the cover with no photograph", () => {
+    // Nothing to sit over. The panel hides the group for the same reason.
+    const type = { variant: "type", coverUrl: null } as const;
+    expect(cover({ ...type, position: "top-left" })).toBe(
+      cover({ ...type, position: "bottom-left" }),
+    );
+  });
+
+  it("pushes the empty frame's label clear of the name either way", () => {
+    // The label only ever renders in the host's preview, and printing it
+    // under the name is what this padding exists to stop.
+    const empty = { coverUrl: null, preview: true, photoLabel: "your photo" };
+    expect(cover({ ...empty, position: "bottom-left" })).toContain("pb-20");
+    expect(cover({ ...empty, position: "top-left" })).toContain("pt-20");
+    expect(cover({ ...empty, position: "centre" })).toContain("pt-20");
   });
 });

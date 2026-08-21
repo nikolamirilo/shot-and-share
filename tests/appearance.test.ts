@@ -1,15 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  COVER_POSITIONS,
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
   DEFAULT_COVER,
+  DEFAULT_POSITION,
   DEFAULT_THEME_ID,
   DEFAULT_UPLOAD,
   THEMES,
   UPLOAD_VARIANTS,
   buildCustomPalette,
   coerceCover,
+  coercePosition,
   coerceUpload,
   findTheme,
   lightBackground,
@@ -40,6 +43,16 @@ import {
   tint,
   toHex,
 } from "@/lib/color";
+import {
+  type Settings,
+  countChanges,
+  draftKey,
+  fromEvent,
+  readDraft,
+  toFields,
+  writeDraft,
+} from "@/components/dashboard/appearance/settings";
+import type { EventRow } from "@/lib/db/types";
 import { TIERS } from "@/lib/tiers";
 
 describe("colour parsing", () => {
@@ -233,12 +246,43 @@ describe("built themes", () => {
   });
 });
 
+describe("where the name sits", () => {
+  it("falls back to the cover every event already has", () => {
+    // A row written before this column existed, a value from a future option
+    // set, or a hand-made request: all three land on the position that has
+    // always been there rather than moving somebody's page.
+    expect(DEFAULT_POSITION).toBe("bottom-left");
+    expect(coercePosition(undefined)).toBe(DEFAULT_POSITION);
+    expect(coercePosition("bottom")).toBe(DEFAULT_POSITION);
+    expect(coercePosition("top-right")).toBe(DEFAULT_POSITION);
+    expect(coercePosition({ id: "centre" })).toBe(DEFAULT_POSITION);
+  });
+
+  it("keeps every option it offers", () => {
+    for (const option of COVER_POSITIONS) {
+      expect(coercePosition(option.id)).toBe(option.id);
+    }
+  });
+
+  it("matches the values the database will accept", () => {
+    // The check constraint in migration 0020 is written out by hand, so the
+    // two lists have to be compared somewhere.
+    expect(COVER_POSITIONS.map((p) => p.id)).toEqual([
+      "bottom-left",
+      "bottom-centre",
+      "centre",
+      "top-left",
+    ]);
+  });
+});
+
 describe("plan gating", () => {
   const customised = {
     theme: "sage",
     theme_custom: { bg: "#000000" },
     theme_font: "loud",
     cover_variant: "half",
+    cover_position: "top-left",
     upload_variant: "panel",
     gallery_layout: "masonry",
   };
@@ -251,6 +295,7 @@ describe("plan gating", () => {
     expect(appearance.palette).toEqual(THEMES[0].palette);
     expect(appearance.font.id).toBe(DEFAULT_FONT_ID);
     expect(appearance.cover).toBe(DEFAULT_COVER);
+    expect(appearance.coverPosition).toBe(DEFAULT_POSITION);
     expect(appearance.upload).toBe(DEFAULT_UPLOAD);
     expect(appearance.layout).toBe("grid");
     expect(appearance.customisable).toBe(false);
@@ -278,6 +323,7 @@ describe("plan gating", () => {
     expect(appearance.themeId).toBe("sage");
     expect(appearance.font.id).toBe("loud");
     expect(appearance.cover).toBe("half");
+    expect(appearance.coverPosition).toBe("top-left");
     expect(appearance.upload).toBe("panel");
     expect(appearance.layout).toBe("masonry");
     expect(appearance.customisable).toBe(true);
@@ -402,5 +448,71 @@ describe("css variables", () => {
     // palette carries it and the variable is set alongside the accent.
     expect(vars["--color-chalk"]).toBe("#FDF6F7");
     expect(Object.keys(vars)).toHaveLength(11);
+  });
+});
+
+/**
+ * The panel's own copy of the settings: what a row turns into, what the save
+ * sends back, and what the "unsaved changes" count is measured on.
+ *
+ * The position is the newest field in all three, and a field missed in any one
+ * of them is a setting that previews perfectly and never reaches the database.
+ */
+describe("the host's draft of the event page", () => {
+  const row = {
+    id: "e1",
+    theme: "sage",
+    theme_font: "loud",
+    theme_custom: {},
+    cover_variant: "full",
+    cover_position: "centre",
+    upload_variant: "panel",
+    gallery_layout: "masonry",
+    cover_media_id: null,
+  } as unknown as EventRow;
+
+  it("reads the position off the row", () => {
+    expect(fromEvent(row).coverPosition).toBe("centre");
+    expect(
+      fromEvent({ ...row, cover_position: "sideways" } as EventRow)
+        .coverPosition,
+    ).toBe(DEFAULT_POSITION);
+  });
+
+  it("sends the position to the server on save", () => {
+    const settings = { ...fromEvent(row), coverPosition: "top-left" } as const;
+    expect(toFields(settings).cover_position).toBe("top-left");
+  });
+
+  it("counts a move as one unsaved change", () => {
+    // Which is what puts the save bar on the screen. A field left out of the
+    // count is a change the host is never told they have.
+    const saved = fromEvent(row);
+    expect(countChanges(saved, saved)).toBe(0);
+    expect(
+      countChanges({ ...saved, coverPosition: "top-left" }, saved),
+    ).toBe(1);
+  });
+
+  it("keeps the position through a closed tab", () => {
+    const settings: Settings = {
+      ...fromEvent(row),
+      coverPosition: "bottom-centre",
+    };
+    const store: Record<string, string> = {};
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store[k] ?? null,
+      setItem: (k: string, v: string) => {
+        store[k] = v;
+      },
+      removeItem: (k: string) => {
+        delete store[k];
+      },
+    });
+
+    writeDraft(draftKey(row.id), settings, fromEvent(row));
+    expect(readDraft(draftKey(row.id))?.coverPosition).toBe("bottom-centre");
+
+    vi.unstubAllGlobals();
   });
 });

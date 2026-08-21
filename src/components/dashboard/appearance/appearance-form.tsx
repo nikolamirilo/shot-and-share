@@ -20,6 +20,7 @@ import { EventPreview } from "@/components/event/event-preview";
 import { Card, Toast } from "@/components/ui";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 import {
+  COVER_POSITIONS,
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
   THEMES,
@@ -173,6 +174,7 @@ export function AppearanceForm({
             palette={palette}
             font={font}
             cover={settings.cover}
+            coverPosition={settings.coverPosition}
             upload={settings.upload}
             layout={settings.layout}
             galleryVisible={event.gallery_visible}
@@ -294,6 +296,28 @@ export function AppearanceForm({
                   ))}
                 </div>
               </Group>
+
+              {/* Hidden on "Just type": there is no photograph for the name
+                  to sit on, so the group would be four buttons that change
+                  nothing in the drawing beside them. */}
+              {settings.cover !== "type" && (
+                <Group
+                  label="Name position"
+                  hint="Where the name, date and message sit on the photo."
+                >
+                  <div className={OPTION_GRID}>
+                    {COVER_POSITIONS.map((option) => (
+                      <Choice
+                        key={option.id}
+                        selected={settings.coverPosition === option.id}
+                        onClick={() => update({ coverPosition: option.id })}
+                        name={option.name}
+                        hint={option.hint}
+                      />
+                    ))}
+                  </div>
+                </Group>
+              )}
 
               <Group
                 label="Cover photo"

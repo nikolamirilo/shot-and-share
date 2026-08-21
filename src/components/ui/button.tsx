@@ -23,15 +23,27 @@ const BASE =
 const LIFT =
   "shadow-md hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm";
 
-const VARIANTS: Record<Variant, string> = {
-  primary: `bg-claret text-chalk ${LIFT}`,
-  secondary: `bg-paper text-ink ${LIFT}`,
+/**
+ * The colours alone, with nothing that moves. A static copy of a button - the
+ * host's preview draws one rather than putting a second real button in their
+ * tab order - takes its fill from here, so a button and its picture cannot
+ * drift apart, and both follow the theme.
+ */
+export const BUTTON_FILL: Record<Variant, string> = {
+  primary: "bg-claret text-chalk",
+  secondary: "bg-paper text-ink",
   /* On ink or on a photograph a shadow has nothing to fall on, so this one is
      carried by the fill alone - and on those grounds the light shape is the
      one that reads, not the wine one. */
-  onDark: "bg-chalk text-ink hover:-translate-y-0.5",
-  ghost:
-    "text-ink underline decoration-2 underline-offset-4 decoration-claret hover:decoration-ink",
+  onDark: "bg-chalk text-ink",
+  ghost: "text-ink underline decoration-2 underline-offset-4 decoration-claret",
+};
+
+const VARIANTS: Record<Variant, string> = {
+  primary: `${BUTTON_FILL.primary} ${LIFT}`,
+  secondary: `${BUTTON_FILL.secondary} ${LIFT}`,
+  onDark: `${BUTTON_FILL.onDark} hover:-translate-y-0.5`,
+  ghost: `${BUTTON_FILL.ghost} hover:decoration-ink`,
 };
 
 const SIZES: Record<Size, string> = {

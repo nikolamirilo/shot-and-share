@@ -87,6 +87,7 @@ export default async function GuestPage({
           message={event.welcome_message}
           coverUrl={coverUrl}
           palette={appearance.palette}
+          position={appearance.coverPosition}
         />
       </div>
 

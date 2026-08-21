@@ -2,7 +2,11 @@ import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
 import { UploadPanel } from "@/components/upload/upload-panel";
 import { PhotoPlaceholder } from "@/components/ui";
 import type { Palette } from "@/lib/appearance/themes";
-import type { CoverVariant, UploadVariant } from "@/lib/appearance/variants";
+import type {
+  CoverPosition,
+  CoverVariant,
+  UploadVariant,
+} from "@/lib/appearance/variants";
 import type { FontSet } from "@/lib/fonts";
 import { type GalleryLayout, holeSize } from "@/lib/gallery";
 import type { UploadWording } from "@/lib/media";
@@ -33,6 +37,8 @@ export interface EventPreviewProps {
   palette: Palette;
   font: FontSet;
   cover: CoverVariant;
+  /** Where the name sits on the cover photograph. */
+  coverPosition: CoverPosition;
   upload: UploadVariant;
   layout: GalleryLayout;
   /** How the guest page words the ask, so the drawing says the same thing. */
@@ -52,6 +58,7 @@ export function EventPreview({
   palette,
   font,
   cover,
+  coverPosition,
   upload,
   layout,
   wording,
@@ -75,6 +82,7 @@ export function EventPreview({
             coverUrl={coverUrl ?? null}
             photoLabel={coverChosen ? "your photo" : "no photo yet"}
             palette={palette}
+            position={coverPosition}
             preview
           />
 

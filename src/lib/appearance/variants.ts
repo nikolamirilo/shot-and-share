@@ -42,6 +42,51 @@ export function coerceCover(value: unknown): CoverVariant {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Where the name, the date and the message sit over the cover photograph.
+ *
+ * The cover variants above answer how much of the phone the photograph gets;
+ * this answers where the type goes on it, which used to have one answer. Hosts
+ * pick photographs of people, people stand in the lower half of a portrait
+ * shot, and the name was printed across their faces with nothing to press.
+ *
+ * The ids are the only hyphenated ones in the database, because these are the
+ * only values that are genuinely two decisions in one word.
+ */
+export const COVER_POSITIONS = [
+  {
+    id: "bottom-left",
+    name: "Bottom left",
+    hint: "The name along the foot of the photo. The one every event has today.",
+  },
+  {
+    id: "bottom-centre",
+    name: "Bottom centre",
+    hint: "The same foot of the photo, centred. Formal, and kinder to short names.",
+  },
+  {
+    id: "centre",
+    name: "Middle",
+    hint: "Across the middle of the photo. For a wide shot with room above the people.",
+  },
+  {
+    id: "top-left",
+    name: "Top left",
+    hint: "Along the top, clear of everyone standing in the lower half.",
+  },
+] as const;
+
+export type CoverPosition = (typeof COVER_POSITIONS)[number]["id"];
+export const DEFAULT_POSITION: CoverPosition = "bottom-left";
+
+export function coercePosition(value: unknown): CoverPosition {
+  return COVER_POSITIONS.some((p) => p.id === value)
+    ? (value as CoverPosition)
+    : DEFAULT_POSITION;
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
  * How the guest is asked for their photos.
  *
  * This is the one component on the page that has a job to do, so the variants
