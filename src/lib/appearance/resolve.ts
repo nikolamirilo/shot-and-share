@@ -10,11 +10,14 @@ import {
   findTheme,
 } from "@/lib/appearance/themes";
 import {
+  type CoverPosition,
   type CoverVariant,
   DEFAULT_COVER,
+  DEFAULT_POSITION,
   DEFAULT_UPLOAD,
   type UploadVariant,
   coerceCover,
+  coercePosition,
   coerceUpload,
 } from "@/lib/appearance/variants";
 import type { FontSet } from "@/lib/fonts";
@@ -28,6 +31,8 @@ export interface Appearance {
   themeId: string;
   font: FontSet;
   cover: CoverVariant;
+  /** Where the name sits on the cover photograph. */
+  coverPosition: CoverPosition;
   upload: UploadVariant;
   layout: GalleryLayout;
   /** Free events carry the Shot & Share header and footer. */
@@ -42,6 +47,7 @@ interface AppearanceSource {
   theme_custom?: unknown;
   theme_font?: string | null;
   cover_variant?: string | null;
+  cover_position?: string | null;
   upload_variant?: string | null;
   gallery_layout?: string | null;
 }
@@ -63,6 +69,7 @@ export function resolveAppearance(event: AppearanceSource): Appearance {
       themeId: DEFAULT_THEME_ID,
       font: findFontSet(DEFAULT_FONT_ID),
       cover: DEFAULT_COVER,
+      coverPosition: DEFAULT_POSITION,
       upload: DEFAULT_UPLOAD,
       layout: DEFAULT_LAYOUT,
       platformBranding: true,
@@ -81,6 +88,7 @@ export function resolveAppearance(event: AppearanceSource): Appearance {
     themeId,
     font: findFontSet(coerceFont(event.theme_font)),
     cover: coerceCover(event.cover_variant),
+    coverPosition: coercePosition(event.cover_position),
     upload: coerceUpload(event.upload_variant),
     layout: coerceLayout(event.gallery_layout),
     platformBranding: false,

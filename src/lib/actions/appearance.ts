@@ -16,6 +16,7 @@ const appearanceSchema = z.object({
   // the application and an unknown one falls back when it is read.
   theme_font: z.string().trim().min(1).max(32),
   cover_variant: z.enum(["full", "classic", "half", "type"]),
+  cover_position: z.enum(["bottom-left", "bottom-centre", "centre", "top-left"]),
   upload_variant: z.enum(["button", "panel", "bar", "split"]),
   gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
   cover_media_id: z.string().uuid().nullable(),
@@ -52,6 +53,7 @@ export async function updateAppearance(
     theme: formData.get("theme"),
     theme_font: formData.get("theme_font"),
     cover_variant: formData.get("cover_variant"),
+    cover_position: formData.get("cover_position"),
     upload_variant: formData.get("upload_variant"),
     gallery_layout: formData.get("gallery_layout"),
     cover_media_id: coverMediaId.length > 0 ? coverMediaId : null,
@@ -80,6 +82,7 @@ export async function updateAppearance(
       theme: parsed.data.theme,
       theme_font: parsed.data.theme_font,
       cover_variant: parsed.data.cover_variant,
+      cover_position: parsed.data.cover_position,
       upload_variant: parsed.data.upload_variant,
       gallery_layout: parsed.data.gallery_layout,
       cover_media_id: parsed.data.cover_media_id,

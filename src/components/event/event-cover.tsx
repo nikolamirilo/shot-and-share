@@ -1,5 +1,9 @@
 import type { Palette } from "@/lib/appearance/themes";
-import type { CoverVariant } from "@/lib/appearance/variants";
+import {
+  type CoverPosition,
+  type CoverVariant,
+  DEFAULT_POSITION,
+} from "@/lib/appearance/variants";
 import { paletteToCssVars } from "@/lib/appearance";
 import type { FontSet } from "@/lib/fonts";
 import { fontToCssVars } from "@/lib/fonts";
@@ -40,6 +44,79 @@ export function EventThemeRoot({
   );
 }
 
+interface Placement {
+  /** How the type block is pinned inside the frame. */
+  box: string;
+  /** The type's own alignment, and the scroll cue's with it. */
+  align: string;
+  /** Rows within the block, so a centred name is not a left-aligned column. */
+  items: string;
+  /**
+   * Which edge the type sits against. Decides the wash, the padding, the safe
+   * area, and which way the empty frame's label is pushed to keep clear of the
+   * name. `none` is the middle of the photograph, against no edge at all.
+   */
+  edge: "bottom" | "top" | "none";
+}
+
+const PLACEMENTS: Record<CoverPosition, Placement> = {
+  "bottom-left": {
+    box: "inset-x-0 bottom-0",
+    align: "",
+    items: "",
+    edge: "bottom",
+  },
+  "bottom-centre": {
+    box: "inset-x-0 bottom-0",
+    align: "text-center",
+    items: "items-center",
+    edge: "bottom",
+  },
+  centre: {
+    box: "inset-0 flex flex-col justify-center",
+    align: "text-center",
+    items: "items-center",
+    edge: "none",
+  },
+  "top-left": {
+    box: "inset-x-0 top-0",
+    align: "",
+    items: "",
+    edge: "top",
+  },
+};
+
+/**
+ * The washes, keyed by the edge the type sits against.
+ *
+ * The wash is not decoration - it is the only thing making white type legible
+ * on a photograph nobody has seen. Move the type without moving this and the
+ * name disappears on any bright picture, so the position picks both.
+ *
+ * `bottom` is the one every cover had, at its own stops: a host who never
+ * opens this setting gets exactly the page they had before it existed.
+ */
+const WASHES: Record<Placement["edge"], string> = {
+  bottom:
+    "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.42) 27%, rgba(0,0,0,0.04) 58%, rgba(0,0,0,0.12) 100%)",
+  top: "linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.42) 27%, rgba(0,0,0,0.04) 58%, rgba(0,0,0,0.12) 100%)",
+  /* Nothing to hang off at either edge, so this one is a scrim under the type
+     itself, with a little over the whole frame to catch a white sky. */
+  none: "radial-gradient(78% 46% at 50% 50%, rgba(0,0,0,0.66) 0%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.24), rgba(0,0,0,0.18))",
+};
+
+/**
+ * The banner's own, lighter. It carries a date and a name rather than a whole
+ * page of type, over a strip a fifth of the height - the full cover's wash on
+ * it reads as a darkened photograph rather than a legible one.
+ */
+const BANNER_WASHES: Record<Placement["edge"], string> = {
+  bottom:
+    "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)",
+  top: "linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)",
+  none: "radial-gradient(72% 58% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 74%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.18), rgba(0,0,0,0.14))",
+};
+
 export interface CoverProps {
   variant: CoverVariant;
   name: string;
@@ -47,6 +124,8 @@ export interface CoverProps {
   message?: string | null;
   coverUrl?: string | null;
   palette: Palette;
+  /** Where the type sits on the photograph. Nothing to sit on without one. */
+  position?: CoverPosition;
   /**
    * Compact rendering for the dashboard preview. Its heights step with the `@`
    * container - the drawing itself, see EventPreview - not the window.
@@ -84,6 +163,7 @@ function Title({
   message,
   preview,
   hero,
+  centred,
   className,
 }: {
   name: string;
@@ -92,6 +172,12 @@ function Title({
   preview?: boolean;
   /** The full-screen cover, where the name has the whole phone to itself. */
   hero?: boolean;
+  /**
+   * Centred type. The message is the only part that needs telling: it is held
+   * to `max-w-xl`, and a narrow box of centred lines hung off the left edge
+   * under a centred name is the thing that reads as a mistake.
+   */
+  centred?: boolean;
   className?: string;
 }) {
   return (
@@ -122,6 +208,7 @@ function Title({
             preview
               ? "mt-1.5 line-clamp-2 text-micro leading-snug"
               : "mt-3 max-w-xl text-body sm:mt-4 sm:text-lead",
+            centred && "mx-auto",
           )}
         >
           {message}
@@ -189,11 +276,59 @@ function PhotoCover({
   coverUrl,
   preview,
   photoLabel,
+  position = DEFAULT_POSITION,
   half,
 }: CoverProps & {
   /** Half the screen rather than all of it. */
   half?: boolean;
 }) {
+  const place = PLACEMENTS[position];
+
+  // Written out rather than assembled, because Tailwind reads this file for
+  // literal class names and generates nothing for a string it cannot see.
+  const pad =
+    place.edge === "none"
+      ? preview
+        ? "py-3"
+        : "py-10 sm:py-12"
+      : place.edge === "top"
+        ? preview
+          ? "pt-3"
+          : half
+            ? "pt-6 sm:pt-8"
+            : "pt-[max(2rem,env(safe-area-inset-top))] sm:pt-12"
+        : preview
+          ? "pb-3"
+          : half
+            ? "pb-6 sm:pb-8"
+            : "pb-[max(2rem,env(safe-area-inset-bottom))] sm:pb-12";
+
+  // The label in the empty frame is pushed clear of wherever the name is, or
+  // the host's preview reads as two things printed over each other. Centred
+  // type sends it downwards: at the middle it would be underneath.
+  const empty =
+    place.edge === "bottom"
+      ? preview
+        ? half
+          ? "pb-14"
+          : "pb-20"
+        : half
+          ? "pb-28"
+          : "pb-40"
+      : preview
+        ? half
+          ? "pt-14"
+          : "pt-20"
+        : half
+          ? "pt-28"
+          : "pt-40";
+
+  // The cue points at what is under the cover, not at the name, so it stays at
+  // the foot of the frame. It only trails the name when the name is down there
+  // too - which is the cover every event has today, unchanged.
+  const cueTrailsTitle = place.edge === "bottom";
+  const sides = preview ? "px-4" : "px-4 sm:px-5";
+
   return (
     <header
       className={cx(
@@ -212,33 +347,23 @@ function PhotoCover({
       )}
     >
       <div className="absolute inset-0">
-        <CoverPhoto
-          url={coverUrl}
-          label={photoLabel}
-          emptyClassName={
-            preview ? (half ? "pb-14" : "pb-20") : half ? "pb-28" : "pb-40"
-          }
-        />
+        <CoverPhoto url={coverUrl} label={photoLabel} emptyClassName={empty} />
       </div>
 
-      {/* Heavier at the foot: there is more type down there, and a full-bleed
-          photograph can be bright at any point in it. */}
+      {/* Heaviest where the type is: a full-bleed photograph can be bright at
+          any point in it, and the name is the thing that has to survive that. */}
       <div
         className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.42) 27%, rgba(0,0,0,0.04) 58%, rgba(0,0,0,0.12) 100%)",
-        }}
+        style={{ background: WASHES[place.edge] }}
       />
 
       <div
         className={cx(
-          "absolute inset-x-0 bottom-0 mx-auto max-w-3xl",
-          preview
-            ? "px-4 pb-3"
-            : half
-              ? "px-4 pb-6 sm:px-5 sm:pb-8"
-              : "px-4 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-12",
+          "absolute mx-auto max-w-3xl",
+          place.box,
+          place.align,
+          sides,
+          pad,
         )}
       >
         {/* Fixed light text: it sits on a photograph, not on the theme. */}
@@ -248,21 +373,54 @@ function PhotoCover({
             date={date}
             message={message}
             preview={preview}
+            centred={place.items === "items-center"}
             hero
           />
-          {!half && <ScrollCue preview={preview} />}
+          {!half && cueTrailsTitle && (
+            <ScrollCue preview={preview} align={place.items} />
+          )}
         </div>
       </div>
+
+      {!half && !cueTrailsTitle && (
+        <div
+          className={cx(
+            // The eyebrow keeps its own colour from the theme, so light type
+            // on a photograph has to be asked for here exactly as it is in the
+            // block above - without this the words go, and the arrow stays.
+            "absolute inset-x-0 bottom-0 mx-auto max-w-3xl text-white [&_.eyebrow]:text-white/85",
+            // Its own scrim, because the cover's has gone to the other end of
+            // the photograph with the name: eleven characters of 11px type on
+            // whatever the foot of the picture happens to be is nothing.
+            "bg-linear-to-t from-black/55 to-transparent",
+            place.align,
+            sides,
+            preview
+              ? "pb-3 pt-8"
+              : "pb-[max(2rem,env(safe-area-inset-bottom))] pt-16 sm:pb-12",
+          )}
+        >
+          <ScrollCue preview={preview} align={place.items} />
+        </div>
+      )}
     </header>
   );
 }
 
 /** "There is more underneath this." */
-function ScrollCue({ preview }: { preview?: boolean }) {
+function ScrollCue({
+  preview,
+  align,
+}: {
+  preview?: boolean;
+  /** Follows the name: a centred name over a left-hung cue reads as a slip. */
+  align?: string;
+}) {
   return (
     <span
       className={cx(
         "flex items-center gap-2",
+        align === "items-center" ? "justify-center" : undefined,
         preview ? "mt-2.5" : "mt-6 sm:mt-8",
       )}
     >
@@ -293,7 +451,35 @@ function ClassicCover({
   coverUrl,
   preview,
   photoLabel,
+  position = DEFAULT_POSITION,
 }: CoverProps) {
+  const place = PLACEMENTS[position];
+
+  // A strip is 208px tall on a phone, so the same three positions are a
+  // smaller move here than on a full screen - but the reason holds: the faces
+  // in a banner crop are in the lower half of it too.
+  const pad =
+    place.edge === "none"
+      ? preview
+        ? "py-2"
+        : "py-4 sm:py-5"
+      : place.edge === "top"
+        ? preview
+          ? "pt-3"
+          : "pt-[max(1.5rem,env(safe-area-inset-top))] sm:pt-7"
+        : preview
+          ? "pb-3"
+          : "pb-6 sm:pb-7";
+
+  const empty =
+    place.edge === "bottom"
+      ? preview
+        ? "pb-12"
+        : "pb-16"
+      : preview
+        ? "pt-12"
+        : "pt-16";
+
   return (
     <header className="relative z-10 overflow-hidden shadow-md">
       <div
@@ -306,27 +492,28 @@ function ClassicCover({
         )}
       >
         <div className="absolute inset-0">
-          {/* The name sits along the bottom, so the empty frame's mark is
-              pushed clear of it rather than printed underneath. */}
+          {/* The empty frame's mark is pushed clear of the name rather than
+              printed underneath it, whichever end the name is at. */}
           <CoverPhoto
             url={coverUrl}
             label={photoLabel}
-            emptyClassName={preview ? "pb-12" : "pb-16"}
+            emptyClassName={empty}
           />
         </div>
         {/* One wash: it is there for the photograph under the type, not for
-            the palette around it. */}
+            the palette around it - so it follows the type to whichever end of
+            the strip the type went to. */}
         <div
           className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)",
-          }}
+          style={{ background: BANNER_WASHES[place.edge] }}
         />
         <div
           className={cx(
-            "absolute inset-x-0 bottom-0 mx-auto max-w-3xl",
-            preview ? "px-4 pb-3" : "px-4 pb-6 sm:px-5 sm:pb-7",
+            "absolute mx-auto max-w-3xl",
+            place.box,
+            place.align,
+            preview ? "px-4" : "px-4 sm:px-5",
+            pad,
           )}
         >
           {/* Fixed light text: it sits on a photograph, not on the theme. */}

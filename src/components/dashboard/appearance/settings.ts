@@ -1,9 +1,11 @@
 import {
   CUSTOM_THEME_ID,
+  type CoverPosition,
   type CoverVariant,
   DEFAULT_THEME_ID,
   type UploadVariant,
   coerceCover,
+  coercePosition,
   coerceUpload,
   findTheme,
 } from "@/lib/appearance";
@@ -37,6 +39,7 @@ export interface Settings {
   theme: string;
   font: string;
   cover: CoverVariant;
+  coverPosition: CoverPosition;
   upload: UploadVariant;
   layout: GalleryLayout;
   coverMediaId: string | null;
@@ -64,6 +67,7 @@ export function fromEvent(event: EventRow): Settings {
     theme: event.theme ?? DEFAULT_THEME_ID,
     font: event.theme_font ?? DEFAULT_FONT_ID,
     cover: coerceCover(event.cover_variant),
+    coverPosition: coercePosition(event.cover_position),
     upload: coerceUpload(event.upload_variant),
     layout: coerceLayout(event.gallery_layout),
     coverMediaId: event.cover_media_id,
@@ -82,6 +86,7 @@ export function toFields(s: Settings): Record<string, string> {
     theme: s.theme,
     theme_font: s.font,
     cover_variant: s.cover,
+    cover_position: s.coverPosition,
     upload_variant: s.upload,
     gallery_layout: s.layout,
     cover_media_id: s.coverMediaId ?? "",
@@ -104,6 +109,7 @@ export function countChanges(a: Settings, b: Settings): number {
   if (a.theme !== b.theme) n += 1;
   if (a.font !== b.font) n += 1;
   if (a.cover !== b.cover) n += 1;
+  if (a.coverPosition !== b.coverPosition) n += 1;
   if (a.upload !== b.upload) n += 1;
   if (a.layout !== b.layout) n += 1;
   if (a.coverMediaId !== b.coverMediaId) n += 1;
@@ -132,6 +138,7 @@ export function readDraft(key: string): Settings | null {
           : findTheme(draft.theme).id,
       font: coerceFont(draft.font),
       cover: coerceCover(draft.cover),
+      coverPosition: coercePosition(draft.coverPosition),
       upload: coerceUpload(draft.upload),
       layout: coerceLayout(draft.layout),
       coverMediaId:
