@@ -114,7 +114,7 @@ export const EVENT_LINK = {
 } as const;
 
 export function eventLinkTitle(name: string): string {
-  return `Share your photos from ${name}`;
+  return `${name}`;
 }
 
 /**
