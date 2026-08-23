@@ -94,6 +94,57 @@ export const DISALLOWED_PATHS = [
 ] as const;
 
 /* -------------------------------------------------------------------------- */
+/*  An event's share link                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * What a share link says about itself - in the tab, in a chat preview, and on
+ * the card drawn for it.
+ *
+ * Here rather than in the page for the reason everything else in this file is:
+ * the title and the card used to be written separately, so a link could unfurl
+ * with one sentence and open on another. A guest sent this by a friend decides
+ * whether to tap it from these three lines alone.
+ */
+export const EVENT_LINK = {
+  /** What the page asks for, in the fewest words that still ask for it. */
+  invitation: "Add your photos",
+  /** The same, with the reason there is nothing to install. */
+  invitationBranded: "Add your photos - no app, no account",
+} as const;
+
+export function eventLinkTitle(name: string): string {
+  return `Share your photos from ${name}`;
+}
+
+/**
+ * The sentence under the title in a preview.
+ *
+ * The host's own welcome message when there is one: they wrote it for the
+ * guests this link is being sent to, and it beats anything written here. Long
+ * ones are cut at a word, because a preview is clipped at around 200
+ * characters anyway and a description ending mid-word reads as broken.
+ */
+export function eventLinkDescription(
+  name: string,
+  date: string | null,
+  message?: string | null,
+): string {
+  const written = message?.trim();
+  if (written) return clip(written, 200);
+
+  const occasion = date ? `${name}, ${date}` : name;
+  return `Add the photos you took at ${occasion}. Open the link, pick your photos, and they go straight to the host - no app and no account.`;
+}
+
+function clip(text: string, limit: number): string {
+  if (text.length <= limit) return text;
+  const cut = text.slice(0, limit);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Structured data                                                            */
 /* -------------------------------------------------------------------------- */
 
