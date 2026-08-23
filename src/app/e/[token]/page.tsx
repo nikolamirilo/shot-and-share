@@ -7,12 +7,27 @@ import {
   PlatformFooter,
   PlatformHeader,
 } from "@/components/layout/platform-banner";
+import { resolveAppearance } from "@/lib/appearance";
 import { googleFontsHref } from "@/lib/fonts";
+import { formatEventDate } from "@/lib/format";
 import { resolveGuestToken } from "@/lib/guards/guest";
+import { SITE, eventLinkDescription, eventLinkTitle } from "@/lib/seo";
 import { loadGuestPage } from "@/lib/views/guest-page";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * What this link looks like before anybody taps it.
+ *
+ * Nearly every guest arrives from a chat, so the preview is the page's first
+ * impression: the name of their event, the date, and whatever the host wrote
+ * to them. The words come from `seo.ts` and the picture from the sibling
+ * `opengraph-image`, which Next attaches on its own.
+ *
+ * `openGraph` and `twitter` are set out in full rather than added to, because
+ * Next replaces those two blocks per route instead of merging them - inherit
+ * half of one and the card is the site's title over the event's picture.
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -20,10 +35,38 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { token } = await params;
   const ctx = await resolveGuestToken(token);
+
+  // A share link is not something search engines should hold on to. It stays
+  // crawlable so this directive is read - see DISALLOWED_PATHS.
+  const robots = { index: false, follow: false };
+
+  if (!ctx) {
+    return { title: "Share photos", robots };
+  }
+
+  const event = ctx.event;
+  const { platformBranding } = resolveAppearance(event);
+  const title = eventLinkTitle(event.name);
+  const description = eventLinkDescription(
+    event.name,
+    formatEventDate(event.event_date),
+    event.welcome_message,
+  );
+
   return {
-    title: ctx ? `Share your photos from ${ctx.event.name}` : "Share photos",
-    // A share link is not something search engines should hold on to.
-    robots: { index: false, follow: false },
+    /* A paid event page carries nothing of ours - no header, no footer, and
+       so no "· Shot & Share" appended to the host's own event in a tab. */
+    title: platformBranding ? title : { absolute: title },
+    description,
+    robots,
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      locale: "en_GB",
+      siteName: platformBranding ? SITE.name : event.name,
+    },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
