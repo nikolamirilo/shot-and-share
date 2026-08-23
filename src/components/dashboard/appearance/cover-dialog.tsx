@@ -74,8 +74,10 @@ export function CoverDialog({
   return (
     <div
       /* Safe-area padding at the bottom: on a phone the home indicator sits
-         exactly where the last row of tiles lands. */
-      className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-ink/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
+         exactly where the last row of tiles lands. `h-[100dvh]` for the same
+         reason - `inset-0` is the window with the browser's bars hidden, which
+         is not the window anybody is looking at. */
+      className="fixed inset-0 z-50 flex h-[100dvh] items-center justify-center overscroll-contain bg-ink/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Choose a cover photo"

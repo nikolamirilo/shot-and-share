@@ -47,6 +47,16 @@
   /* The inside of anything a photograph goes into. */
   --color-well: #241a1d;
 
+  /* The two colours of anything sitting on a dark scrim - the lightbox, its
+     buttons and its arrows. Held out of the event theme on purpose: `chalk`
+     means "what reads on the accent", so a host who picks a pale accent gets a
+     near-black chalk, and a chalk button with ink text on it is then black on
+     black. The scrim is ours rather than theirs, so its controls are too.
+     Written as literal hex and never handed to `paletteToCssVars`. See
+     components/ui/scrim.ts. */
+  --color-scrim: #fdf6f7;
+  --color-scrim-ink: #181214;
+
   /* Display: a grotesque with a width axis, run heavy and narrow so a headline
      can be enormous without needing the whole page.
      Body: quiet, slightly warm, gets out of the way.

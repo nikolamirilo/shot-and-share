@@ -72,9 +72,12 @@ export function Swatch({
           dots about as wide as the full stop ending this sentence, and the
           only honest way to tell two of them apart was to click both. */}
       <span className="flex gap-1.5">
-        {colors.map((c) => (
+        {/* Keyed by position rather than by colour: these are always background,
+            accent and ink in that order, and on the custom swatch a host is
+            free to pick the same hex for two of them. */}
+        {colors.map((c, i) => (
           <span
-            key={c}
+            key={i}
             className="inset-shadow-well h-7 w-7 rounded-full shadow-sm"
             style={{ background: c }}
           />

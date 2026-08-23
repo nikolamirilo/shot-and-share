@@ -10,7 +10,7 @@ import {
 } from "react-icons/md";
 
 import { ReportButton } from "@/components/gallery/report-button";
-import { Button, cx } from "@/components/ui";
+import { ON_SCRIM_FLOATING, ON_SCRIM_QUIET, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
 /** Below this a drag is a tap with a shaky hand, not a swipe. */
@@ -59,9 +59,14 @@ export function Lightbox({
   const [linkPending, setLinkPending] = useState(true);
   /** False until this photo's pixels are on screen. Reset on every step. */
   const [loaded, setLoaded] = useState(false);
+  /** The report sheet is open, which is the one time the arrows are in the way. */
+  const [reporting, setReporting] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
-  useEffect(() => setLoaded(false), [item.id]);
+  useEffect(() => {
+    setLoaded(false);
+    setReporting(false);
+  }, [item.id]);
 
   useEffect(() => {
     /*
@@ -132,27 +137,33 @@ export function Lightbox({
 
   return (
     <div
-      /* Safe-area padding at the bottom: on a phone the home indicator sits
-         exactly where the Close button lands. */
-      className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-ink/92 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4"
+      /*
+       * `h-[100dvh]` rather than `inset-0` alone. On a phone `inset-0` is the
+       * *large* viewport - the window as it would be with the browser's own
+       * bars hidden - so the bottom of this sheet spent its life underneath
+       * Safari's toolbar, taking whatever was down there with it. The dynamic
+       * unit is the window as it actually is right now.
+       */
+      className="fixed inset-0 z-50 h-[100dvh] overscroll-contain bg-ink/92"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
-      {/*
-       * A column with the picture given whatever is left, rather than a block
-       * that scrolls. A portrait photo is taller than the phone holding it, so
-       * laid out at full width it pushed Close and Download off the bottom of
-       * the screen - reachable only by scrolling a container most people did
-       * not know was scrollable. The picture is now bounded by the room
-       * available and the buttons keep their place under it.
-       */}
-      <div
-        className="flex max-h-full w-full max-w-2xl flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {/* Safe areas on all four sides: the notch at the top, the home
+          indicator at the bottom, and the rounded corners in landscape. */}
+      <div className="flex h-full w-full items-center justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
+        {/*
+         * The frame. `h-full` and not `max-h-full`, which is the whole reason
+         * the controls used to disappear: a percentage height resolves against
+         * a parent that has one, and `max-h-full` leaves this box auto-height,
+         * so `max-h-full` on the picture inside it resolved to nothing at all.
+         * A portrait photo then rendered at its full height, overflowed the
+         * window, and pushed every button out of the bottom of the screen.
+         * With a real height here, the picture is bounded by the frame and the
+         * frame is bounded by the window.
+         */}
         <div
-          className="relative flex min-h-0 flex-1 items-center justify-center"
+          className="relative flex h-full w-full max-w-2xl items-center justify-center"
           onTouchStart={item.kind === "video" ? undefined : onTouchStart}
           onTouchEnd={item.kind === "video" ? undefined : onTouchEnd}
         >
@@ -164,10 +175,14 @@ export function Lightbox({
                 controls
                 playsInline
                 preload="metadata"
-                className="h-auto max-h-full w-auto max-w-full rounded-xl"
+                onClick={(e) => e.stopPropagation()}
+                className="max-h-full max-w-full rounded-xl"
               />
             ) : (
-              <div className="shimmer relative aspect-video w-full overflow-hidden rounded-xl bg-well" />
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="shimmer aspect-video w-full overflow-hidden rounded-xl bg-well"
+              />
             )
           ) : viewUrl ? (
             /*
@@ -188,78 +203,133 @@ export function Lightbox({
                 // the shimmer's shape until the photo takes over.
                 width={item.width ?? 1200}
                 height={item.height ?? 900}
-                // Full width on a phone, and the panel is max-w-2xl after that.
+                // Full width on a phone, and the frame is max-w-2xl after that.
                 sizes="(max-width: 704px) 100vw, 672px"
                 onLoad={() => setLoaded(true)}
+                onClick={(e) => e.stopPropagation()}
                 // The point of the screen, so never lazy.
                 priority
-                // Bounded both ways: a landscape photo is held by the width, a
-                // portrait one by the height it is allowed, and neither ends up
-                // taller than the space between the top of the screen and the
-                // buttons.
+                /* Bounded both ways, and `w-auto`/`h-auto` so the aspect ratio
+                   survives the bounding: whichever edge runs out first is the
+                   one that holds the photograph. */
                 className="relative h-auto max-h-full w-auto max-w-full rounded-xl"
               />
             </>
           ) : (
-            <div className="shimmer relative aspect-square w-full overflow-hidden rounded-xl bg-well" />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="shimmer aspect-square w-full overflow-hidden rounded-xl bg-well"
+            />
           )}
 
           {/* Nothing to step to means one photo in the event, where two dead
-              buttons would be furniture. */}
-          {(prevId || nextId) && (
+              buttons would be furniture. Drawn before the layer below so that
+              anything on it - the report sheet especially - covers them rather
+              than fighting them for the same strip of screen. */}
+          {(prevId || nextId) && !reporting && (
             <>
               <StepArrow direction="prev" targetId={prevId} onStep={onStep} />
               <StepArrow direction="next" targetId={nextId} onStep={onStep} />
             </>
           )}
-        </div>
 
-        {/* Never squeezed: whatever the picture does, this keeps its height. */}
-        <div className="shrink-0">
-          {total > 1 && (
-            <p className="mt-3 text-center font-mono text-micro uppercase tracking-[0.16em] text-linen/70">
-              {position} of {total}
-            </p>
-          )}
+          {/*
+           * Every control is laid *on* the picture rather than in a row under
+           * it. A row under it is only reachable when the picture leaves room,
+           * and on a phone in portrait it never does.
+           *
+           * The layer itself takes no clicks - a tap beside the photograph
+           * still closes, and a swipe still steps - so each control turns them
+           * back on for itself.
+           */}
+          <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-2 sm:p-3">
+            <div className="flex items-start justify-between gap-2">
+              {total > 1 ? (
+                <span
+                  className={cx(
+                    "rounded-full px-3 py-1.5 font-mono text-micro uppercase tracking-[0.16em]",
+                    ON_SCRIM_QUIET,
+                  )}
+                >
+                  {position} of {total}
+                </span>
+              ) : (
+                <span />
+              )}
 
-          {item.processing && (
-            <p className="mt-3 rounded-xl bg-linen/12 px-3 py-2 text-center text-label text-linen/80">
-              Still being converted so it plays everywhere. Check back shortly.
-            </p>
-          )}
-
-          <div className="mt-4 flex flex-wrap justify-center gap-2.5 sm:gap-3">
-            <Button onClick={onClose} variant="onDark" size="sm">
-              <MdClose aria-hidden className="shrink-0 text-[1.25em]" />
-              Close
-            </Button>
-            {/* One anchor in two states rather than one that appears when the
-                link lands: stepping re-fetches, and a button that vanishes and
-                returns moves the two beside it every time. Absent entirely once
-                the request finishes with no link, since there is nothing to
-                wait for. */}
-            {(linkPending || full?.downloadUrl) && (
-              <a
-                href={full?.downloadUrl}
-                download={full?.downloadUrl ? true : undefined}
-                aria-disabled={full?.downloadUrl ? undefined : true}
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                title="Close"
                 className={cx(
-                  "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-chalk px-3.5 py-2 text-small font-semibold leading-tight text-ink",
-                  !full?.downloadUrl && "opacity-45",
+                  "pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform hover:scale-105",
+                  ON_SCRIM_FLOATING,
                 )}
               >
-                <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
-                Download
-              </a>
-            )}
-            {onReported && (
-              <ReportButton
-                token={token}
-                mediaId={item.id}
-                onReported={() => onReported(item.id)}
-              />
-            )}
+                <MdClose aria-hidden className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Above the video's own controls rather than across the scrub
+                bar, which is the one strip of a video that has to stay free. */}
+            <div
+              className={cx(
+                "flex min-h-0 flex-col items-center gap-2 overflow-y-auto",
+                item.kind === "video" && "pb-12",
+              )}
+            >
+              {item.processing && (
+                <p
+                  className={cx(
+                    "rounded-xl px-3 py-2 text-center text-label",
+                    ON_SCRIM_QUIET,
+                  )}
+                >
+                  Still being converted so it plays everywhere. Check back
+                  shortly.
+                </p>
+              )}
+
+              <div
+                className="pointer-events-auto flex w-full max-w-sm flex-wrap items-center justify-center gap-2.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* One anchor in two states rather than one that appears when
+                    the link lands: stepping re-fetches, and a button that
+                    vanishes and returns moves the one beside it every time.
+                    Absent entirely once the request finishes with no link,
+                    since there is nothing to wait for. */}
+                {(linkPending || full?.downloadUrl) && (
+                  <a
+                    href={full?.downloadUrl}
+                    download={full?.downloadUrl ? true : undefined}
+                    aria-disabled={full?.downloadUrl ? undefined : true}
+                    className={cx(
+                      "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-small font-semibold leading-tight",
+                      ON_SCRIM_FLOATING,
+                      !full?.downloadUrl && "opacity-45",
+                    )}
+                  >
+                    <MdOutlineFileDownload
+                      aria-hidden
+                      className="shrink-0 text-[1.25em]"
+                    />
+                    Download
+                  </a>
+                )}
+                {onReported && (
+                  <ReportButton
+                    token={token}
+                    mediaId={item.id}
+                    onReported={() => onReported(item.id)}
+                    onOpenChange={setReporting}
+                  />
+                )}
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -285,7 +355,12 @@ function StepArrow({
     <button
       type="button"
       disabled={!targetId}
-      onClick={() => targetId && onStep(targetId)}
+      /* The backdrop closes on click and this button sits on top of it, so the
+         step has to stop where it happened or every step is also a close. */
+      onClick={(e) => {
+        e.stopPropagation();
+        if (targetId) onStep(targetId);
+      }}
       aria-label={back ? "Previous photo" : "Next photo"}
       className={cx(
         /*
@@ -294,7 +369,7 @@ function StepArrow({
          * took its own middle with it. The picture is bounded by the window
          * now, so half of it is always somewhere a thumb can reach.
          */
-        "absolute top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-chalk text-ink transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
+        `absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45 ${ON_SCRIM_FLOATING}`,
         back ? "left-2" : "right-2",
       )}
     >

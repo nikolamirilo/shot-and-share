@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps } from "react";
 
+import { ON_SCRIM } from "@/components/ui/scrim";
 import { cx } from "@/lib/cx";
 
 /**
@@ -34,8 +35,9 @@ export const BUTTON_FILL: Record<Variant, string> = {
   secondary: "bg-paper text-ink",
   /* On ink or on a photograph a shadow has nothing to fall on, so this one is
      carried by the fill alone - and on those grounds the light shape is the
-     one that reads, not the wine one. */
-  onDark: "bg-chalk text-ink",
+     one that reads, not the wine one. The scrim's own pair rather than the
+     theme's, for the reason set out in ui/scrim. */
+  onDark: ON_SCRIM,
   ghost: "text-ink underline decoration-2 underline-offset-4 decoration-claret",
 };
 
