@@ -1,16 +1,14 @@
 "use client";
 
-import { useRef } from "react";
 import { MdOutlineRefresh } from "react-icons/md";
 
 import { Button, Hole, ProgressBar } from "@/components/ui";
 import { UploadPanel } from "@/components/upload/upload-panel";
 import { useUploadQueue } from "@/components/upload/use-upload-queue";
 import type { UploadVariant } from "@/lib/appearance/variants";
+import { HIDDEN_FILE_INPUT, useAccept, useFilePicker } from "@/lib/client/picker";
 import { formatBytes } from "@/lib/format";
 import {
-  ACCEPT_ATTRIBUTE_ALL,
-  ACCEPT_ATTRIBUTE_PHOTO,
   PREPARING,
   UPLOADING,
   countLabel,
@@ -45,9 +43,6 @@ export function Uploader({
   remainingBytes: number;
   onUploaded: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
-
   const queue = useUploadQueue({
     token,
     maxFileBytes,
@@ -56,12 +51,14 @@ export function Uploader({
     onUploaded,
   });
 
-  async function handleFiles(files: FileList | null) {
-    await queue.addFiles(files);
-    // Cleared so picking the same file twice still fires a change event.
-    if (inputRef.current) inputRef.current.value = "";
-    if (cameraRef.current) cameraRef.current.value = "";
-  }
+  // Both pickers hand their files to the same queue. The wiring - opening the
+  // sheet, hearing back from it, and hearing back from it when the event that
+  // was supposed to say so never arrives - is in lib/client/picker.
+  const handleFiles = (files: File[]) => {
+    void queue.addFiles(files);
+  };
+  const library = useFilePicker(handleFiles);
+  const camera = useFilePicker(handleFiles);
 
   // One line, in the guest's terms. "Compressing" and "presigning" are our
   // words for our problems - and neither is the noun, because one tap can put
@@ -69,7 +66,7 @@ export function Uploader({
   const working = queue.phase === "preparing" ? PREPARING : UPLOADING;
 
   const wording = uploadWording({ video: allowVideo, filesPerPick });
-  const accept = allowVideo ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO;
+  const accept = useAccept(allowVideo);
 
   // One list for both: a clip that was too big to send and a photo that fell
   // off the wifi are the same thing to the guest - "that one is not with the
@@ -78,13 +75,18 @@ export function Uploader({
 
   return (
     <>
+      {/* No onChange: the listeners are attached to the element itself, and
+          there is a second way in for the browsers that do not fire one. Hidden
+          with opacity rather than sr-only, because an input clipped to nothing
+          is not reliably openable from script on a phone. */}
       <input
-        ref={inputRef}
+        ref={library.inputRef}
         type="file"
         multiple
         accept={accept}
-        onChange={(e) => handleFiles(e.target.files)}
-        className="sr-only"
+        className={HIDDEN_FILE_INPUT}
+        tabIndex={-1}
+        aria-hidden
         id="guest-files"
       />
       {/* The camera is a second input rather than an attribute on the first:
@@ -92,12 +94,13 @@ export function Uploader({
           the library button has to keep working. */}
       {variant === "split" && (
         <input
-          ref={cameraRef}
+          ref={camera.inputRef}
           type="file"
           accept={accept}
           capture="environment"
-          onChange={(e) => handleFiles(e.target.files)}
-          className="sr-only"
+          className={HIDDEN_FILE_INPUT}
+          tabIndex={-1}
+          aria-hidden
           id="guest-camera"
         />
       )}
@@ -109,9 +112,9 @@ export function Uploader({
         captureLabel={wording.capture}
         chooseLabel={wording.choose}
         hint={`${wording.hint} ${formatBytes(remainingBytes)} of room left.`}
-        onPick={() => inputRef.current?.click()}
-        onCapture={() => cameraRef.current?.click()}
-        onDropFiles={handleFiles}
+        onPick={library.open}
+        onCapture={camera.open}
+        onDropFiles={(files) => handleFiles(Array.from(files))}
       >
         {/* The whole batch as one line, and one bar that only ever fills.
             It used to drift while the batch was being encoded and switch to a

@@ -73,6 +73,17 @@ export function useUploadQueue({
   const picks = useRef(0);
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  /**
+   * The same flag, readable straight away.
+   *
+   * `busy` is state, so inside a handler it is whatever it was when that render
+   * happened - and a second selection arriving mid-batch is exactly when that
+   * is out of date. Files handed over at the wrong moment used to be dropped on
+   * the floor here.
+   */
+  const busyRef = useRef(false);
+  /** Picked while a batch was running, and sent as soon as it is not. */
+  const waitingForTheirTurn = useRef<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   /** Something worth saying that is not a failure: "the first 100 are going". */
   const [notice, setNotice] = useState<string | null>(null);
@@ -202,6 +213,7 @@ export function useUploadQueue({
    * at zero, no message.
    */
   async function runBatch(batch: Item[]) {
+    busyRef.current = true;
     setBusy(true);
     setPhase("preparing");
     setRunning(batch.map((item) => item.key));
@@ -228,12 +240,29 @@ export function useUploadQueue({
         ),
       );
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
 
-  async function addFiles(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0 || busy) return;
+  /**
+   * Takes whatever the picker produced: a live FileList, or a copy of one.
+   *
+   * A copy is what it gets from the guest page now - see lib/client/picker -
+   * but a FileList is still accepted, because a file dropped onto the panel
+   * from a laptop arrives as one.
+   */
+  async function addFiles(fileList: FileList | File[] | null) {
+    const files = fileList ? Array.from(fileList) : [];
+    if (files.length === 0) return;
+
+    // Never dropped. A second handful can arrive while the first is still
+    // going - a slow picker, or the safety net in lib/client/picker catching a
+    // selection late - and the guest has no idea their photos were ignored.
+    if (busyRef.current) {
+      waitingForTheirTurn.current.push(...files);
+      return;
+    }
 
     setError(null);
     setNotice(null);
@@ -241,7 +270,7 @@ export function useUploadQueue({
 
     // File by file, never all-or-nothing: one clip over the limit used to
     // stop sixty photographs going anywhere. See lib/client/triage.
-    const { accepted, skipped, leftOut } = triage(Array.from(fileList), {
+    const { accepted, skipped, leftOut } = triage(files, {
       maxFileBytes,
       room: remainingBytes - saved.to,
       maxCount: filesPerPick,
@@ -249,7 +278,7 @@ export function useUploadQueue({
 
     if (leftOut > 0) {
       setNotice(
-        `That was ${fileList.length}. The first ${filesPerPick} are on their way - add the other ${leftOut} once these are done.`,
+        `That was ${files.length}. The first ${filesPerPick} are on their way - add the other ${leftOut} once these are done.`,
       );
     }
     if (skipped.some((s) => s.upgrade)) setUpgradeHint(true);
@@ -275,11 +304,17 @@ export function useUploadQueue({
     // the first one sitting there marked "added".
     setItems((prev) => [...prev, ...batch, ...refused]);
     if (batch.length > 0) await runBatch(batch);
+
+    const queued = waitingForTheirTurn.current;
+    if (queued.length > 0) {
+      waitingForTheirTurn.current = [];
+      await addFiles(queued);
+    }
   }
 
   async function retryFailed() {
     const failed = items.filter((i) => i.status === "failed");
-    if (failed.length === 0 || busy) return;
+    if (failed.length === 0 || busyRef.current) return;
 
     setError(null);
     setUpgradeHint(false);

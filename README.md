@@ -148,6 +148,22 @@ confirms - a phone that died halfway - leaves only its reservation, and the
 nightly job hands the quota back and removes any orphaned object. See migration
 `0010`.
 
+### Getting the files out of the picker
+
+Step 0, and the part that is not ours: the sheet the guest picks photos in
+belongs to the operating system, and the page is frozen or discarded while it is
+up. A guest who taps Add and lands back on a page where nothing happens has lost
+the whole product, so `src/lib/client/picker.ts` is deliberately more careful
+than the four lines this normally takes.
+
+| What breaks | What the picker does about it |
+|---|---|
+| Safari cannot confirm a selection when the accept list has entries it cannot resolve - a bare `.heic`, a type it has no mapping for. Older iOS ignored them; recent iOS does not | Safari is given `image/*` (and `video/*` on a plan with video) and nothing else. Every other browser keeps the long list, which is what a desktop file manager matches extensions against |
+| A file input clipped to nothing by `sr-only` is not reliably openable from script on a phone | A real 1px box at zero opacity, behind the page and out of the tab order. Nothing marks it uninteractive |
+| The change event never arrives - the page was frozen, or the browser simply did not fire one | Native `change` **and** `input` listeners on the element itself, plus a sweep of the input when the page comes back into focus, twice more after a beat. Whichever arrives first wins; a selection is identified by its `FileList`, so the others are no-ops |
+| Files arrive while a batch is still running and get dropped | They are held and sent as soon as the queue is free |
+| The same photo picked twice does not count as a new selection | The input is cleared when the picker opens, not after the upload - so a file taken out of it is never read from an input that has been emptied |
+
 ### Compression
 
 Photos are re-encoded **on the device that took them**, before upload. The phone
