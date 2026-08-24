@@ -6,6 +6,7 @@ import { type Prepared, prepare } from "@/lib/client/prepare";
 import { START, type Stages, runPercent } from "@/lib/client/progress";
 import { sendUpload } from "@/lib/client/send-upload";
 import { triage } from "@/lib/client/triage";
+import { formatBytes } from "@/lib/format";
 import { UploadError, gate, getFingerprint } from "@/lib/client/upload";
 
 /**
@@ -53,8 +54,6 @@ const UPLOAD_AT_ONCE = 3;
 export interface UploadQueueOptions {
   token: string;
   maxFileBytes: number;
-  /** How many one tap takes; the rest are named and left for the next tap. */
-  filesPerPick: number;
   remainingBytes: number;
   onUploaded: () => void;
 }
@@ -66,7 +65,6 @@ export interface UploadQueueOptions {
 export function useUploadQueue({
   token,
   maxFileBytes,
-  filesPerPick,
   remainingBytes,
   onUploaded,
 }: UploadQueueOptions) {
@@ -84,6 +82,14 @@ export function useUploadQueue({
   const busyRef = useRef(false);
   /** Picked while a batch was running, and sent as soon as it is not. */
   const waitingForTheirTurn = useRef<File[]>([]);
+  /**
+   * How many files the browser actually handed over for the run on screen.
+   *
+   * Shown to the guest when it does not match what is being sent, and the
+   * first thing to look at when somebody says "I chose thirty and it only
+   * took nine": if this says nine, the picker gave us nine.
+   */
+  const [picked, setPicked] = useState(0);
   const [error, setError] = useState<string | null>(null);
   /** Something worth saying that is not a failure: "the first 100 are going". */
   const [notice, setNotice] = useState<string | null>(null);
@@ -267,21 +273,28 @@ export function useUploadQueue({
     setError(null);
     setNotice(null);
     setUpgradeHint(false);
+    setPicked(files.length);
+    // The one line in the console that tells an operator whether a short
+    // upload was the picker's doing or ours.
+    console.info(`[upload] picked ${files.length}`);
 
     // File by file, never all-or-nothing: one clip over the limit used to
-    // stop sixty photographs going anywhere. See lib/client/triage.
-    const { accepted, skipped, leftOut } = triage(files, {
+    // stop sixty photographs going anywhere. There is no cap on how many -
+    // only the plan's per-file size and the room left. See lib/client/triage.
+    const { accepted, skipped } = triage(files, {
       maxFileBytes,
       room: remainingBytes - saved.to,
-      maxCount: filesPerPick,
     });
 
-    if (leftOut > 0) {
+    // One line for the whole batch, because "not enough room" is one fact
+    // about the event rather than a fact about each photograph.
+    const noRoom = skipped.filter((s) => s.upgrade).length;
+    if (noRoom > 0) {
+      setUpgradeHint(true);
       setNotice(
-        `That was ${files.length}. The first ${filesPerPick} are on their way - add the other ${leftOut} once these are done.`,
+        `There is ${formatBytes(Math.max(0, remainingBytes - saved.to))} left at this event, so ${noRoom} of the ${files.length} you picked will not fit.`,
       );
     }
-    if (skipped.some((s) => s.upgrade)) setUpgradeHint(true);
 
     const pick = picks.current;
     picks.current += 1;
@@ -370,6 +383,7 @@ export function useUploadQueue({
     notice,
     upgradeHint,
     completed,
+    picked,
     held,
     saved,
     failed,

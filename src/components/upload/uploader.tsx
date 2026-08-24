@@ -29,7 +29,6 @@ export function Uploader({
   variant,
   allowVideo,
   maxFileBytes,
-  filesPerPick,
   remainingBytes,
   onUploaded,
 }: {
@@ -37,16 +36,14 @@ export function Uploader({
   /** The shape the host picked for this event. */
   variant: UploadVariant;
   allowVideo: boolean;
+  /** The plan's per-file ceiling - the only limit on a single file. */
   maxFileBytes: number;
-  /** How many one tap of the button takes. Follows the plan. */
-  filesPerPick: number;
   remainingBytes: number;
   onUploaded: () => void;
 }) {
   const queue = useUploadQueue({
     token,
     maxFileBytes,
-    filesPerPick,
     remainingBytes,
     onUploaded,
   });
@@ -65,7 +62,7 @@ export function Uploader({
   // four photos and a clip in the same queue.
   const working = queue.phase === "preparing" ? PREPARING : UPLOADING;
 
-  const wording = uploadWording({ video: allowVideo, filesPerPick });
+  const wording = uploadWording({ video: allowVideo, maxFileBytes });
   const accept = useAccept(allowVideo);
 
   // One list for both: a clip that was too big to send and a photo that fell
@@ -141,6 +138,15 @@ export function Uploader({
                   : `${queue.sent} of ${queue.batch.length}`}
               </span>
             </div>
+            {/* Only when the two numbers disagree, and then it is the most
+                useful line on the page: a guest who chose thirty and sees
+                "picked 9" knows the picker stopped at nine, not us. */}
+            {queue.picked > queue.batch.length && (
+              <p className="mt-2 text-[0.8125rem] text-ash">
+                Your phone handed over {queue.picked}; {queue.batch.length} are
+                on their way.
+              </p>
+            )}
           </div>
         )}
 

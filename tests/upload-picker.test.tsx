@@ -96,7 +96,7 @@ describe("the input the picker belongs to", () => {
         variant="split"
         allowVideo
         maxFileBytes={1024}
-        filesPerPick={20}
+
         remainingBytes={4096}
         onUploaded={() => {}}
       />,

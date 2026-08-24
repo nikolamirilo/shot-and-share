@@ -57,17 +57,20 @@ export function rateLimit(
 
 export const LIMITS = {
   /**
-   * Presign requests per link, per minute.
+   * Presign requests per device, per minute.
    *
-   * One per file now, not one per batch. A guest picking the maximum of 100
-   * photos (`MAX_FILES_PER_PICK` in lib/tiers - the top plan's pick) makes
-   * 100 of these, and may reasonably do that twice in a minute -
-   * so a limit near the batch size would cut them off mid-batch. Sized at
-   * four batches, and there is a test holding it there should the batch size
-   * move again. Still bounded: the cost of a presign is a signature, and the
-   * quota check inside it is what actually stops anyone filling the bucket.
+   * One per file, and a guest may now pick as many files as the event has room
+   * for - so this is sized at four big picks (`BIG_PICK` in lib/tiers), with a
+   * test holding the two together.
+   *
+   * Keyed per device rather than per link and address. Two hundred guests at a
+   * venue share one wifi and therefore one address, and a limit they shared
+   * would mean the twentieth guest of the evening being told to wait because
+   * the nineteenth was uploading. Still bounded: the cost of a presign is a
+   * signature, and the quota check inside it is what actually stops anyone
+   * filling the bucket.
    */
-  presign: { limit: 400, window: 60 },
+  presign: { limit: 4 * 300, window: 60 },
   /** Guest page loads per IP, per minute. */
   guestPage: { limit: 60, window: 60 },
   /**

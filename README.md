@@ -164,6 +164,20 @@ than the four lines this normally takes.
 | Files arrive while a batch is still running and get dropped | They are held and sent as soon as the queue is free |
 | The same photo picked twice does not count as a new selection | The input is cleared when the picker opens, not after the upload - so a file taken out of it is never read from an input that has been emptied |
 
+**Two limits, and no third one.** A guest may hand over as many files as they
+like in one tap: the plan's per-file ceiling (`maxFileBytes`) turns away a file
+that is too big on its own, and the room left at the event turns away what will
+not fit in total. There used to be a cap on the count as well - twenty on Free,
+a hundred on Pro - and it is gone, because a guest emptying a camera roll after
+a wedding should not be doing it in handfuls. The presign rate limit is sized
+for that (four big picks a minute) and keyed per device, so one guest's camera
+roll cannot use up the allowance of the next guest on the same venue wifi.
+
+When the count the browser handed over does not match the count being sent, the
+page says so under the progress bar - "your phone handed over 9; 9 are on their
+way" is the difference between a picker that stopped early and a queue that
+dropped something.
+
 ### Compression
 
 Photos are re-encoded **on the device that took them**, before upload. The phone

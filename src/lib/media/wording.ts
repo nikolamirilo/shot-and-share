@@ -1,3 +1,4 @@
+import { formatBytes } from "@/lib/format";
 import type { Tier } from "@/lib/tiers";
 
 /**
@@ -16,16 +17,20 @@ export interface UploadWording {
   capture: string;
   /** The library half of the split variant. */
   choose: string;
-  /** What may be sent, and how many at once. */
+  /** What may be sent, and how big one of them may be. */
   hint: string;
 }
 
 /**
  * Takes the plan rather than two flags, because both things the copy needs -
- * whether video is in, and how many files one tap takes - come from it.
+ * whether video is in, and how big one file may be - come from it.
+ *
+ * It used to say "up to 50 at a time", which was true and is no longer: a
+ * guest may hand over as many files as the event has room for. The number
+ * worth printing is the one that can actually turn a file away on its own.
  */
 export function uploadWording(
-  tier: Pick<Tier, "video" | "filesPerPick">,
+  tier: Pick<Tier, "video" | "maxFileBytes">,
 ): UploadWording {
   return tier.video
     ? {
@@ -34,13 +39,13 @@ export function uploadWording(
         // accept list lets the camera offer both.
         capture: "Open camera",
         choose: "Choose files",
-        hint: `Photos and video, up to ${tier.filesPerPick} at a time.`,
+        hint: `Photos and video, up to ${formatBytes(tier.maxFileBytes, 0)} a file.`,
       }
     : {
         action: "Add your photos",
         capture: "Take a photo",
         choose: "Choose photos",
-        hint: `Photos, up to ${tier.filesPerPick} at a time.`,
+        hint: `Photos, up to ${formatBytes(tier.maxFileBytes, 0)} a file.`,
       };
 }
 
