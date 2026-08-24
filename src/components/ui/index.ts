@@ -18,6 +18,7 @@ export { Eyebrow } from "@/components/ui/eyebrow";
 export { Field, inputClass } from "@/components/ui/field";
 export { Hole } from "@/components/ui/hole";
 export { Panel } from "@/components/ui/panel";
+export { Photo } from "@/components/ui/photo";
 export { PhotoPlaceholder } from "@/components/ui/photo-placeholder";
 export {
   ON_SCRIM,

@@ -29,9 +29,25 @@ function mediaPatterns() {
   }
 }
 
+/**
+ * The optimiser is metered - a fixed number of transformations a month, and
+ * one photograph at one width is one of them. This turns it off everywhere:
+ * photographs are then served straight from the bucket, unresized.
+ *
+ * Worth having as a switch rather than only as a runtime fallback, because a
+ * quota that runs out on the 20th takes the whole gallery's images down with
+ * it. Flip this, redeploy, and the site keeps working for nothing. The stored
+ * thumbnail is already a ~25 KB WebP cut for these tiles, so the wall costs
+ * roughly what it did; only the full-size copies get heavier.
+ */
+const optimiserDisabled =
+  process.env.NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION === "1" ||
+  process.env.NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION === "true";
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
+    unoptimized: optimiserDisabled,
     remotePatterns: mediaPatterns(),
     // A photo grid is the whole product, so it is worth the extra encode time:
     // AVIF runs 15-20% smaller than WebP at these sizes, and the optimiser

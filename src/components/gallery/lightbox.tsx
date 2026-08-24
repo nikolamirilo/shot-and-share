@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import {
   MdChevronLeft,
@@ -10,7 +9,7 @@ import {
 } from "react-icons/md";
 
 import { ReportButton } from "@/components/gallery/report-button";
-import { ON_SCRIM_FLOATING, ON_SCRIM_QUIET, cx } from "@/components/ui";
+import { ON_SCRIM_FLOATING, ON_SCRIM_QUIET, Photo, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
 /** Below this a drag is a tap with a shaky hand, not a swipe. */
@@ -196,7 +195,7 @@ export function Lightbox({
               {!loaded && (
                 <div className="shimmer absolute inset-0 overflow-hidden rounded-xl bg-well" />
               )}
-              <Image
+              <Photo
                 src={viewUrl}
                 alt=""
                 // A 4:3 guess when we have no real dimensions: it only holds

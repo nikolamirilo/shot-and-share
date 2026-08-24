@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { MdOutlineCheck, MdOutlineDelete, MdOutlineFlag } from "react-icons/md";
 
@@ -8,7 +7,7 @@ import { useServerAction } from "@/hooks/use-server-action";
 
 import { approveMedia } from "@/lib/actions/moderation";
 import { deleteMedia } from "@/lib/actions/media";
-import { Alert, Badge, Button, Panel } from "@/components/ui";
+import { Alert, Badge, Button, Panel, Photo } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
 /**
@@ -79,7 +78,7 @@ export function ReviewPanel({
             >
               <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-xl bg-ink/10 xs:w-32 sm:w-40">
                 {item.previewUrl ? (
-                  <Image
+                  <Photo
                     src={item.previewUrl}
                     alt=""
                     fill
