@@ -7,7 +7,7 @@ import {
   MdOutlinePhotoLibrary,
 } from "react-icons/md";
 
-import { BUTTON_FILL, Button, Hole, cx } from "@/components/ui";
+import { BUTTON_FILL, Button, ButtonLabel, Hole, cx } from "@/components/ui";
 import type { UploadVariant } from "@/lib/appearance/variants";
 
 /**
@@ -34,6 +34,17 @@ export interface UploadPanelProps {
   /** What may be sent, and how much room is left. */
   hint: string;
   busy?: boolean;
+  /**
+   * The id of the file input the primary action opens.
+   *
+   * When it is given the action is a `<label>` and the tap goes straight to
+   * the input - no script between the guest and the picker, which is what some
+   * iOS builds need before they will offer multi-select. `onPick` stays for
+   * the places a label cannot go.
+   */
+  pickFor?: string;
+  /** The id of the camera input, for the split variant. Same reasoning. */
+  captureFor?: string;
   onPick?: () => void;
   /** Only "Camera or library" offers the camera as its own button. */
   onCapture?: () => void;
@@ -104,6 +115,7 @@ function BigButton({
   label,
   hint,
   busy,
+  pickFor,
   onPick,
   preview,
   children,
@@ -114,6 +126,7 @@ function BigButton({
         label={label}
         icon={<MdOutlineAddAPhoto aria-hidden className="shrink-0 text-[1.25em]" />}
         busy={busy}
+        htmlFor={pickFor}
         onClick={onPick}
         preview={preview}
         className={cx(
@@ -135,6 +148,7 @@ function DropPanel({
   label,
   hint,
   busy,
+  pickFor,
   onPick,
   onDropFiles,
   preview,
@@ -176,25 +190,40 @@ function DropPanel({
     preview ? "p-3" : "px-5 py-7 sm:p-8",
   );
 
+  // A label rather than a button, for the same reason the other variants use
+  // one: the tap reaches the file input without passing through script. It
+  // keeps the drag handlers, which is the whole point of this variant.
+  const dragging = {
+    onDragOver: (e: React.DragEvent) => {
+      e.preventDefault();
+      setOver(true);
+    },
+    onDragLeave: () => setOver(false),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setOver(false);
+      if (e.dataTransfer.files.length > 0) onDropFiles?.(e.dataTransfer.files);
+    },
+  };
+
   return (
     <div>
       {preview ? (
         <div className={shell}>{inside}</div>
+      ) : pickFor ? (
+        <label
+          htmlFor={pickFor}
+          {...dragging}
+          className={cx(shell, "cursor-pointer", busy && "pointer-events-none opacity-45")}
+        >
+          {inside}
+        </label>
       ) : (
         <button
           type="button"
           disabled={busy}
           onClick={onPick}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setOver(true);
-          }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setOver(false);
-            if (e.dataTransfer.files.length > 0) onDropFiles?.(e.dataTransfer.files);
-          }}
+          {...dragging}
           className={cx(shell, "disabled:opacity-45")}
         >
           {inside}
@@ -210,6 +239,7 @@ function SlimBar({
   label,
   hint,
   busy,
+  pickFor,
   onPick,
   preview,
   children,
@@ -223,6 +253,7 @@ function SlimBar({
         label={label}
         icon={<MdOutlineAddAPhoto aria-hidden className="shrink-0 text-[1.25em]" />}
         busy={busy}
+        htmlFor={pickFor}
         onClick={onPick}
         preview={preview}
         className="w-full"
@@ -243,6 +274,8 @@ function SplitButtons({
   chooseLabel = "Choose photos",
   hint,
   busy,
+  pickFor,
+  captureFor,
   onPick,
   onCapture,
   preview,
@@ -265,6 +298,7 @@ function SplitButtons({
           label={busy ? label : captureLabel}
           icon={<MdOutlinePhotoCamera aria-hidden className="shrink-0 text-[1.25em]" />}
           busy={busy}
+          htmlFor={captureFor}
           onClick={onCapture}
           preview={preview}
           className={preview ? "py-2" : "py-4"}
@@ -273,6 +307,7 @@ function SplitButtons({
           label={chooseLabel}
           icon={<MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />}
           busy={busy}
+          htmlFor={pickFor}
           onClick={onPick}
           preview={preview}
           variant="secondary"
@@ -291,6 +326,7 @@ function Action({
   label,
   icon,
   busy,
+  htmlFor,
   onClick,
   preview,
   variant = "primary",
@@ -303,6 +339,8 @@ function Action({
    */
   icon?: React.ReactNode;
   busy?: boolean;
+  /** The file input this action opens, when it opens one without script. */
+  htmlFor?: string;
   onClick?: () => void;
   preview?: boolean;
   variant?: "primary" | "secondary";
@@ -324,6 +362,21 @@ function Action({
         {icon}
         {label}
       </span>
+    );
+  }
+
+  if (htmlFor) {
+    return (
+      <ButtonLabel
+        size="lg"
+        variant={variant}
+        disabled={busy}
+        htmlFor={htmlFor}
+        className={className}
+      >
+        {icon}
+        {label}
+      </ButtonLabel>
     );
   }
 

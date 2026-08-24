@@ -7,7 +7,12 @@ export { cx } from "@/lib/cx";
 
 export { Alert } from "@/components/ui/alert";
 export { Badge } from "@/components/ui/badge";
-export { BUTTON_FILL, Button, ButtonLink } from "@/components/ui/button";
+export {
+  BUTTON_FILL,
+  Button,
+  ButtonLabel,
+  ButtonLink,
+} from "@/components/ui/button";
 export { Card } from "@/components/ui/card";
 export { Eyebrow } from "@/components/ui/eyebrow";
 export { Field, inputClass } from "@/components/ui/field";

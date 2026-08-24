@@ -7,6 +7,7 @@ import {
   ACCEPT_ATTRIBUTE_ALL,
   ACCEPT_ATTRIBUTE_PHOTO,
   acceptAttribute,
+  inAppBrowser,
   isSafari,
 } from "@/lib/media";
 
@@ -129,5 +130,74 @@ describe("the input the picker belongs to", () => {
     expect(html).toContain('id="guest-camera"');
     expect(html.match(/capture="environment"/g)?.length).toBe(1);
     expect(html.match(/multiple/g)?.length).toBe(1);
+  });
+});
+
+describe("opening the picker without script", () => {
+  function markup(variant: "button" | "split" | "panel" | "bar") {
+    return renderToStaticMarkup(
+      <Uploader
+        token="t"
+        variant={variant}
+        allowVideo
+        maxFileBytes={1024}
+        remainingBytes={4096}
+        onUploaded={() => {}}
+      />,
+    );
+  }
+
+  /**
+   * The second half of the iPhone report: some builds hand over one file at a
+   * time from a picker opened by `input.click()`, and offer multi-select from
+   * the same input opened by tapping a label attached to it. A label also
+   * needs no JavaScript at all, so it cannot be defeated by a frozen page.
+   */
+  it("points every upload button at its input with a label", () => {
+    for (const variant of ["button", "split", "panel", "bar"] as const) {
+      const html = markup(variant);
+      expect(html).toContain('for="guest-files"');
+    }
+    // The split variant's camera half gets the same treatment.
+    expect(markup("split")).toContain('for="guest-camera"');
+  });
+
+  it("keeps the library input multiple", () => {
+    // The attribute the whole complaint is about. On the camera input it would
+    // be pointless - a viewfinder takes one photograph.
+    const html = markup("button");
+    expect(html).toMatch(/<input[^>]*id="guest-files"[^>]*>/);
+    expect(html.match(/multiple/g)?.length).toBe(1);
+  });
+});
+
+describe("browsers that are not the browser", () => {
+  const INSTAGRAM =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 340.0.0.19.109";
+  const FACEBOOK =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.35.109]";
+
+  /**
+   * "It works on his iPhone and not on mine" is usually this: one of them
+   * opened the link in Safari and the other tapped it inside WhatsApp. The
+   * in-page browser is a WKWebView whose picker takes one file at a time on
+   * several iOS builds, and no attribute on our input changes that - so the
+   * page says so instead.
+   */
+  it("recognises the apps a share link gets tapped in", () => {
+    expect(inAppBrowser(INSTAGRAM)).toBe("Instagram");
+    expect(inAppBrowser(FACEBOOK)).toBe("Facebook");
+    expect(inAppBrowser(IPHONE_18)).toBeNull();
+    expect(inAppBrowser(CHROME)).toBeNull();
+    expect(inAppBrowser(undefined)).toBeNull();
+  });
+
+  it("still gives them Safari's accept list, since that is what they are", () => {
+    // A WKWebView is WebKit with somebody's chrome around it: same picker,
+    // same refusal to act on an accept entry it cannot resolve.
+    expect(isSafari(INSTAGRAM)).toBe(true);
+    expect(acceptAttribute({ video: true, ua: INSTAGRAM })).toBe(
+      "image/*,video/*",
+    );
   });
 });

@@ -122,6 +122,47 @@ export function acceptAttribute({
   return video ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO;
 }
 
+
+/**
+ * The apps that open links in a browser of their own, and the name to call
+ * them by.
+ *
+ * A share link for a wedding is passed around in exactly these: the guest taps
+ * it in WhatsApp or Instagram and never sees Safari at all. What they get is a
+ * WKWebView, and on several iOS builds that view's file picker takes one photo
+ * at a time no matter what the input says - which is not something the page can
+ * fix, only warn about. It is also why "it works on my iPhone and not on his"
+ * has nothing to do with the iPhone.
+ *
+ * Ordered longest-lived first; the checks are substrings of the user agent
+ * these apps append to WebKit's own.
+ */
+const IN_APP = [
+  ["Instagram", "Instagram"],
+  ["FBAN", "Facebook"],
+  ["FBAV", "Facebook"],
+  ["FB_IAB", "Facebook"],
+  ["Messenger", "Messenger"],
+  ["WhatsApp", "WhatsApp"],
+  ["Viber", "Viber"],
+  ["Snapchat", "Snapchat"],
+  ["TikTok", "TikTok"],
+  ["BytedanceWebview", "TikTok"],
+  ["Twitter", "X"],
+  ["LinkedInApp", "LinkedIn"],
+  ["Line/", "LINE"],
+  ["MicroMessenger", "WeChat"],
+  ["Telegram", "Telegram"],
+] as const;
+
+export function inAppBrowser(ua: string | undefined | null): string | null {
+  if (!ua) return null;
+  for (const [needle, name] of IN_APP) {
+    if (ua.includes(needle)) return name;
+  }
+  return null;
+}
+
 export function classify(
   mime: string,
 ): { kind: MediaKind; ext: string } | null {

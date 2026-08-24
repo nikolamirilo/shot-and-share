@@ -163,6 +163,8 @@ than the four lines this normally takes.
 | The change event never arrives - the page was frozen, or the browser simply did not fire one | Native `change` **and** `input` listeners on the element itself, plus a sweep of the input when the page comes back into focus, twice more after a beat. Whichever arrives first wins; a selection is identified by its `FileList`, so the others are no-ops |
 | Files arrive while a batch is still running and get dropped | They are held and sent as soon as the queue is free |
 | The same photo picked twice does not count as a new selection | The input is cleared when the picker opens, not after the upload - so a file taken out of it is never read from an input that has been emptied |
+| Some iOS builds open a picker with no multi-select when the input is clicked from script | Every upload button is a `<label>` pointing at its input, so the tap reaches the input with no JavaScript in between. `open()` is kept for the host's cover picker, where a label cannot go |
+| A share link tapped inside WhatsApp or Instagram opens a WKWebView whose picker takes one file at a time | Not fixable from the page, so it is named: the guest is told which app they are in and how to open the page in a real browser |
 
 **Two limits, and no third one.** A guest may hand over as many files as they
 like in one tap: the plan's per-file ceiling (`maxFileBytes`) turns away a file
@@ -176,7 +178,10 @@ roll cannot use up the allowance of the next guest on the same venue wifi.
 When the count the browser handed over does not match the count being sent, the
 page says so under the progress bar - "your phone handed over 9; 9 are on their
 way" is the difference between a picker that stopped early and a queue that
-dropped something.
+dropped something. The same count goes to `/api/guest/pick`, which writes one
+line to the request log beside the user agent that produced it and stores
+nothing: "one photo at a time on some iPhones and not others" is a pattern that
+can only be found by looking at what each device actually did.
 
 ### Compression
 

@@ -274,9 +274,6 @@ export function useUploadQueue({
     setNotice(null);
     setUpgradeHint(false);
     setPicked(files.length);
-    // The one line in the console that tells an operator whether a short
-    // upload was the picker's doing or ours.
-    console.info(`[upload] picked ${files.length}`);
 
     // File by file, never all-or-nothing: one clip over the limit used to
     // stop sixty photographs going anywhere. There is no cap on how many -
@@ -312,6 +309,24 @@ export function useUploadQueue({
       stages: START,
       error: reason,
     }));
+
+    /*
+     * What the picker produced, in the log beside the browser that produced it.
+     *
+     * The one number nobody can get at from the outside: an iPhone that offers
+     * no multi-select looks exactly like a guest who chose one photo. Fired and
+     * forgotten - a beacon that fails must never cost anybody an upload.
+     */
+    fetch("/api/guest/pick", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        picked: files.length,
+        sending: accepted.length,
+      }),
+      keepalive: true,
+    }).catch(() => {});
 
     // Appended, not replaced: a guest adding a second handful should still see
     // the first one sitting there marked "added".

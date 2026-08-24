@@ -6,7 +6,12 @@ import { Button, Hole, ProgressBar } from "@/components/ui";
 import { UploadPanel } from "@/components/upload/upload-panel";
 import { useUploadQueue } from "@/components/upload/use-upload-queue";
 import type { UploadVariant } from "@/lib/appearance/variants";
-import { HIDDEN_FILE_INPUT, useAccept, useFilePicker } from "@/lib/client/picker";
+import {
+  HIDDEN_FILE_INPUT,
+  useAccept,
+  useFilePicker,
+  useInAppBrowser,
+} from "@/lib/client/picker";
 import { formatBytes } from "@/lib/format";
 import {
   PREPARING,
@@ -56,6 +61,11 @@ export function Uploader({
   };
   const library = useFilePicker(handleFiles);
   const camera = useFilePicker(handleFiles);
+
+  // Not a real browser: a share link for a wedding gets tapped inside WhatsApp
+  // and Instagram far more often than it gets opened in Safari, and those
+  // in-page browsers hand over one photo at a time on several iOS builds.
+  const inApp = useInAppBrowser();
 
   // One line, in the guest's terms. "Compressing" and "presigning" are our
   // words for our problems - and neither is the noun, because one tap can put
@@ -109,6 +119,8 @@ export function Uploader({
         captureLabel={wording.capture}
         chooseLabel={wording.choose}
         hint={`${wording.hint} ${formatBytes(remainingBytes)} of room left.`}
+        pickFor="guest-files"
+        captureFor={variant === "split" ? "guest-camera" : undefined}
         onPick={library.open}
         onCapture={camera.open}
         onDropFiles={(files) => handleFiles(Array.from(files))}
@@ -158,9 +170,20 @@ export function Uploader({
           {queue.busy ? working : ""}
         </p>
 
-        {/* More were picked than one tap takes. Said while the batch runs, so
-            the guest is not left counting a "58 of 100" against the 160 they
-            chose. */}
+        {/* The one thing a guest cannot work out for themselves: their browser
+            is not Safari, and that is why the picker gave them one photo.
+            Never phrased as an error - nothing is broken, and the way out is
+            two taps they already know. */}
+        {inApp && !queue.busy && (
+          <p className="mt-5 note p-4 text-[0.9375rem]">
+            You are in {inApp}&rsquo;s browser, which can only pass on one photo
+            at a time. To send several at once, open this page in Safari or
+            Chrome - tap the menu at the corner of the screen and choose
+            &ldquo;Open in browser&rdquo;.
+          </p>
+        )}
+
+        {/* Something worth saying about this batch that is not a failure. */}
         {queue.notice && (
           <p className="mt-5 note p-4 text-[0.9375rem]">{queue.notice}</p>
         )}

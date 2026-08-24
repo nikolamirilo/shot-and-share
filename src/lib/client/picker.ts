@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { acceptAttribute } from "@/lib/media/accept";
+import { acceptAttribute, inAppBrowser } from "@/lib/media/accept";
 
 /**
  * Opening a file picker and getting the files back out of it.
@@ -79,9 +79,36 @@ export function useFilePicker(onFiles: (files: File[]) => void): FilePicker {
     handler.current(Array.from(list));
   }, []);
 
+  /**
+   * Everything that has to happen before the sheet opens.
+   *
+   * On the input's own click rather than in `open()`, because the guest page
+   * now opens the picker with a `<label>` - the tap never passes through
+   * script at all. A scripted `open()` reaches this the same way, since
+   * `input.click()` fires a click on the input.
+   */
+  const arm = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    handled.current = null;
+    waiting.current = true;
+    // Cleared as the picker opens rather than after the upload, so picking the
+    // same photo twice still counts as a new selection - and so the input is
+    // never emptied while a file taken out of it is still being read.
+    try {
+      input.value = "";
+    } catch {
+      // Some browsers refuse the assignment. The identity guard above covers
+      // the case this was protecting against.
+    }
+  }, []);
+
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
+
+    input.addEventListener("click", arm);
 
     // Listened for on the element itself rather than through React's onChange.
     // React listens at the root of the app and replays what it hears; a native
@@ -118,33 +145,25 @@ export function useFilePicker(onFiles: (files: File[]) => void): FilePicker {
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
+      input.removeEventListener("click", arm);
       input.removeEventListener("change", deliver);
       input.removeEventListener("input", deliver);
       window.removeEventListener("focus", sweep);
       document.removeEventListener("visibilitychange", onVisible);
       for (const timer of timers) clearTimeout(timer);
     };
-  }, [take]);
+  }, [arm, take]);
 
+  /**
+   * The scripted way in, for the places a label cannot cover - a drop panel
+   * that is also a button, and the host's cover picker.
+   *
+   * Nothing may be awaited before the click: a picker only opens while the
+   * browser still considers itself inside the guest's tap. The bookkeeping is
+   * in `arm`, which the click itself triggers.
+   */
   const open = useCallback(() => {
-    const input = inputRef.current;
-    if (!input) return;
-
-    handled.current = null;
-    waiting.current = true;
-    // Cleared here rather than after the upload, so picking the same photo
-    // twice still counts as a new selection - and so the input is never
-    // emptied while a file taken out of it is still being read.
-    try {
-      input.value = "";
-    } catch {
-      // Some browsers refuse the assignment. The identity guard above covers
-      // the case this was protecting against.
-    }
-
-    // Nothing may be awaited before this line: a picker only opens while the
-    // browser still considers itself inside the guest's tap.
-    input.click();
+    inputRef.current?.click();
   }, []);
 
   return { inputRef, open };
@@ -172,4 +191,25 @@ export function useAccept(video: boolean): string {
   }, [video]);
 
   return accept;
+}
+
+/**
+ * The name of the app whose in-page browser this is, or null for a real one.
+ *
+ * Read once on mount, for the same reason `useAccept` is: the server has no
+ * user agent the client would agree with, and a mismatch between the two
+ * renders is worse than a note that appears a moment late.
+ */
+export function useInAppBrowser(): string | null {
+  const [app, setApp] = useState<string | null>(null);
+
+  useEffect(() => {
+    setApp(
+      inAppBrowser(
+        typeof navigator === "undefined" ? undefined : navigator.userAgent,
+      ),
+    );
+  }, []);
+
+  return app;
 }
