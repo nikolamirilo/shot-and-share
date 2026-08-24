@@ -10,6 +10,7 @@ import type { MediaView } from "@/lib/media-view";
 import {
   type GalleryLayout,
   neighbours,
+  upcoming,
   withFreshHead,
   withOlder,
 } from "@/lib/gallery";
@@ -240,6 +241,10 @@ export function GuestGallery({
           nextId={step.next}
           position={openIndex + 1}
           total={items.length}
+          /* Fetched behind this one so the next few steps are instant. Recut
+             on every step and on every refresh, so a photograph that arrives
+             mid-evening joins the queue instead of being the one slow frame. */
+          preload={upcoming(items, open.id)}
           onStep={setOpenId}
           onClose={() => setOpenId(null)}
           onReported={(id) => {

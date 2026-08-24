@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Lightbox } from "@/components/gallery/lightbox";
 import { PhotoGallery } from "@/components/gallery/photo-gallery";
 import { DEMO_MEDIA } from "@/lib/demo";
-import { neighbours } from "@/lib/gallery";
+import { neighbours, upcoming } from "@/lib/gallery";
 
 /**
  * The demo wall.
@@ -55,6 +55,7 @@ export function DemoGallery() {
           nextId={step.next}
           position={openIndex + 1}
           total={DEMO_MEDIA.length}
+          preload={upcoming(DEMO_MEDIA, open.id)}
           onStep={setOpenId}
           onClose={() => setOpenId(null)}
         />

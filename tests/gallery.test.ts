@@ -8,7 +8,9 @@ import {
   coerceLayout,
   holeSize,
   isGalleryLayout,
+  PRELOAD_AHEAD,
   neighbours,
+  upcoming,
   withFreshHead,
   withOlder,
 } from "@/lib/gallery";
@@ -141,6 +143,44 @@ function shot(id: string, minute: number): MediaView {
 }
 
 const ids = (items: MediaView[]) => items.map((item) => item.id);
+
+describe("fetching the next photographs early", () => {
+  const wall = [shot("a", 10), shot("b", 20), shot("c", 30), shot("d", 40)];
+
+  it("takes the ones after the open photograph, in the order they are shown", () => {
+    expect(ids(upcoming(wall, "a"))).toEqual(["b", "c", "d"]);
+  });
+
+  it("looks forward only - the one behind is already in the browser", () => {
+    expect(ids(upcoming(wall, "c"))).toEqual(["d"]);
+  });
+
+  it("stops at the end of what the wall has loaded", () => {
+    expect(upcoming(wall, "d")).toEqual([]);
+  });
+
+  it("goes no further than the window, however long the wall is", () => {
+    const long = Array.from({ length: 40 }, (_, i) => shot(`p${i}`, i));
+    expect(upcoming(long, "p0")).toHaveLength(PRELOAD_AHEAD);
+    expect(ids(upcoming(long, "p0"))).toEqual(["p1", "p2", "p3", "p4", "p5"]);
+  });
+
+  it("leaves clips alone", () => {
+    // A clip plays from a signed URL resolved on opening, and pulling one down
+    // in the background would take the whole of a venue's wifi with it.
+    const mixed = [
+      shot("a", 10),
+      { ...shot("v", 20), kind: "video" as const },
+      shot("b", 30),
+    ];
+    expect(ids(upcoming(mixed, "a"))).toEqual(["b"]);
+  });
+
+  it("gives up on a photograph that is no longer on the wall", () => {
+    // What happens when the open one is reported away mid-look.
+    expect(upcoming(wall, "gone")).toEqual([]);
+  });
+});
 
 describe("keeping the wall up to date", () => {
   // Newest first, which is the order the gallery is served in.

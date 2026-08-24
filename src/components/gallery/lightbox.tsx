@@ -15,6 +15,17 @@ import type { MediaView } from "@/lib/media-view";
 /** Below this a drag is a tap with a shaky hand, not a swipe. */
 const SWIPE_MIN_PX = 50;
 
+/**
+ * How wide the picture is going to be: full width on a phone, and the frame is
+ * `max-w-2xl` after that.
+ *
+ * One constant because the photographs fetched ahead have to ask for exactly
+ * what the one on screen will ask for. The browser picks a copy out of the
+ * srcset using this, so a different value here is a different URL, and a
+ * different URL is a fetch that warms nothing.
+ */
+const VIEW_SIZES = "(max-width: 704px) 100vw, 672px";
+
 export function Lightbox({
   token,
   item,
@@ -22,6 +33,7 @@ export function Lightbox({
   nextId,
   position,
   total,
+  preload = [],
   onStep,
   onClose,
   onReported,
@@ -35,6 +47,16 @@ export function Lightbox({
   /** Which of the loaded photos this is, counting from one. */
   position: number;
   total: number;
+  /**
+   * The photographs after this one, in order, fetched in the background so
+   * that stepping forward shows a picture rather than a shimmer.
+   *
+   * The full-size copies are resized by the optimiser on first request, which
+   * is the couple of seconds a guest spends looking at an empty frame. Asking
+   * for them early moves that wait under the photograph they are already
+   * looking at. Empty is fine - it just means nothing is warmed.
+   */
+  preload?: MediaView[];
   onStep: (id: string) => void;
   onClose: () => void;
   /**
@@ -134,6 +156,17 @@ export function Lightbox({
   const viewUrl =
     item.kind === "video" ? full?.url : (item.fullUrl ?? item.previewUrl);
 
+  /*
+   * This photograph is up, so the connection is free for the next ones. Waiting
+   * on it rather than firing everything at once is the same bargain the wall
+   * makes in `useLoadQueue`: on a venue's wifi, six requests at once means the
+   * picture somebody is actually waiting for arrives sixth.
+   *
+   * A clip counts as up once its URL resolves - it streams as it plays and is
+   * never going to report itself finished.
+   */
+  const onScreen = item.kind === "video" ? Boolean(viewUrl) : loaded;
+
   return (
     <div
       /*
@@ -202,8 +235,7 @@ export function Lightbox({
                 // the shimmer's shape until the photo takes over.
                 width={item.width ?? 1200}
                 height={item.height ?? 900}
-                // Full width on a phone, and the frame is max-w-2xl after that.
-                sizes="(max-width: 704px) 100vw, 672px"
+                sizes={VIEW_SIZES}
                 onLoad={() => setLoaded(true)}
                 onClick={(e) => e.stopPropagation()}
                 // The point of the screen, so never lazy.
@@ -329,6 +361,42 @@ export function Lightbox({
             </div>
           </div>
 
+          {/*
+           * The photographs after this one, off-screen and at low priority.
+           *
+           * Real <Photo> elements rather than a hand-built preload link: they
+           * carry the same `sizes`, the same dimensions and the same fallback
+           * to an unoptimised copy, so the browser resolves the same URL it
+           * will want when the guest steps - and finds it already in the cache.
+           *
+           * Clipped to nothing rather than `display: none`, which browsers are
+           * entitled to treat as a reason not to fetch at all.
+           */}
+          {onScreen && preload.length > 0 && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"
+            >
+              {preload.map((ahead) => {
+                const src = ahead.fullUrl ?? ahead.previewUrl;
+                return src ? (
+                  <Photo
+                    key={ahead.id}
+                    src={src}
+                    alt=""
+                    width={ahead.width ?? 1200}
+                    height={ahead.height ?? 900}
+                    sizes={VIEW_SIZES}
+                    // Eager, or an image nowhere near the viewport is never
+                    // fetched at all - but behind everything the page still
+                    // wants, this photograph included.
+                    loading="eager"
+                    fetchPriority="low"
+                  />
+                ) : null;
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

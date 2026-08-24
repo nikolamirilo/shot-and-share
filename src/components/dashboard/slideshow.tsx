@@ -41,23 +41,29 @@ const IDLE_MS = 3_000;
 const MAX_BACKFILL_PAGES = 200;
 
 /**
- * What the projector draws for one item.
+ * What the projector draws for one item, or nothing at all.
  *
- * The full copy rather than `previewUrl`: that is a 640px thumbnail cut for
- * grid tiles (see THUMB_MAX_EDGE) and it is visibly soft blown up across a
- * 1080p wall. A clip has no full copy and falls back to its poster frame.
+ * The full-size copy and nothing else - deliberately not `previewUrl`, which
+ * falls back through a 640px thumbnail cut for grid tiles (THUMB_MAX_EDGE) and,
+ * for a clip, a poster frame the phone made at around 55 KB. Either one blown
+ * up across a 1080p wall is the soft slide in a set of sharp ones, and next to
+ * a 3000px photograph the difference is the width of the room.
+ *
+ * So a clip is not a slide. There is no playing it either: the stored object is
+ * the raw recording off the phone until the transcode worker has been over it,
+ * which is tens of megabytes of HEVC that a laptop browser will not decode.
  */
 function frameUrl(item: MediaView): string | null {
-  return item.fullUrl ?? item.previewUrl;
+  return item.fullUrl;
 }
 
 /**
  * Only what can actually be drawn.
  *
- * A photo still waiting on the worker - a HEIC from desktop Chrome, a clip
- * with no poster yet - has no URL at all, and left in the list it is seven
- * seconds of black screen in the middle of the party. It comes back on a later
- * poll with its rendition attached.
+ * A photo still waiting on the worker - a HEIC from desktop Chrome - has no
+ * full copy yet, and left in the list it is seven seconds of black screen in
+ * the middle of the party. It comes back on a later poll with its rendition
+ * attached: `newestRef` and `seenRef` both step around it rather than over it.
  */
 function showable(items: MediaView[]): MediaView[] {
   return items.filter((item) => frameUrl(item) !== null);
@@ -119,6 +125,9 @@ export function Slideshow({
   const [paused, setPaused] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [idle, setIdle] = useState(false);
+  /* Still fetching the earlier half of the evening. The show waits for it
+     rather than advancing off the first slide and being shifted past it. */
+  const [backfilling, setBackfilling] = useState(olderThan !== null);
 
   /*
    * Both seeded from the first render's list - `useRef` ignores every later
@@ -207,29 +216,35 @@ export function Slideshow({
    * photographs is two requests, and the browser holds a list of URLs - only
    * three of them are ever in the DOM.
    *
-   * Each page goes on the front, so the wall stays in order, and the index
-   * moves with it: whoever is watching should not have the photograph swapped
-   * out from under them because a page landed.
+   * Each page goes on the front, so the wall stays in order. The index moves
+   * with it - whoever is watching should not have the photograph swapped out
+   * from under them - with one exception: a show still sitting on its first
+   * slide stays on the first slide. Shifting there is how the evening opened on
+   * photograph 223 of 282, which is not where an evening opens.
    */
   useEffect(() => {
     if (!olderThan) return;
     let live = true;
 
     (async () => {
-      let cursor: string | null = olderThan;
-      for (let page = 0; live && cursor && page < MAX_BACKFILL_PAGES; page++) {
-        const url = new URL(
-          `/api/events/${eventId}/latest`,
-          window.location.origin,
-        );
-        url.searchParams.set("before", cursor);
+      try {
+        let cursor: string | null = olderThan;
+        let page = 0;
+        while (live && cursor && page++ < MAX_BACKFILL_PAGES) {
+          const url = new URL(
+            `/api/events/${eventId}/latest`,
+            window.location.origin,
+          );
+          url.searchParams.set("before", cursor);
 
-        try {
           const res = await fetch(url);
           if (!res.ok) return;
           const body = await res.json();
-          // The cursor counts rows, not slides: it has to step over a
-          // photograph that is still converting rather than stall on it.
+          // Checked again on the far side of the request: this walk outlives a
+          // page the host has already navigated away from.
+          if (!live) return;
+          // The cursor counts rows, not slides: it has to step over a clip or a
+          // photograph still converting rather than stall on it.
           cursor = body.nextCursor ?? null;
 
           const older = showable(body.items ?? []).filter(
@@ -240,11 +255,12 @@ export function Slideshow({
           for (const item of older) seenRef.current.add(item.id);
           const earlier = older.reverse();
           setItems((prev) => [...earlier, ...prev]);
-          setIndex((i) => i + earlier.length);
-        } catch {
-          // The wall keeps running on what it already has.
-          return;
+          setIndex((i) => (i === 0 ? 0 : i + earlier.length));
         }
+      } catch {
+        // The wall keeps running on what it already has.
+      } finally {
+        if (live) setBackfilling(false);
       }
     })();
 
@@ -279,17 +295,21 @@ export function Slideshow({
    *
    * `tooFew` rather than the length: below two slides there is nothing to
    * advance to, and this is what starts the show when the second one lands.
+   *
+   * Nothing advances until the backfill has finished, so the wall opens on the
+   * first photograph of the evening rather than seven seconds into the last
+   * hour of it.
    */
   const currentId = items[index]?.id;
   const tooFew = items.length < 2;
   useEffect(() => {
-    if (paused || tooFew) return;
+    if (paused || tooFew || backfilling) return;
     const timer = setTimeout(
       () => setIndex((i) => (i + 1) % countRef.current),
       ADVANCE_MS,
     );
     return () => clearTimeout(timer);
-  }, [paused, currentId, tooFew]);
+  }, [paused, currentId, tooFew, backfilling]);
 
   const wake = useCallback(() => {
     setIdle(false);

@@ -88,6 +88,39 @@ export function neighbours(
   };
 }
 
+/**
+ * How many photographs after the open one are fetched before anybody asks for
+ * them.
+ *
+ * Five is about as far ahead as a guest gets while one full-size copy is still
+ * arriving. Further than that and a wall being looked at slowly spends
+ * optimiser transformations - which are metered - on photographs nobody opens.
+ */
+export const PRELOAD_AHEAD = 5;
+
+/**
+ * The next few photographs, in order, for the lightbox to fetch quietly behind
+ * the one on screen.
+ *
+ * Photographs only. A clip plays from a short-lived signed URL that is resolved
+ * when it is opened, so there is nothing about it worth warming up early - and
+ * a video pulled down in the background would take the whole of a venue's wifi
+ * with it.
+ *
+ * Like `neighbours`, this works on the loaded list: it runs out at the end of
+ * what the wall has, not at the end of the evening.
+ */
+export function upcoming(
+  items: readonly MediaView[],
+  currentId: string,
+): MediaView[] {
+  const at = items.findIndex((item) => item.id === currentId);
+  if (at === -1) return [];
+  return items
+    .slice(at + 1, at + 1 + PRELOAD_AHEAD)
+    .filter((item) => item.kind !== "video");
+}
+
 /* --- keeping a wall up to date -------------------------------------------- */
 
 /**

@@ -116,11 +116,48 @@ describe("the lightbox's controls", () => {
     expect(markup()).not.toContain("pb-12");
   });
 
+  it("keep the photograph as the first image on the page", () => {
+    // The ones fetched ahead are drawn last, behind the controls, so nothing
+    // about this dialog reads the wrong <img> as the picture.
+    const html = markup({ preload: [{ ...PHOTO, id: "photo-2" }] });
+    const first = html.indexOf("<img");
+    expect(html.slice(first, first + 400)).toContain("max-h-full");
+  });
+
   it("drop the arrows when there is nowhere to step", () => {
     const alone = markup({ prevId: null, nextId: null, total: 1, position: 1 });
     expect(alone).not.toContain('aria-label="Previous photo"');
     expect(alone).not.toContain('aria-label="Next photo"');
     // And the counter goes with them: "1 of 1" is not information.
     expect(alone).not.toContain("1 of 1");
+  });
+});
+
+/**
+ * Stepping forward used to mean waiting: the full-size copy is resized by the
+ * optimiser on first request, and nobody had asked for it until the guest
+ * pressed the arrow. So the ones after this are asked for while this one is
+ * being looked at.
+ */
+describe("the photographs fetched ahead", () => {
+  const ahead = [
+    { ...PHOTO, id: "photo-2" },
+    { ...PHOTO, id: "photo-3" },
+  ];
+
+  it("wait until the photograph on screen has arrived", () => {
+    /*
+     * A first render is a photograph that has not landed yet, and that is the
+     * whole point of the wait: six requests at once on a venue's wifi means
+     * the picture somebody is actually waiting for arrives sixth.
+     */
+    const html = markup({ preload: ahead });
+    expect(html.match(/<img/g)).toHaveLength(1);
+  });
+
+  it("are not something the lightbox needs to be given", () => {
+    // The host's own console opens photographs through this too, and gets the
+    // same dialog it always had.
+    expect(() => markup({ preload: undefined })).not.toThrow();
   });
 });

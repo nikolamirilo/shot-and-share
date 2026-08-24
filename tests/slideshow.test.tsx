@@ -51,6 +51,14 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => store.client,
 }));
 
+vi.mock("@/lib/host", () => ({
+  requireOwnedEvent: vi.fn(async () => EVENT),
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: vi.fn(async () => store.client),
+}));
+
 vi.mock("@/lib/storage", () => ({
   storage: {
     publicUrl: (key: string) => `https://cdn.example/${key}`,
@@ -64,6 +72,7 @@ const { default: SlideshowPage } = await import(
   "@/app/dashboard/(projector)/events/[id]/slideshow/page"
 );
 const { listGuestMediaSince } = await import("@/lib/db/media-repo");
+const { GET } = await import("@/app/api/events/[id]/latest/route");
 
 /** The URL the page will resolve a stored object to, given the mock above. */
 function stored(id: string) {
@@ -95,7 +104,8 @@ function push(id: string, reviewState: string, minute: number) {
       reviewState === "held" ? [{ name: "Explicit", confidence: 92 }] : null,
     report_count: reviewState === "reported" ? 1 : 0,
     status: "ready",
-    created_at: `2026-08-01T00:${String(minute).padStart(2, "0")}:00.000Z`,
+    // Date.UTC rather than a template, so a test can push past sixty of them.
+    created_at: new Date(Date.UTC(2026, 7, 1, 0, minute)).toISOString(),
   });
 }
 
@@ -128,13 +138,14 @@ function photo(over: Partial<MediaView> & { id: string }): MediaView {
   };
 }
 
-function show(initial: MediaView[]) {
+function show(initial: MediaView[], olderThan: string | null = null) {
   return renderToStaticMarkup(
     <Slideshow
       eventId={EVENT.id}
       eventName={EVENT.name}
       backHref={`/dashboard/events/${EVENT.id}`}
       initial={initial}
+      olderThan={olderThan}
     />,
   );
 }
@@ -199,9 +210,29 @@ describe("each slide", () => {
     expect(shows(html, "https://cdn.example/thumb/a.webp")).toBe(false);
   });
 
-  /** A clip has no full copy. Its poster frame is the slide. */
-  it("falls back to the poster frame for a clip", () => {
+  /*
+   * The fallback that made a wall of sharp photographs go soft every fourth
+   * slide: `previewUrl` resolves to the thumbnail whenever the full copy is
+   * missing, so anything not yet converted was quietly served at 640px.
+   */
+  it("is nothing at all rather than a thumbnail standing in for one", () => {
     const html = show([
+      photo({ id: "ready", fullUrl: "https://cdn.example/full/ready.jpg" }),
+      photo({ id: "heic", previewUrl: "https://cdn.example/thumb/heic.webp" }),
+    ]);
+
+    expect(shows(html, "https://cdn.example/thumb/heic.webp")).toBe(false);
+    expect(html).toContain("1 / 1");
+  });
+
+  /*
+   * A clip has no full copy - only a poster frame the phone made, around 55 KB,
+   * which is the soft slide in a set of sharp ones. There is nothing to play
+   * either until the transcode worker has been over it. So it is not a slide.
+   */
+  it("is never a clip's poster frame", () => {
+    const html = show([
+      photo({ id: "ready", fullUrl: "https://cdn.example/full/ready.jpg" }),
       photo({
         id: "clip",
         kind: "video",
@@ -210,7 +241,8 @@ describe("each slide", () => {
       }),
     ]);
 
-    expect(shows(html, "https://cdn.example/poster/clip.webp")).toBe(true);
+    expect(shows(html, "https://cdn.example/poster/clip.webp")).toBe(false);
+    expect(html).toContain("1 / 1");
   });
 
   it("is never a photograph that has nothing to draw yet", () => {
@@ -223,6 +255,69 @@ describe("each slide", () => {
     expect((html.match(/<img/g) ?? []).length).toBe(1);
     // And it is not counted either, or the wall claims a photo it cannot show.
     expect(html).toContain("1 / 1");
+  });
+});
+
+/**
+ * The seed is a page, not the event, and the browser fetches the rest. Both
+ * halves of that had to be got right: a wall holding only the newest sixty is a
+ * slideshow of the last ten minutes, and one that keeps the seed under the
+ * viewer's eye while the earlier photographs land in front of it opens the
+ * evening on photograph 223 of 282.
+ */
+describe("the rest of the evening", () => {
+  it("opens on the first photograph, not part-way through", () => {
+    const html = show([
+      photo({ id: "a", fullUrl: "https://cdn.example/full/a.jpg" }),
+      photo({ id: "b", fullUrl: "https://cdn.example/full/b.jpg" }),
+      photo({ id: "c", fullUrl: "https://cdn.example/full/c.jpg" }),
+    ]);
+
+    expect(html).toContain("1 / 3");
+  });
+
+  it("hands the wall a cursor when the seed does not cover the event", async () => {
+    // One more than the seed, so there is an earlier page to go and get.
+    for (let i = 0; i <= 60; i++) push(`p-${i}`, "approved", i);
+
+    const element = await SlideshowPage({
+      params: Promise.resolve({ id: EVENT.id }),
+    });
+
+    // The oldest of the sixty seeded, which is where the browser picks up.
+    expect(element.props.olderThan).toBe("2026-08-01T00:01:00.000Z");
+  });
+
+  it("hands over nothing when the seed already is the event", async () => {
+    push("only", "approved", 1);
+
+    const element = await SlideshowPage({
+      params: Promise.resolve({ id: EVENT.id }),
+    });
+
+    expect(element.props.olderThan).toBeNull();
+  });
+
+  it("pages backwards through approved photographs only", async () => {
+    push("a", "approved", 1);
+    push("held-b", "held", 2);
+    push("c", "approved", 3);
+
+    const res = await GET(
+      new Request(
+        `http://localhost/api/events/${EVENT.id}/latest?before=2026-08-01T00:03:30.000Z`,
+      ),
+      { params: Promise.resolve({ id: EVENT.id }) },
+    );
+    const body = (await res.json()) as {
+      items: Array<{ id: string }>;
+      nextCursor: string | null;
+    };
+
+    // Newest first off the wire; the wall turns each page round itself.
+    expect(body.items.map((item) => item.id)).toEqual(["c", "a"]);
+    // A short page is the end of the event, so there is nowhere further back.
+    expect(body.nextCursor).toBeNull();
   });
 });
 
