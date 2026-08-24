@@ -1,10 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback } from "react";
 
 import { PENDING_SURFACE } from "@/components/gallery/skeleton";
-import { cx } from "@/components/ui";
+import { Photo, cx } from "@/components/ui";
 import { aspectRatio } from "@/lib/gallery";
 import type { MediaView } from "@/lib/media-view";
 
@@ -114,7 +113,7 @@ export function Tile({
          * want very different files - and a cache miss now costs 25 KB out of
          * the bucket rather than two megabytes.
          */
-        <Image
+        <Photo
           src={source}
           alt=""
           {...(natural

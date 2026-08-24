@@ -1,11 +1,10 @@
-import Image from "next/image";
 import { Fragment } from "react";
 import {
   MdOutlineAddCircleOutline,
   MdOutlinePhotoLibrary,
 } from "react-icons/md";
 
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, Photo } from "@/components/ui";
 import { HERO } from "@/lib/seo";
 
 /**
@@ -121,7 +120,7 @@ export function HeroVariant2({ signedIn }: { signedIn: boolean }) {
                   className="tile-in relative aspect-square w-1/4 shrink-0 sm:w-1/6 lg:w-1/12"
                   style={{ animationDelay: `${360 + (i * 2 + row) * 26}ms` }}
                 >
-                  <Image
+                  <Photo
                     src={`/hero/variants/${frame}.jpg`}
                     alt=""
                     fill

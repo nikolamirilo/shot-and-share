@@ -1,10 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LogoMark } from "@/components/layout/logo";
-import { Hole } from "@/components/ui";
+import { Hole, Photo } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 import { createClient } from "@/lib/supabase/browser";
 
@@ -135,7 +134,7 @@ export function Slideshow({
                 {item.previewUrl && (
                   // Resized to the screen rather than the stored 2560px: a
                   // projector is 1080p and the optimiser caches the result.
-                  <Image
+                  <Photo
                     src={item.previewUrl}
                     alt=""
                     width={item.width ?? 1600}

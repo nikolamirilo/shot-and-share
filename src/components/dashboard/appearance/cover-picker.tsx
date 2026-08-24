@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { MdOutlineImage } from "react-icons/md";
 
 import { CoverDialog } from "@/components/dashboard/appearance/cover-dialog";
 import { useCoverPhotos } from "@/components/dashboard/appearance/use-cover-photos";
 import { useCoverUpload } from "@/components/dashboard/appearance/use-cover-upload";
-import { Button } from "@/components/ui";
+import { Button, Photo } from "@/components/ui";
 import { HIDDEN_FILE_INPUT, useAccept, useFilePicker } from "@/lib/client/picker";
 import { pluralise } from "@/lib/format";
 import type { MediaView } from "@/lib/media-view";
@@ -92,7 +91,7 @@ export function CoverPicker({
       <div className="flex flex-wrap items-center gap-3">
         <span className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-linen shadow-md">
           {selectedUrl ? (
-            <Image
+            <Photo
               src={selectedUrl}
               alt=""
               width={128}

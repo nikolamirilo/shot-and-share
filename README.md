@@ -270,6 +270,29 @@ What is stored is full resolution for any screen and for printing up to A4
 lightbox all read the same file. A video keeps a second small object for its
 poster frame, because a clip has no still of itself to show in a grid.
 
+### When the image optimiser runs out
+
+Photographs are rendered through `<Photo>` (`components/ui/photo.tsx`) rather
+than `next/image` directly, because Next's optimiser is metered on Vercel: one
+photograph at one width is one transformation, and a plan has a fixed number of
+them per month. Past that ceiling `/_next/image` answers with an error, and on
+a wall of fifty photographs that is fifty broken frames at once - on a link a
+host has already handed round a wedding.
+
+So the optimiser is treated as an enhancement that can go away.
+
+A photograph that fails to load through it is asked for again straight from the
+bucket. That costs almost nothing on the wall: what a tile loads is the stored
+thumbnail, already a ~25 KB WebP cut for roughly this size, so the fallback is
+the same picture unresized rather than a phone pulling two megabytes. Once
+three photographs have had to fall back, the page stops asking the optimiser
+for anything - three failures is not one deleted object, it is the service, and
+there is no sense fetching every remaining tile twice to find that out again.
+
+`NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION=1` does the same thing deliberately and
+for the whole deployment, including the server render. It is the switch to
+reach for on the warning email rather than after the quota is gone.
+
 ### The custom event page
 
 What a guest sees when they scan the code. Paid plans only - it is the "custom

@@ -1,10 +1,9 @@
-import Image from "next/image";
 import {
   MdOutlineAddCircleOutline,
   MdOutlinePhotoLibrary,
 } from "react-icons/md";
 
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, Photo } from "@/components/ui";
 import { TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
@@ -97,7 +96,7 @@ export function HeroVariant3({ signedIn }: { signedIn: boolean }) {
               } as React.CSSProperties}
             >
               <div className="relative aspect-4/5 overflow-hidden rounded-xl">
-                <Image
+                <Photo
                   src={`/hero/variants/${card.frame}.jpg`}
                   alt=""
                   fill

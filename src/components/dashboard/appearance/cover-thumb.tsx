@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
-
-import { cx } from "@/components/ui";
+import { Photo, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
 /**
@@ -61,7 +59,7 @@ export function CoverThumb({
         // photo - a phone camera's several megabytes - and a grid of a hundred
         // of them at full size is the whole gallery pulled down to fill tiles a
         // couple of hundred pixels wide.
-        <Image
+        <Photo
           src={item.previewUrl}
           alt=""
           width={320}
