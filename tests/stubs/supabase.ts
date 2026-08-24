@@ -51,6 +51,12 @@ class Query {
     return this;
   }
 
+  /** The slideshow's cursor: everything that arrived after the last frame. */
+  gt(column: string, value: string) {
+    this.filters.push((row) => String(row[column]) > value);
+    return this;
+  }
+
   /** Only the `not(column, "is", null)` form the retention job uses. */
   not(column: string, _operator: string, value: unknown) {
     this.filters.push((row) => row[column] !== value);

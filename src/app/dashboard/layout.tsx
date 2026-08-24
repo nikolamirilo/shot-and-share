@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { MdAdd } from "react-icons/md";
 
-import { AccountMenu } from "@/components/layout/account-menu";
-import { Wordmark } from "@/components/layout/logo";
-import { HeaderShell } from "@/components/layout/site-header";
-import { ButtonLink } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
 
 /**
  * Declared once here so it covers every page in the segment, including ones
@@ -19,75 +12,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default async function DashboardLayout({
+/**
+ * Nothing but the segment-wide rules: no deployment without Supabase has a
+ * dashboard to show, and nothing under here is for a search engine.
+ *
+ * The header, the footer and the sign-in check live one level down in
+ * `(shell)`, because the slideshow is in this segment and must not have them.
+ * It is projected on a wall: a navigation bar across the top of somebody's
+ * wedding is the whole reason the split exists.
+ */
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   if (!hasSupabase) redirect("/login");
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const meta = user.user_metadata ?? {};
-  const name = (meta.full_name as string | undefined) ?? null;
-  /* Google sends `picture`; most other providers and our own profiles trigger
-     write `avatar_url`. Either is the same photograph. */
-  const avatarUrl =
-    (meta.avatar_url as string | undefined) ??
-    (meta.picture as string | undefined) ??
-    null;
-
-  return (
-    <div className="flex min-h-dvh flex-col bg-linen">
-      {/* About 300 usable pixels on a phone: the name and sign-out both live
-          behind one 40px badge, and the wordmark gives up its word below xs so
-          the row never wraps.
-
-          The mark goes home, not to the dashboard - every other site has taught
-          people it is the way out. "My events" carries them back in, from xs up.
-
-          The card is the marketing header's, because signing in is not a change
-          of product. It does not follow the page down: the tab rails inside
-          pin themselves to the viewport and would run underneath it. */}
-      <HeaderShell className="relative z-10">
-        <Link href="/" aria-label="Shot & Share, home" className="shrink-0">
-          <Wordmark labelClassName="hidden xs:inline" />
-        </Link>
-
-        <div className="flex items-center gap-3 sm:gap-4">
-          <Link
-            href="/dashboard"
-            className="hidden whitespace-nowrap text-[0.9375rem] font-semibold hover:underline xs:inline"
-          >
-            My events
-          </Link>
-          <ButtonLink
-            href="/dashboard/events/new"
-            size="sm"
-            className="whitespace-nowrap"
-          >
-            <MdAdd aria-hidden className="shrink-0 text-[1.25em]" />
-            New event
-          </ButtonLink>
-          <AccountMenu
-            name={name}
-            email={user.email ?? null}
-            avatarUrl={avatarUrl}
-          />
-        </div>
-      </HeaderShell>
-
-      <main className="flex-1">{children}</main>
-
-      <footer className="bg-linen">
-        <p className="mx-auto max-w-6xl px-4 py-5 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist sm:px-5">
-          Shot & Share · every photo from every guest
-        </p>
-      </footer>
-    </div>
-  );
+  return <>{children}</>;
 }
