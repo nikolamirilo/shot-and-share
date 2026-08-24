@@ -35,9 +35,13 @@ export async function POST(request: Request) {
   return handle(async () => {
     const body = await parseBody(request, bodySchema);
 
+    // Per device, not per venue: the fingerprint is what separates two guests
+    // sharing the room's wifi, and one guest's camera roll must not use up the
+    // next guest's allowance. The address stays in the key so a device that
+    // invents a new fingerprint per request is still bounded by the quota.
     enforceRateLimit(
       LIMITS.presign,
-      `presign:${body.token.slice(0, 12)}:${clientIp(request.headers)}`,
+      `presign:${body.token.slice(0, 12)}:${clientIp(request.headers)}:${body.fingerprint}`,
       "Too many uploads at once. Wait a moment and try again.",
     );
 

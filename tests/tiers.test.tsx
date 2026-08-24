@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   GB,
   KEEP_FOREVER,
-  MAX_FILES_PER_PICK,
+  BIG_PICK,
   MB,
   TIERS,
   TIER_ORDER,
@@ -44,14 +44,14 @@ describe("tiers", () => {
     expect(TIERS.pro.maxFileBytes).toBe(500 * MB);
   });
 
-  it("lets a guest pick more at a time on a bigger plan", () => {
-    expect(TIERS.free.filesPerPick).toBe(20);
-    expect(TIERS.plus.filesPerPick).toBe(50);
-    expect(TIERS.pro.filesPerPick).toBe(100);
-  });
-
-  it("knows the largest pick any plan allows, for sizing the rate limit", () => {
-    expect(MAX_FILES_PER_PICK).toBe(100);
+  it("puts no cap on how many files one pick may hold", () => {
+    // The plans differ in room and in what one file may weigh, and in nothing
+    // else about picking. A guest emptying a camera roll hands over the lot.
+    for (const tier of [TIERS.free, TIERS.plus, TIERS.pro]) {
+      expect(tier).not.toHaveProperty("filesPerPick");
+    }
+    // Kept only to size the presign rate limit, which is one call per file.
+    expect(BIG_PICK).toBeGreaterThanOrEqual(300);
   });
 
   it("stops the top tier short of forever, so the add-on has a job", () => {

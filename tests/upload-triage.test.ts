@@ -22,7 +22,7 @@ function fake(name: string, bytes: number, type = "image/jpeg"): File {
   return file;
 }
 
-const LIMITS = { maxFileBytes: 200 * MB, room: 10_000 * MB, maxCount: 100 };
+const LIMITS = { maxFileBytes: 200 * MB, room: 10_000 * MB };
 
 describe("triage", () => {
   it("takes everything when everything fits", () => {
@@ -30,7 +30,6 @@ describe("triage", () => {
     const result = triage(files, LIMITS);
     expect(result.accepted).toEqual(files);
     expect(result.skipped).toEqual([]);
-    expect(result.leftOut).toBe(0);
   });
 
   it("skips a file over the size limit and keeps the rest", () => {
@@ -45,14 +44,14 @@ describe("triage", () => {
     expect(result.skipped[0].upgrade).toBeFalsy();
   });
 
-  it("counts files past the per-pick cap as left out, and does not judge them", () => {
-    const files = Array.from({ length: 5 }, (_, i) => fake(`${i}.jpg`, 1 * MB));
-    // The sixth is oversized, but it is past the cap so it is not even looked at.
-    files.push(fake("huge.jpg", 900 * MB));
-    const result = triage(files, { ...LIMITS, maxCount: 3 });
-    expect(result.accepted.map((f) => f.name)).toEqual(["0.jpg", "1.jpg", "2.jpg"]);
+  it("takes as many as the guest picked, however many that is", () => {
+    // There is no cap on the count any more. A guest emptying a camera roll
+    // hands over the lot, and only the two limits that cost money apply: the
+    // per-file size, and the room left at the event.
+    const files = Array.from({ length: 250 }, (_, i) => fake(`${i}.jpg`, 1 * MB));
+    const result = triage(files, LIMITS);
+    expect(result.accepted).toHaveLength(250);
     expect(result.skipped).toEqual([]);
-    expect(result.leftOut).toBe(3);
   });
 
   it("skips what will not fit in the room left, but keeps smaller files after it", () => {
@@ -88,25 +87,29 @@ describe("triage", () => {
   });
 });
 
-describe("the per-pick cap", () => {
-  it("follows the plan, and the hint under the button says so", async () => {
+describe("what the guest is told the limits are", () => {
+  it("names the per-file size, which is the only limit on one file", async () => {
     const { uploadWording } = await import("@/lib/media");
     const { TIERS } = await import("@/lib/tiers");
-    expect(uploadWording(TIERS.free).hint).toContain("Photos, up to 20 at a time");
-    expect(uploadWording(TIERS.plus).hint).toContain(
-      "Photos and video, up to 50 at a time",
+    // No count in the copy any more: there is no count limit to name.
+    expect(uploadWording(TIERS.free).hint).toBe("Photos, up to 50 MB a file.");
+    expect(uploadWording(TIERS.plus).hint).toBe(
+      "Photos and video, up to 200 MB a file.",
     );
-    expect(uploadWording(TIERS.pro).hint).toContain(
-      "Photos and video, up to 100 at a time",
+    expect(uploadWording(TIERS.pro).hint).toBe(
+      "Photos and video, up to 500 MB a file.",
     );
+    for (const tier of [TIERS.free, TIERS.plus, TIERS.pro]) {
+      expect(uploadWording(tier).hint).not.toContain("at a time");
+    }
   });
 
-  it("is covered by the presign rate limit at least four times over in a minute", async () => {
-    // One presign per file. A guest who picks the maximum, then does it again
-    // straight away, must not be cut off mid-batch by the app's own limiter.
+  it("covers a big pick four times over in a minute", async () => {
+    // One presign per file, and no cap on how many files a pick may hold. The
+    // limiter must not be what cuts a guest off mid-camera-roll.
     const { LIMITS } = await import("@/lib/ratelimit");
-    const { MAX_FILES_PER_PICK } = await import("@/lib/tiers");
+    const { BIG_PICK } = await import("@/lib/tiers");
     expect(LIMITS.presign.window).toBe(60);
-    expect(LIMITS.presign.limit).toBeGreaterThanOrEqual(4 * MAX_FILES_PER_PICK);
+    expect(LIMITS.presign.limit).toBeGreaterThanOrEqual(4 * BIG_PICK);
   });
 });

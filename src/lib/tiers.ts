@@ -84,14 +84,6 @@ export interface Tier {
    * plans differ in how long a clip they take, not in what a photo may be.
    */
   maxFileBytes: number;
-  /**
-   * How many files a guest may pick in one tap of the button.
-   *
-   * Anything past it is left out with a note saying so, never dropped
-   * silently. Bigger plans take more, because a wedding guest emptying a
-   * camera roll should not be doing it twenty at a time.
-   */
-  filesPerPick: number;
   bulkZip: boolean;
   cleanQr: boolean;
   brandedQr: boolean;
@@ -114,7 +106,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     retentionDays: 30,
     video: false,
     maxFileBytes: 50 * MB,
-    filesPerPick: 20,
     bulkZip: true,
     cleanQr: true,
     brandedQr: false,
@@ -134,7 +125,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     retentionDays: 183,
     video: true,
     maxFileBytes: 200 * MB,
-    filesPerPick: 50,
     bulkZip: true,
     cleanQr: true,
     brandedQr: false,
@@ -154,7 +144,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     retentionDays: 365,
     video: true,
     maxFileBytes: 500 * MB,
-    filesPerPick: 100,
     bulkZip: true,
     cleanQr: true,
     brandedQr: true,
@@ -230,12 +219,14 @@ export const PURCHASABLE_IDS = [
 export const TIER_ORDER: PlanKey[] = ["free", "plus", "pro"];
 
 /**
- * The largest pick any plan allows. Only the presign rate limit needs it -
- * see `LIMITS.presign` - and a test holds the two together.
+ * What one guest emptying a camera roll in a single tap plausibly comes to.
+ *
+ * Not a cap - there is no cap on how many files a guest may pick, only on how
+ * big each one may be and how much room the event has left. It exists solely
+ * to size the presign rate limit, which is one request per file: see
+ * `LIMITS.presign`, and the test that holds the two together.
  */
-export const MAX_FILES_PER_PICK = Math.max(
-  ...TIER_ORDER.map((key) => TIERS[key].filesPerPick),
-);
+export const BIG_PICK = 300;
 
 /** Variant id back to the plan it pays for. Built once, not searched per call. */
 const BY_ID = new Map<string, Tier>(

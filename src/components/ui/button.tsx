@@ -73,6 +73,46 @@ export function Button({
   );
 }
 
+
+/**
+ * A button that is really a `<label>`, so a tap lands on the file input it
+ * names rather than on script that opens one.
+ *
+ * This exists for one reason: on some iOS builds a file picker opened by
+ * `input.click()` comes up without multi-select, while the same input opened by
+ * tapping a label attached to it comes up with it. A label is also the only
+ * form of "open the picker" that needs no JavaScript at all, which makes it the
+ * most reliable thing on the guest page.
+ *
+ * `disabled` is not an attribute a label has, so it is drawn instead: dimmed
+ * and taken out of the way of taps.
+ */
+export function ButtonLabel({
+  variant = "primary",
+  size = "md",
+  className,
+  disabled,
+  ...props
+}: ComponentProps<"label"> & {
+  variant?: Variant;
+  size?: Size;
+  disabled?: boolean;
+}) {
+  return (
+    <label
+      className={cx(
+        BASE,
+        VARIANTS[variant],
+        variant === "ghost" ? "min-h-10 px-1 py-2" : SIZES[size],
+        "cursor-pointer",
+        disabled && "pointer-events-none opacity-45",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 export function ButtonLink({
   variant = "primary",
   size = "md",
