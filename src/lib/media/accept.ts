@@ -72,6 +72,56 @@ export const ACCEPT_ATTRIBUTE_ALL = [
   ...VIDEO_EXT,
 ].join(",");
 
+/**
+ * The same two lists, cut down to what Safari's picker can act on.
+ *
+ * Recent iOS hands the accept list to the system photo picker, which wants
+ * types it can resolve. Anything it cannot - a bare extension like `.heic`, or
+ * a type it has no mapping for - is not ignored the way older versions ignored
+ * it: the sheet still opens and still shows the camera roll, but the button
+ * that confirms the selection does nothing when it is tapped. A guest sees
+ * their photos, taps them, taps Add, and lands back on the page with nothing
+ * happening.
+ *
+ * Two wildcards is all Safari needs, and the two of them cover every file this
+ * product takes. The long list stays for the browsers that use it properly.
+ */
+export const SAFARI_ACCEPT_PHOTO = "image/*";
+export const SAFARI_ACCEPT_ALL = "image/*,video/*";
+
+/**
+ * Safari, on any device - the iPad reports itself as a Mac, and desktop Safari
+ * shares the picker code that iOS uses.
+ *
+ * Chrome and Edge put "Safari" in their own user agent strings, so they have to
+ * be ruled out by name. Deliberately not a feature test: what is being detected
+ * is how a native sheet reads an attribute, which nothing in the page can see.
+ */
+export function isSafari(ua: string | undefined | null): boolean {
+  if (!ua) return false;
+  if (/CriOS|FxiOS|EdgiOS|OPiOS|Chrome\/|Chromium|Edg\/|OPR\//.test(ua)) {
+    return false;
+  }
+  return /Safari\//.test(ua) || /iPhone|iPad|iPod/.test(ua);
+}
+
+/**
+ * What to put on the file input, for this browser and this plan.
+ *
+ * Kept as one pure function of the user agent so the choice is testable
+ * without a browser, and so both pickers in the product make it the same way.
+ */
+export function acceptAttribute({
+  video,
+  ua,
+}: {
+  video: boolean;
+  ua?: string | null;
+}): string {
+  if (isSafari(ua)) return video ? SAFARI_ACCEPT_ALL : SAFARI_ACCEPT_PHOTO;
+  return video ? ACCEPT_ATTRIBUTE_ALL : ACCEPT_ATTRIBUTE_PHOTO;
+}
+
 export function classify(
   mime: string,
 ): { kind: MediaKind; ext: string } | null {

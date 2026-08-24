@@ -1,15 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { MdOutlineImage } from "react-icons/md";
 
 import { CoverDialog } from "@/components/dashboard/appearance/cover-dialog";
 import { useCoverPhotos } from "@/components/dashboard/appearance/use-cover-photos";
 import { useCoverUpload } from "@/components/dashboard/appearance/use-cover-upload";
 import { Button } from "@/components/ui";
+import { HIDDEN_FILE_INPUT, useAccept, useFilePicker } from "@/lib/client/picker";
 import { pluralise } from "@/lib/format";
-import { ACCEPT_ATTRIBUTE_PHOTO } from "@/lib/media";
 import type { MediaView } from "@/lib/media-view";
 
 /**
@@ -41,8 +41,8 @@ export function CoverPicker({
   maxFileBytes: number;
   remainingBytes: number;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
+  const accept = useAccept(false);
 
   const browse = useCoverPhotos(eventId, firstPage, photoCount);
 
@@ -65,6 +65,13 @@ export function CoverPicker({
     },
   });
 
+  // Same wiring as the guest page, for the same reason: the picker is a native
+  // sheet, and what it hands back has to be caught however it arrives.
+  const picker = useFilePicker((files) => {
+    const file = files[0];
+    if (file) void uploader.upload(file);
+  });
+
   const error = uploader.error ?? browse.error;
 
   return (
@@ -73,17 +80,13 @@ export function CoverPicker({
           and the dialog closes on a successful upload - an input inside it
           would be gone before the handler had finished tidying up. */}
       <input
-        ref={inputRef}
+        ref={picker.inputRef}
         type="file"
-        accept={ACCEPT_ATTRIBUTE_PHOTO}
+        accept={accept}
         id="cover-file"
-        className="sr-only"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          await uploader.upload(file);
-          if (inputRef.current) inputRef.current.value = "";
-        }}
+        className={HIDDEN_FILE_INPUT}
+        tabIndex={-1}
+        aria-hidden
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -145,7 +148,7 @@ export function CoverPicker({
           onChoose={choose}
           onClose={() => setOpen(false)}
           onLoadMore={() => void browse.loadMore()}
-          onPickFile={() => inputRef.current?.click()}
+          onPickFile={picker.open}
           onRemove={(item) => void uploader.remove(item)}
         />
       )}
