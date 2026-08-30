@@ -53,25 +53,30 @@ export function screenableKey(row: {
 /**
  * What state a newly arrived upload should land in.
  *
- * Two things decide it, in this order:
+ * Three things decide it, in this order:
  *
- *   1. The host's switch. An event set to hold everything holds everything, and
- *      the screening still runs, because a host facing four hundred photos
- *      wants to know which three to look at first.
- *   2. The automated check. Anything it flags is held.
+ *   1. The host's scanning switch. Off - the default - and no photograph is
+ *      sent to the provider at all. Not a filter applied to the verdict: the
+ *      call is never made, which is the whole point of the setting.
+ *   2. The host's approval switch. An event set to hold everything holds
+ *      everything, and the screening still runs where it is on, because a host
+ *      facing four hundred photos wants to know which three to look at first.
+ *   3. The automated check. Anything it flags is held.
  *
- * A check that could not run - no provider configured, an unscreenable format,
- * AWS having an afternoon - lets the upload through and records that nobody
- * looked. That is the deliberate direction to fail in: an outage must not stop
- * a wedding, and the host controls and the report button are still standing.
+ * A check that could not run - not asked for, no provider configured, an
+ * unscreenable format, AWS having an afternoon - lets the upload through and
+ * records that nobody looked. That is the deliberate direction to fail in: an
+ * outage must not stop a wedding, and the host controls and the report button
+ * are still standing.
  */
 export async function decideReview(args: {
   key: string | null;
   requireApproval: boolean;
+  /** The event's automatic-scan switch. Nothing is screened without it. */
+  autoScan: boolean;
 }): Promise<ReviewColumns> {
-  const verdict: ModerationVerdict | null = args.key
-    ? await screenObject(args.key)
-    : null;
+  const verdict: ModerationVerdict | null =
+    args.autoScan && args.key ? await screenObject(args.key) : null;
 
   const screened =
     verdict !== null &&

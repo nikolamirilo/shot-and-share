@@ -78,6 +78,7 @@ describe("what a verdict does to a row", () => {
     const review = await decideReview({
       key: "owner/event/abc.jpg",
       requireApproval: false,
+      autoScan: true,
     });
 
     expect(review.review_state).toBe("approved");
@@ -97,6 +98,7 @@ describe("what a verdict does to a row", () => {
     const review = await decideReview({
       key: "owner/event/abc.jpg",
       requireApproval: false,
+      autoScan: true,
     });
 
     expect(review.review_state).toBe("held");
@@ -120,11 +122,51 @@ describe("what a verdict does to a row", () => {
     const review = await decideReview({
       key: "owner/event/abc.jpg",
       requireApproval: false,
+      autoScan: true,
     });
 
     expect(review.review_state).toBe("approved");
     expect(review.moderated_at).toBeNull();
     expect(review.moderation_labels).toBeNull();
+  });
+});
+
+describe("the host's automatic-scan switch", () => {
+  it("sends nothing to the provider while it is off", async () => {
+    // The default, and the whole point of the setting: not a verdict that is
+    // ignored afterwards - the call is never made at all.
+    screen.mockResolvedValue({
+      allowed: false,
+      outcome: "flagged",
+      labels: [{ name: "Explicit", confidence: 99 }],
+      provider: "rekognition",
+    });
+
+    const review = await decideReview({
+      key: "owner/event/abc.jpg",
+      requireApproval: false,
+      autoScan: false,
+    });
+
+    expect(screen).not.toHaveBeenCalled();
+    expect(review.review_state).toBe("approved");
+    // Nobody looked, and the row says so rather than recording a pass.
+    expect(review.moderated_at).toBeNull();
+    expect(review.moderation_labels).toBeNull();
+  });
+
+  it("still holds everything when the host asked for that, unscanned", async () => {
+    // The two switches are independent. Approving every photo by hand does not
+    // quietly turn the scanner back on.
+    const review = await decideReview({
+      key: "owner/event/abc.jpg",
+      requireApproval: true,
+      autoScan: false,
+    });
+
+    expect(screen).not.toHaveBeenCalled();
+    expect(review.review_state).toBe("held");
+    expect(review.moderated_at).toBeNull();
   });
 });
 
@@ -140,6 +182,7 @@ describe("the host's hold-everything switch", () => {
     const review = await decideReview({
       key: "owner/event/abc.jpg",
       requireApproval: true,
+      autoScan: true,
     });
 
     expect(review.review_state).toBe("held");

@@ -46,6 +46,15 @@ export interface ConfirmRequest {
    * step with nothing on the other side of it.
    */
   requireApproval?: boolean;
+  /**
+   * The event's automatic-scan switch.
+   *
+   * Passed in for the same reason as the one above, and defaulting to false for
+   * the same reason it is off in the database: nothing is sent to a moderation
+   * provider unless the host asked for it. Covers pass false - a host does not
+   * need their own cover image screened.
+   */
+  autoScan?: boolean;
 }
 
 export type ConfirmResult =
@@ -166,6 +175,7 @@ export async function confirmReservation(
       poster_key: row.poster_key ?? null,
     }),
     requireApproval: request.requireApproval ?? false,
+    autoScan: request.autoScan ?? false,
   });
 
   if (review.review_state === "held") {

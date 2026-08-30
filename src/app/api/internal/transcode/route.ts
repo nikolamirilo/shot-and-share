@@ -255,7 +255,7 @@ export async function POST(request: Request) {
       await storage.remove([media.media_key]);
     }
 
-    await screenLate(media.id, {
+    await screenLate(media.id, media.event_id, {
       moderated_at: media.moderated_at,
       kind: media.kind,
       media_key: replaced ? newKey : media.media_key,
@@ -278,9 +278,15 @@ export async function POST(request: Request) {
  *
  * Only rows nobody has screened. A photograph the host has already looked at
  * and approved must not be pulled back down by a conversion job hours later.
+ *
+ * And only for events that asked to be screened. This is the one moderation
+ * call the upload path does not make, so the event's switch has to be read
+ * here rather than inherited - otherwise every HEIC at every event would still
+ * reach the provider by the back door.
  */
 async function screenLate(
   mediaId: string,
+  eventId: string,
   row: {
     moderated_at: string | null;
     kind: string;
@@ -294,13 +300,23 @@ async function screenLate(
   if (!key) return;
 
   try {
+    const admin = createAdminClient();
+
+    const { data: event } = await admin
+      .from("events")
+      .select("auto_scan")
+      .eq("id", eventId)
+      .maybeSingle();
+
+    if (!event?.auto_scan) return;
+
     /* requireApproval is false on purpose. The event's hold-everything switch
        was already applied when the row was written; asking again here would
        hold a photograph the host has released. */
-    const review = await decideReview({ key, requireApproval: false });
+    const review = await decideReview({ key, requireApproval: false, autoScan: true });
     if (!review.moderated_at) return;
 
-    await createAdminClient()
+    await admin
       .from("media")
       .update(review)
       .eq("id", mediaId)

@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       reason: body.reason,
       log: "confirm",
       requireApproval: event.require_approval,
+      autoScan: event.auto_scan,
     });
 
     /* The guest is told when their photo is waiting on the host. A photo that

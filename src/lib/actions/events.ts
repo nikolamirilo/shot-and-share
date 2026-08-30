@@ -62,6 +62,9 @@ export async function createEvent(
       // approve four hundred wedding photographs one at a time would ruin the
       // product for the people who never think about moderation at all.
       require_approval: false,
+      // Same reasoning, and a stronger version of it: nothing from this event
+      // goes to a moderation provider until its host asks for that.
+      auto_scan: false,
       welcome_message: null,
       cover_media_id: null,
       archive_key: null,
@@ -87,6 +90,7 @@ const settingsSchema = z.object({
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gallery_visible: z.boolean(),
   require_approval: z.boolean(),
+  auto_scan: z.boolean(),
   welcome_message: z.string().trim().max(400).nullable(),
 });
 
@@ -103,6 +107,7 @@ export async function updateEventSettings(
     event_date: formData.get("event_date"),
     gallery_visible: formData.get("gallery_visible") === "on",
     require_approval: formData.get("require_approval") === "on",
+    auto_scan: formData.get("auto_scan") === "on",
     welcome_message: welcome.length > 0 ? welcome : null,
   });
   if (!parsed.success) {
@@ -134,6 +139,7 @@ export async function updateEventSettings(
       event_date: parsed.data.event_date,
       gallery_visible: parsed.data.gallery_visible,
       require_approval: parsed.data.require_approval,
+      auto_scan: parsed.data.auto_scan,
       welcome_message: parsed.data.welcome_message,
       expires_at: expiresAt,
     })

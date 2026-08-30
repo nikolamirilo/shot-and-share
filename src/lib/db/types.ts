@@ -63,6 +63,13 @@ export type EventRow = {
    * Off by default and it has to stay that way - see migration 0018.
    */
   require_approval: boolean;
+  /**
+   * Run the automated content check on each upload as it arrives.
+   * Off by default - see migration 0023. Independent of `require_approval`:
+   * one decides whether anything is screened, the other whether the host sees
+   * everything before their guests do.
+   */
+  auto_scan: boolean;
   gallery_layout: GalleryLayout;
   theme: string;
   theme_custom: unknown;
@@ -243,6 +250,7 @@ export interface Database {
           | "cover_position"
           | "upload_variant"
           | "require_approval"
+          | "auto_scan"
         > &
           Partial<
             Pick<
@@ -257,6 +265,7 @@ export interface Database {
               | "cover_position"
               | "upload_variant"
               | "require_approval"
+              | "auto_scan"
             >
           >
       >;
