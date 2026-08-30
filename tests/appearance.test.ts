@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  COVER_POSITIONS,
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
   DEFAULT_COVER,
@@ -13,8 +14,10 @@ import {
   coercePosition,
   coerceUpload,
   findTheme,
+  joinPosition,
   lightBackground,
   resolveAppearance,
+  splitPosition,
 } from "@/lib/appearance";
 import {
   DEFAULT_FONT_ID,
@@ -204,8 +207,26 @@ describe("where the name sits", () => {
     expect(DEFAULT_POSITION).toBe("bottom-left");
     expect(coercePosition(undefined)).toBe(DEFAULT_POSITION);
     expect(coercePosition("bottom")).toBe(DEFAULT_POSITION);
-    expect(coercePosition("top-right")).toBe(DEFAULT_POSITION);
+    expect(coercePosition("middle")).toBe(DEFAULT_POSITION);
     expect(coercePosition({ id: "centre" })).toBe(DEFAULT_POSITION);
+  });
+
+  it("takes any pairing of a vertical and an alignment", () => {
+    // Nine, not four: the vertical and the alignment are asked separately, so
+    // every combination of them has to survive the round trip.
+    expect(COVER_POSITIONS).toHaveLength(9);
+    for (const position of COVER_POSITIONS) {
+      expect(coercePosition(position.id)).toBe(position.id);
+      const { vertical, horizontal } = splitPosition(position.id);
+      expect(joinPosition(vertical, horizontal)).toBe(position.id);
+    }
+  });
+
+  it("moves the old one-word middle onto the grid", () => {
+    // 'centre' was the middle row when it had one column. A row still holding
+    // it - or a draft in somebody's browser - keeps the page it describes
+    // rather than snapping back to the default.
+    expect(coercePosition("centre")).toBe("middle-centre");
   });
 });
 
@@ -330,7 +351,7 @@ describe("the host's draft of the event page", () => {
   } as unknown as EventRow;
 
   it("reads the position off the row", () => {
-    expect(fromEvent(row).coverPosition).toBe("centre");
+    expect(fromEvent(row).coverPosition).toBe("middle-centre");
     expect(
       fromEvent({ ...row, cover_position: "sideways" } as EventRow)
         .coverPosition,
@@ -338,7 +359,7 @@ describe("the host's draft of the event page", () => {
   });
 
   it("sends the position to the server on save", () => {
-    const settings = { ...fromEvent(row), coverPosition: "top-left" } as const;
-    expect(toFields(settings).cover_position).toBe("top-left");
+    const settings = { ...fromEvent(row), coverPosition: "top-right" } as const;
+    expect(toFields(settings).cover_position).toBe("top-right");
   });
 });
