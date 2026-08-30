@@ -75,15 +75,39 @@ storage cost per wedding.
 
 ### Payments
 
-Leave the Lemon Squeezy variables empty and `ENABLE_MOCK_CHECKOUT=1` gives you a
-local checkout that grants a tier without taking money. It refuses to run in
-production and goes through the same `grantPurchase` function the real webhook
-uses, so it cannot drift from the code that handles actual money.
+Creem is the merchant of record. Leave `CREEM_API_KEY` empty and
+`ENABLE_MOCK_CHECKOUT=1` gives you a local checkout that grants a tier without
+taking money. It refuses to run in production and goes through the same
+`grantPurchase` function the real webhook uses, so it cannot drift from the code
+that handles actual money.
+
+With a key, the key alone decides the environment: one starting `creem_test_`
+talks to the sandbox, anything else charges real cards. Point a webhook at
+`/api/webhooks/creem` and subscribe it to `checkout.completed`, `refund.created`
+and `dispute.created` - a Creem endpoint receives only the events it is
+subscribed to, so an unsubscribed `refund.created` is a refund that never takes
+the plan back. The products must be `tax_mode: inclusive`, because every price
+on the site is quoted inclusive of EU VAT.
+
+The plan an event is on is decided by the Creem product the money was actually
+taken for, never by the metadata on the checkout. Metadata is not ours alone -
+a Creem payment link accepts `?metadata[key]=value` from whoever opens it, and
+the product ids are public - so trusting it would let somebody pay for Plus and
+ask for Pro.
+
+**Cutover order.** `events.tier` stores the provider's own id for the plan, so
+the release and `supabase/migrations/0021` have to land together: between them,
+every paid event holds an id the code cannot resolve and reads as Free. That is
+temporary for quotas and features, which are computed per request, and would be
+permanent for the retention window, which is stored - so `updateEventSettings`
+refuses to recompute an expiry it cannot justify rather than writing Free's 30
+days over somebody's 365. Run the migration immediately after deploying, and
+read its header first - it needs four ids filled in.
 
 ```bash
 npm run dev        # development server
 npm run build      # production build
-npm test           # 125 unit tests
+npm test           # 391 unit tests
 npm run typecheck
 npm run lint
 ```
@@ -98,7 +122,7 @@ npm run lint
 | Styling | Tailwind CSS v4, tokens in `globals.css` |
 | Auth and database | Supabase - Postgres with Row Level Security, email/password and Google sign-in |
 | File storage | S3, with a local filesystem driver for development |
-| Payments | Lemon Squeezy as merchant of record |
+| Payments | Creem as merchant of record |
 | Email | Resend, or stdout when no key is set |
 
 ### Two decisions everything else follows from
@@ -412,17 +436,19 @@ Pro stops at twelve months deliberately. If retention were unlimited, the
 Keep Forever add-on would have no job to do.
 
 **A plan has two identifiers.** `key` - `free`, `plus`, `pro` - is fixed forever
-and is what code says: `TIERS.pro`. `id` is the Lemon Squeezy variant the plan
-is sold under, and is what `events.tier` stores. Renaming a plan is a one-line
-change in `tiers.ts` because no row holds a name.
+and is what code says: `TIERS.pro`. `id` is the Creem product the plan is sold
+under, and is what `events.tier` stores. Renaming a plan is a one-line change in
+`tiers.ts` because no row holds a name.
 
-The cost of keying rows on the payment provider's id is that a test store and a
-live store issue different numbers, so the same plan reads differently in a
-development database than in production. `getTier()` answers an unrecognised id
-with Free, which is the only safe direction to be wrong in. Variant ids are read
-from `NEXT_PUBLIC_LS_VARIANT_*` rather than from `lib/env.ts`, because `tiers.ts`
-is imported by client components and `env.ts` is server-only; a variant id is
-already visible in every checkout URL, so there is nothing there to keep back.
+The cost of keying rows on the payment provider's id is that a sandbox account
+and a live account issue different ids, so the same plan reads differently in a
+development database than in production - and changing provider means rewriting
+those rows, which is what `supabase/migrations/0021` does. `getTier()` answers an
+unrecognised id with Free, which is the only safe direction to be wrong in.
+Product ids are read from `NEXT_PUBLIC_CREEM_PRODUCT_*` rather than from
+`lib/env.ts`, because `tiers.ts` is imported by client components and `env.ts` is
+server-only; a product id is already visible in every checkout URL, so there is
+nothing there to keep back.
 
 ---
 

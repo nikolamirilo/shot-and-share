@@ -2,27 +2,46 @@ import { fail, handle, ok } from "@/lib/api";
 import type { PurchaseStatus } from "@/lib/db/types";
 import { env } from "@/lib/env";
 import { grantPurchase, revokePurchase } from "@/lib/payments/grant";
-import { parseWebhook, verifySignature } from "@/lib/payments/lemonsqueezy";
+import { parseWebhook, verifySignature } from "@/lib/payments/creem";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** The one event that moves an entitlement up. */
-const GRANTING = new Set(["order_created"]);
+const GRANTING = new Set(["checkout.completed"]);
 
 /**
  * The ones that move it back down, and what each means for the purchase row.
  *
- * Only `order_refunded` can actually fire today: nothing recurring is sold. The
- * subscription cases are here because a provider that starts sending one should
- * find something listening rather than a silent 200, and because half of this
- * file survives a move to Paddle or Polar.
+ * `refund.created` and `dispute.created` are the two that can fire today:
+ * nothing recurring is sold. A dispute is treated as money gone rather than
+ * money contested, because with a merchant of record the funds are pulled
+ * immediately and the refund policy already says we will not contest a refund
+ * we would have given anyway - so leaving the plan unlocked would be product
+ * delivered for nothing.
+ *
+ * The subscription cases are here because a provider that starts sending one
+ * should find something listening rather than a silent 200. Two are absent on
+ * purpose, and both would be bugs if they were here:
+ *
+ *   * `subscription.past_due` is a dunning window, not a verdict. Creem retries
+ *     the card and the subscription goes back to active if one succeeds, so
+ *     revoking here takes a plan away from somebody who then keeps paying for
+ *     it. `subscription.unpaid` is what that window ending looks like.
+ *   * `subscription.scheduled_cancel` is reversible until the period ends, and
+ *     the customer has paid for the period either way. `subscription.expired`
+ *     is what the period actually ending looks like.
  */
-const REVOKING: Record<string, Extract<PurchaseStatus, "refunded" | "expired" | "failed">> = {
-  order_refunded: "refunded",
-  subscription_expired: "expired",
-  subscription_cancelled: "expired",
-  subscription_payment_failed: "failed",
+const REVOKING: Record<
+  string,
+  Extract<PurchaseStatus, "refunded" | "expired" | "failed">
+> = {
+  "refund.created": "refunded",
+  "dispute.created": "refunded",
+  "subscription.expired": "expired",
+  "subscription.canceled": "expired",
+  "subscription.paused": "expired",
+  "subscription.unpaid": "failed",
 };
 
 /**
@@ -38,17 +57,20 @@ const REVOKING: Record<string, Extract<PurchaseStatus, "refunded" | "expired" | 
  */
 export async function POST(request: Request) {
   return handle(async () => {
-    if (!env.lemonSqueezy.webhookSecret) {
+    if (!env.creem.webhookSecret) {
       return fail("not_configured", "No webhook secret configured.");
     }
 
+    // The raw text, never a re-serialised object: the signature is over the
+    // exact bytes Creem sent, and any parse-then-stringify round trip is free to
+    // reorder keys or renormalise numbers.
     const raw = await request.text();
-    const signature = request.headers.get("x-signature") ?? "";
 
     // Before the body is parsed, not after. Parsing attacker-controlled JSON is
     // a smaller risk than acting on it, but it is not no risk, and the check
-    // costs one HMAC.
-    if (!verifySignature(raw, signature)) {
+    // costs one HMAC. The headers go in whole rather than one named header,
+    // because Creem signs two different ways - see `verifySignature`.
+    if (!verifySignature(raw, request.headers)) {
       return fail("forbidden", "Bad signature.");
     }
 
@@ -58,7 +80,7 @@ export async function POST(request: Request) {
     const revokeAs = REVOKING[parsed.eventName];
     if (revokeAs) {
       const result = await revokePurchase({
-        provider: "lemonsqueezy",
+        provider: "creem",
         orderId: parsed.orderId,
         subscriptionId: parsed.subscriptionId,
         status: revokeAs,
@@ -88,7 +110,7 @@ export async function POST(request: Request) {
     const result = await grantPurchase({
       eventId: parsed.eventId,
       product: parsed.product,
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: parsed.txnId,
       orderId: parsed.orderId,
       subscriptionId: parsed.subscriptionId,

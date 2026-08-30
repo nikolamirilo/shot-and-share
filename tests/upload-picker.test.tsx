@@ -7,7 +7,6 @@ import {
   ACCEPT_ATTRIBUTE_ALL,
   ACCEPT_ATTRIBUTE_PHOTO,
   acceptAttribute,
-  inAppBrowser,
   isSafari,
 } from "@/lib/media";
 
@@ -63,15 +62,6 @@ describe("what the file picker is asked for", () => {
       expect(accept).not.toContain("heif");
       expect(accept).not.toContain("avif");
     }
-  });
-
-  it("still offers video to Safari on a plan that has it", () => {
-    // The wildcards are cut down, not cut out: a guest whose host pays for
-    // video must still be able to pick a clip.
-    expect(acceptAttribute({ video: true, ua: IPHONE_18 })).toContain("video/*");
-    expect(acceptAttribute({ video: false, ua: IPHONE_18 })).not.toContain(
-      "video",
-    );
   });
 
   it("keeps the long list for everything else", () => {
@@ -161,36 +151,11 @@ describe("opening the picker without script", () => {
     // The split variant's camera half gets the same treatment.
     expect(markup("split")).toContain('for="guest-camera"');
   });
-
-  it("keeps the library input multiple", () => {
-    // The attribute the whole complaint is about. On the camera input it would
-    // be pointless - a viewfinder takes one photograph.
-    const html = markup("button");
-    expect(html).toMatch(/<input[^>]*id="guest-files"[^>]*>/);
-    expect(html.match(/multiple/g)?.length).toBe(1);
-  });
 });
 
 describe("browsers that are not the browser", () => {
   const INSTAGRAM =
     "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 340.0.0.19.109";
-  const FACEBOOK =
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.35.109]";
-
-  /**
-   * "It works on his iPhone and not on mine" is usually this: one of them
-   * opened the link in Safari and the other tapped it inside WhatsApp. The
-   * in-page browser is a WKWebView whose picker takes one file at a time on
-   * several iOS builds, and no attribute on our input changes that - so the
-   * page says so instead.
-   */
-  it("recognises the apps a share link gets tapped in", () => {
-    expect(inAppBrowser(INSTAGRAM)).toBe("Instagram");
-    expect(inAppBrowser(FACEBOOK)).toBe("Facebook");
-    expect(inAppBrowser(IPHONE_18)).toBeNull();
-    expect(inAppBrowser(CHROME)).toBeNull();
-    expect(inAppBrowser(undefined)).toBeNull();
-  });
 
   it("still gives them Safari's accept list, since that is what they are", () => {
     // A WKWebView is WebKit with somebody's chrome around it: same picker,

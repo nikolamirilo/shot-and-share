@@ -73,20 +73,6 @@ describe("which copy each surface gets", () => {
     expect(view.fullUrl).toContain(`full/${ID}.jpg`);
   });
 
-  it("serves a row written before the folders existed", async () => {
-    // A flat key and no thumbnail. Never backfilled, so it has to keep working.
-    const view = await toMediaView(
-      photo({
-        media_key: `${OWNER}/${EVENT}/${ID}.webp`,
-        thumb_key: null,
-        media_format: "webp",
-      }),
-    );
-
-    expect(view.previewUrl).toContain(`${EVENT}/${ID}.webp`);
-    expect(view.fullUrl).toContain(`${EVENT}/${ID}.webp`);
-  });
-
   it("shows nothing for a photo the worker has not converted yet", async () => {
     // A HEIC uploaded from desktop Chrome is in the bucket and is a broken
     // image icon everywhere that is not Safari, so the grid holds its

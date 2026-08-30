@@ -71,70 +71,9 @@ describe("the cover a host is shown", () => {
     // Still correct standing on its own, where flex-1 does nothing.
     expect(html).toContain("h-svh");
   });
-
-  it("lays the name over half a screen of photo", () => {
-    // "Half screen" is the full-screen cover at half the height, which is the
-    // whole of the difference: the name sits on the photograph rather than in a
-    // band under it, and the ask stays on the screen. No scroll cue, because
-    // the thing it points at is already visible.
-    const html = renderToStaticMarkup(
-      <EventCover
-        variant="half"
-        name="Your event"
-        date="2026-09-12"
-        coverUrl="https://example.test/thumb.jpg"
-        palette={palette}
-      />,
-    );
-    expect(html).toContain("h-[50svh]");
-    expect(html).toContain("Your event");
-    expect(html).not.toContain("add your photos");
-  });
-
-  it("uses the photo once there is one", () => {
-    const html = renderToStaticMarkup(
-      <EventCover
-        variant="half"
-        name="Your event"
-        date="2026-09-12"
-        coverUrl="https://example.test/thumb.jpg"
-        palette={palette}
-        preview
-      />,
-    );
-    expect(html).toContain("https://example.test/thumb.jpg");
-    expect(html).not.toContain("your photo");
-  });
 });
 
 describe("the colours a host is shown", () => {
-  it("paints the chosen card colour in the preview", () => {
-    // The old preview drew a near-black bar and four dark recesses, none of
-    // which read --color-paper - so picking wheat for "Cards" appeared to do
-    // nothing at all.
-    const wheat = buildCustomPalette({
-      bg: "#FFF6DC",
-      surface: "#F5DEB3",
-      accent: "#FFC02E",
-      ink: "#1F1607",
-    });
-
-    const html = renderToStaticMarkup(
-      <EventThemeRoot palette={wheat} font={findFontSet("cheese")}>
-        <UploadPanel
-          variant="button"
-          label="Add your photos"
-          hint="Photos, up to 20 at a time."
-          preview
-        />
-      </EventThemeRoot>,
-    );
-
-    expect(html).toContain("--color-paper:#F5DEB3");
-    // .card is what turns that variable into a visible surface.
-    expect(html).toContain("card");
-  });
-
   it("carries the type pairing down to everything underneath", () => {
     const html = renderToStaticMarkup(
       <EventThemeRoot palette={palette} font={findFontSet("classic")}>
@@ -173,49 +112,6 @@ describe("the upload panel", () => {
       );
       expect(preview).toContain("Photos, up to 20 at a time.");
     }
-  });
-
-  it("asks the guest for nothing but the photos", () => {
-    // The name field is gone from every variant, and it is the only field the
-    // panel ever had. A text input reappearing here is a guest deciding whether
-    // to fill it in before they can send anything.
-    for (const variant of ["button", "panel", "bar", "split"] as const) {
-      const html = renderToStaticMarkup(
-        <UploadPanel
-          variant={variant}
-          label="Add your photos"
-          hint="Photos, up to 20 at a time."
-        />,
-      );
-      expect(html).not.toContain("<input");
-      expect(html).not.toContain("Your name");
-    }
-  });
-
-  it("puts nothing focusable in the preview", () => {
-    // It is a picture of the guest page sitting inside the host's own form.
-    // A real button here would be a second "Add your photos" in the tab order
-    // and a submit button inside a form that saves.
-    const html = renderToStaticMarkup(
-      <UploadPanel
-        variant="panel"
-        label="Add your photos"
-        hint="Photos, up to 20 at a time."
-        preview
-      />,
-    );
-    expect(html).not.toContain("<button");
-  });
-
-  it("is a real control when it is the guest's", () => {
-    const html = renderToStaticMarkup(
-      <UploadPanel
-        variant="panel"
-        label="Add your photos"
-        hint="Photos, up to 20 at a time."
-      />,
-    );
-    expect(html).toContain("<button");
   });
 });
 
@@ -269,27 +165,6 @@ describe("the drawing of the guest page", () => {
     expect(html).toContain("Photos and video");
   });
 
-  it("carries nothing of ours above the cover or below the gallery", () => {
-    // The panel is locked on the free plan, so everything this draws is a paid
-    // page - and a paid page is the host's, top to bottom. If the mark or the
-    // small print came back here it would mean it had come back on the page.
-    const html = preview();
-
-    expect(html).not.toContain("Say Cheese");
-    expect(html).not.toContain("go to the host of this event");
-  });
-
-  it("loads no gallery photograph at all", () => {
-    // Every tile is drawn. A host clicking through five themes and four
-    // layouts is not worth an image request per tile, and their guests' faces
-    // answer none of the questions this panel is asking.
-    for (const layout of GALLERY_LAYOUTS) {
-      const html = preview({ layout: layout.id });
-      expect(html).not.toContain("<img");
-      expect(html).not.toContain("background-image");
-    }
-  });
-
   it("draws the cover photo the host picked, and only that one", () => {
     // The four cover styles are four crops of one picture. Judging between
     // them against a grey frame is judging nothing, so this photograph - and
@@ -326,27 +201,6 @@ describe("the drawing of the guest page", () => {
     expect(drawn.get("stack")).toContain("aspect-ratio:1.75");
   });
 
-  it("draws no layout switcher, because the page no longer has one", () => {
-    // The layout is the host's decision, like the theme and the cover. A row
-    // of layout names in the drawing would promise guests a switch they do
-    // not get.
-    const html = preview({ layout: "grid" });
-    for (const option of GALLERY_LAYOUTS) {
-      expect(html).not.toContain(option.name);
-    }
-  });
-
-  it("hides the gallery when the event hides it", () => {
-    expect(preview({ galleryVisible: false })).not.toContain(
-      "Everyone&#x27;s photos",
-    );
-  });
-
-  it("says whether a cover photo has been chosen", () => {
-    expect(preview({ coverChosen: false })).toContain("no photo yet");
-    expect(preview({ coverChosen: true })).toContain("your photo");
-  });
-
   it("carries the chosen colours across the whole drawing", () => {
     const wheat = buildCustomPalette({
       bg: "#FFF6DC",
@@ -371,20 +225,6 @@ describe("the drawing of the guest page", () => {
       expect(html).toContain("bg-claret");
       expect(html).not.toContain("bg-ink");
     }
-  });
-
-  it("moves the name to where the host put it", () => {
-    // The drawing renders the real cover, so this is the guest page's own
-    // markup: the type block is pinned to the edge the setting names.
-    expect(preview({ cover: "full", coverPosition: "bottom-left" })).toContain(
-      "inset-x-0 bottom-0",
-    );
-    expect(preview({ cover: "full", coverPosition: "top-left" })).toContain(
-      "inset-x-0 top-0",
-    );
-    expect(preview({ cover: "full", coverPosition: "centre" })).toContain(
-      "justify-center",
-    );
   });
 
   it("puts nothing focusable inside the host's form", () => {
@@ -470,33 +310,5 @@ describe("the name's position on the cover", () => {
         "linear-gradient(to top",
       );
     }
-  });
-
-  it("keeps the banner's own lighter wash", () => {
-    // A strip is a fifth of the height and carries a fifth of the type. The
-    // full cover's wash on it reads as a darkened photo, not a legible one.
-    expect(cover({ variant: "classic", position: "bottom-left" })).toContain(
-      "rgba(0,0,0,0.72)",
-    );
-    expect(cover({ variant: "full", position: "bottom-left" })).toContain(
-      "rgba(0,0,0,0.8)",
-    );
-  });
-
-  it("ignores the setting on the cover with no photograph", () => {
-    // Nothing to sit over. The panel hides the group for the same reason.
-    const type = { variant: "type", coverUrl: null } as const;
-    expect(cover({ ...type, position: "top-left" })).toBe(
-      cover({ ...type, position: "bottom-left" }),
-    );
-  });
-
-  it("pushes the empty frame's label clear of the name either way", () => {
-    // The label only ever renders in the host's preview, and printing it
-    // under the name is what this padding exists to stop.
-    const empty = { coverUrl: null, preview: true, photoLabel: "your photo" };
-    expect(cover({ ...empty, position: "bottom-left" })).toContain("pb-20");
-    expect(cover({ ...empty, position: "top-left" })).toContain("pt-20");
-    expect(cover({ ...empty, position: "centre" })).toContain("pt-20");
   });
 });

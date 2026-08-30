@@ -7,7 +7,7 @@ import { PURCHASABLE_IDS } from "@/lib/tiers";
 import {
   createCheckoutUrl,
   isCheckoutConfigured,
-} from "@/lib/payments/lemonsqueezy";
+} from "@/lib/payments/creem";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

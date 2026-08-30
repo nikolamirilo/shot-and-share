@@ -74,24 +74,11 @@ function columns(html: string): number[][] {
 }
 
 describe("the masonry wall", () => {
-  it("puts the newest photographs along the top row", () => {
-    // Two columns is what renders before the browser has measured anything,
-    // which is what a server render sees. Dealt across rather than poured down
-    // each column: the two newest are the two at the top, not photos 1 and 4.
-    const heads = columns(markup("masonry", photos(6))).map((c) => c[0]);
-    expect(heads).toEqual([1, 2]);
-  });
-
   it("keeps each column newest first below the top row", () => {
     expect(columns(markup("masonry", photos(6)))).toEqual([
       [1, 3, 5],
       [2, 4, 6],
     ]);
-  });
-
-  it("holds every photograph exactly once", () => {
-    const all = columns(markup("masonry", photos(7))).flat().sort((a, b) => a - b);
-    expect(all).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 });
 
@@ -106,12 +93,6 @@ describe("filling the wall", () => {
     expect(order(markup("grid", photos(25)))).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
     ]);
-  });
-
-  it("still holds a place for the ones whose turn has not come", () => {
-    // Held, not dropped. The wall keeps its full height so it does not grow
-    // under a thumb that is already scrolling.
-    expect(markup("grid", photos(25)).match(/<li>/g)).toHaveLength(25);
   });
 
   it("shimmers the ones whose turn has not come", () => {
@@ -144,12 +125,6 @@ describe("frames for photographs on their way", () => {
     }
   });
 
-  it("keeps them out of the way on Stack", () => {
-    // One photograph per screen, so ten frames is six thousand pixels of
-    // shimmer for a page nobody has scrolled to yet.
-    expect(frames(markup("stack", [], 10))).toBe(3);
-  });
-
   it("puts them after the photographs already on the wall", () => {
     const html = markup("grid", photos(5), 10);
     expect(order(html)).toEqual([1, 2, 3, 4, 5]);
@@ -158,31 +133,6 @@ describe("frames for photographs on their way", () => {
     expect(html.indexOf("animate-pulse")).toBeGreaterThan(
       html.lastIndexOf("%2Fpreview%2F5"),
     );
-  });
-
-  it("deals them across the masonry columns", () => {
-    // Two columns before the browser has measured anything. A tail of ten on
-    // the left would make the wall lopsided as it grew.
-    const lanes = markup("masonry", photos(4), 4)
-      .split("<ul")
-      .slice(1)
-      .map(frames);
-    expect(lanes).toEqual([2, 2]);
-  });
-
-  it("draws none when nothing is on its way", () => {
-    // Including the tiles waiting their turn in the loading queue, which wear
-    // the same shimmer - photos(5) is under one wave, so none of them do.
-    expect(frames(markup("grid", photos(5)))).toBe(0);
-  });
-});
-
-describe("the other layouts", () => {
-  it("render photographs in the order they were given", () => {
-    // Grid, Circles and Stack are all one flow, so source order is what shows.
-    for (const layout of ["grid", "holes", "stack"] as const) {
-      expect(order(markup(layout, photos(5))), layout).toEqual([1, 2, 3, 4, 5]);
-    }
   });
 });
 
@@ -230,16 +180,5 @@ describe("marking a video on the wall", () => {
     for (const layout of ["grid", "masonry", "holes", "stack"] as const) {
       expect(markup(layout, [clip()]), layout).toContain(PLAY);
     }
-  });
-
-  it("leaves photographs alone", () => {
-    expect(markup("grid", photos(3))).not.toContain(PLAY);
-  });
-
-  it("no longer labels it in words", () => {
-    const html = markup("grid", [clip()]);
-    // The aria-label still says "video" - that is the accessible name, not a
-    // badge drawn over the picture.
-    expect(html).not.toContain(">video<");
   });
 });

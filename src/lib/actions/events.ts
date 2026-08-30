@@ -8,7 +8,7 @@ import { requireOwnedEvent, requireUser } from "@/lib/actions/guards";
 import type { ActionState } from "@/lib/actions/types";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { issueTokenFor } from "@/lib/share-tokens";
-import { TIERS, computeExpiry, getTier } from "@/lib/tiers";
+import { TIERS, computeExpiry, getTier, isKnownTierId } from "@/lib/tiers";
 
 const createSchema = z.object({
   name: z
@@ -109,10 +109,23 @@ export async function updateEventSettings(
     return { error: parsed.error.issues[0].message ?? "Check the form." };
   }
 
-  // Retention is measured from the event date, so moving the date moves expiry.
+  /*
+   * Retention is measured from the event date, so moving the date moves expiry.
+   *
+   * Unless we cannot tell what the event is entitled to. An id `getTier` does
+   * not recognise resolves to Free, and recomputing from Free turns a paid
+   * 365-day window into 30 days - written to the row, and still there long
+   * after the id starts resolving again. That window is the difference between
+   * somebody's wedding photographs being there next summer and the retention
+   * job having deleted them, so a save that only changed a name is not allowed
+   * to make it. Leave the stored expiry alone and let the next real purchase,
+   * or the migration, settle it.
+   */
   const expiresAt = event.keep_forever
     ? null
-    : computeExpiry(parsed.data.event_date, getTier(event.tier)).toISOString();
+    : isKnownTierId(event.tier)
+      ? computeExpiry(parsed.data.event_date, getTier(event.tier)).toISOString()
+      : event.expires_at;
 
   const { error } = await supabase
     .from("events")

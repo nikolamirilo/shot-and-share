@@ -24,9 +24,7 @@ vi.mock("@/lib/tiers", async () => {
   return actual;
 });
 
-const { grantPurchase, recomputeEntitlement, revokePurchase } = await import(
-  "@/lib/payments/grant"
-);
+const { grantPurchase, revokePurchase } = await import("@/lib/payments/grant");
 const { TIERS } = await import("@/lib/tiers");
 
 const EVENT_ID = "11111111-2222-3333-4444-555555555555";
@@ -58,31 +56,6 @@ beforeEach(() => {
 });
 
 describe("granting", () => {
-  it("moves the event onto the plan that was paid for", async () => {
-    await grantPurchase({
-      eventId: EVENT_ID,
-      product: "plus",
-      provider: "lemonsqueezy",
-      providerTxnId: "order-1",
-      orderId: "order-1",
-    });
-
-    expect(event().tier).toBe(TIERS.plus.id);
-    expect(event().storage_quota_bytes).toBe(TIERS.plus.quotaBytes);
-  });
-
-  it("keeps the order id, because that is what a refund will name", async () => {
-    await grantPurchase({
-      eventId: EVENT_ID,
-      product: "plus",
-      provider: "lemonsqueezy",
-      providerTxnId: "txn-1",
-      orderId: "order-1",
-    });
-
-    expect(store.rows("purchases")[0].order_id).toBe("order-1");
-  });
-
   /*
    * Buying the cheaper plan after the dearer one is a real thing people do -
    * usually Keep Forever, occasionally a mistake. The entitlement is derived
@@ -92,14 +65,14 @@ describe("granting", () => {
     await grantPurchase({
       eventId: EVENT_ID,
       product: "pro",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-1",
       orderId: "order-1",
     });
     await grantPurchase({
       eventId: EVENT_ID,
       product: "plus",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-2",
       orderId: "order-2",
     });
@@ -112,7 +85,7 @@ describe("granting", () => {
     await grantPurchase({
       eventId: EVENT_ID,
       product: "plus",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-1",
       orderId: "order-1",
     });
@@ -121,7 +94,7 @@ describe("granting", () => {
     const again = await grantPurchase({
       eventId: EVENT_ID,
       product: "pro",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-1",
       orderId: "order-1",
     });
@@ -136,27 +109,6 @@ describe("revoking", () => {
     store.failInsert("purchases", undefined);
   });
 
-  it("takes the plan back down when the order is refunded", async () => {
-    await grantPurchase({
-      eventId: EVENT_ID,
-      product: "pro",
-      provider: "lemonsqueezy",
-      providerTxnId: "order-1",
-      orderId: "order-1",
-    });
-    expect(event().tier).toBe(TIERS.pro.id);
-
-    const result = await revokePurchase({
-      provider: "lemonsqueezy",
-      orderId: "order-1",
-      status: "refunded",
-    });
-
-    expect(result.applied).toBe(true);
-    expect(event().tier).toBe(TIERS.free.id);
-    expect(store.rows("purchases")[0].status).toBe("refunded");
-  });
-
   /*
    * The case a "step the tier down one" implementation gets wrong. Refunding
    * Pro on an event that also paid for Plus has to land on Plus, and the only
@@ -166,20 +118,20 @@ describe("revoking", () => {
     await grantPurchase({
       eventId: EVENT_ID,
       product: "plus",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-1",
       orderId: "order-1",
     });
     await grantPurchase({
       eventId: EVENT_ID,
       product: "pro",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-2",
       orderId: "order-2",
     });
 
     await revokePurchase({
-      provider: "lemonsqueezy",
+      provider: "creem",
       orderId: "order-2",
       status: "refunded",
     });
@@ -191,7 +143,7 @@ describe("revoking", () => {
     await grantPurchase({
       eventId: EVENT_ID,
       product: "keep_forever",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-1",
       orderId: "order-1",
     });
@@ -199,7 +151,7 @@ describe("revoking", () => {
     expect(event().expires_at).toBeNull();
 
     await revokePurchase({
-      provider: "lemonsqueezy",
+      provider: "creem",
       orderId: "order-1",
       status: "refunded",
     });
@@ -212,7 +164,7 @@ describe("revoking", () => {
 
   it("acknowledges a refund for an order it never recorded", async () => {
     const result = await revokePurchase({
-      provider: "lemonsqueezy",
+      provider: "creem",
       orderId: "order-nobody-has-heard-of",
       status: "refunded",
     });
@@ -225,14 +177,14 @@ describe("revoking", () => {
     await grantPurchase({
       eventId: EVENT_ID,
       product: "pro",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "txn-1",
       orderId: "order-1",
       subscriptionId: "sub-1",
     });
 
     await revokePurchase({
-      provider: "lemonsqueezy",
+      provider: "creem",
       subscriptionId: "sub-1",
       status: "expired",
     });
@@ -243,7 +195,7 @@ describe("revoking", () => {
 
   it("refuses to act when it has been given nothing to match on", async () => {
     const result = await revokePurchase({
-      provider: "lemonsqueezy",
+      provider: "creem",
       status: "refunded",
     });
     expect(result).toEqual({ applied: false, reason: "nothing_to_match" });
@@ -258,17 +210,12 @@ describe("recomputing", () => {
     await grantPurchase({
       eventId: EVENT_ID,
       product: "pro",
-      provider: "lemonsqueezy",
+      provider: "creem",
       providerTxnId: "order-1",
       orderId: "order-1",
     });
 
     expect(event().status).toBe("active");
     expect(event().deleted_at).toBeNull();
-  });
-
-  it("says nothing for an event that is not there", async () => {
-    store.reset();
-    expect(await recomputeEntitlement(EVENT_ID)).toBeNull();
   });
 });

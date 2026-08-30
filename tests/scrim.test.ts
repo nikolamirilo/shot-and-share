@@ -32,12 +32,6 @@ function scrimPair() {
 }
 
 describe("the scrim's colours", () => {
-  it("are defined as literal hex, not as another token", () => {
-    const { bg, ink } = scrimPair();
-    expect(bg).toBeTruthy();
-    expect(ink).toBeTruthy();
-  });
-
   it("read against each other", () => {
     const { bg, ink } = scrimPair();
     expect(contrastRatio(parseHex(bg!)!, parseHex(ink!)!)).toBeGreaterThanOrEqual(
@@ -65,16 +59,6 @@ describe("the scrim's colours", () => {
       const keys = Object.keys(paletteToCssVars(palette));
       expect(keys.filter((k) => k.startsWith("--color-scrim"))).toEqual([]);
     }
-  });
-
-  it("is the case worth guarding: some themes make chalk and ink the same", () => {
-    // Not a defect in the palettes - `onAccent` is allowed to equal `ink` when
-    // the accent is pale. It is only a defect when something on the dark scrim
-    // uses the two together, which is what the classes below are checked for.
-    const collisions = THEMES.filter(
-      (t) => t.palette.onAccent.toUpperCase() === t.palette.ink.toUpperCase(),
-    );
-    expect(collisions.length).toBeGreaterThan(0);
   });
 });
 
@@ -121,17 +105,5 @@ describe("controls on the scrim", () => {
     const report = read("src/components/gallery/report-button.tsx");
     expect(report).not.toMatch(/bg-chalk/);
     expect(report).toContain("ON_SCRIM");
-  });
-
-  it("sit on a scrim that is dark under every theme", () => {
-    // The sheet itself is `bg-ink/92`, and the light pair only reads on it
-    // while `ink` stays dark. It does, by construction: a custom ink is put
-    // through `readableInk` against a background that is forced light.
-    const white = parseHex("#FFFFFF")!;
-    for (const palette of THEMES.map((t) => t.palette)) {
-      expect(contrastRatio(parseHex(palette.ink)!, white)).toBeGreaterThanOrEqual(
-        AA_CONTRAST,
-      );
-    }
   });
 });

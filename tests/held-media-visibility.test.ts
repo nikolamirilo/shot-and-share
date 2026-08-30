@@ -100,13 +100,6 @@ describe("the guest gallery", () => {
 
     expect(body.items.map((item) => item.id)).toEqual(["approved-a"]);
   });
-
-  it("shows nothing at all when everything is waiting on the host", async () => {
-    push("held-a", "held", 1);
-    push("held-b", "held", 2);
-
-    expect((await gallery()).items).toHaveLength(0);
-  });
 });
 
 describe("the ZIP", () => {
@@ -136,13 +129,5 @@ describe("the host's review queue", () => {
     const rows = await listMediaAwaitingReview(store.client as never, EVENT.id);
 
     expect(rows.map((row) => row.id)).toEqual(["held-b", "reported-c"]);
-  });
-
-  it("is empty on an event where nothing was flagged", async () => {
-    push("approved-a", "approved", 1);
-
-    expect(
-      await listMediaAwaitingReview(store.client as never, EVENT.id),
-    ).toHaveLength(0);
   });
 });

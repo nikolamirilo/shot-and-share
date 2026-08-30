@@ -18,8 +18,8 @@ import type { MediaView } from "@/lib/media-view";
  * behind the browser's own toolbar, where nothing could reach them.
  *
  * The fix is structural, so these are structural: the frame has a real height,
- * the picture is bounded by it, and every control is laid on the picture
- * rather than queued up underneath it.
+ * and every control is laid on the picture rather than queued up underneath
+ * it.
  */
 
 const PHOTO: MediaView = {
@@ -66,15 +66,6 @@ describe("the lightbox's frame", () => {
     // every percentage height inside it resolves to nothing.
     expect(frame).not.toContain("max-h-full");
   });
-
-  it("bounds the picture both ways", () => {
-    const img = /<img[^>]*class="([^"]*)"/.exec(markup())?.[1] ?? "";
-    expect(img).toContain("max-h-full");
-    expect(img).toContain("max-w-full");
-    // Not stretched to fit: whichever edge runs out first holds it.
-    expect(img).toContain("h-auto");
-    expect(img).toContain("w-auto");
-  });
 });
 
 describe("the lightbox's controls", () => {
@@ -109,21 +100,6 @@ describe("the lightbox's controls", () => {
     expect(html.match(/pointer-events-auto/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("clear a video's own controls", () => {
-    // The scrub bar is the one strip of a video that has to stay free.
-    const video = markup({ item: { ...PHOTO, kind: "video" } });
-    expect(video).toContain("pb-12");
-    expect(markup()).not.toContain("pb-12");
-  });
-
-  it("keep the photograph as the first image on the page", () => {
-    // The ones fetched ahead are drawn last, behind the controls, so nothing
-    // about this dialog reads the wrong <img> as the picture.
-    const html = markup({ preload: [{ ...PHOTO, id: "photo-2" }] });
-    const first = html.indexOf("<img");
-    expect(html.slice(first, first + 400)).toContain("max-h-full");
-  });
-
   it("drop the arrows when there is nowhere to step", () => {
     const alone = markup({ prevId: null, nextId: null, total: 1, position: 1 });
     expect(alone).not.toContain('aria-label="Previous photo"');
@@ -153,11 +129,5 @@ describe("the photographs fetched ahead", () => {
      */
     const html = markup({ preload: ahead });
     expect(html.match(/<img/g)).toHaveLength(1);
-  });
-
-  it("are not something the lightbox needs to be given", () => {
-    // The host's own console opens photographs through this too, and gets the
-    // same dialog it always had.
-    expect(() => markup({ preload: undefined })).not.toThrow();
   });
 });

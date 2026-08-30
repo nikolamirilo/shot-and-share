@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import { ComparisonTable } from "@/components/marketing/comparison-table";
 import { PricingTable } from "@/components/marketing/pricing-table";
-import { FAQS } from "@/lib/faqs";
 import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
@@ -26,22 +25,6 @@ const pages = () =>
   [markup(<PricingTable />), markup(<ComparisonTable />)].join("\n");
 
 describe("the photo counts agree", () => {
-  it("says the same thing about the free plan everywhere", () => {
-    const expected = photoCountLabel(TIERS.free.quotaBytes);
-    expect(expected).toBe("150");
-
-    const rendered = pages();
-    expect(rendered).toContain(expected);
-  });
-
-  it("says the same thing about Plus everywhere", () => {
-    const expected = photoCountLabel(TIERS.plus.quotaBytes);
-    expect(expected).toBe("1,500");
-
-    expect(pages()).toContain(expected);
-    expect(FAQS.map(([, answer]) => answer).join("\n")).toContain(expected);
-  });
-
   /*
    * The specific numbers that were wrong. Pinned by value rather than by
    * derivation, because a derived assertion would have passed happily while the

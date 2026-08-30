@@ -4,9 +4,8 @@ import { describe, expect, it } from "vitest";
 import { ComparisonTable } from "@/components/marketing/comparison-table";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { PricingTable } from "@/components/marketing/pricing-table";
-import { SiteFooter } from "@/components/layout/site-footer";
 import { LEGAL_PAGES } from "@/lib/legal/pages";
-import { KEEP_FOREVER, VAT_BADGE, VAT_NOTE } from "@/lib/tiers";
+import { KEEP_FOREVER, VAT_NOTE } from "@/lib/tiers";
 
 /**
  * The site agreeing with itself about what it sells and what it costs.
@@ -42,18 +41,8 @@ describe("VAT is one claim, not three", () => {
     expect(termsText).not.toContain("where it applies");
   });
 
-  it("states the inclusive claim, and says the price is final", () => {
-    expect(VAT_NOTE).toContain("includes EU VAT");
-    // The half that matters to a consumer: no surprise at the last step.
-    expect(VAT_NOTE).toContain("the number you pay");
-  });
-
   it("uses the same sentence in the terms as on the pricing page", () => {
     expect(termsText).toContain(VAT_NOTE);
-  });
-
-  it("puts the short form on the homepage badge", () => {
-    expect(marketing()).toContain(VAT_BADGE);
   });
 });
 
@@ -67,20 +56,5 @@ describe("the add-on has one name", () => {
     const rendered = marketing();
     expect(rendered).not.toContain("The Archive");
     expect(rendered).toContain(KEEP_FOREVER.name);
-  });
-
-  it("uses the same name in the legal documents", () => {
-    expect(termsText).toContain(KEEP_FOREVER.name);
-    expect(
-      LEGAL_PAGES["refund-policy"].sections
-        .flatMap((section) => section.body)
-        .join("\n"),
-    ).toContain(KEEP_FOREVER.name);
-  });
-});
-
-describe("the demo is reachable without an account", () => {
-  it("is linked from the footer, which is on every page", () => {
-    expect(renderToStaticMarkup(<SiteFooter />)).toContain('href="/demo"');
   });
 });

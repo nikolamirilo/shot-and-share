@@ -2,7 +2,7 @@ import "server-only";
 
 import type { EventRow } from "@/lib/db/types";
 import { grantPurchase } from "@/lib/payments/grant";
-import { listRecentOrders } from "@/lib/payments/lemonsqueezy";
+import { listRecentOrders } from "@/lib/payments/creem";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -60,7 +60,7 @@ export async function recoverPurchases(
     const result = await grantPurchase({
       eventId: event.id,
       product: order.product!,
-      provider: "lemonsqueezy",
+      provider: "creem",
       // The same id the webhook would have used, so if it turns up late the
       // unique constraint recognises it and nothing is applied twice.
       providerTxnId: order.id,

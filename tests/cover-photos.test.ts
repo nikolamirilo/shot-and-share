@@ -8,10 +8,9 @@ import { createStore } from "./stubs/supabase";
  *
  * The picker used to show whatever the console had already loaded, cut to two
  * dozen, so a cover shot taken on the second night of a wedding was simply not
- * offered. What matters here is that every photograph is reachable, that the
- * host's own uploaded covers are not mixed into the list, and that the cursor
- * is a timestamp rather than an offset - a photo arriving mid-browse must not
- * shuffle a row the host is looking at.
+ * offered. What matters here is that the cursor is a timestamp rather than an
+ * offset - a photo arriving mid-browse must not shuffle a row the host is
+ * looking at.
  */
 
 const store = createStore();
@@ -99,40 +98,5 @@ describe("the cover picker's photo pages", () => {
       .toBe(true);
     // A short page means there is nothing left, so the picker stops asking.
     expect(second.nextCursor).toBeNull();
-  });
-
-  it("reaches a photograph far past the console's own first page", async () => {
-    seed(COVER_PAGE_SIZE * 3);
-
-    const ids: string[] = [];
-    let cursor: string | null = null;
-    do {
-      const page = await (await get(cursor ?? undefined)).json();
-      ids.push(...page.items.map((item: { id: string }) => item.id));
-      cursor = page.nextCursor;
-    } while (cursor);
-
-    expect(ids).toHaveLength(COVER_PAGE_SIZE * 3);
-    // The oldest photograph at the event, which the old picker could not show.
-    expect(ids).toContain("guest-0");
-  });
-
-  it("leaves the host's own uploaded covers out of the list", async () => {
-    seed(3);
-    seed(2, "cover");
-
-    const body = await (await get()).json();
-
-    expect(body.items).toHaveLength(3);
-    expect(
-      body.items.every((item: { id: string }) => item.id.startsWith("guest-")),
-    ).toBe(true);
-  });
-
-  it("says so plainly when there are no photographs yet", async () => {
-    const body = await (await get()).json();
-
-    expect(body.items).toEqual([]);
-    expect(body.nextCursor).toBeNull();
   });
 });

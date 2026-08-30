@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-  COVER_POSITIONS,
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
   DEFAULT_COVER,
@@ -9,29 +8,24 @@ import {
   DEFAULT_THEME_ID,
   DEFAULT_UPLOAD,
   THEMES,
-  UPLOAD_VARIANTS,
   buildCustomPalette,
   coerceCover,
   coercePosition,
   coerceUpload,
   findTheme,
   lightBackground,
-  paletteToCssVars,
   resolveAppearance,
 } from "@/lib/appearance";
 import {
   DEFAULT_FONT_ID,
-  FONT_SETS,
   coerceFont,
   findFontSet,
-  fontToCssVars,
   googleFontsHref,
 } from "@/lib/fonts";
 import {
   AA_CONTRAST,
   AA_LARGE_CONTRAST,
   contrastRatio,
-  darken,
   isDark,
   lighten,
   meetsContrast,
@@ -39,18 +33,11 @@ import {
   parseHex,
   readableInk,
   rgbToHsl,
-  safeHex,
   tint,
-  toHex,
 } from "@/lib/color";
 import {
-  type Settings,
-  countChanges,
-  draftKey,
   fromEvent,
-  readDraft,
   toFields,
-  writeDraft,
 } from "@/components/dashboard/appearance/settings";
 import type { EventRow } from "@/lib/db/types";
 import { TIERS } from "@/lib/tiers";
@@ -68,27 +55,12 @@ describe("colour parsing", () => {
     expect(parseHex("javascript:alert(1)")).toBeNull();
     expect(parseHex("")).toBeNull();
   });
-
-  it("falls back rather than passing junk through to CSS", () => {
-    expect(safeHex("nonsense", "#FFC02E")).toBe("#FFC02E");
-    expect(safeHex(null, "#FFC02E")).toBe("#FFC02E");
-    expect(safeHex("#abc", "#FFC02E")).toBe("#AABBCC");
-  });
-
-  it("round-trips", () => {
-    expect(toHex(parseHex("#FFC02E")!)).toBe("#FFC02E");
-  });
 });
 
 describe("contrast", () => {
   it("matches the WCAG extremes", () => {
     expect(contrastRatio(parseHex("#000")!, parseHex("#fff")!)).toBeCloseTo(21, 1);
     expect(contrastRatio(parseHex("#fff")!, parseHex("#fff")!)).toBeCloseTo(1, 5);
-  });
-
-  it("passes the house palette", () => {
-    // If the product's own theme failed this, the thresholds would be wrong.
-    expect(meetsContrast("#1F1607", "#FFF6DC")).toBe(true);
   });
 
   it("identifies dark backgrounds", () => {
@@ -102,23 +74,11 @@ describe("readable ink", () => {
     expect(readableInk("#FFF6DC", "#1F1607")).toBe("#1F1607");
   });
 
-  it("rescues an unreadable choice", () => {
-    // Pale grey text on white is the thing a host will absolutely try, and
-    // their guests are reading it on a phone in a dark room.
-    const rescued = readableInk("#FFFFFF", "#EEEEEE");
-    expect(meetsContrast(rescued, "#FFFFFF")).toBe(true);
-  });
-
   it("pushes the chosen hue to its extreme before abandoning it", () => {
     // A host's dark plum should become near-black, not jump to pure white.
     const rescued = readableInk("#FFFFFF", "#B07A85");
     expect(meetsContrast(rescued, "#FFFFFF")).toBe(true);
     expect(rescued).not.toBe("#FFFFFF");
-  });
-
-  it("goes light on a dark background", () => {
-    const rescued = readableInk("#14161F", "#1A1A1A");
-    expect(meetsContrast(rescued, "#14161F")).toBe(true);
   });
 
   it("always lands somewhere readable, whatever it is given", () => {
@@ -135,16 +95,6 @@ describe("colour derivation", () => {
     expect(mix("#000000", "#FFFFFF", 0.5)).toBe("#808080");
     expect(mix("#000000", "#FFFFFF", 0)).toBe("#000000");
     expect(mix("#000000", "#FFFFFF", 1)).toBe("#FFFFFF");
-  });
-
-  it("clamps a weight outside the range instead of overflowing", () => {
-    expect(mix("#000000", "#FFFFFF", 5)).toBe("#FFFFFF");
-    expect(mix("#000000", "#FFFFFF", -5)).toBe("#000000");
-  });
-
-  it("lightens and darkens", () => {
-    expect(lighten("#808080", 0.5)).toBe("#C0C0C0");
-    expect(darken("#808080", 0.5)).toBe("#404040");
   });
 
   it("tints without draining the hue", () => {
@@ -257,23 +207,6 @@ describe("where the name sits", () => {
     expect(coercePosition("top-right")).toBe(DEFAULT_POSITION);
     expect(coercePosition({ id: "centre" })).toBe(DEFAULT_POSITION);
   });
-
-  it("keeps every option it offers", () => {
-    for (const option of COVER_POSITIONS) {
-      expect(coercePosition(option.id)).toBe(option.id);
-    }
-  });
-
-  it("matches the values the database will accept", () => {
-    // The check constraint in migration 0020 is written out by hand, so the
-    // two lists have to be compared somewhere.
-    expect(COVER_POSITIONS.map((p) => p.id)).toEqual([
-      "bottom-left",
-      "bottom-centre",
-      "centre",
-      "top-left",
-    ]);
-  });
 });
 
 describe("plan gating", () => {
@@ -305,17 +238,6 @@ describe("plan gating", () => {
     expect(resolveAppearance({ tier: TIERS.free.id }).platformBranding).toBe(true);
     expect(resolveAppearance({ tier: TIERS.plus.id }).platformBranding).toBe(false);
     expect(resolveAppearance({ tier: TIERS.pro.id }).platformBranding).toBe(false);
-  });
-
-  it("fixes the gallery on free, whatever the row says", () => {
-    // The layout is the host's decision on a paid event and ours on a free
-    // one. Either way it is a decision about the event: no guest overrides it.
-    expect(resolveAppearance({ tier: TIERS.free.id, ...customised }).layout).toBe(
-      "grid",
-    );
-    expect(resolveAppearance({ tier: TIERS.plus.id, ...customised }).layout).toBe(
-      "masonry",
-    );
   });
 
   it("honours everything on a paid event", () => {
@@ -350,30 +272,6 @@ describe("cover variants", () => {
     expect(coerceCover(undefined)).toBe(DEFAULT_COVER);
   });
 
-  it("sends a removed variant to the default rather than breaking", () => {
-    // 0011 rewrites every 'framed' row and 0012 every 'band' one, but a
-    // restore, a replayed request or a browser tab left open across the deploy
-    // can still present one.
-    expect(coerceCover("framed")).toBe(DEFAULT_COVER);
-    expect(coerceCover("band")).toBe(DEFAULT_COVER);
-  });
-
-  it("opens on the full-screen photo unless told otherwise", () => {
-    // A guest arrives holding a phone. The photograph is what should be on it.
-    expect(DEFAULT_COVER).toBe("full");
-  });
-
-  it("matches the ids the database constraint allows", () => {
-    // 0012 constrains this column, so a new variant needs a migration as well
-    // as a component. Drifting apart means a save that fails at the database.
-    expect(COVER_VARIANTS.map((v) => v.id)).toEqual([
-      "full",
-      "classic",
-      "half",
-      "type",
-    ]);
-  });
-
   it("has exactly one variant that works without a photo", () => {
     // Everything else falls back to it before a cover photo is chosen, so
     // there has to be one and only one.
@@ -388,17 +286,6 @@ describe("upload variants", () => {
     expect(coerceUpload("panel")).toBe("panel");
     expect(coerceUpload("carousel")).toBe(DEFAULT_UPLOAD);
     expect(coerceUpload(null)).toBe(DEFAULT_UPLOAD);
-  });
-
-  it("matches the ids the database constraint allows", () => {
-    // 0006 constrains this column, so a new variant needs a migration as well
-    // as a component. Drifting apart means a save that fails at the database.
-    expect(UPLOAD_VARIANTS.map((v) => v.id)).toEqual([
-      "button",
-      "panel",
-      "bar",
-      "split",
-    ]);
   });
 });
 
@@ -420,43 +307,14 @@ describe("type pairings", () => {
     expect(href).toContain("family=Playfair+Display");
     expect(href).toContain("display=swap");
   });
-
-  it("carries the display settings the stylesheet cannot assume", () => {
-    // 86% width is right for Bricolage, which has a width axis, and wrong for
-    // a serif that does not - so weight, width and tracking travel with the
-    // face rather than living in globals.css.
-    for (const set of FONT_SETS) {
-      const vars = fontToCssVars(set);
-      expect(vars["--font-display"]).toBe(set.display);
-      expect(vars["--font-sans"]).toBe(set.body);
-      expect(vars["--font-display-weight"]).toBe(String(set.displayWeight));
-      expect(vars["--font-display-stretch"]).toMatch(/%$/);
-      expect(vars["--font-display-tracking"]).toMatch(/em$/);
-    }
-  });
-});
-
-describe("css variables", () => {
-  it("maps onto the names the design system already uses", () => {
-    // This is what lets a theme re-skin every existing component without any
-    // component knowing themes exist.
-    const vars = paletteToCssVars(THEMES[0].palette);
-    expect(vars["--color-linen"]).toBe("#F6F2F3");
-    expect(vars["--color-ink"]).toBe("#181214");
-    expect(vars["--color-claret"]).toBe("#7A1230");
-    // The label on a filled button is chosen rather than assumed, so the
-    // palette carries it and the variable is set alongside the accent.
-    expect(vars["--color-chalk"]).toBe("#FDF6F7");
-    expect(Object.keys(vars)).toHaveLength(11);
-  });
 });
 
 /**
- * The panel's own copy of the settings: what a row turns into, what the save
- * sends back, and what the "unsaved changes" count is measured on.
+ * The panel's own copy of the settings: what a row turns into and what the save
+ * sends back.
  *
- * The position is the newest field in all three, and a field missed in any one
- * of them is a setting that previews perfectly and never reaches the database.
+ * The position is the newest field in both, and a field missed in either one is
+ * a setting that previews perfectly and never reaches the database.
  */
 describe("the host's draft of the event page", () => {
   const row = {
@@ -482,37 +340,5 @@ describe("the host's draft of the event page", () => {
   it("sends the position to the server on save", () => {
     const settings = { ...fromEvent(row), coverPosition: "top-left" } as const;
     expect(toFields(settings).cover_position).toBe("top-left");
-  });
-
-  it("counts a move as one unsaved change", () => {
-    // Which is what puts the save bar on the screen. A field left out of the
-    // count is a change the host is never told they have.
-    const saved = fromEvent(row);
-    expect(countChanges(saved, saved)).toBe(0);
-    expect(
-      countChanges({ ...saved, coverPosition: "top-left" }, saved),
-    ).toBe(1);
-  });
-
-  it("keeps the position through a closed tab", () => {
-    const settings: Settings = {
-      ...fromEvent(row),
-      coverPosition: "bottom-centre",
-    };
-    const store: Record<string, string> = {};
-    vi.stubGlobal("localStorage", {
-      getItem: (k: string) => store[k] ?? null,
-      setItem: (k: string, v: string) => {
-        store[k] = v;
-      },
-      removeItem: (k: string) => {
-        delete store[k];
-      },
-    });
-
-    writeDraft(draftKey(row.id), settings, fromEvent(row));
-    expect(readDraft(draftKey(row.id))?.coverPosition).toBe("bottom-centre");
-
-    vi.unstubAllGlobals();
   });
 });

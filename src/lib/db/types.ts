@@ -45,7 +45,7 @@ export type EventRow = {
   name: string;
   event_date: string;
   /**
-   * The Lemon Squeezy variant id of the plan. Resolve it with `getTier`.
+   * The Creem product id of the plan. Resolve it with `getTier`.
    *
    * A plain string rather than a union: the valid values come from the
    * payment provider at runtime, so there is nothing here for the compiler

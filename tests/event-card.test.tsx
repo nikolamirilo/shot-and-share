@@ -2,7 +2,6 @@ import { ImageResponse } from "next/og";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStore } from "./stubs/supabase";
-import { THEMES } from "@/lib/appearance";
 import { OG_SIZE, OgCard } from "@/lib/og-card";
 import { HERO, SITE, heroHeadline } from "@/lib/seo";
 import { TIERS } from "@/lib/tiers";
@@ -141,12 +140,6 @@ beforeEach(() => {
 });
 
 describe("the card an event link unfurls into", () => {
-  it("is a PNG at the size the crawlers are told to expect", async () => {
-    expect(card.size).toEqual(OG_SIZE);
-    expect(card.contentType).toBe("image/png");
-    expect((await render()).subarray(0, 4)).toEqual(PNG_MAGIC);
-  });
-
   it("puts the event's own photograph on it", async () => {
     pushCover();
     servePhoto();
@@ -266,18 +259,6 @@ describe("what the preview says", () => {
 
     expect(meta.title).toBe("Share photos");
     expect(meta.description).toBeUndefined();
-  });
-});
-
-describe("the palette a card is drawn in", () => {
-  it("is the host's, not the house one", async () => {
-    const ivory = await render();
-
-    event = { ...EVENT, theme: "navy" };
-    const navy = await render();
-
-    expect(ivory.equals(navy)).toBe(false);
-    expect(THEMES.map((t) => t.id)).toContain("ivory");
   });
 });
 

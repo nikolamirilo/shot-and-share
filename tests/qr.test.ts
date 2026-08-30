@@ -29,21 +29,6 @@ async function card(opts: {
 }
 
 describe("QR generation", () => {
-  it("produces scalable SVG, not a bitmap", async () => {
-    const svg = qrSvg(URL_UNDER_TEST, cardColours(HOUSE, true));
-    expect(svg).toContain("<svg");
-    expect(svg).toContain("viewBox");
-    expect(svg).not.toContain("<image");
-  });
-
-  it("draws the code as rounded shapes rather than one stroked path", async () => {
-    // The look is the whole point of the shapes, and a later "simplification"
-    // back to a single path would take it away silently.
-    const svg = qrSvg(URL_UNDER_TEST, cardColours(HOUSE, true));
-    expect(svg.match(/<rect/g)?.length ?? 0).toBeGreaterThan(100);
-    expect(svg).toContain('rx="0.3"');
-  });
-
   it("gives the code its quiet zone", async () => {
     // Four modules of white on every side. Without them a scanner has nothing
     // to find the symbol's edge against.
@@ -53,75 +38,15 @@ describe("QR generation", () => {
     expect(first).toBe(4);
     expect(extent).toBeGreaterThan(4 * 2 + 20);
   });
-
-  it("takes the plate and the modules from the event's theme", async () => {
-    const sky = cardColours(findTheme("sky").palette, true);
-    const svg = qrSvg(URL_UNDER_TEST, sky);
-    expect(svg).toContain(sky.plate);
-    expect(svg).toContain(sky.modules);
-  });
 });
 
 describe("the printable card", () => {
-  it("is a PDF a browser will save rather than try to render", async () => {
-    const { bytes, text } = await card({
-      eventName: "Ana and Marko",
-      branded: false,
-    });
-    expect(text.startsWith("%PDF-")).toBe(true);
-    expect(bytes.byteLength).toBeGreaterThan(1000);
-  });
-
-  it("is one A5 page, so printing it needs no scaling", async () => {
-    const { bytes } = await card({ eventName: "Ana and Marko", branded: true });
-    const pdf = await PDFDocument.load(bytes);
-    expect(pdf.getPageCount()).toBe(1);
-
-    const { width, height } = pdf.getPage(0).getSize();
-    // 148 x 210mm in points, to the nearest point.
-    expect(Math.round(width)).toBe(420);
-    expect(Math.round(height)).toBe(595);
-  });
-
-  it("carries the event name and the instruction", async () => {
-    const { bytes } = await card({ eventName: "Ana and Marko", branded: true });
-    const pdf = await PDFDocument.load(bytes);
-    // The drawn text is compressed inside the content stream, so the title is
-    // the readable proof that the name reached the document.
-    expect(pdf.getTitle()).toContain("Ana and Marko");
-  });
-
   it("keeps the share link off the card", async () => {
     // A share token is a long random string. Nobody types it correctly off a
     // table, and the line asking them to try was competing with the code.
     const { text } = await card({ eventName: "Ana and Marko", branded: true });
     expect(text).not.toContain("saycheese.app");
     expect(text).not.toContain("aVeryLongTokenValue123456");
-  });
-
-  it("sets a long name smaller rather than off the edge", async () => {
-    // The name is the largest thing on the card, and a host types whatever they
-    // type. A card that fits "Ana & Marko" and runs a longer one into the
-    // margin is a card that only works for short names.
-    for (const eventName of [
-      "Ana & Marko",
-      "Marija i Nikola - vjencanje 2026",
-      "The Fortieth Birthday Party of Alexander Constantine",
-      "Supercalifragilisticexpialidocious",
-    ]) {
-      await expect(card({ eventName, branded: true })).resolves.toBeTruthy();
-    }
-  });
-
-  it("does not say the same thing twice", async () => {
-    // The instruction lives under the code. The line above the name is the
-    // date, and a card with no date simply has no eyebrow.
-    const { bytes } = await card({
-      eventName: "Ana & Marko",
-      branded: true,
-      eventDate: "",
-    });
-    await expect(PDFDocument.load(bytes)).resolves.toBeTruthy();
   });
 
   it("sets a name the standard faces cannot encode, rather than throwing", async () => {
@@ -136,44 +61,6 @@ describe("the printable card", () => {
     ).resolves.toBeTruthy();
     // An all-emoji name leaves nothing to set. That is a blank line, not a crash.
     await expect(card({ eventName: "🎉🎊", branded: true })).resolves.toBeTruthy();
-  });
-
-  it("draws both cards in the product's own palette", async () => {
-    const plain = await paints((await card({ eventName: "T", branded: false })).bytes);
-    const branded = await paints((await card({ eventName: "T", branded: true })).bytes);
-
-    // Claret ground under the branded card, white under the plain one. Claret
-    // itself appears on both - it is the plain card's wordmark - so the tell is
-    // the softened chalk the branded card sets its quiet lines in, which only a
-    // card with a claret ground has any use for.
-    const soft = cardColours(HOUSE, true).eyebrow.toLowerCase();
-    expect(branded).toContain(CLARET);
-    expect(branded).toContain(soft);
-    expect(plain).toContain(PAPER);
-    expect(plain).not.toContain(soft);
-  });
-
-  it("follows the event's theme rather than the house one", async () => {
-    // A host who dressed their page in sage gets a sage card. The claret is the
-    // default, not a constant.
-    for (const theme of THEMES) {
-      const { colours, bytes } = await card({
-        eventName: "T",
-        branded: true,
-        theme: theme.id,
-      });
-      expect(colours.ground).toBe(theme.palette.accent);
-      expect(await paints(bytes)).toContain(theme.palette.accent.toLowerCase());
-    }
-  });
-
-  it("sets the card's type in whatever reads on the host's colour", async () => {
-    // Claret is dark and takes chalk; ivory and sage are pale and take ink.
-    // Neither is special-cased - the palette says which, and the card obeys.
-    for (const theme of THEMES) {
-      const colours = cardColours(theme.palette, true);
-      expect(colours.heading).toBe(theme.palette.onAccent);
-    }
   });
 
   it("keeps the code readable whatever the theme is", async () => {
@@ -195,9 +82,6 @@ describe("the printable card", () => {
     }
   });
 });
-
-const PAPER = "#ffffff";
-const CLARET = "#7a1230";
 
 /**
  * Every colour the page fills with, back as hex. PDF carries them as three

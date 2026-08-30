@@ -97,20 +97,35 @@ export const env = {
     return opt("NEXT_PUBLIC_MEDIA_BASE_URL");
   },
 
-  lemonSqueezy: {
+  creem: {
     get apiKey() {
-      return opt("LEMONSQUEEZY_API_KEY");
-    },
-    get storeId() {
-      return opt("LEMONSQUEEZY_STORE_ID");
+      return opt("CREEM_API_KEY");
     },
     get webhookSecret() {
-      return opt("LEMONSQUEEZY_WEBHOOK_SECRET");
+      return opt("CREEM_WEBHOOK_SECRET");
     },
     /**
-     * Variant ids deliberately do not live here. They are read in
+     * Sandbox or real money, decided by the key rather than by a second switch.
+     *
+     * Creem issues test keys prefixed `creem_test_` and live keys prefixed
+     * `creem_`, and the two live on different hosts. A separate flag would be
+     * one more thing that can disagree with the key beside it - and the way
+     * that disagreement shows up is a live key quietly charging cards from a
+     * preview deployment, or a test key answering 401 in production.
+     */
+    get apiBase() {
+      return opt("CREEM_API_KEY")?.startsWith("creem_test_")
+        ? "https://test-api.creem.io"
+        : "https://api.creem.io";
+    },
+    /** True while pointed at the sandbox. Only used to say so out loud. */
+    get isTestMode() {
+      return Boolean(opt("CREEM_API_KEY")?.startsWith("creem_test_"));
+    },
+    /**
+     * Product ids deliberately do not live here. They are read in
      * `@/lib/tiers` from `NEXT_PUBLIC_` names instead, because that module is
-     * imported by client components and this one is server-only. A variant id
+     * imported by client components and this one is server-only. A product id
      * is not a secret - it appears in every checkout URL.
      */
   },
@@ -163,6 +178,10 @@ export const hasS3 = Boolean(
     process.env.S3_SECRET_ACCESS_KEY,
 );
 
-export function hasLemonSqueezy(): boolean {
-  return Boolean(env.lemonSqueezy.apiKey && env.lemonSqueezy.storeId);
+/**
+ * One key is the whole configuration: Creem scopes everything to the account
+ * the key belongs to, so there is no store id to get wrong alongside it.
+ */
+export function hasCreem(): boolean {
+  return Boolean(env.creem.apiKey);
 }

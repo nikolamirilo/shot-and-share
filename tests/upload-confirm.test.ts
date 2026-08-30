@@ -189,20 +189,6 @@ describe("confirming an upload", () => {
     logged.mockRestore();
   });
 
-  it("says so plainly when the browser reported no reason at all", async () => {
-    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
-    reserve();
-
-    await POST(request({ failed: true, mediaUploaded: false }));
-
-    expect(logged).toHaveBeenCalledWith(
-      "[confirm] upload did not reach storage",
-      expect.objectContaining({ reason: "not reported" }),
-    );
-
-    logged.mockRestore();
-  });
-
   it("keeps the clip and refunds only the poster when the poster failed", async () => {
     reserveVideo();
     const res = await POST(

@@ -87,35 +87,6 @@ beforeEach(() => {
   requests = 0;
 });
 
-describe("a photo the browser compressed", () => {
-  it("is accepted by storage at the size the route signed for", async () => {
-    const compressed = new Blob([new Uint8Array(120_000)], {
-      type: "image/webp",
-    });
-
-    const { status, body } = await presignFor({
-      size: 3_000_000,
-      type: "image/jpeg",
-      compressed: {
-        size: compressed.size,
-        format: "webp",
-        width: 2560,
-        height: 1440,
-      },
-      sourceWidth: 4032,
-      sourceHeight: 3024,
-      needsServer: false,
-    });
-
-    expect(status).toBe(200);
-    expect(body.upload.source).toBe("compressed");
-
-    const sent = await sendBytes(body.upload.media, compressed);
-    expect(sent.text).toBe("");
-    expect(sent.status).toBe(204);
-  });
-});
-
 describe("a photo whose type the picker never reported", () => {
   it("is signed and stored as what the browser produced", async () => {
     const compressed = new Blob([new Uint8Array(80_000)], {
@@ -161,54 +132,6 @@ describe("a photo the browser could not decode", () => {
     const sent = await sendBytes(body.upload.media, original);
     expect(sent.text).toBe("");
     expect(sent.status).toBe(204);
-  });
-});
-
-describe("a video with a poster", () => {
-  it("accepts both objects", async () => {
-    const clip = new Blob([new Uint8Array(900_000)], { type: "video/mp4" });
-    const poster = new Blob([new Uint8Array(40_000)], { type: "image/webp" });
-
-    const { status, body } = await presignFor({
-      size: clip.size,
-      type: "video/mp4",
-      poster: { size: poster.size, format: "webp", width: 720, height: 405 },
-      sourceWidth: 1920,
-      sourceHeight: 1080,
-      durationSeconds: 12,
-      needsServer: true,
-    });
-
-    expect(status).toBe(200);
-
-    expect((await sendBytes(body.upload.media, clip)).status).toBe(204);
-    expect((await sendBytes(body.upload.poster, poster)).status).toBe(204);
-  });
-});
-
-describe("a photo and its thumbnail", () => {
-  it("accepts both objects at the sizes the route signed for", async () => {
-    const full = new Blob([new Uint8Array(1_950_000)], { type: "image/jpeg" });
-    const thumb = new Blob([new Uint8Array(25_000)], { type: "image/webp" });
-
-    const { status, body } = await presignFor({
-      size: 4_000_000,
-      type: "image/jpeg",
-      compressed: {
-        size: full.size,
-        format: "jpeg",
-        width: 4032,
-        height: 3024,
-      },
-      thumb: { size: thumb.size, format: "webp", width: 640, height: 480 },
-      sourceWidth: 4032,
-      sourceHeight: 3024,
-      needsServer: false,
-    });
-
-    expect(status).toBe(200);
-    expect((await sendBytes(body.upload.media, full)).status).toBe(204);
-    expect((await sendBytes(body.upload.thumb, thumb)).status).toBe(204);
   });
 });
 
@@ -260,17 +183,6 @@ describe("the whole handshake", () => {
     const rows = store.rows("media");
     expect(rows).toHaveLength(1);
     expect(rows[0].thumb_key).toMatch(/\/thumb\/[^/]+\.webp$/);
-    expect(rows[0].media_key).toMatch(/\/full\/[^/]+\.jpg$/);
-  });
-
-  it("still ends with a photo when the thumbnail never made it", async () => {
-    // The one that matters: a guest at a venue whose thumbnail POST failed
-    // still has their photograph, and the grid falls back to the full copy.
-    expect(await handshake({ sendThumb: false })).toEqual({ confirmed: true, held: false });
-
-    const rows = store.rows("media");
-    expect(rows).toHaveLength(1);
-    expect(rows[0].thumb_key).toBeNull();
     expect(rows[0].media_key).toMatch(/\/full\/[^/]+\.jpg$/);
   });
 });

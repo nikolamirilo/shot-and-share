@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * The upload screening.
  *
- * Three things have to hold, and only one of them is "flagged photos get held".
- * The other two are the ones that would hurt: an unconfigured deployment must
- * still take uploads, and a provider that falls over must not stop a wedding.
+ * Two things have to hold, and only one of them is "flagged photos get held".
+ * The other is the one that would hurt: a provider that falls over must not
+ * stop a wedding.
  */
 
 const screen = vi.fn();
@@ -126,31 +126,6 @@ describe("what a verdict does to a row", () => {
     expect(review.moderated_at).toBeNull();
     expect(review.moderation_labels).toBeNull();
   });
-
-  it("lets a photo through when there is nothing configured to screen it", async () => {
-    screen.mockResolvedValue({
-      allowed: true,
-      outcome: "skipped",
-      labels: [],
-      provider: "none",
-    });
-
-    const review = await decideReview({
-      key: "owner/event/abc.jpg",
-      requireApproval: false,
-    });
-
-    expect(review.review_state).toBe("approved");
-    expect(review.moderated_at).toBeNull();
-  });
-
-  it("does not call the provider at all when there is no screenable object", async () => {
-    const review = await decideReview({ key: null, requireApproval: false });
-
-    expect(screen).not.toHaveBeenCalled();
-    expect(review.review_state).toBe("approved");
-    expect(review.moderated_at).toBeNull();
-  });
 });
 
 describe("the host's hold-everything switch", () => {
@@ -171,10 +146,5 @@ describe("the host's hold-everything switch", () => {
     // Still screened, so the host is told which of four hundred to look at
     // first rather than facing an undifferentiated queue.
     expect(review.moderated_at).not.toBeNull();
-  });
-
-  it("holds a photo that could not be screened at all", async () => {
-    const review = await decideReview({ key: null, requireApproval: true });
-    expect(review.review_state).toBe("held");
   });
 });

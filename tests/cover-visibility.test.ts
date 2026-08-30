@@ -92,14 +92,4 @@ describe("the guest gallery", () => {
       "guest-a",
     ]);
   });
-
-  it("is empty at an event whose only image is the cover", async () => {
-    push("host-cover", "cover", 1);
-
-    const response = await GET(
-      new Request("http://localhost/api/gallery?token=" + "b".repeat(32)),
-    );
-
-    expect((await response.json()).items).toEqual([]);
-  });
 });

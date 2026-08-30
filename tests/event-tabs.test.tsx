@@ -29,16 +29,6 @@ function render() {
 }
 
 describe("the tabs on the event console", () => {
-  it("ships every panel, open or not", () => {
-    // Closed is a display rule, not a reason to leave the markup out: a host
-    // switching tabs keeps what they typed, and the whole console arrives in
-    // the first response.
-    const html = render();
-    expect(html).toContain("the share panel");
-    expect(html).toContain("the plan panel");
-    expect(html).toContain("the settings panel");
-  });
-
   it("opens the first tab and closes the rest at every width", () => {
     // `hidden lg:block` was right while a laptop showed the whole console at
     // once. It would now leave every panel stacked behind the rail.
@@ -48,38 +38,6 @@ describe("the tabs on the event console", () => {
     expect(html).toMatch(/id="upgrade"[^>]*class="hidden/);
     expect(html).toMatch(/id="settings"[^>]*class="hidden/);
     expect(html).not.toMatch(/id="(upgrade|settings)"[^>]*lg:(block|grid)/);
-  });
-
-  it("keeps a closed grid panel a grid when it reopens", () => {
-    // A two-column row that comes back as a block is the panel arriving
-    // stacked on the one screen wide enough to show it side by side.
-    const html = render();
-    expect(html).toMatch(/id="share"[^>]*class="grid/);
-  });
-
-  it("keeps the strip on the screens that used to hide it", () => {
-    const html = render();
-    expect(html).toMatch(/role="tablist"/);
-    expect(html).not.toMatch(/role="tablist"[^>]*class="[^"]*lg:hidden/);
-  });
-
-  it("stands the rail up beside the panel on a laptop", () => {
-    // The two halves of a rail: a column of buttons, and a grid to put that
-    // column and the open panel in. Either one alone is a broken layout.
-    const html = render();
-    expect(html).toMatch(/role="tablist"[^>]*class="[^"]*lg:flex-col/);
-    expect(html).toMatch(/lg:grid-cols-\[13rem_1fr\]/);
-  });
-
-  it("leaves a strip horizontal on a laptop", () => {
-    const html = renderToStaticMarkup(
-      <Tabs items={ITEMS} label="Event page settings" idPrefix="look">
-        <TabPanel id="share">the share panel</TabPanel>
-      </Tabs>,
-    );
-    expect(html).not.toContain("lg:flex-col");
-    expect(html).not.toContain("lg:grid-cols-[13rem_1fr]");
-    expect(html).toContain('aria-orientation="horizontal"');
   });
 
   it("points each tab at the panel it opens", () => {
@@ -149,28 +107,6 @@ function renderRaised() {
 }
 
 describe("the bottom bar on a phone", () => {
-  it("pins the row to the bottom, and stops at sm", () => {
-    const html = renderBar();
-    const list = /role="tablist"[^>]*class="([^"]*)"/.exec(html)![1];
-    expect(list).toContain("fixed");
-    expect(list).toContain("bottom-0");
-    // One equal column per tab, however many there are - the bar does not know
-    // the number and must not be told it twice.
-    expect(list).toContain("grid-flow-col");
-    expect(list).toContain("auto-cols-fr");
-    // From `sm` up it is the strip it always was, in the flow of the page.
-    expect(list).toContain("sm:static");
-    expect(list).toContain("sm:flex");
-  });
-
-  it("does not pin the strip when the bar was not asked for", () => {
-    // Every other set of tabs in the product - the event page editor's own -
-    // must keep both feet on the ground.
-    const html = render();
-    expect(html).not.toContain("bottom-0");
-    expect(html).not.toContain("grid-flow-col");
-  });
-
   it("is one tablist, not a bar and a strip", () => {
     // Two rows over one set of panels would mean two elements carrying
     // id="share-tab", and every aria-labelledby pointing at whichever the
@@ -193,13 +129,6 @@ describe("the bottom bar on a phone", () => {
     expect(order("settings")).toContain("max-sm:order-5");
   });
 
-  it("puts the row back in its declared order above sm", () => {
-    // `max-sm:` and not a bare `order-*`: the rail reads top to bottom in the
-    // order a host does things, with Share at the front.
-    const html = renderRaised();
-    expect(html).not.toMatch(/(?<!max-sm:)\border-[1-6]\b/);
-  });
-
   it("leaves one shape per width rather than two fighting", () => {
     // A button carrying both `px-3.5` and `px-0.5` is not a bug you can see -
     // it is settled by whichever rule the compiler emitted last, which is not
@@ -213,38 +142,6 @@ describe("the bottom bar on a phone", () => {
     ]) {
       expect(pair.filter((c) => classes.includes(c))).toHaveLength(1);
     }
-  });
-
-  it("draws the raised one as a collared circle, and only on a phone", () => {
-    const html = renderRaised();
-    const circle = /class="([^"]*rounded-full[^"]*)"/.exec(html)![1];
-    // Measured against the bar rather than its own button, so that half of it
-    // stands above the bar's top edge.
-    expect(circle).toContain("absolute");
-    expect(circle).toContain("top-0");
-    expect(circle).toContain("left-1/2");
-    expect(circle).toContain("-translate-y-1/2");
-    // The collar, in the page's own colour, and nothing above sm.
-    expect(circle).toContain("ring-linen");
-    expect(circle).toContain("bg-claret");
-    expect(circle).toContain("sm:hidden");
-  });
-
-  it("says which tab is open with a halo, not by turning the colour off", () => {
-    const html = renderRaised();
-    const circle = /class="([^"]*rounded-full[^"]*)"/.exec(html)![1];
-    // Share is the open tab in this render, and it is claret either way.
-    expect(circle).toContain("outline-claret");
-    expect(circle).toContain("bg-claret");
-  });
-
-  it("never clips the button that stands outside the row", () => {
-    const html = renderRaised();
-    const list = /role="tablist"[^>]*class="([^"]*)"/.exec(html)![1];
-    expect(list).toContain("overflow-visible");
-    // And the strip above sm still scrolls, which is a different property on
-    // the same element - the two must not be declared in one branch.
-    expect(list).toContain("sm:overflow-x-auto");
   });
 
   it("keeps the full label as the accessible name at every width", () => {

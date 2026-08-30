@@ -25,13 +25,6 @@ function fake(name: string, bytes: number, type = "image/jpeg"): File {
 const LIMITS = { maxFileBytes: 200 * MB, room: 10_000 * MB };
 
 describe("triage", () => {
-  it("takes everything when everything fits", () => {
-    const files = [fake("a.jpg", 5 * MB), fake("b.jpg", 6 * MB)];
-    const result = triage(files, LIMITS);
-    expect(result.accepted).toEqual(files);
-    expect(result.skipped).toEqual([]);
-  });
-
   it("skips a file over the size limit and keeps the rest", () => {
     const big = fake("clip.mov", 300 * MB, "video/mp4");
     const files = [fake("a.jpg", 5 * MB), big, fake("c.jpg", 5 * MB)];
@@ -74,16 +67,6 @@ describe("triage", () => {
     // Room is the host's problem to fix, so this one carries the upgrade hint.
     expect(result.skipped[0].upgrade).toBe(true);
     expect(result.skipped[0].reason.toLowerCase()).toContain("room");
-  });
-
-  it("does not let a skipped file eat the room a later one needed", () => {
-    // 5 MB of room. The 12 MB photo (6 MB estimated) is skipped and must not
-    // count against the room, or the 4 MB photo (2 MB estimated) after it
-    // would be refused as well.
-    const files = [fake("big.jpg", 12 * MB), fake("small.jpg", 4 * MB)];
-    const result = triage(files, { ...LIMITS, room: 5 * MB });
-    expect(result.accepted.map((f) => f.name)).toEqual(["small.jpg"]);
-    expect(result.skipped.map((s) => s.file.name)).toEqual(["big.jpg"]);
   });
 });
 

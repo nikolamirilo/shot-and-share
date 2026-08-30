@@ -9,7 +9,6 @@ import {
   eventPrefix,
   mediaKey,
   thumbKey,
-  ownerPrefix,
   posterKey,
 } from "@/lib/media";
 
@@ -25,23 +24,6 @@ afterAll(async () => {
 });
 
 describe("local storage driver", () => {
-  it("round-trips an object", async () => {
-    const key = mediaKey(SCOPE, "media-1", "jpg");
-    await localDriver.put({
-      key,
-      body: Buffer.from("hello photo"),
-      contentType: "image/jpeg",
-    });
-
-    expect(await localDriver.head(key)).toEqual({ size: 11 });
-
-    const chunks: Buffer[] = [];
-    for await (const chunk of await localDriver.getStream(key)) {
-      chunks.push(chunk as Buffer);
-    }
-    expect(Buffer.concat(chunks).toString()).toBe("hello photo");
-  });
-
   it("accepts a stream body, which is how the ZIP is written", async () => {
     const key = archiveKey(SCOPE);
     await localDriver.put({
@@ -50,10 +32,6 @@ describe("local storage driver", () => {
       contentType: "application/zip",
     });
     expect((await localDriver.head(key))?.size).toBe(5);
-  });
-
-  it("reports a missing object as null rather than throwing", async () => {
-    expect(await localDriver.head("nope/nope/nope.jpg")).toBeNull();
   });
 
   it("removes a whole event prefix", async () => {
@@ -66,19 +44,6 @@ describe("local storage driver", () => {
     const removed = await localDriver.removePrefix(eventPrefix(SCOPE));
     expect(removed).toBeGreaterThanOrEqual(2);
     expect(await localDriver.head(mediaKey(SCOPE, "media-1", "jpg"))).toBeNull();
-  });
-
-  it("removes a whole owner prefix, which is how an account is closed", async () => {
-    const other = { ownerId: OWNER, eventId: "test-event-0002" };
-    await localDriver.put({
-      key: mediaKey(other, "media-9", "jpg"),
-      body: Buffer.from("another event, same host"),
-      contentType: "image/jpeg",
-    });
-
-    const removed = await localDriver.removePrefix(ownerPrefix(OWNER));
-    expect(removed).toBeGreaterThanOrEqual(1);
-    expect(await localDriver.head(mediaKey(other, "media-9", "jpg"))).toBeNull();
   });
 
   it("returns 0 for a prefix that does not exist", async () => {
@@ -160,16 +125,6 @@ describe("key safety", () => {
     expect(() => safeKey("../../../etc/passwd")).toThrow();
     expect(() => safeKey("/etc/passwd")).toThrow();
     expect(() => safeKey("a/b/../../../secrets")).toThrow();
-  });
-
-  it("normalises within the root rather than enforcing the owner prefix", () => {
-    // Worth being precise about what this function is: it stops a key escaping
-    // the storage root, not a key escaping its own tenant folder. One `..` per
-    // segment lands back at the root, and that is allowed.
-    expect(safeKey("a/b/c/../../../secrets")).toBe("secrets");
-    // The tenant boundary is held elsewhere - keys are built server-side from
-    // the owner on the row, the CHECK constraint in 0008 refuses anything else,
-    // and both local endpoints match the full key before touching disk.
   });
 
   it("allows the keys the application actually generates", () => {

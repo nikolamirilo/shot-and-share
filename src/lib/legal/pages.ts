@@ -90,7 +90,9 @@ const TERMS: LegalPage = {
       body: [
         `Every plan is a one-time payment for one event. ${TIERS.plus.name} is €${TIERS.plus.priceEur} and ${TIERS.pro.name} is €${TIERS.pro.priceEur}. The ${KEEP_FOREVER.name} add-on is €${KEEP_FOREVER.priceEur}, also paid once, and keeps that event's photos permanently.`,
         "Nothing renews and nothing needs cancelling. There is no subscription, no trial that turns into a charge, and no card of yours stored by us.",
-        `Payment is handled by Lemon Squeezy, who act as merchant of record. Your card details never reach us and your receipt comes from them. ${VAT_NOTE} Upgrading an event mid-way charges the difference rather than the full price again.`,
+        `Payment is handled by Creem, who act as merchant of record. Your card details never reach us and your receipt comes from them. ${VAT_NOTE}`,
+        `Upgrading an event pays the new plan's price in full. Nothing is taken off for the plan you already bought and nothing is refunded, so moving from ${TIERS.plus.name} to ${TIERS.pro.name} costs €${TIERS.pro.priceEur}, not the €${TIERS.pro.priceEur - TIERS.plus.priceEur} difference.`,
+        `The event moves onto the better plan as soon as the payment reaches us. Its storage allowance becomes the new plan's, and its photos are kept for the new plan's window - counted from the date of the event itself rather than from the day you upgraded, so none of the time you paid for is lost. The earlier payment stays on record, which is why a refunded upgrade drops the event back to the plan it was on before instead of to ${TIERS.free.name}.`,
       ],
     },
     {
@@ -252,7 +254,7 @@ const PRIVACY: LegalPage = {
         "Supabase - accounts and the database holding your events.",
         "Amazon Web Services - the photograph and video files themselves, stored in Frankfurt, and the automated moderation check.",
         "Vercel - running and serving the website.",
-        "Lemon Squeezy - payment, as merchant of record. They hold your payment details and we never see them.",
+        "Creem - payment, as merchant of record. They hold your payment details and we never see them.",
         "Resend - sending the emails this product sends, such as the warnings before a storage window ends.",
       ],
     },
@@ -378,7 +380,7 @@ const REFUND_POLICY: LegalPage = {
     {
       heading: "Who is refunding you",
       body: [
-        `Payments are taken by Lemon Squeezy as merchant of record, so the charge on your statement and the refund both come from them. The decision is ours. ${OPERATOR_LINE}`,
+        `Payments are taken by Creem as merchant of record, so the charge on your statement and the refund both come from them. The decision is ours. ${OPERATOR_LINE}`,
       ],
     },
   ],

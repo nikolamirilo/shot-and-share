@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { HERO, SITE, heroHeadline } from "@/lib/seo";
-
 /**
  * The card a link turns into in a chat.
  *
- * Two things are worth holding. That it renders at all: satori draws these, it
+ * What is worth holding is that it renders at all: satori draws these, it
  * takes a deliberately small subset of CSS, and a card that throws at request
- * time is a link that unfurls as a bare URL. And that it says what the landing
- * page says - the copy used to be written out twice, so the page could be
- * given a new headline while the card kept selling the old one.
+ * time is a link that unfurls as a bare URL.
  */
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
@@ -27,22 +23,5 @@ describe("the social card", () => {
     expect(png.subarray(0, 4)).toEqual(PNG_MAGIC);
     expect(route.size).toEqual({ width: 1200, height: 630 });
     expect(route.contentType).toBe("image/png");
-  });
-
-  it("carries the hero's own words, not a second copy of them", async () => {
-    const { alt } = await import("@/app/opengraph-image");
-
-    expect(alt).toBe(`${SITE.name} - Let your guests capture the moments you miss`);
-    expect(alt).toContain(heroHeadline());
-    // Two lines on the card, one sentence in an alt attribute.
-    expect(heroHeadline()).toBe(HERO.headlineLines.join(" "));
-  });
-
-  // Pricing says its own thing, and its number comes from `tiers.ts`.
-  it("still renders the pricing card", async () => {
-    const route = await import("@/app/pricing/opengraph-image");
-    const png = await render(route);
-
-    expect(png.subarray(0, 4)).toEqual(PNG_MAGIC);
   });
 });

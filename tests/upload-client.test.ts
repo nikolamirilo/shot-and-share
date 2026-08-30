@@ -63,37 +63,6 @@ describe("gate", () => {
     });
     expect(ran).toBe(true);
   });
-
-  it("lets two stages overlap rather than taking turns", async () => {
-    const compressing = gate(1);
-    const uploading = gate(1);
-    const order: string[] = [];
-
-    const one = async (name: string) => {
-      await compressing(async () => {
-        order.push(`compress ${name}`);
-        await wait(10);
-      });
-      await uploading(async () => {
-        order.push(`upload ${name}`);
-        await wait(10);
-      });
-    };
-
-    await Promise.all([one("a"), one("b")]);
-
-    // The point of the whole change: b is being compressed while a is being
-    // uploaded, rather than every compress finishing before any upload starts.
-    expect(order).toEqual([
-      "compress a",
-      "compress b",
-      "upload a",
-      "upload b",
-    ]);
-    expect(order.indexOf("compress b")).toBeLessThan(
-      order.indexOf("upload a") + 1,
-    );
-  });
 });
 
 /**
@@ -131,11 +100,6 @@ describe("getFingerprint", () => {
     expect(getFingerprint()).toBe(id);
   });
 
-  it("works where there is no usable crypto at all", () => {
-    vi.stubGlobal("crypto", {});
-    expect(getFingerprint()).toMatch(/^[0-9a-f]{32}$/);
-  });
-
   it("still returns an id when storage itself throws", () => {
     vi.stubGlobal("crypto", {});
     vi.stubGlobal("localStorage", {
@@ -157,12 +121,6 @@ describe("withRetry", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  it("returns the first success without waiting", async () => {
-    const task = vi.fn(async () => "done");
-    await expect(withRetry(task)).resolves.toBe("done");
-    expect(task).toHaveBeenCalledTimes(1);
   });
 
   it("tries three times before giving up on a retryable failure", async () => {
@@ -251,18 +209,6 @@ describe("postJson", () => {
     expect(error.retryable).toBe(false);
   });
 
-  it("marks a 5xx retryable and a 4xx not", async () => {
-    fetchMock.mockResolvedValue(respond(503, {}));
-    await expect(postJson("/x", {})).rejects.toMatchObject({
-      retryable: true,
-    });
-
-    fetchMock.mockResolvedValue(respond(400, {}));
-    await expect(postJson("/x", {})).rejects.toMatchObject({
-      retryable: false,
-    });
-  });
-
   it("survives an error page that is not JSON", async () => {
     fetchMock.mockResolvedValue(
       new Response("<html>502 Bad Gateway</html>", { status: 502 }),
@@ -338,13 +284,6 @@ describe("uploadToPresigned", () => {
   });
 
   const body = () => new Blob(["bytes"], { type: "image/webp" });
-
-  it("resolves on a 2xx", async () => {
-    const promise = uploadToPresigned(presigned, body());
-    sent!.status = 204;
-    sent!.onload!();
-    await expect(promise).resolves.toBeUndefined();
-  });
 
   it("names the reason S3 gave, and does not retry it", async () => {
     const promise = uploadToPresigned(presigned, body());

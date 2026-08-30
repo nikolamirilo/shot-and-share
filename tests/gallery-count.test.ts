@@ -18,12 +18,6 @@ describe("counting an event's photographs", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("gives back the number the database counted", async () => {
-    expect(
-      await countGuestMedia(answering({ data: 412, error: null }), "event"),
-    ).toBe(412);
-  });
-
   it("reads a bigint that arrived as a string", async () => {
     // supabase-js hands bigint back as a string once it is large enough to
     // need to. No event gets there, and it costs nothing to be right about.

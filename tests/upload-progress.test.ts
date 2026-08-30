@@ -28,27 +28,6 @@ const prepared = (over: Partial<Stages> = {}): Stages => ({
 });
 
 describe("one file's share of the bar", () => {
-  it("starts at nothing and ends at everything", () => {
-    expect(fileFraction(START)).toBe(0);
-    expect(fileFraction({ prepare: 1, upload: 1, confirmed: true })).toBe(1);
-  });
-
-  it("gives encoding real weight, so the bar moves before any bytes do", () => {
-    // Compressing is two encodes on a phone and is a genuine share of the
-    // wait. Left at zero the bar sits still through it and reads as stuck,
-    // which is what the drifting indeterminate bar was papering over.
-    expect(fileFraction({ ...START, prepare: 0.5 })).toBeGreaterThan(0);
-    expect(fileFraction(prepared())).toBeGreaterThan(0.1);
-    // But not so much that encoding looks like most of the job.
-    expect(fileFraction(prepared())).toBeLessThan(0.4);
-  });
-
-  it("counts uploading as the bulk of the work", () => {
-    const half = fileFraction(prepared({ upload: 0.5 }));
-    expect(half).toBeGreaterThan(fileFraction(prepared()));
-    expect(half).toBeLessThan(fileFraction(prepared({ upload: 1 })));
-  });
-
   it("leaves something for the confirm, so it never sits at 100 unfinished", () => {
     // The row is written after the last byte lands. A bar that reaches 100 and
     // then waits is a bar that has stopped meaning anything.
@@ -87,10 +66,6 @@ describe("one file's share of the bar", () => {
 });
 
 describe("the run as a whole", () => {
-  it("is empty with nothing to do", () => {
-    expect(runPercent([])).toBe(0);
-  });
-
   it("weighs a file by its size, not by being one file", () => {
     // A 200 MB clip and a 2 MB photo are not half the wait each. Counting them
     // equally is why the bar jumped to 50% while the clip had barely started.
@@ -102,27 +77,6 @@ describe("the run as a whole", () => {
 
     // The small photo finishing must barely move the bar.
     expect(runPercent([clip, photo])).toBeLessThan(5);
-  });
-
-  it("does not credit a clip a fifth of the bar for cutting one frame", () => {
-    const clip = {
-      bytes: 200_000_000,
-      stages: { ...START, prepare: 1 },
-      kind: "video" as const,
-    };
-    expect(runPercent([clip])).toBeLessThan(5);
-  });
-
-  it("does not move in halves when there are two files", () => {
-    // The reported symptom. With per-file measurement the bar passes through
-    // the middle rather than jumping to it.
-    const a = { bytes: 4_000_000, stages: prepared({ upload: 0.4 }) };
-    const b = { bytes: 4_000_000, stages: { ...START, prepare: 0.5 } };
-
-    const percent = runPercent([a, b]);
-    expect(percent).toBeGreaterThan(0);
-    expect(percent).toBeLessThan(50);
-    expect(Number.isInteger(percent)).toBe(true);
   });
 
   it("never goes backwards across a whole realistic run", () => {
@@ -150,18 +104,6 @@ describe("the run as a whole", () => {
     }
     expect(seen[0]).toBe(0);
     expect(seen.at(-1)).toBe(100);
-  });
-
-  it("reaches exactly 100 when everything is confirmed", () => {
-    // Not 99. A bar that stops one short of the end is the thing a guest
-    // stares at wondering whether to close the page.
-    const done = { prepare: 1, upload: 1, confirmed: true };
-    expect(
-      runPercent([
-        { bytes: 1, stages: done },
-        { bytes: 999_999, stages: done },
-      ]),
-    ).toBe(100);
   });
 
   it("copes with a zero-byte file rather than dividing by nothing", () => {

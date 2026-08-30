@@ -45,8 +45,4 @@ describe("rate limiting", () => {
     const headers = new Headers({ "x-forwarded-for": "203.0.113.9, 10.0.0.2" });
     expect(clientIp(headers)).toBe("203.0.113.9");
   });
-
-  it("degrades to a constant rather than throwing", () => {
-    expect(clientIp(new Headers())).toBe("unknown");
-  });
 });

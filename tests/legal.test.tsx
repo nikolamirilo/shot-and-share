@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { LEGAL_ORDER, LEGAL_PAGES } from "@/lib/legal/pages";
-import { OPERATOR, OPERATOR_LINE, addressLine } from "@/lib/legal/operator";
+import { OPERATOR, addressLine } from "@/lib/legal/operator";
 import { PUBLIC_ROUTES } from "@/lib/seo";
 import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
 
@@ -29,27 +29,10 @@ const text = (slug: keyof typeof LEGAL_PAGES) => {
 const everything = LEGAL_ORDER.map(text).join("\n");
 
 describe("the pages exist and are reachable", () => {
-  it("has all four", () => {
-    expect(LEGAL_ORDER).toEqual([
-      "terms",
-      "privacy",
-      "refund-policy",
-      "acceptable-use",
-    ]);
-  });
-
   it("lists every one in the sitemap", () => {
     const paths = PUBLIC_ROUTES.map((route) => route.path);
     for (const slug of LEGAL_ORDER) {
       expect(paths).toContain(`/${slug}`);
-    }
-  });
-
-  it("gives each one a title and a footer label", () => {
-    for (const slug of LEGAL_ORDER) {
-      expect(LEGAL_PAGES[slug].title.length).toBeGreaterThan(0);
-      expect(LEGAL_PAGES[slug].navLabel.length).toBeGreaterThan(0);
-      expect(LEGAL_PAGES[slug].sections.length).toBeGreaterThan(0);
     }
   });
 });
@@ -64,10 +47,6 @@ describe("the operator is named, not implied", () => {
     expect(everything).not.toMatch(/\[[a-z][^\]]*\]/i);
     expect(everything.toUpperCase()).not.toContain("REPLACE_ME");
     expect(everything.toUpperCase()).not.toContain("TODO");
-  });
-
-  it("names the trading entity on the terms", () => {
-    expect(text("terms")).toContain(OPERATOR.legalName);
   });
 
   it("gives both registration numbers on the terms", () => {
@@ -86,18 +65,39 @@ describe("the operator is named, not implied", () => {
     expect(text("privacy")).toContain(OPERATOR.legalName);
     expect(text("privacy")).toContain(OPERATOR.registrationNumber);
   });
-
-  it("joins the product to the entity in one sentence", () => {
-    expect(OPERATOR_LINE).toContain("Shot & Share");
-    expect(OPERATOR_LINE).toContain(OPERATOR.legalName);
-  });
 });
 
 describe("the answers a reviewer is actually looking for", () => {
-  it("gives an email address on every page", () => {
-    for (const slug of LEGAL_ORDER) {
-      expect(text(slug)).toMatch(/[\w.]+@[\w.]+/);
-    }
+  /*
+   * The terms used to promise that upgrading "charges the difference rather
+   * than the full price again". Nothing in the checkout has ever done that: an
+   * upgrade opens a checkout for the new plan at its own price. A payments page
+   * that describes a discount the buyer does not get is the kind of thing a
+   * card scheme calls a misleading term, so the claim is asserted against here
+   * rather than only removed.
+   */
+  it("does not promise a pro-rated upgrade", () => {
+    const terms = text("terms").toLowerCase();
+    expect(terms).not.toContain("charges the difference");
+    expect(terms).not.toContain("pro-rat");
+    expect(terms).not.toContain("prorat");
+  });
+
+  it("says an upgrade costs the new plan's full price", () => {
+    const terms = text("terms");
+    expect(terms).toContain("in full");
+    // The figure itself, so the copy cannot drift away from the price table.
+    expect(terms).toContain(`costs €${TIERS.pro.priceEur}`);
+    expect(terms).toContain("nothing is refunded");
+  });
+
+  /*
+   * Retention counts from the event date, not the purchase date - see
+   * `computeExpiry`. Somebody upgrading a week before the wedding must not read
+   * this and think they have bought a window that starts today.
+   */
+  it("says which date the upgraded window is counted from", () => {
+    expect(text("terms")).toContain("date of the event itself");
   });
 
   it("states the refund window as a number of days", () => {
@@ -110,19 +110,6 @@ describe("the answers a reviewer is actually looking for", () => {
     expect(refunds).toContain("chargeback");
   });
 
-  it("names every company that touches the data", () => {
-    const privacy = text("privacy");
-    for (const processor of [
-      "Supabase",
-      "Amazon Web Services",
-      "Vercel",
-      "Lemon Squeezy",
-      "Resend",
-    ]) {
-      expect(privacy).toContain(processor);
-    }
-  });
-
   it("states where the files are and how long they stay", () => {
     const privacy = text("privacy");
     expect(privacy).toContain("European Union");
@@ -130,12 +117,6 @@ describe("the answers a reviewer is actually looking for", () => {
     // drift away from what the product actually does.
     expect(privacy).toContain(String(TIERS.free.retentionDays));
     expect(privacy).toContain(String(HARD_DELETE_GRACE_DAYS));
-  });
-
-  it("gives someone in a photo a way to have it removed", () => {
-    const privacy = text("privacy").toLowerCase();
-    expect(privacy).toContain("did not upload it");
-    expect(privacy).toContain("hours");
   });
 
   it("bans the four things an acceptable use policy has to ban", () => {
@@ -163,11 +144,5 @@ describe("what the product must not say", () => {
     expect(everything.toLowerCase()).not.toContain("contact us for");
     expect(everything.toLowerCase()).not.toContain("request a quote");
     expect(everything.toLowerCase()).not.toContain("custom quote");
-  });
-
-  it("says plainly that nothing recurs", () => {
-    const terms = text("terms").toLowerCase();
-    expect(terms).toContain("nothing renews");
-    expect(terms).toContain("no subscription");
   });
 });

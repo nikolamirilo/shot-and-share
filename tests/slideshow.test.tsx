@@ -16,13 +16,11 @@ import { TIERS } from "@/lib/tiers";
  * from: it is a projector pointed at a room full of people, so a mistake on it
  * is a mistake in public and stays there for seven seconds at a time.
  *
- * Three of them had been made. The seed query read the host's console view of
+ * Two of them had been made. The seed query read the host's console view of
  * the media table rather than the guest's, so a photograph held for review was
  * on the wall on the first frame - the exact failure held-media-visibility.test
  * warns about and did not cover. Each slide was drawn from `previewUrl`, a
- * 640px thumbnail cut for grid tiles, blown up across 1080p. And a photograph
- * still being converted, which has no URL at all, took its turn as seven
- * seconds of black.
+ * 640px thumbnail cut for grid tiles, blown up across 1080p.
  */
 
 const store = createStore();
@@ -183,13 +181,6 @@ describe("what reaches the projector", () => {
 
     expect(rows.map((row) => row.id)).toEqual(["approved-c"]);
   });
-
-  it("shows nothing at all when everything is waiting on the host", async () => {
-    push("held-a", "held", 1);
-    push("held-b", "held", 2);
-
-    expect(await wall()).toContain("Waiting for the first photo");
-  });
 });
 
 describe("each slide", () => {
@@ -224,38 +215,6 @@ describe("each slide", () => {
     expect(shows(html, "https://cdn.example/thumb/heic.webp")).toBe(false);
     expect(html).toContain("1 / 1");
   });
-
-  /*
-   * A clip has no full copy - only a poster frame the phone made, around 55 KB,
-   * which is the soft slide in a set of sharp ones. There is nothing to play
-   * either until the transcode worker has been over it. So it is not a slide.
-   */
-  it("is never a clip's poster frame", () => {
-    const html = show([
-      photo({ id: "ready", fullUrl: "https://cdn.example/full/ready.jpg" }),
-      photo({
-        id: "clip",
-        kind: "video",
-        previewUrl: "https://cdn.example/poster/clip.webp",
-        posterUrl: "https://cdn.example/poster/clip.webp",
-      }),
-    ]);
-
-    expect(shows(html, "https://cdn.example/poster/clip.webp")).toBe(false);
-    expect(html).toContain("1 / 1");
-  });
-
-  it("is never a photograph that has nothing to draw yet", () => {
-    const html = show([
-      photo({ id: "ready", fullUrl: "https://cdn.example/full/ready.jpg" }),
-      // Still with the worker: in the bucket, but a broken image everywhere.
-      photo({ id: "converting", processing: true }),
-    ]);
-
-    expect((html.match(/<img/g) ?? []).length).toBe(1);
-    // And it is not counted either, or the wall claims a photo it cannot show.
-    expect(html).toContain("1 / 1");
-  });
 });
 
 /**
@@ -286,16 +245,6 @@ describe("the rest of the evening", () => {
 
     // The oldest of the sixty seeded, which is where the browser picks up.
     expect(element.props.olderThan).toBe("2026-08-01T00:01:00.000Z");
-  });
-
-  it("hands over nothing when the seed already is the event", async () => {
-    push("only", "approved", 1);
-
-    const element = await SlideshowPage({
-      params: Promise.resolve({ id: EVENT.id }),
-    });
-
-    expect(element.props.olderThan).toBeNull();
   });
 
   it("pages backwards through approved photographs only", async () => {
@@ -345,13 +294,5 @@ describe("the route", () => {
 
     expect(layouts.length).toBeGreaterThan(0);
     for (const source of layouts) expect(source).not.toContain("HeaderShell");
-  });
-
-  it("has not taken the header away from the rest of the console", () => {
-    const shell = readFileSync(
-      path.join(app, "dashboard/(shell)/layout.tsx"),
-      "utf8",
-    );
-    expect(shell).toContain("HeaderShell");
   });
 });

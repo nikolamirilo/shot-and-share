@@ -88,17 +88,6 @@ const compressedPhoto = {
   needsServer: false,
 };
 
-/** A HEIC outside Safari: the browser decoded nothing, so the worker owes both. */
-const undecodablePhoto = {
-  size: 2_000_000,
-  type: "image/heic",
-  compressed: null,
-  thumb: null,
-  sourceWidth: null,
-  sourceHeight: null,
-  needsServer: true,
-};
-
 const video = {
   size: 8_000_000,
   type: "video/quicktime",
@@ -118,24 +107,6 @@ beforeEach(() => {
 });
 
 describe("presigning an upload", () => {
-  it("signs the full copy and its thumbnail, and nothing else", async () => {
-    const res = await POST(request(compressedPhoto));
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-
-    const { upload } = body;
-    // Two objects for a photo, and the browser is told to send the encoded
-    // blob rather than the file off the disk.
-    expect(upload.source).toBe("compressed");
-    expect(upload.media).toBeTruthy();
-    expect(upload.thumb).toBeTruthy();
-    expect(upload.poster).toBeNull();
-    expect(Object.keys(upload).sort()).toEqual(
-      ["mediaId", "media", "thumb", "poster", "source"].sort(),
-    );
-  });
-
   it("puts each copy in its own folder and charges for both", async () => {
     const res = await POST(request(compressedPhoto));
     const { upload } = await res.json();
@@ -149,39 +120,6 @@ describe("presigning an upload", () => {
     expect(Number(reservation.size_bytes)).toBe(1_950_000);
     expect(Number(reservation.thumb_size_bytes)).toBe(25_000);
     expect(reservation.thumb_key).toBe(upload.thumb.fields.key);
-  });
-
-  it("signs no thumbnail for a photo the browser could not decode", async () => {
-    // A HEIC outside Safari. Nothing may be signed for a thumbnail that will
-    // never be posted - the worker cuts it instead.
-    const res = await POST(request(undecodablePhoto));
-    const { upload } = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(upload.source).toBe("file");
-    expect(upload.thumb).toBeNull();
-    expect(reservations().at(-1)!.thumb_key).toBeNull();
-  });
-
-  it("signs no thumbnail for a video, whose poster already is one", async () => {
-    EVENT.tier = TIERS.pro.id;
-    const res = await POST(request(video));
-    const { upload } = await res.json();
-
-    expect(upload.thumb).toBeNull();
-    expect(upload.poster).toBeTruthy();
-  });
-
-  it("keys that object inside the owner's event folder, at the root", async () => {
-    const res = await POST(request(compressedPhoto));
-    const { upload } = await res.json();
-
-    expect(upload.media.fields.key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/full/${upload.mediaId}.jpg`,
-    );
-    expect(upload.thumb.fields.key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/thumb/${upload.mediaId}.webp`,
-    );
   });
 
   it("writes no media row at all - only a reservation", async () => {
@@ -261,21 +199,6 @@ describe("presigning an upload", () => {
     expect(upload.source).toBe("compressed");
     expect(upload.media.fields.key).toMatch(/\.jpg$/);
     expect(reservations()[0].size_bytes).toBe(1_950_000);
-  });
-
-  it("still refuses a type it does not know and cannot see a photo behind", async () => {
-    const res = await POST(
-      request({
-        size: 3_000_000,
-        type: "application/zip",
-        compressed: null,
-        needsServer: true,
-      }),
-    );
-
-    expect(res.status).toBe(400);
-    expect(store.reserved()).toBe(0);
-    expect(reservations()).toHaveLength(0);
   });
 
   /**

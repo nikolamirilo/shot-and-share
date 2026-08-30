@@ -29,11 +29,11 @@ export const AVG_PHOTO_BYTES = 7 * MB;
 export type PlanKey = "free" | "plus" | "pro";
 
 /**
- * Lemon Squeezy variant ids.
+ * Creem product ids.
  *
  * `NEXT_PUBLIC_` because this module is imported by client components and
  * `@/lib/env` is server-only, so the ids cannot travel through it. Publishing
- * them costs nothing: a variant id is already visible in the checkout URL of
+ * them costs nothing: a product id is already visible in the checkout URL of
  * every purchase.
  *
  * Written out one static member access at a time rather than through a helper,
@@ -41,10 +41,11 @@ export type PlanKey = "free" | "plus" | "pro";
  * see that exact expression. A dynamic lookup compiles to `undefined` in the
  * browser and fails silently.
  */
-export const LS_VARIANTS = {
-  plus: process.env.NEXT_PUBLIC_LS_VARIANT_PLUS || undefined,
-  pro: process.env.NEXT_PUBLIC_LS_VARIANT_PRO || undefined,
-  keep_forever: process.env.NEXT_PUBLIC_LS_VARIANT_KEEP_FOREVER || undefined,
+export const CREEM_PRODUCTS = {
+  plus: process.env.NEXT_PUBLIC_CREEM_PRODUCT_PLUS || undefined,
+  pro: process.env.NEXT_PUBLIC_CREEM_PRODUCT_PRO || undefined,
+  keep_forever:
+    process.env.NEXT_PUBLIC_CREEM_PRODUCT_KEEP_FOREVER || undefined,
 } as const satisfies Record<string, string | undefined>;
 
 export interface Tier {
@@ -53,17 +54,17 @@ export interface Tier {
    */
   key: PlanKey;
   /**
-   * The Lemon Squeezy variant id, and what `events.tier` holds.
+   * The Creem product id, and what `events.tier` holds.
    *
-   * Falls back to the plan key when the variant is not configured, so a
-   * developer without a Lemon Squeezy store still gets a stable value to write
+   * Falls back to the plan key when the product is not configured, so a
+   * developer without a Creem account still gets a stable value to write
    * and read back. It does mean a development row and a production row say
    * different things for the same plan - the accepted cost of keying rows on
    * an id that belongs to the payment provider rather than to us.
    */
   id: string;
   /**
-   * Position in the ladder. Variant ids are opaque numbers that do not sort,
+   * Position in the ladder. Product ids are opaque strings that do not sort,
    * so upgrades are decided on this and nothing else.
    */
   rank: number;
@@ -96,7 +97,7 @@ export interface Tier {
 export const TIERS: Record<PlanKey, Tier> = {
   free: {
     key: "free",
-    // Free is not sold, so there is no variant to name it after.
+    // Free is not sold, so there is no product to name it after.
     id: "free",
     rank: 0,
     name: "Free",
@@ -116,7 +117,7 @@ export const TIERS: Record<PlanKey, Tier> = {
   },
   plus: {
     key: "plus",
-    id: LS_VARIANTS.plus ?? "plus",
+    id: CREEM_PRODUCTS.plus ?? "plus",
     rank: 1,
     name: "Plus",
     meaning: "One event, done properly.",
@@ -135,7 +136,7 @@ export const TIERS: Record<PlanKey, Tier> = {
   },
   pro: {
     key: "pro",
-    id: LS_VARIANTS.pro ?? "pro",
+    id: CREEM_PRODUCTS.pro ?? "pro",
     rank: 2,
     name: "Pro",
     meaning: "The whole thing.",
@@ -162,11 +163,11 @@ export const TIERS: Record<PlanKey, Tier> = {
  * generous next to a 90-day competitor and short enough that the upsell matters.
  *
  * Unlike a tier this is never stored in `events.tier` - it is a boolean column
- * on the event - so it carries only a key and the variant to charge against.
+ * on the event - so it carries only a key and the product to charge against.
  */
 export const KEEP_FOREVER = {
   key: "keep_forever" as const,
-  variantId: LS_VARIANTS.keep_forever,
+  productId: CREEM_PRODUCTS.keep_forever,
   name: "Keep Forever",
   meaning: "Where the negatives go, so where photos are kept for good.",
   priceEur: 29,
@@ -183,10 +184,10 @@ export const KEEP_FOREVER = {
  * misleading price: EU consumer rules require the figure shown to a consumer to
  * be the figure they pay.
  *
- * So there is one claim, written once, and it is the inclusive one. The Lemon
- * Squeezy variants have to be configured tax-inclusive to match, which is a
+ * So there is one claim, written once, and it is the inclusive one. The Creem
+ * products have to be configured `tax_mode: inclusive` to match, which is a
  * setting in their dashboard rather than anything this repository can enforce -
- * see the note in `@/lib/payments/lemonsqueezy`.
+ * see the note in `@/lib/payments/creem`.
  */
 export const VAT_NOTE =
   "Every price includes EU VAT. The number you see is the number you pay.";
@@ -203,8 +204,8 @@ export const VAT_BADGE = "VAT included";
  * a dead `PurchasableId` in here that excluded nothing. One definition, and a
  * runtime list so the zod enum is derived rather than retyped.
  *
- * These are plan keys, not variant ids. A product travels as a request
- * parameter and inside Lemon Squeezy custom data, where a value that survives
+ * These are plan keys, not Creem product ids. A product travels as a request
+ * parameter and inside Creem checkout metadata, where a value that survives
  * changing stores is worth more than one that matches the row it will produce.
  */
 export type PaidPlanKey = Exclude<PlanKey, "free">;
@@ -228,7 +229,7 @@ export const TIER_ORDER: PlanKey[] = ["free", "plus", "pro"];
  */
 export const BIG_PICK = 300;
 
-/** Variant id back to the plan it pays for. Built once, not searched per call. */
+/** Product id back to the plan it pays for. Built once, not searched per call. */
 const BY_ID = new Map<string, Tier>(
   TIER_ORDER.map((key) => [TIERS[key].id, TIERS[key]]),
 );
@@ -236,14 +237,33 @@ const BY_ID = new Map<string, Tier>(
 /**
  * Resolve what an event row stores.
  *
- * The argument is a Lemon Squeezy variant id, so an unrecognised one is
- * ordinary rather than exceptional: it is what a row written against a
- * different store, or against a variant since replaced, looks like. Those fall
- * back to Free, which is the only safe direction to be wrong in.
+ * The argument is a Creem product id, so an unrecognised one is ordinary
+ * rather than exceptional: it is what a row written against a different
+ * account, or against a product since replaced, looks like. Those fall back to
+ * Free, which is the only safe direction to be wrong in.
  */
 export function getTier(id: string | null | undefined): Tier {
   if (!id) return TIERS.free;
   return BY_ID.get(id) ?? TIERS.free;
+}
+
+/**
+ * Whether `getTier` actually recognised that id, or merely fell back to Free.
+ *
+ * Falling back to Free is the right answer almost everywhere - it is the only
+ * safe direction to be wrong in when the question is "what may this event do".
+ * It is the wrong answer to "how long are these photos kept", because there the
+ * safe direction is the other one: an unrecognised id must never be allowed to
+ * shorten a window somebody paid for, and a shortened window is written to the
+ * row and outlives whatever caused it.
+ *
+ * That is not hypothetical. Between deploying a release that changes what
+ * `events.tier` holds and running the migration that rewrites those rows, every
+ * paid event holds an id this code does not know - see
+ * `supabase/migrations/0021`.
+ */
+export function isKnownTierId(id: string | null | undefined): boolean {
+  return !id || BY_ID.has(id);
 }
 
 /** True when moving from one stored tier id to another buys more, not less. */
@@ -286,7 +306,7 @@ export function photoCountLabel(bytes: number): string {
  * buys six months ahead of the wedding should not lose half their window.
  *
  * Takes the plan rather than an id: every caller already holds one, and the id
- * is now a variant that would only have to be looked up again in here.
+ * is now a product that would only have to be looked up again in here.
  */
 export function computeExpiry(eventDate: string | Date, tier: Tier): Date {
   const base = new Date(eventDate);
