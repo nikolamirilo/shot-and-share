@@ -275,16 +275,38 @@ describe("the name's position on the cover", () => {
   });
 
   it("puts a scrim under a name in the middle", () => {
-    const html = cover({ position: "centre" });
+    const html = cover({ position: "middle-centre" });
 
     expect(html).toContain("radial-gradient");
     expect(html).toContain("text-center");
   });
 
+  it("moves the scrim sideways with the name", () => {
+    // The middle row has no edge to hang a gradient off, so the dark patch is
+    // under the type itself - and a patch in the centre does nothing for a
+    // name in the left margin.
+    expect(cover({ position: "middle-left" })).toContain("at 26% 50%");
+    expect(cover({ position: "middle-right" })).toContain("at 74% 50%");
+  });
+
+  it("aligns the type, and the message and cue with it", () => {
+    const right = cover({ position: "bottom-right", message: "Thank you." });
+    expect(right).toContain("text-right");
+    // The message is narrower than the frame, so it is pushed to the same
+    // side rather than left hanging off the opposite one.
+    expect(right).toContain("ml-auto");
+    expect(right).toContain("justify-end");
+
+    const centre = cover({ position: "bottom-centre", message: "Thank you." });
+    expect(centre).toContain("text-center");
+    expect(centre).toContain("sm:text-lead mx-auto");
+    expect(centre).toContain("justify-center");
+  });
+
   it("keeps the scroll cue at the foot when the name leaves it", () => {
     // The cue points at what is below the cover, not at the name, so it is
     // pinned to the foot in its own box once the name is no longer down there.
-    for (const position of ["centre", "top-left"] as const) {
+    for (const position of ["middle-centre", "top-right"] as const) {
       const html = cover({ position });
       expect(html).toContain("add your photos");
       expect(html).toContain("absolute inset-x-0 bottom-0");

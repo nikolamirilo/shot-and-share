@@ -1,8 +1,11 @@
 import type { Palette } from "@/lib/appearance/themes";
 import {
+  type CoverHorizontal,
   type CoverPosition,
   type CoverVariant,
+  type CoverVertical,
   DEFAULT_POSITION,
+  splitPosition,
 } from "@/lib/appearance/variants";
 import { paletteToCssVars } from "@/lib/appearance";
 import type { FontSet } from "@/lib/fonts";
@@ -49,8 +52,8 @@ interface Placement {
   box: string;
   /** The type's own alignment, and the scroll cue's with it. */
   align: string;
-  /** Rows within the block, so a centred name is not a left-aligned column. */
-  items: string;
+  /** Which side the message and the cue are pushed towards. */
+  horizontal: CoverHorizontal;
   /**
    * Which edge the type sits against. Decides the wash, the padding, the safe
    * area, and which way the empty frame's label is pushed to keep clear of the
@@ -59,32 +62,57 @@ interface Placement {
   edge: "bottom" | "top" | "none";
 }
 
-const PLACEMENTS: Record<CoverPosition, Placement> = {
-  "bottom-left": {
-    box: "inset-x-0 bottom-0",
-    align: "",
-    items: "",
-    edge: "bottom",
-  },
-  "bottom-centre": {
-    box: "inset-x-0 bottom-0",
-    align: "text-center",
-    items: "items-center",
-    edge: "bottom",
-  },
-  centre: {
-    box: "inset-0 flex flex-col justify-center",
-    align: "text-center",
-    items: "items-center",
-    edge: "none",
-  },
-  "top-left": {
-    box: "inset-x-0 top-0",
-    align: "",
-    items: "",
-    edge: "top",
-  },
+/*
+ * Written out rather than assembled from the ids, because Tailwind reads this
+ * file for literal class names and generates nothing for a string it builds at
+ * runtime.
+ */
+const BOXES: Record<CoverVertical, string> = {
+  top: "inset-x-0 top-0",
+  middle: "inset-0 flex flex-col justify-center",
+  bottom: "inset-x-0 bottom-0",
 };
+
+const ALIGNS: Record<CoverHorizontal, string> = {
+  left: "text-left",
+  centre: "text-center",
+  right: "text-right",
+};
+
+/**
+ * Where a block narrower than the frame is pushed: the message, which is held
+ * to `max-w-xl`, and the empty frame's own margins. A narrow box of centred
+ * lines hung off the left edge under a centred name reads as a mistake.
+ */
+const NUDGES: Record<CoverHorizontal, string> = {
+  left: "",
+  centre: "mx-auto",
+  right: "ml-auto",
+};
+
+/** The scroll cue follows the name rather than staying where it was. */
+const CUE_JUSTIFY: Record<CoverHorizontal, string> = {
+  left: "justify-start",
+  centre: "justify-center",
+  right: "justify-end",
+};
+
+/** The middle row is against no edge; the other two name their own. */
+const EDGES: Record<CoverVertical, Placement["edge"]> = {
+  top: "top",
+  middle: "none",
+  bottom: "bottom",
+};
+
+function placementFor(position: CoverPosition): Placement {
+  const { vertical, horizontal } = splitPosition(position);
+  return {
+    box: BOXES[vertical],
+    align: ALIGNS[horizontal],
+    horizontal,
+    edge: EDGES[vertical],
+  };
+}
 
 /**
  * The washes, keyed by the edge the type sits against.
@@ -96,13 +124,32 @@ const PLACEMENTS: Record<CoverPosition, Placement> = {
  * `bottom` is the one every cover had, at its own stops: a host who never
  * opens this setting gets exactly the page they had before it existed.
  */
-const WASHES: Record<Placement["edge"], string> = {
+const WASHES: Record<"bottom" | "top", string> = {
   bottom:
     "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.42) 27%, rgba(0,0,0,0.04) 58%, rgba(0,0,0,0.12) 100%)",
   top: "linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.42) 27%, rgba(0,0,0,0.04) 58%, rgba(0,0,0,0.12) 100%)",
-  /* Nothing to hang off at either edge, so this one is a scrim under the type
-     itself, with a little over the whole frame to catch a white sky. */
-  none: "radial-gradient(78% 46% at 50% 50%, rgba(0,0,0,0.66) 0%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.24), rgba(0,0,0,0.18))",
+};
+
+/*
+ * Nothing to hang off at either edge, so the middle row is a scrim under the
+ * type itself, with a little over the whole frame to catch a white sky. It
+ * follows the type sideways as well as the gradients follow it up and down:
+ * a patch of dark in the centre does nothing for a name in the left margin.
+ */
+const CENTRE_WASHES: Record<CoverHorizontal, string> = {
+  left: "radial-gradient(78% 46% at 26% 50%, rgba(0,0,0,0.66) 0%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.24), rgba(0,0,0,0.18))",
+  centre:
+    "radial-gradient(78% 46% at 50% 50%, rgba(0,0,0,0.66) 0%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.24), rgba(0,0,0,0.18))",
+  right:
+    "radial-gradient(78% 46% at 74% 50%, rgba(0,0,0,0.66) 0%, rgba(0,0,0,0.22) 72%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.24), rgba(0,0,0,0.18))",
+};
+
+const BANNER_CENTRE_WASHES: Record<CoverHorizontal, string> = {
+  left: "radial-gradient(72% 58% at 26% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 74%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.18), rgba(0,0,0,0.14))",
+  centre:
+    "radial-gradient(72% 58% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 74%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.18), rgba(0,0,0,0.14))",
+  right:
+    "radial-gradient(72% 58% at 74% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 74%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.18), rgba(0,0,0,0.14))",
 };
 
 /**
@@ -110,12 +157,23 @@ const WASHES: Record<Placement["edge"], string> = {
  * page of type, over a strip a fifth of the height - the full cover's wash on
  * it reads as a darkened photograph rather than a legible one.
  */
-const BANNER_WASHES: Record<Placement["edge"], string> = {
+const BANNER_WASHES: Record<"bottom" | "top", string> = {
   bottom:
     "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)",
   top: "linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)",
-  none: "radial-gradient(72% 58% at 50% 50%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 74%, rgba(0,0,0,0) 100%), linear-gradient(to top, rgba(0,0,0,0.18), rgba(0,0,0,0.14))",
 };
+
+function washFor(place: Placement): string {
+  return place.edge === "none"
+    ? CENTRE_WASHES[place.horizontal]
+    : WASHES[place.edge];
+}
+
+function bannerWashFor(place: Placement): string {
+  return place.edge === "none"
+    ? BANNER_CENTRE_WASHES[place.horizontal]
+    : BANNER_WASHES[place.edge];
+}
 
 export interface CoverProps {
   variant: CoverVariant;
@@ -163,7 +221,7 @@ function Title({
   message,
   preview,
   hero,
-  centred,
+  horizontal = "left",
   className,
 }: {
   name: string;
@@ -173,11 +231,11 @@ function Title({
   /** The full-screen cover, where the name has the whole phone to itself. */
   hero?: boolean;
   /**
-   * Centred type. The message is the only part that needs telling: it is held
-   * to `max-w-xl`, and a narrow box of centred lines hung off the left edge
-   * under a centred name is the thing that reads as a mistake.
+   * Which way the type is aligned. The message is the only part that needs
+   * telling: everything else inherits `text-align` from the block, while the
+   * message is held to `max-w-xl` and has to be pushed to the same side.
    */
-  centred?: boolean;
+  horizontal?: CoverHorizontal;
   className?: string;
 }) {
   return (
@@ -208,7 +266,7 @@ function Title({
             preview
               ? "mt-1.5 line-clamp-2 text-micro leading-snug"
               : "mt-3 max-w-xl text-body sm:mt-4 sm:text-lead",
-            centred && "mx-auto",
+            NUDGES[horizontal],
           )}
         >
           {message}
@@ -282,7 +340,7 @@ function PhotoCover({
   /** Half the screen rather than all of it. */
   half?: boolean;
 }) {
-  const place = PLACEMENTS[position];
+  const place = placementFor(position);
 
   // Written out rather than assembled, because Tailwind reads this file for
   // literal class names and generates nothing for a string it cannot see.
@@ -354,7 +412,7 @@ function PhotoCover({
           any point in it, and the name is the thing that has to survive that. */}
       <div
         className="absolute inset-0"
-        style={{ background: WASHES[place.edge] }}
+        style={{ background: washFor(place) }}
       />
 
       <div
@@ -373,11 +431,11 @@ function PhotoCover({
             date={date}
             message={message}
             preview={preview}
-            centred={place.items === "items-center"}
+            horizontal={place.horizontal}
             hero
           />
           {!half && cueTrailsTitle && (
-            <ScrollCue preview={preview} align={place.items} />
+            <ScrollCue preview={preview} horizontal={place.horizontal} />
           )}
         </div>
       </div>
@@ -400,7 +458,7 @@ function PhotoCover({
               : "pb-[max(2rem,env(safe-area-inset-bottom))] pt-16 sm:pb-12",
           )}
         >
-          <ScrollCue preview={preview} align={place.items} />
+          <ScrollCue preview={preview} horizontal={place.horizontal} />
         </div>
       )}
     </header>
@@ -410,17 +468,17 @@ function PhotoCover({
 /** "There is more underneath this." */
 function ScrollCue({
   preview,
-  align,
+  horizontal = "left",
 }: {
   preview?: boolean;
   /** Follows the name: a centred name over a left-hung cue reads as a slip. */
-  align?: string;
+  horizontal?: CoverHorizontal;
 }) {
   return (
     <span
       className={cx(
         "flex items-center gap-2",
-        align === "items-center" ? "justify-center" : undefined,
+        CUE_JUSTIFY[horizontal],
         preview ? "mt-2.5" : "mt-6 sm:mt-8",
       )}
     >
@@ -453,7 +511,7 @@ function ClassicCover({
   photoLabel,
   position = DEFAULT_POSITION,
 }: CoverProps) {
-  const place = PLACEMENTS[position];
+  const place = placementFor(position);
 
   // A strip is 208px tall on a phone, so the same three positions are a
   // smaller move here than on a full screen - but the reason holds: the faces
@@ -505,7 +563,7 @@ function ClassicCover({
             the strip the type went to. */}
         <div
           className="absolute inset-0"
-          style={{ background: BANNER_WASHES[place.edge] }}
+          style={{ background: bannerWashFor(place) }}
         />
         <div
           className={cx(
@@ -518,7 +576,12 @@ function ClassicCover({
         >
           {/* Fixed light text: it sits on a photograph, not on the theme. */}
           <div className="text-white [&_.eyebrow]:text-white/70 [&_h1]:text-white">
-            <Title name={name} date={date} preview={preview} />
+            <Title
+              name={name}
+              date={date}
+              preview={preview}
+              horizontal={place.horizontal}
+            />
           </div>
         </div>
       </div>

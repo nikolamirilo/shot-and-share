@@ -16,7 +16,20 @@ const appearanceSchema = z.object({
   // the application and an unknown one falls back when it is read.
   theme_font: z.string().trim().min(1).max(32),
   cover_variant: z.enum(["full", "classic", "half", "type"]),
-  cover_position: z.enum(["bottom-left", "bottom-centre", "centre", "top-left"]),
+  // Any pairing of the three verticals and the three alignments. Spelled out
+  // rather than built from the two lists, so the shape the database's own
+  // check constraint allows is readable next to it.
+  cover_position: z.enum([
+    "top-left",
+    "top-centre",
+    "top-right",
+    "middle-left",
+    "middle-centre",
+    "middle-right",
+    "bottom-left",
+    "bottom-centre",
+    "bottom-right",
+  ]),
   upload_variant: z.enum(["button", "panel", "bar", "split"]),
   gallery_layout: z.enum(["grid", "masonry", "holes", "stack"]),
   cover_media_id: z.string().uuid().nullable(),

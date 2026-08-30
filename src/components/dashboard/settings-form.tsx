@@ -99,8 +99,33 @@ export function SettingsForm({ event }: { event: EventRow }) {
           <span className="block text-[0.9375rem] text-ash">
             Off by default. Everything guests upload waits for you under Photos
             instead of appearing straight away. Sensible for a company event,
-            hard work at a wedding. Photos the automatic check flags wait for
-            you either way.
+            hard work at a wedding. If the automatic scan below is on,
+            anything it flags waits for you whether this is on or not.
+          </span>
+        </span>
+      </label>
+
+      <label className="flex items-start gap-3 sm:max-w-2xl">
+        <input
+          type="checkbox"
+          name="auto_scan"
+          defaultChecked={event.auto_scan}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-[#1F1607]"
+        />
+        <span>
+          <span className="block font-semibold">
+            Automatic scan of content
+          </span>
+          {/* Off by default, and it says why rather than only what. Sending
+              every photograph from somebody's wedding to a third party is a
+              decision the host makes, not one the product makes for them. */}
+          <span className="block text-[0.9375rem] text-ash">
+            Off by default. Each photo is checked automatically as it arrives
+            and anything it flags waits for you under Photos, instead of
+            appearing straight away. The check reads the photo in the same
+            region it is stored in and returns category labels only. Leave it
+            off and nothing is sent anywhere - your own controls and the report
+            button still work either way.
           </span>
         </span>
       </label>

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CoverPicker } from "@/components/dashboard/appearance/cover-picker";
 import { CustomColourPicker } from "@/components/dashboard/appearance/custom-colour-picker";
 import { LockedPanel } from "@/components/dashboard/appearance/locked-panel";
+import { PositionPicker } from "@/components/dashboard/appearance/position-picker";
 import {
   Choice,
   Group,
@@ -20,7 +21,6 @@ import { EventPreview } from "@/components/event/event-preview";
 import { Card, Toast } from "@/components/ui";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 import {
-  COVER_POSITIONS,
   COVER_VARIANTS,
   CUSTOM_THEME_ID,
   THEMES,
@@ -298,24 +298,17 @@ export function AppearanceForm({
               </Group>
 
               {/* Hidden on "Just type": there is no photograph for the name
-                  to sit on, so the group would be four buttons that change
+                  to sit on, so the group would be six buttons that change
                   nothing in the drawing beside them. */}
               {settings.cover !== "type" && (
                 <Group
                   label="Name position"
-                  hint="Where the name, date and message sit on the photo."
+                  hint="Where the name, date and message sit on the photo. Pick how far down it goes and which way it is aligned."
                 >
-                  <div className={OPTION_GRID}>
-                    {COVER_POSITIONS.map((option) => (
-                      <Choice
-                        key={option.id}
-                        selected={settings.coverPosition === option.id}
-                        onClick={() => update({ coverPosition: option.id })}
-                        name={option.name}
-                        hint={option.hint}
-                      />
-                    ))}
-                  </div>
+                  <PositionPicker
+                    value={settings.coverPosition}
+                    onChange={(coverPosition) => update({ coverPosition })}
+                  />
                 </Group>
               )}
 

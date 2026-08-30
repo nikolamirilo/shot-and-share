@@ -49,39 +49,84 @@ export function coerceCover(value: unknown): CoverVariant {
  * pick photographs of people, people stand in the lower half of a portrait
  * shot, and the name was printed across their faces with nothing to press.
  *
+ * Two decisions rather than a list of presets, the way a word processor asks
+ * it: how far down the photograph, and which way the lines are aligned. That
+ * is nine positions from six buttons, and a host who wants the name in the top
+ * right corner no longer has to settle for the nearest preset.
+ *
  * The ids are the only hyphenated ones in the database, because these are the
- * only values that are genuinely two decisions in one word.
+ * only values that are genuinely two decisions in one word - `vertical-horizontal`,
+ * always in that order.
  */
-export const COVER_POSITIONS = [
-  {
-    id: "bottom-left",
-    name: "Bottom left",
-    hint: "The name along the foot of the photo. The one every event has today.",
-  },
-  {
-    id: "bottom-centre",
-    name: "Bottom centre",
-    hint: "The same foot of the photo, centred. Formal, and kinder to short names.",
-  },
-  {
-    id: "centre",
-    name: "Middle",
-    hint: "Across the middle of the photo. For a wide shot with room above the people.",
-  },
-  {
-    id: "top-left",
-    name: "Top left",
-    hint: "Along the top, clear of everyone standing in the lower half.",
-  },
+export const COVER_VERTICALS = [
+  { id: "top", name: "Top", hint: "Along the top, clear of anyone standing in the lower half." },
+  { id: "middle", name: "Middle", hint: "Across the middle. For a wide shot with room above the people." },
+  { id: "bottom", name: "Bottom", hint: "The foot of the photo. The one every event has today." },
 ] as const;
 
-export type CoverPosition = (typeof COVER_POSITIONS)[number]["id"];
+export type CoverVertical = (typeof COVER_VERTICALS)[number]["id"];
+
+export const COVER_HORIZONTALS = [
+  { id: "left", name: "Left", hint: "Hung off the left edge." },
+  { id: "centre", name: "Centre", hint: "Centred. Formal, and kinder to short names." },
+  { id: "right", name: "Right", hint: "Hung off the right edge." },
+] as const;
+
+export type CoverHorizontal = (typeof COVER_HORIZONTALS)[number]["id"];
+
+export type CoverPosition = `${CoverVertical}-${CoverHorizontal}`;
+
+/** All nine, in reading order: the grid the picker draws. */
+export const COVER_POSITIONS: {
+  id: CoverPosition;
+  name: string;
+  vertical: CoverVertical;
+  horizontal: CoverHorizontal;
+}[] = COVER_VERTICALS.flatMap((v) =>
+  COVER_HORIZONTALS.map((h) => ({
+    id: `${v.id}-${h.id}` as CoverPosition,
+    name: `${v.name} ${h.name.toLowerCase()}`,
+    vertical: v.id,
+    horizontal: h.id,
+  })),
+);
+
 export const DEFAULT_POSITION: CoverPosition = "bottom-left";
 
+/**
+ * Positions written before the grid existed.
+ *
+ * `centre` was one word when the middle row only had one column. Rows still
+ * hold it - and so does a draft in somebody's browser - so it is translated
+ * rather than coerced away, which would move a page the host never touched.
+ */
+const LEGACY_POSITIONS: Record<string, CoverPosition> = {
+  centre: "middle-centre",
+};
+
 export function coercePosition(value: unknown): CoverPosition {
-  return COVER_POSITIONS.some((p) => p.id === value)
-    ? (value as CoverPosition)
-    : DEFAULT_POSITION;
+  if (typeof value !== "string") return DEFAULT_POSITION;
+  if (COVER_POSITIONS.some((p) => p.id === value)) return value as CoverPosition;
+  return LEGACY_POSITIONS[value] ?? DEFAULT_POSITION;
+}
+
+/** The two halves of a position, for anything that renders or edits one. */
+export function splitPosition(value: CoverPosition): {
+  vertical: CoverVertical;
+  horizontal: CoverHorizontal;
+} {
+  const [vertical, horizontal] = value.split("-") as [
+    CoverVertical,
+    CoverHorizontal,
+  ];
+  return { vertical, horizontal };
+}
+
+export function joinPosition(
+  vertical: CoverVertical,
+  horizontal: CoverHorizontal,
+): CoverPosition {
+  return `${vertical}-${horizontal}`;
 }
 
 /* -------------------------------------------------------------------------- */

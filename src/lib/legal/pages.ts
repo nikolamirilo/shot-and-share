@@ -225,7 +225,7 @@ const PRIVACY: LegalPage = {
     {
       heading: "Moderation",
       body: [
-        "Every photo is checked automatically as it arrives, before it becomes visible in any gallery. The check uses Amazon Rekognition content moderation and runs in the same EU region the files are stored in. Video is checked on the still frame taken from the clip.",
+        "Hosts can switch on an automatic check of every photo as it arrives, before it becomes visible in any gallery. It is off unless the host turns it on, and while it is off no photograph from their event is sent to any moderation service at all. The check uses Amazon Rekognition content moderation and runs in the same EU region the files are stored in. Video is checked on the still frame taken from the clip.",
         "It returns category labels and nothing else. No photograph is retained by that service and nothing is sent anywhere for any other purpose. A flagged upload is held out of the gallery and shown only to the host, who approves or deletes it.",
         "Guests can also report a photo from inside the gallery. A reported photo is hidden at once and the host is emailed.",
       ],
@@ -235,7 +235,7 @@ const PRIVACY: LegalPage = {
       body: [
         "For host accounts and payments: because we need it to give you the service you asked for, and because tax law requires us to keep records of what was sold.",
         "For the photographs: on your instructions, as the controller. The lawful basis for collecting them from your guests is yours to have, and in practice it is the guest's own decision to upload.",
-        "For the moderation check and the small number of counts we keep, meaning photos, uploaders and link opens: our legitimate interest in running a service that is not used for illegal content, and in knowing whether the product works. They are counts and category labels, never profiles.",
+        "For the moderation check, where a host has switched it on, and the small number of counts we keep, meaning photos, uploaders and link opens: our legitimate interest in running a service that is not used for illegal content, and in knowing whether the product works. They are counts and category labels, never profiles.",
       ],
     },
     {
@@ -424,9 +424,10 @@ const ACCEPTABLE_USE: LegalPage = {
     {
       heading: "What we do about it",
       body: [
-        "Every photo is screened automatically the moment it arrives, before it appears in any gallery. A flagged upload is held back and shown only to the host, who approves or deletes it. Video is screened on a still frame from the clip.",
+        "Hosts can switch on automatic screening of every photo the moment it arrives, before it appears in any gallery. A flagged upload is held back and shown only to the host, who approves or deletes it. Video is screened on a still frame from the clip.",
+        "Hosts can also hold every upload for their own approval before anyone else sees it, and can delete any photo at any time.",
         "Guests can report any photo from inside the gallery. A reported photo is hidden immediately, before anyone has looked at it, and the host is emailed.",
-        "Automated screening is not perfect in either direction. It is one layer, and the host controls and the report button are the others.",
+        "Automated screening is not perfect in either direction, and it is not the only layer. The host controls and the report button work whether or not it is switched on.",
       ],
     },
     {
