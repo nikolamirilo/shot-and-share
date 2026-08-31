@@ -28,7 +28,16 @@ export async function checkoutUrlForEvent(args: {
   ownerId: string;
   email?: string | null;
 }): Promise<string> {
-  const redirectUrl = `${env.siteUrl}/dashboard/events/${args.eventId}?purchase=complete`;
+  /*
+   * `product` rides along so the page the host lands on can tell whether the
+   * thing they just paid for has arrived yet, rather than saying "reload and
+   * see" to somebody whose plan already moved.
+   *
+   * A hint and nothing more, like `purchase` beside it. Both are typed by
+   * whoever holds the URL, so neither grants anything - the plan is still moved
+   * only by the signed webhook, or by recovery asking the provider directly.
+   */
+  const redirectUrl = `${env.siteUrl}/dashboard/events/${args.eventId}?purchase=complete&product=${args.product}`;
 
   if (isCheckoutConfigured(args.product)) {
     return createCheckoutUrl({ ...args, redirectUrl });

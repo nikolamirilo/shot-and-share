@@ -13,6 +13,7 @@ import { AppearanceForm } from "@/components/dashboard/appearance/appearance-for
 import { ArchivePanel } from "@/components/dashboard/archive-panel";
 import { DangerZone } from "@/components/dashboard/danger-zone";
 import { HostGallery } from "@/components/dashboard/host-gallery";
+import { PurchaseBanner } from "@/components/dashboard/purchase-banner";
 import { ReviewPanel } from "@/components/dashboard/review-panel";
 import { SettingsForm } from "@/components/dashboard/settings-form";
 import { SharePanel } from "@/components/dashboard/share-panel";
@@ -24,7 +25,7 @@ import { findEventName } from "@/lib/db/event-repo";
 import { formatEventDate } from "@/lib/format";
 import { coerceLayout } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/server";
-import { KEEP_FOREVER } from "@/lib/tiers";
+import { KEEP_FOREVER, PURCHASABLE_IDS, TIERS } from "@/lib/tiers";
 import { recoverPurchases } from "@/lib/payments/recover";
 import { getSessionUser } from "@/lib/supabase/server";
 import { loadEventConsole } from "@/lib/views/event-console";
@@ -86,10 +87,10 @@ export default async function EventPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ purchase?: string }>;
+  searchParams: Promise<{ purchase?: string; product?: string }>;
 }) {
   const { id } = await params;
-  const { purchase } = await searchParams;
+  const { purchase, product } = await searchParams;
 
   let view = await loadEventConsole(id);
   if (!view) notFound();
@@ -117,6 +118,25 @@ export default async function EventPage({
 
   const { event, tier, summary, media, covers, photoCount, review } = view;
 
+  /*
+   * Has the thing they just paid for actually arrived?
+   *
+   * Answered off the plan on the row rather than off whether recovery applied
+   * anything just now: the webhook usually gets here first, and "recovery found
+   * nothing to do" is what success looks like when it does.
+   *
+   * `null` where the URL does not name a product - a checkout link issued
+   * before this was added - and the banner then keeps its old advice rather
+   * than guessing.
+   */
+  const bought = PURCHASABLE_IDS.find((id) => id === product);
+  const settled =
+    bought === undefined
+      ? null
+      : bought === KEEP_FOREVER.key
+        ? event.keep_forever
+        : tier.rank >= TIERS[bought].rank;
+
   return (
     /* The bottom padding is the bar's own height plus room to breathe. Without
        it the last thing on every panel sits underneath the navigation. */
@@ -142,14 +162,17 @@ export default async function EventPage({
         </div>
       </header>
 
-      {purchase && (
-        <Alert tone="notice" className="mt-5 sm:mt-6">
-          Payment received. If the plan still looks the same, wait a few seconds
-          and reload - and if it still has not moved, use{" "}
-          <strong>Find my payment</strong> under Plan. Nothing is lost either
-          way.
-        </Alert>
-      )}
+      {purchase === "complete" &&
+        (settled === null ? (
+          <Alert tone="notice" className="mt-5 sm:mt-6">
+            Payment received. If the plan still looks the same, wait a few
+            seconds and reload - and if it still has not moved, use{" "}
+            <strong>Find my payment</strong> under Plan. Nothing is lost either
+            way.
+          </Alert>
+        ) : (
+          <PurchaseBanner settled={settled} className="mt-5 sm:mt-6" />
+        ))}
 
       {event.status === "expired" && (
         <Alert tone="notice" className="mt-5 sm:mt-6">
