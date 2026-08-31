@@ -1,13 +1,9 @@
 import { z } from "zod";
 
-import { ApiError, handle, ok, parseBody } from "@/lib/api";
+import { handle, ok, parseBody } from "@/lib/api";
 import { requireOwnedEvent, requireUser } from "@/lib/host";
-import { env } from "@/lib/env";
 import { PURCHASABLE_IDS } from "@/lib/tiers";
-import {
-  createCheckoutUrl,
-  isCheckoutConfigured,
-} from "@/lib/payments/creem";
+import { checkoutUrlForEvent } from "@/lib/payments/checkout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,30 +25,13 @@ export async function POST(request: Request) {
     const { user } = await requireUser();
     const event = await requireOwnedEvent(body.eventId);
 
-    const redirectUrl = `${env.siteUrl}/dashboard/events/${event.id}?purchase=complete`;
-
-    if (isCheckoutConfigured(body.product)) {
-      return ok({
-        url: await createCheckoutUrl({
-          product: body.product,
-          eventId: event.id,
-          ownerId: user.id,
-          email: user.email,
-          redirectUrl,
-        }),
-      });
-    }
-
-    if (env.mockCheckout && !env.isProduction) {
-      const url = new URL("/api/dev/checkout", env.siteUrl);
-      url.searchParams.set("eventId", event.id);
-      url.searchParams.set("product", body.product);
-      return ok({ url: url.toString(), mock: true });
-    }
-
-    throw new ApiError(
-      "not_configured",
-      "Payments are not configured in this environment yet.",
-    );
+    return ok({
+      url: await checkoutUrlForEvent({
+        product: body.product,
+        eventId: event.id,
+        ownerId: user.id,
+        email: user.email,
+      }),
+    });
   });
 }

@@ -228,7 +228,7 @@ export function Tabs({
 
       {/* One cell, so that however many panels are inside they all sit in the
           rail's second column rather than taking turns with it. */}
-      <TabsContext.Provider value={{ active, domId }}>
+      <TabsContext.Provider value={{ active, domId, open }}>
         <div className="min-w-0">{children}</div>
       </TabsContext.Provider>
     </div>

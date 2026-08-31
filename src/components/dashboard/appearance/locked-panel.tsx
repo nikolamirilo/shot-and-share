@@ -1,9 +1,30 @@
+"use client";
+
+import { useContext } from "react";
 import { MdOutlineWorkspacePremium } from "react-icons/md";
 
-import { Badge, ButtonLink } from "@/components/ui";
+import { Badge, Button, ButtonLink } from "@/components/ui";
+import { TabsContext } from "@/components/ui/tabs/context";
 import { TIERS } from "@/lib/tiers";
 
 export function LockedPanel({ eventId }: { eventId: string }) {
+  /*
+   * On the event console this panel sits in a tab beside the one it is sending
+   * the host to, so it opens that tab itself. The link is the fallback for
+   * anywhere else this ends up - and the reason it is only the fallback is
+   * that it does nothing at all from a page that is already open: the router
+   * moves a same-page hash with `history.pushState`, which fires no
+   * `hashchange` for the tabs to hear.
+   */
+  const tabs = useContext(TabsContext);
+
+  const label = (
+    <>
+      <MdOutlineWorkspacePremium aria-hidden className="shrink-0 text-[1.25em]" />
+      See the plans
+    </>
+  );
+
   return (
     <section className="card p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -35,10 +56,15 @@ export function LockedPanel({ eventId }: { eventId: string }) {
         ))}
       </ul>
 
-      <ButtonLink href={`/dashboard/events/${eventId}#upgrade`} className="mt-5">
-        <MdOutlineWorkspacePremium aria-hidden className="shrink-0 text-[1.25em]" />
-        See the plans
-      </ButtonLink>
+      {tabs ? (
+        <Button onClick={() => tabs.open("upgrade")} className="mt-5">
+          {label}
+        </Button>
+      ) : (
+        <ButtonLink href={`/dashboard/events/${eventId}#upgrade`} className="mt-5">
+          {label}
+        </ButtonLink>
+      )}
     </section>
   );
 }

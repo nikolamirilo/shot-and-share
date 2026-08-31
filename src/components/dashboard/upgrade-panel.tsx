@@ -21,8 +21,20 @@ export function UpgradePanel({
   keepForever: boolean;
 }) {
   const { pending, error, run } = useServerAction();
+  const [chosen, setChosen] = useState<PurchasableId | null>(null);
+
+  /**
+   * Which button is actually working, rather than all of them.
+   *
+   * Read through `pending` rather than cleared afterwards: the moment the
+   * action settles every button goes back to its price, so a failure leaves no
+   * row stuck on "Opening checkout…" and a success - which navigates away -
+   * never flickers back to the price on the way out.
+   */
+  const working = pending ? chosen : null;
 
   function buy(product: PurchasableId) {
+    setChosen(product);
     run(() => startCheckout(eventId, product), {
       onSuccess: (result) => {
         if (result.url) window.location.href = result.url;
@@ -115,7 +127,9 @@ export function UpgradePanel({
               className="col-span-2 w-full sm:col-span-1 sm:w-auto"
             >
               <MdOutlineShoppingCartCheckout aria-hidden className="shrink-0 text-[1.25em]" />
-              {pending ? "Opening checkout…" : `Buy for €${option.price}`}
+              {working === option.product
+                ? "Opening checkout…"
+                : `Buy for €${option.price}`}
             </Button>
           </li>
         ))}

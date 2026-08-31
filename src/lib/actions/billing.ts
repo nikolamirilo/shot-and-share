@@ -1,38 +1,53 @@
 "use server";
 
-import { headers } from "next/headers";
-
 import { requireOwnedEvent } from "@/lib/actions/guards";
+import { ApiError } from "@/lib/api";
 import { recoverPurchases } from "@/lib/payments/recover";
-import { env } from "@/lib/env";
+import { checkoutUrlForEvent } from "@/lib/payments/checkout";
 import type { PurchasableId } from "@/lib/tiers";
-import { clientIp } from "@/lib/ratelimit";
 import { revalidatePath } from "next/cache";
 
-/** Used by the upgrade buttons to reach the payment provider. */
+/**
+ * Used by the upgrade buttons to reach the payment provider.
+ *
+ * Builds the checkout URL in-process. It used to POST to our own
+ * `/api/checkout` over the public internet with the host's cookies forwarded,
+ * which meant every upgrade depended on the app being able to reach itself
+ * through its own edge - and when something in front answered instead, the
+ * reply was an HTML page, `res.json()` threw, and the whole event page turned
+ * into a 500 rather than a message under the button.
+ *
+ * Nothing is allowed to throw out of here for the same reason: an unhandled
+ * throw in an action is a server render error, and "we could not start
+ * checkout" belongs in the panel the host is looking at.
+ */
 export async function startCheckout(
   eventId: string,
   product: PurchasableId,
 ): Promise<{ url?: string; error?: string }> {
-  await requireOwnedEvent(eventId);
-  const requestHeaders = await headers();
+  const { event, user } = await requireOwnedEvent(eventId);
 
-  const res = await fetch(`${env.siteUrl}/api/checkout`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      cookie: requestHeaders.get("cookie") ?? "",
-      "x-forwarded-for": clientIp(requestHeaders),
-    },
-    body: JSON.stringify({ eventId, product }),
-  });
+  try {
+    return {
+      url: await checkoutUrlForEvent({
+        product,
+        eventId: event.id,
+        ownerId: user.id,
+        email: user.email,
+      }),
+    };
+  } catch (error) {
+    // An ApiError is the deliberate refusal - "payments are not configured" -
+    // and says something the host can act on. Anything else is the provider
+    // being unreachable or unhappy, and its text is not for a customer.
+    if (error instanceof ApiError) return { error: error.message };
 
-  const body = (await res.json()) as
-    | { url: string }
-    | { error: { message: string } };
-
-  if ("error" in body) return { error: body.error.message };
-  return { url: body.url };
+    console.error("[checkout] could not start checkout", error);
+    return {
+      error:
+        "We could not reach the payment provider. Try again in a moment, and write to us if it keeps happening.",
+    };
+  }
 }
 
 /**
