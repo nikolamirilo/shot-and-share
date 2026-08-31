@@ -56,30 +56,32 @@ export function DashboardHeader({
       </HeaderShell>
 
       {menuOpen && (
-        <div className="absolute left-3 right-3 z-40 mx-auto max-w-6xl rounded-2xl bg-paper/98 px-4 py-4 shadow-md backdrop-blur sm:hidden">
-          <div className="mb-3 flex items-center gap-3 border-b border-sand pb-3">
-            <AccountMenu name={name} email={email} avatarUrl={avatarUrl} />
-          </div>
-          <nav className="flex flex-col gap-1">
-            <Link
-              href="/dashboard"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
-            >
-              My events
-            </Link>
-            <div className="mt-2">
-              <ButtonLink
-                href="/dashboard/events/new"
-                size="sm"
-                className="w-full justify-center"
-                onClick={() => setMenuOpen(false)}
-              >
-                <MdAdd aria-hidden className="shrink-0 text-[1.25em]" />
-                New event
-              </ButtonLink>
+        <div className="absolute inset-x-0 top-full z-40 mt-2 rounded-2xl bg-paper/98 shadow-md backdrop-blur sm:hidden">
+          <div className="mx-auto flex max-w-6xl flex-col px-4 py-4">
+            <div className="mb-3 flex items-center gap-3 border-b border-sand pb-3">
+              <AccountMenu name={name} email={email} avatarUrl={avatarUrl} />
             </div>
-          </nav>
+            <nav className="flex flex-col gap-1">
+              <Link
+                href="/dashboard"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
+              >
+                My events
+              </Link>
+              <div className="mt-2">
+                <ButtonLink
+                  href="/dashboard/events/new"
+                  size="sm"
+                  className="px-3 py-2"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <MdAdd aria-hidden className="shrink-0 text-[1.25em]" />
+                  New event
+                </ButtonLink>
+              </div>
+            </nav>
+          </div>
         </div>
       )}
     </>

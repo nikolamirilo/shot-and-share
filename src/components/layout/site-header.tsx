@@ -82,8 +82,8 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
       </nav>
 
       {open && (
-        <div className="absolute left-3 right-3 top-full z-40 mt-2 rounded-2xl bg-paper/98 px-4 py-4 shadow-md backdrop-blur sm:hidden">
-          <nav className="flex flex-col gap-1">
+        <div className="absolute inset-x-0 top-full z-40 mt-2 rounded-2xl bg-paper/98 shadow-md backdrop-blur sm:hidden">
+          <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4">
             <Link
               href="/#how"
               onClick={() => setOpen(false)}
@@ -110,7 +110,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
                 href={signedIn ? "/dashboard" : "/login"}
                 size="sm"
                 variant="primary"
-                className="w-full justify-center"
+                className="px-3 py-2"
                 onClick={() => setOpen(false)}
               >
                 {signedIn ? (
