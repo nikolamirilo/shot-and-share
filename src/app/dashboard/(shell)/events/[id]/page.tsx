@@ -126,8 +126,8 @@ export default async function EventPage({
    * nothing to do" is what success looks like when it does.
    *
    * `null` where the URL does not name a product - a checkout link issued
-   * before this was added - and the banner then keeps its old advice rather
-   * than guessing.
+   * before this started naming one - and the banner then keeps its old advice
+   * rather than guessing.
    */
   const bought = PURCHASABLE_IDS.find((id) => id === product);
   const settled =
@@ -162,17 +162,9 @@ export default async function EventPage({
         </div>
       </header>
 
-      {purchase === "complete" &&
-        (settled === null ? (
-          <Alert tone="notice" className="mt-5 sm:mt-6">
-            Payment received. If the plan still looks the same, wait a few
-            seconds and reload - and if it still has not moved, use{" "}
-            <strong>Find my payment</strong> under Plan. Nothing is lost either
-            way.
-          </Alert>
-        ) : (
-          <PurchaseBanner settled={settled} className="mt-5 sm:mt-6" />
-        ))}
+      {purchase === "complete" && (
+        <PurchaseBanner settled={settled} className="mt-5 sm:mt-6" />
+      )}
 
       {event.status === "expired" && (
         <Alert tone="notice" className="mt-5 sm:mt-6">
