@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import {
+  MdClose,
+  MdMenu,
   MdOutlineAddCircleOutline,
   MdOutlinePhotoLibrary,
 } from "react-icons/md";
@@ -7,16 +12,6 @@ import {
 import { Wordmark } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui";
 
-/**
- * The navigation floats: a card held clear of the edges rather than a bar
- * welded to the top, so the hero's colour runs to the top of the window behind
- * it. The dashboard's header is the same object with different things in it.
- *
- * `className` carries only how it sits in the page. The marketing one is
- * `sticky` rather than `fixed`, so it keeps its space in the flow; the
- * dashboard's stays in flow because the panels under it pin themselves to the
- * viewport and would slide underneath a header that followed them down.
- */
 export function HeaderShell({
   className = "",
   children,
@@ -34,32 +29,37 @@ export function HeaderShell({
 }
 
 export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <HeaderShell className="sticky top-0 z-40">
       <Link href="/" aria-label="Shot & Share, home" className="shrink-0">
         <Wordmark labelClassName="hidden xs:inline" />
       </Link>
 
-      <nav className="flex items-center gap-4 sm:gap-5">
+      <div className="flex items-center gap-3 sm:hidden">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Close menu" : "Open menu"}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-2xl hover:bg-sand"
+        >
+          {open ? <MdClose /> : <MdMenu />}
+        </button>
+      </div>
+
+      <nav className="hidden items-center gap-4 sm:flex sm:gap-5">
         <Link
           href="/#how"
-          className="hidden text-[0.9375rem] font-semibold hover:underline sm:block"
+          className="text-[0.9375rem] font-semibold hover:underline"
         >
           How it works
         </Link>
-        {/* Ahead of Pricing, and it keeps its place down to the same width.
-            Somebody who has not worked out what this is yet should be able to
-            meet the product before the price list, and until this existed the
-            only way in was a sign-in form. */}
         <Link
           href="/demo"
           className="text-[0.9375rem] font-semibold hover:underline"
         >
           Demo
         </Link>
-        {/* Pricing survives to the smallest screen where "How it works" does
-            not. It is the question a visitor on a phone actually has, and the
-            landing page repeats how it works three sections in. */}
         <Link
           href="/pricing"
           className="text-[0.9375rem] font-semibold hover:underline"
@@ -80,6 +80,50 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
           {signedIn ? "My events" : "Create an event"}
         </ButtonLink>
       </nav>
+
+      {open && (
+        <div className="absolute left-3 right-3 top-full z-40 mt-2 rounded-2xl bg-paper/98 px-4 py-4 shadow-md backdrop-blur sm:hidden">
+          <nav className="flex flex-col gap-1">
+            <Link
+              href="/#how"
+              onClick={() => setOpen(false)}
+              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/demo"
+              onClick={() => setOpen(false)}
+              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
+            >
+              Demo
+            </Link>
+            <Link
+              href="/pricing"
+              onClick={() => setOpen(false)}
+              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
+            >
+              Pricing
+            </Link>
+            <div className="mt-2">
+              <ButtonLink
+                href={signedIn ? "/dashboard" : "/login"}
+                size="sm"
+                variant="primary"
+                className="w-full justify-center"
+                onClick={() => setOpen(false)}
+              >
+                {signedIn ? (
+                  <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
+                ) : (
+                  <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
+                )}
+                {signedIn ? "My events" : "Create an event"}
+              </ButtonLink>
+            </div>
+          </nav>
+        </div>
+      )}
     </HeaderShell>
   );
 }

@@ -111,6 +111,9 @@
     /* iOS paints its own grey box over anything tappable, which fights the
        shadows. The interface already answers a tap by settling. */
     -webkit-tap-highlight-color: transparent;
+    /* Prevent elements that break out of their container (e.g. negative margins
+       on tab bars) from causing horizontal scroll on mobile. */
+    overflow-x: hidden;
   }
 
   body {

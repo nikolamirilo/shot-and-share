@@ -1,11 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdOutlineExpandMore } from "react-icons/md";
+import {
+  MdChecklist,
+  MdClose,
+  MdOutlineExpandMore,
+  MdOutlineFileDownload,
+} from "react-icons/md";
 
 import { Lightbox } from "@/components/gallery/lightbox";
 import { PhotoGallery } from "@/components/gallery/photo-gallery";
-import { Button, Hole } from "@/components/ui";
+import { Button, Hole, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 import {
   type GalleryLayout,
@@ -60,6 +65,15 @@ export function GuestGallery({
    * wall, and holding the object would keep a deleted photo on screen.
    */
   const [openId, setOpenId] = useState<string | null>(null);
+  /**
+   * Guest selection mode: press & hold or tap the select button to enter,
+   * then tap photos to add them to the download set.
+   */
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const downloadLinkRef = useRef<HTMLAnchorElement>(null);
   /**
    * A refresh that did not land. The wall keeps what it has - a guest
    * mid-scroll must not have it emptied - but says so rather than going quiet.
@@ -154,6 +168,70 @@ export function GuestGallery({
       )
     : null;
 
+  const isSelected = useCallback(
+    (item: MediaView) => selectedIds.has(item.id),
+    [selectedIds],
+  );
+
+  const handleActivate = useCallback(
+    (item: MediaView) => {
+      if (selecting) {
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(item.id)) next.delete(item.id);
+          else next.add(item.id);
+          return next;
+        });
+      } else {
+        setOpenId(item.id);
+      }
+    },
+    [selecting],
+  );
+
+  const downloadSelected = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const res = await fetch("/api/photos/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, ids: [...selectedIds] }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error?.message ?? "Could not prepare the download.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = downloadLinkRef.current;
+      if (link) {
+        link.href = url;
+        link.download = `photos-${selectedIds.size}.zip`;
+        link.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not download.";
+      setDownloadError(message);
+      console.error(err);
+    } finally {
+      setDownloading(false);
+    }
+  }, [token, selectedIds]);
+
+  const exitSelection = useCallback(() => {
+    setSelecting(false);
+    setSelectedIds(new Set());
+    setDownloadError(null);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setDownloadError(null);
+  }, []);
+
   if (error && items.length === 0) {
     return (
       <section className="mt-10">
@@ -166,7 +244,7 @@ export function GuestGallery({
     <section className="mt-10 sm:mt-12">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-[1.625rem] sm:text-h2">Everyone&apos;s photos</h2>
-        {items.length > 0 && (
+        {items.length > 0 && !selecting && (
           <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
             {/* The count can lag the wall by one refresh, so the larger of
                 the two is the honest one. */}
@@ -206,15 +284,78 @@ export function GuestGallery({
         <PhotoGallery
           items={items}
           layout={layout}
-          onActivate={(item) => setOpenId(item.id)}
+          onActivate={handleActivate}
+          isSelected={selecting ? isSelected : undefined}
           /* The first load draws the whole wall as frames rather than an
              empty container. */
           pending={
             loadingMore || (items.length === 0 && loading) ? PENDING_TILES : 0
           }
-          className="mt-6"
+          className={cx("mt-6", selecting && selectedIds.size > 0 && "pb-20")}
         />
       )}
+
+      {selecting && (
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-paper shadow-[0_-8px_24px_rgba(0,0,0,0.08)] pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-5">
+            <button
+              type="button"
+              onClick={exitSelection}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink/8 text-ink transition-transform active:scale-95"
+              aria-label="Close selection"
+              title="Close selection"
+            >
+              <MdClose aria-hidden className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.9375rem] font-semibold leading-tight">
+                {selectedIds.size === 0
+                  ? "Tap photos to select"
+                  : `${selectedIds.size} selected`}
+              </p>
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="text-[0.8125rem] text-ash underline underline-offset-2"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={downloadSelected}
+              disabled={selectedIds.size === 0 || downloading}
+              className="flex shrink-0 items-center gap-2 rounded-2xl bg-claret px-4 py-3 text-small font-semibold text-chalk shadow-md transition-transform disabled:opacity-45 enabled:active:scale-95"
+            >
+              <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
+              {downloading ? "Preparing…" : "Download"}
+            </button>
+          </div>
+          {downloadError && (
+            <p className="mx-auto max-w-3xl px-4 pb-3 text-[0.8125rem] text-claret sm:px-5">
+              {downloadError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!selecting && items.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setSelecting(true)}
+          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-claret px-5 py-3.5 text-small font-semibold text-chalk shadow-lg transition-transform hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0 active:shadow-md"
+          aria-label="Select photos to download"
+        >
+          <MdChecklist aria-hidden className="shrink-0 text-[1.25em]" />
+          Select
+        </button>
+      )}
+
+      {/* Invisible anchor the download handler clicks to trigger the save dialog,
+          kept mounted so we never pay the cost of creating one. */}
+      <a ref={downloadLinkRef} aria-hidden="true" className="hidden" />
 
       {cursor && (
         <Button

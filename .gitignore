@@ -16,3 +16,4 @@ next-env.d.ts
 coverage
 docs
 /supabase/.temp
+tasks
