@@ -17,10 +17,18 @@ export function AccountMenu({
   name,
   email,
   avatarUrl,
+  align = "right",
 }: {
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
+  /**
+   * Which edge of the badge the panel grows from. In the header the badge is
+   * the last thing on the row, so the panel hangs off its right edge; in the
+   * phone menu the badge is the first thing on the row, and a right-anchored
+   * panel there starts 190px off the left of the screen.
+   */
+  align?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -82,10 +90,13 @@ export function AccountMenu({
           id="account-panel"
           role="dialog"
           aria-label="Account"
-          /* Right-anchored: the badge is the last thing in the header, so a
-             panel that grew leftwards from its left edge would hang off the
-             screen on a phone. */
-          className="card absolute right-0 top-[calc(100%+0.625rem)] z-50 w-64 p-4 shadow-lg"
+          /* Anchored to whichever edge of the badge has the room - see `align`.
+             `max-w` as well as `w-64`, so the panel still fits a 320px screen
+             once the badge's own offset is taken off. */
+          className={cx(
+            "card absolute top-[calc(100%+0.625rem)] z-50 w-64 max-w-[calc(100vw-2.5rem)] p-4 shadow-lg",
+            align === "left" ? "left-0" : "right-0",
+          )}
         >
           <div className="flex items-center gap-3">
             <Face name={displayName} avatarUrl={avatarUrl} size={48} />

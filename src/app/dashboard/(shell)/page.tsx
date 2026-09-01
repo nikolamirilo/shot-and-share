@@ -36,7 +36,7 @@ export default async function DashboardPage() {
       {events.length === 0 ? (
         <EventsEmptyState />
       ) : (
-        <ul className="mt-7 grid gap-4 sm:mt-9 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <ul className="mt-7 grid grid-cols-1 gap-4 sm:mt-9 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {events.map((event, i) => {
             const token = tokens.get(event.id);
             return (
