@@ -42,7 +42,7 @@ export function DashboardHeader({
      */
     <div className="relative z-30">
       <HeaderShell className="relative z-10">
-        <Link href="/" aria-label="Shot & Share, home" className="shrink-0">
+        <Link href="/" aria-label="Shot & Share, home" className="flex shrink-0 items-center">
           <Wordmark labelClassName="hidden xs:inline" />
         </Link>
 

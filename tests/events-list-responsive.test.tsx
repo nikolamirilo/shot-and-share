@@ -182,15 +182,36 @@ describe("the events list at phone widths", () => {
     expect(html).toContain("Close menu");
   });
 
-  it("gives the phone menu the bar's own surface, not a white card", () => {
-    // Same paper, same 92%, same blur, so the menu reads as the bar carrying
-    // on rather than as a card dropped over it.
+  it("gives the phone menu the bar's paper at full strength", () => {
+    // The bar can be sheer - it is a strip over the page - but a panel you
+    // read a list off cannot: at 92% the event cards underneath showed
+    // straight through the items.
     const source = read("src/components/layout/mobile-menu.tsx");
 
-    expect(source).toContain("bg-paper/92");
-    expect(source).toContain("backdrop-blur");
+    expect(source).toContain("bg-paper ");
+    expect(source).not.toContain("bg-paper/");
+    expect(source).not.toContain("backdrop-blur");
     // And a gap between the two, rather than the panel touching the bar.
     expect(source).toContain("mt-2");
+  });
+
+  it("puts the wordmark and the hamburger on the same two edges", () => {
+    // Vertically: the wordmark's own box is `inline-flex`, so in an inline
+    // anchor it sat on the text baseline and the mark rode 4.5px high of the
+    // icon opposite. The anchor is a flex box, which takes the baseline out.
+    for (const file of ["site-header.tsx", "dashboard-header.tsx"]) {
+      expect(read(`src/components/layout/${file}`)).toContain(
+        'className="flex shrink-0 items-center"',
+      );
+    }
+
+    // Horizontally: the 44px button carries 10px of padding around its 24px
+    // glyph, so it is pulled out by exactly that much and the glyph lands on
+    // the pill's own inset - the edge the wordmark starts on - at either of
+    // the paddings the pill runs.
+    expect(read("src/components/layout/mobile-menu.tsx")).toContain(
+      "-mr-2.5 flex h-11 w-11",
+    );
   });
 
   it("sets the phone menu to the right, under the icon that opened it", () => {
