@@ -81,9 +81,10 @@ export function MobileMenu({
   }
 
   return (
-    /* `relative` is what `top-full` on the panel resolves against, so the menu
-       lands under the button rather than one screenful down the page. */
-    <div ref={wrapRef} className={cx("relative flex items-center", className)}>
+    /* Deliberately not `relative`: the panel below is measured against the
+       *header*, which every caller positions (see HeaderShell), so its edges
+       land on the bar's rather than on the icon's own 44px box. */
+    <div ref={wrapRef} className={cx("flex items-center", className)}>
       <button
         ref={buttonRef}
         type="button"
@@ -102,12 +103,17 @@ export function MobileMenu({
       {open && (
         <div
           id="mobile-menu-panel"
-          /* As wide as the bar it hangs under: the header's own gutter is
-             `px-4`, so the pill is `100vw - 2rem` across, and the negative
-             offsets take back the button's `-mr-1` and the pill's padding to
-             land the panel's right edge on the pill's. They change at `xs`
-             because the pill's padding does. */
-          className="card absolute -right-2 top-[calc(100%+0.625rem)] z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-1 px-4 py-4 text-right shadow-lg xs:-right-3"
+          /* An absolute inset is measured from the containing block's padding
+             box, and the header's padding *is* the page gutter - so `inset-x-0`
+             puts both edges of the panel on the bar's, and `top-full` is the
+             header's bottom,
+             which is the bar's - the header has no padding under it. `mt-2` is
+             the gap between the two.
+
+             The surface is the bar's own: same paper, same 92%, same blur, so
+             the menu reads as the bar continuing rather than as a white card
+             dropped on top of it. */
+          className="absolute inset-x-0 top-full z-50 mt-2 flex flex-col items-end gap-1 rounded-2xl bg-paper/92 px-4 py-4 text-right shadow-md backdrop-blur"
         >
           {items.map((item) => (
             <div

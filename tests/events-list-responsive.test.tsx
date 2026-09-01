@@ -71,14 +71,25 @@ describe("the events list at phone widths", () => {
     expect(html).toContain("truncate");
   });
 
-  it("hangs the phone menu off the hamburger rather than off the viewport", () => {
+  it("hangs the phone menu off the header, edges flush with the bar", () => {
     // The panel is `absolute ... top-full`, so it needs a positioned ancestor.
     // Without one, `top: 100%` means 100% of the *viewport*: tapping the
     // hamburger opened the menu one whole screen further down the page, which
-    // reads as the button doing nothing at all. The menu carries its own
-    // `relative` wrapper now, so it cannot be dropped by a caller.
+    // reads as the button doing nothing at all. The header is that ancestor -
+    // both callers position it - and an inset is measured from its padding
+    // box, which is the page gutter, so `inset-x-0` lands the panel's edges on
+    // the bar's own. Anchored to the icon instead, it sat 12px to the left.
     const source = read("src/components/layout/mobile-menu.tsx");
-    expect(source).toContain('cx("relative flex items-center", className)');
+    expect(source).toContain("absolute inset-x-0 top-full");
+    // The wrapper must NOT be positioned, or the inset resolves against the
+    // icon's 44px box again.
+    expect(source).toContain('cx("flex items-center", className)');
+    expect(read("src/components/layout/site-header.tsx")).toContain(
+      'HeaderShell className="sticky top-0 z-40"',
+    );
+    expect(read("src/components/layout/dashboard-header.tsx")).toContain(
+      'HeaderShell className="relative z-10"',
+    );
 
     const html = renderToStaticMarkup(
       <DashboardHeader name="Nikola" email="n@example.com" avatarUrl={null} />,
@@ -171,14 +182,23 @@ describe("the events list at phone widths", () => {
     expect(html).toContain("Close menu");
   });
 
+  it("gives the phone menu the bar's own surface, not a white card", () => {
+    // Same paper, same 92%, same blur, so the menu reads as the bar carrying
+    // on rather than as a card dropped over it.
+    const source = read("src/components/layout/mobile-menu.tsx");
+
+    expect(source).toContain("bg-paper/92");
+    expect(source).toContain("backdrop-blur");
+    // And a gap between the two, rather than the panel touching the bar.
+    expect(source).toContain("mt-2");
+  });
+
   it("sets the phone menu to the right, under the icon that opened it", () => {
     // The hamburger is at the right end of the bar. A list running down the
     // left of the screen underneath it reads as belonging to something else.
     const source = read("src/components/layout/mobile-menu.tsx");
 
-    expect(source).toContain("absolute -right-2 top-[calc(100%+0.625rem)]");
-    // And its right edge lands on the header pill's, not 12px inside it.
-    expect(source).toContain("xs:-right-3");
+    expect(source).toContain("items-end");
     expect(source).toMatch(/flex-col items-end[^"]*text-right/);
     expect(source).toContain('cx("flex w-full justify-end", item.className)');
   });

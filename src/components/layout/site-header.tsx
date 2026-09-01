@@ -20,7 +20,11 @@ export function HeaderShell({
   return (
     /* The gutter is the page's, not the header's: every content column in the
        product is `px-4 sm:px-5`, and a header on its own 12px inset below `sm`
-       sat a visible 4px wider than the cards underneath it. */
+       sat a visible 4px wider than the cards underneath it.
+
+       Every caller passes a positioning class - `sticky` here, `relative` on
+       the dashboard - and MobileMenu's panel relies on it: that is what
+       `inset-x-4` and `top-full` on the panel are measured against. */
     <header className={`px-4 pt-3 sm:px-5 sm:pt-4 ${className}`}>
       {/* The pill's own padding and gap tighten below `xs`. A 320px phone is
           16px short of holding the dashboard's row at the roomier setting, and
