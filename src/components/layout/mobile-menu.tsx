@@ -93,9 +93,11 @@ export function MobileMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls="mobile-menu-panel"
-        /* 44px of tap target, pulled half a step into the pill's own padding so
-           the icon still sits on the same optical edge as the wordmark. */
-        className="-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-2xl hover:bg-blush"
+        /* 44px of tap target around a 24px glyph, so the button carries 10px
+           of padding either side. Pulling it out by exactly that much puts the
+           glyph on the pill's own inset - the same edge the wordmark starts
+           on - at whatever padding the pill is running. */
+        className="-mr-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-2xl hover:bg-blush"
       >
         {open ? <MdClose /> : <MdMenu />}
       </button>
@@ -110,10 +112,11 @@ export function MobileMenu({
              which is the bar's - the header has no padding under it. `mt-2` is
              the gap between the two.
 
-             The surface is the bar's own: same paper, same 92%, same blur, so
-             the menu reads as the bar continuing rather than as a white card
-             dropped on top of it. */
-          className="absolute inset-x-0 top-full z-50 mt-2 flex flex-col items-end gap-1 rounded-2xl bg-paper/92 px-4 py-4 text-right shadow-md backdrop-blur"
+             The paper is the bar's, at full strength: the bar can be sheer
+             because it is a strip over the page, but a panel you read a list
+             off cannot - the cards underneath were showing straight through
+             the items. */
+          className="absolute inset-x-0 top-full z-50 mt-2 flex flex-col items-end gap-1 rounded-2xl bg-paper px-4 py-4 text-right shadow-md"
         >
           {items.map((item) => (
             <div
