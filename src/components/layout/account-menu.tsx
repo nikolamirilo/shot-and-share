@@ -18,17 +18,27 @@ export function AccountMenu({
   email,
   avatarUrl,
   align = "right",
+  showName = false,
 }: {
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
   /**
-   * Which edge of the badge the panel grows from. In the header the badge is
-   * the last thing on the row, so the panel hangs off its right edge; in the
-   * phone menu the badge is the first thing on the row, and a right-anchored
-   * panel there starts 190px off the left of the screen.
+   * Which edge of the badge the panel grows from. Wherever the badge is the
+   * last thing on its row the panel hangs off its right edge; put the badge at
+   * the *start* of a row and a right-anchored panel begins 190px off the left
+   * of the screen, so that instance has to ask for `left`.
    */
   align?: "left" | "right";
+  /**
+   * Show the name beside the face rather than the face alone. A circle with two
+   * letters in it is recognisable but anonymous; where this is the only sign of
+   * who is signed in, the name is worth the width.
+   *
+   * `"wide"` for the header bar, which is full at a phone's width and can drop
+   * back to the face; `true` anywhere with room to spare, such as the panel.
+   */
+  showName?: boolean | "wide";
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -61,7 +71,7 @@ export function AccountMenu({
   }, [open]);
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className="relative min-w-0">
       <button
         ref={buttonRef}
         type="button"
@@ -72,8 +82,11 @@ export function AccountMenu({
         aria-label={`Account: ${displayName}`}
         title={displayName}
         className={cx(
-          "block touch-manipulation rounded-full transition-transform duration-150",
-          "focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink",
+          /* `max-w-full` is load-bearing: a <button> sizes shrink-to-fit, so
+             without it the badge stays as wide as the name and walks straight
+             out of the header rather than letting the name ellipsise. */
+          "flex min-w-0 max-w-full touch-manipulation items-center gap-2 rounded-full transition-transform duration-150",
+          "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink",
           open ? "translate-y-0" : "hover:-translate-y-0.5",
         )}
       >
@@ -83,6 +96,19 @@ export function AccountMenu({
           size={40}
           className="shadow-md"
         />
+        {/* `truncate` is what lets a long name give way instead of pushing the
+            row off the screen. On the bar the name waits for `xs`, below which
+            the face is the whole badge again and the name is one tap away. */}
+        {showName && (
+          <span
+            className={cx(
+              "min-w-0 truncate pr-1 text-[0.9375rem] font-semibold leading-tight",
+              showName === "wide" ? "hidden xs:block" : "block",
+            )}
+          >
+            {displayName}
+          </span>
+        )}
       </button>
 
       {open && (

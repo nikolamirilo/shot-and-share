@@ -85,31 +85,71 @@ describe("the events list at phone widths", () => {
   });
 
   it("opens the account panel towards the room it has", () => {
-    // In the header the badge is the last thing on the row, so the panel grows
-    // leftwards from its right edge. In the phone menu the same badge is the
-    // *first* thing on the row, and right-anchoring there put 188px of a 256px
-    // panel off the left of the screen - sign out was unreachable.
-    const inHeader = renderToStaticMarkup(
-      <AccountMenu name="Nikola" email="n@example.com" avatarUrl={null} />,
+    // The panel is `w-64` and anchored to one edge of a 40px badge. Anchor it to
+    // the right of a badge that sits at the *start* of a row and 188px of it is
+    // off the left of the screen - which is what the phone menu used to do to
+    // sign out. Both anchors have to stay reachable from the outside.
+    const source = read("src/components/layout/account-menu.tsx");
+    expect(source).toContain('align === "left" ? "left-0" : "right-0"');
+
+    // Rendering both proves the prop is accepted; the panel itself is only in
+    // the markup once it is open, which needs a click this runner has no DOM for.
+    for (const align of ["left", "right"] as const) {
+      expect(
+        renderToStaticMarkup(
+          <AccountMenu
+            name="Nikola"
+            email="n@example.com"
+            avatarUrl={null}
+            align={align}
+          />,
+        ),
+      ).toContain("Account: Nikola");
+    }
+  });
+
+  it("puts the last menu item on the bar instead of behind a hamburger", () => {
+    // One item behind a hamburger is a tap in front of the thing. The rule is
+    // driven by NAV's length, so this is what fails if a second item is added
+    // without the folded-away branch being checked.
+    const html = renderToStaticMarkup(
+      <DashboardHeader name="Nikola" email="n@example.com" avatarUrl={null} />,
     );
-    const inMenu = renderToStaticMarkup(
-      <AccountMenu
-        name="Nikola"
+
+    expect(html).toContain("My events");
+    expect(html).not.toContain("Open menu");
+  });
+
+  it("folds back into a hamburger, set to the right, once there are two", () => {
+    // The branch today's single item never reaches. It is checked at the source
+    // because NAV is a module constant, so there is no way to render the other
+    // side of it - which is exactly why it is worth pinning down.
+    const source = read("src/components/layout/dashboard-header.tsx");
+
+    expect(source).toContain("const collapsed = NAV.length <= 1;");
+    // Both the hamburger and the panel it opens are gated on the same flag.
+    expect(source).toContain("{!collapsed && (");
+    expect(source).toContain("{!collapsed && menuOpen && (");
+    // And everything inside the panel is set to the right, under the button.
+    expect(source).toMatch(/flex-col items-end[^"]*text-right/);
+    expect(source).toContain("flex flex-col items-end gap-1");
+  });
+
+  it("shows who is signed in on the bar, not just a circle of initials", () => {
+    // With no hamburger there is no panel for the account to live in, so the
+    // badge is the only sign of who is signed in on a phone - and it carries
+    // the name from `xs` up rather than two letters at every width.
+    const html = renderToStaticMarkup(
+      <DashboardHeader
+        name="Nikola Mirilo"
         email="n@example.com"
         avatarUrl={null}
-        align="left"
       />,
     );
 
-    // The panel is only in the markup once it is open, so this checks the
-    // component accepts the alignment at all rather than the rendered panel.
-    expect(inHeader).not.toBe("");
-    expect(inMenu).not.toBe("");
-
-    const source = read("src/components/layout/account-menu.tsx");
-    expect(source).toContain('align === "left" ? "left-0" : "right-0"');
-    expect(read("src/components/layout/dashboard-header.tsx")).toContain(
-      'align="left"',
-    );
+    expect(html).toContain("Nikola Mirilo");
+    // Never `hidden sm:block`: that was the desktop-only wrapper, and it would
+    // take sign out off the phone entirely now that the menu is gone.
+    expect(html).not.toContain("hidden sm:block");
   });
 });
