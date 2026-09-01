@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import {
-  MdClose,
-  MdMenu,
   MdOutlineAddCircleOutline,
   MdOutlinePhotoLibrary,
 } from "react-icons/md";
 
 import { Wordmark } from "@/components/layout/logo";
+import { MobileMenu } from "@/components/layout/mobile-menu";
 import { ButtonLink } from "@/components/ui";
 
 export function HeaderShell({
@@ -35,8 +33,20 @@ export function HeaderShell({
   );
 }
 
+/** The marketing pages' own links, in the order they are read. */
+const NAV = [
+  { href: "/#how", label: "How it works" },
+  { href: "/demo", label: "Demo" },
+  { href: "/pricing", label: "Pricing" },
+];
+
 export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
-  const [open, setOpen] = useState(false);
+  const cta = {
+    href: signedIn ? "/dashboard" : "/login",
+    label: signedIn ? "My events" : "Create an event",
+    icon: signedIn ? MdOutlinePhotoLibrary : MdOutlineAddCircleOutline,
+  };
+  const CtaIcon = cta.icon;
 
   return (
     <HeaderShell className="sticky top-0 z-40">
@@ -44,93 +54,65 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
         <Wordmark labelClassName="hidden xs:inline" />
       </Link>
 
-      <div className="flex items-center gap-3 sm:hidden">
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Close menu" : "Open menu"}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-2xl hover:bg-blush"
-        >
-          {open ? <MdClose /> : <MdMenu />}
-        </button>
-      </div>
-
       <nav className="hidden items-center gap-4 sm:flex sm:gap-5">
-        <Link
-          href="/#how"
-          className="text-[0.9375rem] font-semibold hover:underline"
-        >
-          How it works
-        </Link>
-        <Link
-          href="/demo"
-          className="text-[0.9375rem] font-semibold hover:underline"
-        >
-          Demo
-        </Link>
-        <Link
-          href="/pricing"
-          className="text-[0.9375rem] font-semibold hover:underline"
-        >
-          Pricing
-        </Link>
+        {NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="text-[0.9375rem] font-semibold hover:underline"
+          >
+            {item.label}
+          </Link>
+        ))}
         <ButtonLink
-          href={signedIn ? "/dashboard" : "/login"}
+          href={cta.href}
           size="sm"
           variant="primary"
           className="whitespace-nowrap"
         >
-          {signedIn ? (
-            <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
-          ) : (
-            <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-          )}
-          {signedIn ? "My events" : "Create an event"}
+          <CtaIcon aria-hidden className="shrink-0 text-[1.25em]" />
+          {cta.label}
         </ButtonLink>
       </nav>
 
-      {open && (
-        <div className="absolute inset-x-0 top-full z-40 mt-2 rounded-2xl bg-paper/98 shadow-md backdrop-blur sm:hidden">
-          <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4">
-            <Link
-              href="/#how"
-              onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-blush"
-            >
-              How it works
-            </Link>
-            <Link
-              href="/demo"
-              onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-blush"
-            >
-              Demo
-            </Link>
-            <Link
-              href="/pricing"
-              onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-blush"
-            >
-              Pricing
-            </Link>
-            <div className="mt-2">
+      {/* Below `sm` the same links and the same call to action, all of them
+          inside the one menu rather than half on the bar beside it. */}
+      <MobileMenu
+        className="sm:hidden"
+        items={[
+          ...NAV.map((item) => ({
+            key: item.href,
+            render: (close: () => void) => (
+              <Link
+                href={item.href}
+                onClick={close}
+                /* Full width so the whole row is the tap target, and no
+                   horizontal padding of its own: the label ends on the same
+                   edge as the account name above it and the button below. */
+                className="w-full py-2.5 text-right text-[0.9375rem] font-semibold hover:underline"
+              >
+                {item.label}
+              </Link>
+            ),
+          })),
+          {
+            key: "cta",
+            className: "mt-2 border-t border-edge pt-3",
+            render: (close: () => void) => (
               <ButtonLink
-                href={signedIn ? "/dashboard" : "/login"}
+                href={cta.href}
                 size="sm"
                 variant="primary"
-                className="px-3 py-2"
-                onClick={() => setOpen(false)}
+                className="whitespace-nowrap"
+                onClick={close}
               >
-                {signedIn ? (
-                  <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
-                ) : (
-                  <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-                )}
-                {signedIn ? "My events" : "Create an event"}
+                <CtaIcon aria-hidden className="shrink-0 text-[1.25em]" />
+                {cta.label}
               </ButtonLink>
-            </div>
-          </nav>
-        </div>
-      )}
+            ),
+          },
+        ]}
+      />
     </HeaderShell>
   );
 }
