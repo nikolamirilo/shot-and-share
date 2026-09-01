@@ -28,8 +28,13 @@ export function EventCard({
      * It is stretched out of the name rather than wrapped around everything,
      * because the card now also holds a menu, and a button inside an anchor is
      * neither valid markup nor reliably clickable.
+     *
+     * `min-w-0` is not decoration. A grid item's automatic minimum size is its
+     * min-content width, and the name below sets `white-space: nowrap` to get
+     * its ellipsis - so without this the card is as wide as the longest event
+     * name anyone has, and a phone scrolls sideways to reach the rest of it.
      */
-    <li className="card relative flex h-full flex-col p-5 transition-transform hover:-translate-y-0.5">
+    <li className="card relative flex h-full min-w-0 flex-col p-5 transition-transform hover:-translate-y-0.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link

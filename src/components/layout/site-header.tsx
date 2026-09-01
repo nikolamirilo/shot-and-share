@@ -20,7 +20,10 @@ export function HeaderShell({
   children: React.ReactNode;
 }) {
   return (
-    <header className={`px-3 pt-3 sm:px-5 sm:pt-4 ${className}`}>
+    /* The gutter is the page's, not the header's: every content column in the
+       product is `px-4 sm:px-5`, and a header on its own 12px inset below `sm`
+       sat a visible 4px wider than the cards underneath it. */
+    <header className={`px-4 pt-3 sm:px-5 sm:pt-4 ${className}`}>
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl bg-paper/92 px-4 py-2.5 shadow-sm backdrop-blur sm:gap-4 sm:px-5 sm:py-3">
         {children}
       </div>
@@ -41,7 +44,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
         <button
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? "Close menu" : "Open menu"}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-2xl hover:bg-sand"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-2xl hover:bg-blush"
         >
           {open ? <MdClose /> : <MdMenu />}
         </button>
@@ -87,21 +90,21 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
             <Link
               href="/#how"
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
+              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-blush"
             >
               How it works
             </Link>
             <Link
               href="/demo"
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
+              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-blush"
             >
               Demo
             </Link>
             <Link
               href="/pricing"
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-sand"
+              className="rounded-lg px-3 py-2 text-[0.9375rem] font-semibold hover:bg-blush"
             >
               Pricing
             </Link>
