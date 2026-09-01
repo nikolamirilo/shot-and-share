@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { EventCard } from "@/components/dashboard/event-card";
 import { AccountMenu } from "@/components/layout/account-menu";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
+import { MobileMenu } from "@/components/layout/mobile-menu";
 import type { EventRow } from "@/lib/db/types";
 import { GB, TIERS } from "@/lib/tiers";
 
@@ -70,12 +71,15 @@ describe("the events list at phone widths", () => {
     expect(html).toContain("truncate");
   });
 
-  it("hangs the phone menu off the header rather than off the viewport", () => {
-    // The panel is `absolute ... top-full`. When the header and the panel were
-    // siblings in a fragment there was no positioned ancestor for that to
-    // resolve against, so `top: 100%` meant 100% of the *viewport*: tapping the
+  it("hangs the phone menu off the hamburger rather than off the viewport", () => {
+    // The panel is `absolute ... top-full`, so it needs a positioned ancestor.
+    // Without one, `top: 100%` means 100% of the *viewport*: tapping the
     // hamburger opened the menu one whole screen further down the page, which
-    // reads as the button doing nothing at all.
+    // reads as the button doing nothing at all. The menu carries its own
+    // `relative` wrapper now, so it cannot be dropped by a caller.
+    const source = read("src/components/layout/mobile-menu.tsx");
+    expect(source).toContain('cx("relative flex items-center", className)');
+
     const html = renderToStaticMarkup(
       <DashboardHeader name="Nikola" email="n@example.com" avatarUrl={null} />,
     );
@@ -108,37 +112,80 @@ describe("the events list at phone widths", () => {
     }
   });
 
-  it("puts the last menu item on the bar instead of behind a hamburger", () => {
-    // One item behind a hamburger is a tap in front of the thing. The rule is
-    // driven by NAV's length, so this is what fails if a second item is added
-    // without the folded-away branch being checked.
+  it("puts every action behind one hamburger on a phone", () => {
+    // The dashboard has three of them - the account, "My events" and "New
+    // event" - and all three used to sit on the bar at once, filling the pill
+    // edge to edge with no menu in sight.
     const html = renderToStaticMarkup(
       <DashboardHeader name="Nikola" email="n@example.com" avatarUrl={null} />,
     );
 
-    expect(html).toContain("My events");
-    expect(html).not.toContain("Open menu");
+    expect(html).toContain("Open menu");
+    // The row they came from is the desktop one now, not the phone's.
+    expect(html).toContain("hidden min-w-0 items-center gap-4 sm:flex");
   });
 
-  it("folds back into a hamburger, set to the right, once there are two", () => {
-    // The branch today's single item never reaches. It is checked at the source
-    // because NAV is a module constant, so there is no way to render the other
-    // side of it - which is exactly why it is worth pinning down.
-    const source = read("src/components/layout/dashboard-header.tsx");
+  it("drops the hamburger when it would hold a single item", () => {
+    // A menu holding one thing is a tap in front of the thing. The rule lives
+    // in MobileMenu, so it is the same rule on every header that has one.
+    const one = renderToStaticMarkup(
+      <MobileMenu
+        items={[{ key: "a", render: () => <span>Only one</span> }]}
+      />,
+    );
 
-    expect(source).toContain("const collapsed = NAV.length <= 1;");
-    // Both the hamburger and the panel it opens are gated on the same flag.
-    expect(source).toContain("{!collapsed && (");
-    expect(source).toContain("{!collapsed && menuOpen && (");
-    // And everything inside the panel is set to the right, under the button.
+    expect(one).toContain("Only one");
+    expect(one).not.toContain("Open menu");
+
+    const two = renderToStaticMarkup(
+      <MobileMenu
+        items={[
+          { key: "a", render: () => <span>First</span> },
+          { key: "b", render: () => <span>Second</span> },
+        ]}
+      />,
+    );
+
+    expect(two).toContain("Open menu");
+    // Closed, the items are the menu's business and not the bar's.
+    expect(two).not.toContain("First");
+  });
+
+  it("keeps the panel's items in the order they were given", () => {
+    // Closed is the only state a string render sees on its own, so the panel
+    // is asked to start open here.
+    const html = renderToStaticMarkup(
+      <MobileMenu
+        defaultOpen
+        items={[
+          { key: "a", render: () => <span>Account</span> },
+          { key: "b", render: () => <span>Links</span> },
+          { key: "c", render: () => <span>Call to action</span> },
+        ]}
+      />,
+    );
+
+    expect(html.indexOf("Account")).toBeLessThan(html.indexOf("Links"));
+    expect(html.indexOf("Links")).toBeLessThan(html.indexOf("Call to action"));
+    // Open, the icon is the way back out.
+    expect(html).toContain("Close menu");
+  });
+
+  it("sets the phone menu to the right, under the icon that opened it", () => {
+    // The hamburger is at the right end of the bar. A list running down the
+    // left of the screen underneath it reads as belonging to something else.
+    const source = read("src/components/layout/mobile-menu.tsx");
+
+    expect(source).toContain("absolute -right-2 top-[calc(100%+0.625rem)]");
+    // And its right edge lands on the header pill's, not 12px inside it.
+    expect(source).toContain("xs:-right-3");
     expect(source).toMatch(/flex-col items-end[^"]*text-right/);
-    expect(source).toContain("flex flex-col items-end gap-1");
+    expect(source).toContain('cx("flex w-full justify-end", item.className)');
   });
 
-  it("shows who is signed in on the bar, not just a circle of initials", () => {
-    // With no hamburger there is no panel for the account to live in, so the
-    // badge is the only sign of who is signed in on a phone - and it carries
-    // the name from `xs` up rather than two letters at every width.
+  it("keeps who is signed in reachable at both widths", () => {
+    // On the bar from `sm` up, and inside the hamburger below it - never
+    // nowhere, or signing out would need a laptop.
     const html = renderToStaticMarkup(
       <DashboardHeader
         name="Nikola Mirilo"
@@ -148,8 +195,10 @@ describe("the events list at phone widths", () => {
     );
 
     expect(html).toContain("Nikola Mirilo");
-    // Never `hidden sm:block`: that was the desktop-only wrapper, and it would
-    // take sign out off the phone entirely now that the menu is gone.
-    expect(html).not.toContain("hidden sm:block");
+    expect(html).toContain("Open menu");
+
+    const source = read("src/components/layout/dashboard-header.tsx");
+    // The account is the first thing in the phone menu, above the links.
+    expect(source).toContain('key: "account"');
   });
 });
