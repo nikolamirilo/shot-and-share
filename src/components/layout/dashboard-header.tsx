@@ -82,7 +82,6 @@ export function DashboardHeader({
           items={[
             {
               key: "account",
-              className: "border-b border-edge pb-3",
               /* No `close`: the badge opens a panel of its own, and a menu
                  that shut itself on the way would take that panel with it. */
               render: () => (
@@ -108,7 +107,7 @@ export function DashboardHeader({
                 </Link>
               ),
             })),
-            { key: "new-event", className: "mt-1", render: newEvent },
+            { key: "new-event", className: "mt-2", render: newEvent },
           ]}
         />
       </HeaderShell>

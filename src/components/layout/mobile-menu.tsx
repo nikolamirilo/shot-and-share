@@ -102,12 +102,12 @@ export function MobileMenu({
       {open && (
         <div
           id="mobile-menu-panel"
-          /* Set to the right, under the icon that opened it, and capped
-             against a 320px screen. The negative offsets take back the
-             button's own `-mr-1` and the header pill's padding, so the panel
-             ends on the same edge as the bar above it rather than 12px inside
-             it. They change at `xs` because the pill's padding does. */
-          className="card absolute -right-2 top-[calc(100%+0.625rem)] z-50 flex w-60 max-w-[calc(100vw-2rem)] flex-col items-end gap-1 p-3 text-right shadow-lg xs:-right-3"
+          /* As wide as the bar it hangs under: the header's own gutter is
+             `px-4`, so the pill is `100vw - 2rem` across, and the negative
+             offsets take back the button's `-mr-1` and the pill's padding to
+             land the panel's right edge on the pill's. They change at `xs`
+             because the pill's padding does. */
+          className="card absolute -right-2 top-[calc(100%+0.625rem)] z-50 flex w-[calc(100vw-2rem)] flex-col items-end gap-1 px-4 py-4 text-right shadow-lg xs:-right-3"
         >
           {items.map((item) => (
             <div
