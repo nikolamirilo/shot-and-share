@@ -97,7 +97,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
           })),
           {
             key: "cta",
-            className: "mt-2 border-t border-edge pt-3",
+            className: "mt-2",
             render: (close: () => void) => (
               <ButtonLink
                 href={cta.href}
