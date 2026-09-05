@@ -92,11 +92,12 @@ export function neighbours(
  * How many photographs after the open one are fetched before anybody asks for
  * them.
  *
- * Five is about as far ahead as a guest gets while one full-size copy is still
- * arriving. Further than that and a wall being looked at slowly spends
- * optimiser transformations - which are metered - on photographs nobody opens.
+ * Twenty covers a guest stepping quickly through a run of shots without ever
+ * waiting on one. They are fetched at low priority behind the open photograph,
+ * so the cost is optimiser transformations - which are metered - spent on
+ * photographs nobody opens, not a slower photograph on screen.
  */
-export const PRELOAD_AHEAD = 5;
+export const PRELOAD_AHEAD = 20;
 
 /**
  * The next few photographs, in order, for the lightbox to fetch quietly behind
