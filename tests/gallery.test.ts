@@ -90,9 +90,14 @@ describe("fetching the next photographs early", () => {
   });
 
   it("goes no further than the window, however long the wall is", () => {
-    const long = Array.from({ length: 40 }, (_, i) => shot(`p${i}`, i));
+    const long = Array.from(
+      { length: PRELOAD_AHEAD * 2 },
+      (_, i) => shot(`p${i}`, i),
+    );
     expect(upcoming(long, "p0")).toHaveLength(PRELOAD_AHEAD);
-    expect(ids(upcoming(long, "p0"))).toEqual(["p1", "p2", "p3", "p4", "p5"]);
+    expect(ids(upcoming(long, "p0"))).toEqual(
+      Array.from({ length: PRELOAD_AHEAD }, (_, i) => `p${i + 1}`),
+    );
   });
 
   it("leaves clips alone", () => {
