@@ -2,7 +2,7 @@ import { fail, handle } from "@/lib/api";
 import { requireOwnedEvent } from "@/lib/host";
 import { resolveAppearance } from "@/lib/appearance/resolve";
 import { env } from "@/lib/env";
-import { getActiveShareToken } from "@/lib/events";
+import { getShareLinkState } from "@/lib/events";
 import { formatEventDate } from "@/lib/format";
 import { cardColours, qrCardPdf, qrSvg } from "@/lib/qr";
 import { getTier } from "@/lib/tiers";
@@ -31,11 +31,15 @@ export async function GET(
 
     const event = await requireOwnedEvent(id);
 
-    const active = await getActiveShareToken(event.id);
-    if (!active) {
+    const active = await getShareLinkState(event.id);
+    if (active.state !== "active") {
+      // Two reasons, and telling a host to reissue when the link is live and
+      // only unreadable is how printed cards get thrown away.
       return fail(
         "not_found",
-        "This event has no active link. Issue a new one first.",
+        active.state === "unreadable"
+          ? "This event's link cannot be read back since the encryption key changed. Restore it on the Share tab - it still works for guests."
+          : "This event has no active link. Issue a new one first.",
       );
     }
 

@@ -8,7 +8,7 @@ import {
 } from "@/lib/db/media-repo";
 import type { EventRow } from "@/lib/db/types";
 import { env } from "@/lib/env";
-import { getActiveShareToken, storageSummary } from "@/lib/events";
+import { getShareLinkState, storageSummary } from "@/lib/events";
 import type { MediaView } from "@/lib/media-view";
 import { toMediaViews } from "@/lib/media/view";
 import { createClient } from "@/lib/supabase/server";
@@ -40,8 +40,13 @@ export interface EventConsole {
   /** Every guest photograph at the event, not only the loaded ones. */
   photoCount: number;
   uploaderCount: number;
-  /** Null when the host has revoked every link. */
+  /** Null when there is no link to show - see `shareLinkState` for why. */
   shareLink: string | null;
+  /**
+   * "unreadable" is a live link we cannot decrypt, which is not the same thing
+   * as a revoked one and must not be presented as one.
+   */
+  shareLinkState: "active" | "unreadable" | "none";
 }
 
 export async function loadEventConsole(
@@ -62,7 +67,7 @@ export async function loadEventConsole(
     // All of them, always. The queue is meant to be short, and a host who has
     // to page through things waiting on them will not clear it.
     listMediaAwaitingReview(supabase, event.id),
-    getActiveShareToken(event.id),
+    getShareLinkState(event.id),
   ]);
 
   const counts = stats?.[0] ?? {
@@ -81,6 +86,8 @@ export async function loadEventConsole(
     review: await toMediaViews(reviewRows),
     photoCount: Number(counts.photo_count) + Number(counts.video_count),
     uploaderCount: Number(counts.uploader_count),
-    shareLink: active ? shareUrl(env.siteUrl, active.token) : null,
+    shareLink:
+      active.state === "active" ? shareUrl(env.siteUrl, active.token) : null,
+    shareLinkState: active.state,
   };
 }

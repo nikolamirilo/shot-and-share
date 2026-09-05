@@ -196,7 +196,7 @@ export default async function EventPage({
             eventId={event.id}
             link={view.shareLink}
             brandedQr={tier.brandedQr}
-            revoked={view.shareLink === null}
+            state={view.shareLinkState}
             opens={event.link_opens}
             uploaders={view.uploaderCount}
           />

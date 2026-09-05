@@ -1,18 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import {
   MdOutlineAutorenew,
   MdOutlineCheck,
   MdOutlineContentCopy,
   MdOutlineFileDownload,
   MdOutlineLinkOff,
+  MdOutlineLockReset,
 } from "react-icons/md";
 
 import { useServerAction } from "@/hooks/use-server-action";
 
-import { revokeShareLink, rotateShareLink } from "@/lib/actions/share-links";
-import { Alert, Button, Panel, Stat, cx } from "@/components/ui";
+import {
+  restoreShareLink,
+  revokeShareLink,
+  rotateShareLink,
+} from "@/lib/actions/share-links";
+import {
+  Alert,
+  Button,
+  Field,
+  Panel,
+  Stat,
+  cx,
+  inputClass,
+} from "@/components/ui";
 import { pluralise } from "@/lib/format";
 
 /**
@@ -23,19 +36,25 @@ export function SharePanel({
   eventId,
   link,
   brandedQr,
-  revoked,
+  state,
   opens,
   uploaders,
 }: {
   eventId: string;
   link: string | null;
   brandedQr: boolean;
-  revoked: boolean;
+  /**
+   * "unreadable" is a link that is still live for guests but that we cannot
+   * display - see `getShareLinkState`. It is deliberately not folded into
+   * "none": the two need opposite buttons.
+   */
+  state: "active" | "unreadable" | "none";
   /** Times the link has been opened, and how many of those ended in an upload. */
   opens: number;
   uploaders: number;
 }) {
   const [copied, setCopied] = useState(false);
+  const [pasted, setPasted] = useState("");
   const [codeReady, setCodeReady] = useState(false);
   const [busy, setBusy] = useState<"card" | "png" | null>(null);
   const { pending, error, setError, run } = useServerAction();
@@ -108,6 +127,13 @@ export function SharePanel({
     run(() => rotateShareLink(eventId));
   }
 
+  function restore(event: FormEvent) {
+    event.preventDefault();
+    run(() => restoreShareLink(eventId, pasted), {
+      onSuccess: () => setPasted(""),
+    });
+  }
+
   function revoke() {
     run(() => revokeShareLink(eventId), {
       confirm:
@@ -118,7 +144,7 @@ export function SharePanel({
   return (
     <Panel title="Share it">
 
-      {revoked ? (
+      {state === "none" ? (
         <>
           <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-ash">
             There is no active link for this event. Guests who scan an old code
@@ -128,6 +154,65 @@ export function SharePanel({
             <MdOutlineAutorenew aria-hidden className="shrink-0 text-[1.25em]" />
             {pending ? "Issuing…" : "Issue a new link"}
           </Button>
+        </>
+      ) : state === "unreadable" ? (
+        /* The link works and we cannot read it. Everything here is arranged
+           around not letting a host reach for "Issue a new link", which would
+           turn a page that cannot show a code into tables of codes that no
+           longer work. */
+        <>
+          <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-ash">
+            <strong>This event&rsquo;s link still works.</strong> Guests who
+            scan a printed code get through as usual - we just cannot show the
+            link on this page, because the key that encrypts links changed after
+            this one was issued.
+          </p>
+          <p className="mt-2 max-w-prose text-[0.9375rem] leading-relaxed text-ash">
+            Paste the link back in and the code, the card and the download
+            buttons all return. Find it in a printed card, a message you sent
+            guests, or your browser history.
+          </p>
+
+          <form onSubmit={restore} className="mt-5 max-w-prose">
+            <Field label="Your event link" htmlFor="restore-link">
+              <input
+                id="restore-link"
+                type="text"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                value={pasted}
+                onChange={(e) => setPasted(e.target.value)}
+                placeholder="https://www.shotandshare.com/e/…"
+                className={inputClass}
+              />
+            </Field>
+            <Button
+              type="submit"
+              disabled={pending || pasted.trim().length === 0}
+              className="mt-3 w-full sm:w-auto"
+            >
+              <MdOutlineLockReset aria-hidden className="shrink-0 text-[1.25em]" />
+              {pending ? "Restoring…" : "Restore this link"}
+            </Button>
+          </form>
+
+          <div className="mt-6 border-t border-edge pt-5">
+            <p className="max-w-prose text-[0.8125rem] leading-relaxed text-mist">
+              Cannot find it anywhere? Issuing a new link is the last resort:
+              every card already on a table stops working the moment you do.
+            </p>
+            <Button
+              onClick={rotate}
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              className="mt-3"
+            >
+              <MdOutlineAutorenew aria-hidden className="shrink-0 text-[1.25em]" />
+              Issue a new link instead
+            </Button>
+          </div>
         </>
       ) : (
         <>
