@@ -1,33 +1,30 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { MdClose } from "react-icons/md";
 
 import { LogoMark } from "@/components/layout/logo";
-import { ButtonLink } from "@/components/ui";
 
 /**
- * Variant C's actual pitch: a bar that comes up once the guest has scrolled
- * through the gallery, on a free event only.
+ * An optional add-on to any of the three variants: the same offer, floated up
+ * once the guest has scrolled past the gallery.
  *
  * It exists because of where the visits end. A guest opens the link, uploads,
- * scrolls a little and closes the tab; the footer at the bottom of the page is
- * read by the minority who keep going. This is the same offer, put where the
- * majority is.
+ * scrolls a little and closes the tab; whatever sits at the bottom of the page
+ * is read by the minority who keep going.
  *
- * Three rules keep it from being an advert on somebody's wedding:
- *
- * - It waits. Nothing floats until the guest is most of the way down the page,
- *   which on an event page means they have seen the photographs.
- * - It goes away. One tap on the cross, and it stays gone for the rest of the
- *   session - the same visitor scrolling back up does not get it twice.
- * - It sits above the safe area and below nothing. The upload control is at the
- *   top of the page, so this never covers the thing the guest came to press.
+ * It is the house pill - paper, a shadow, blurred behind - and not a dark
+ * banner, because the one thing floating over somebody's photographs should be
+ * the lightest object on the page, not the heaviest. Three rules keep it
+ * honest: it waits until the photographs have been seen, one tap on the cross
+ * puts it away for the session, and it never covers the upload control, which
+ * lives at the top of the page.
  */
 
 const DISMISSED = "ss:invite-dismissed";
 
-/** How far down the page the guest has to be before the bar is allowed up. */
+/** How far down the page the guest has to be before the pill is allowed up. */
 const TRIGGER = 0.55;
 
 export function PlatformInviteBar() {
@@ -38,8 +35,8 @@ export function PlatformInviteBar() {
     try {
       if (sessionStorage.getItem(DISMISSED)) return;
     } catch {
-      // Private mode, or storage turned off. Showing the bar is the safe
-      // failure: the worst case is a guest dismissing it twice.
+      // Private mode, or storage turned off. Showing it is the safe failure:
+      // the worst case is a guest dismissing it twice.
     }
     setGone(false);
 
@@ -51,7 +48,7 @@ export function PlatformInviteBar() {
         const scrollable =
           document.documentElement.scrollHeight - window.innerHeight;
         // A page short enough not to scroll has no "past the gallery" to wait
-        // for, so the bar comes up as soon as it is on screen.
+        // for, so it comes up as soon as it is on screen.
         setShown(scrollable < 200 || window.scrollY / scrollable > TRIGGER);
       });
     };
@@ -77,31 +74,26 @@ export function PlatformInviteBar() {
 
   return (
     <div
-      role="region"
       aria-label="Shot & Share"
-      className={`fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-transform duration-300 motion-reduce:transition-none ${
+      role="region"
+      className={`fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-transform duration-300 motion-reduce:transition-none ${
         shown ? "translate-y-0" : "translate-y-[130%]"
       }`}
     >
-      <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-ink/95 p-2 pl-3.5 shadow-lg backdrop-blur">
-        <LogoMark variant="reversed" className="h-6 w-auto shrink-0" />
+      <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-paper/92 py-2 pl-3.5 pr-2 shadow-lg backdrop-blur">
+        <LogoMark className="h-6 w-auto shrink-0" />
 
-        <p className="min-w-0 flex-1 text-label leading-snug text-linen/85">
-          Collecting photos like this is{" "}
-          <span className="font-semibold text-linen">free</span> for your own
-          event.
+        <p className="min-w-0 flex-1 text-label leading-snug text-ash">
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener"
+            className="font-semibold text-claret underline decoration-claret/35 underline-offset-4 hover:decoration-claret"
+          >
+            Collect photos at your own event
+          </Link>{" "}
+          - free, no app.
         </p>
-
-        <ButtonLink
-          href="/"
-          target="_blank"
-          rel="noopener"
-          size="sm"
-          variant="onDark"
-          className="shrink-0 rounded-xl"
-        >
-          Try it
-        </ButtonLink>
 
         {/* A cross, not a "no thanks" - the words are the offer's job, and a
             second sentence here would be arguing with somebody leaving. */}
@@ -109,7 +101,7 @@ export function PlatformInviteBar() {
           type="button"
           onClick={dismiss}
           aria-label="Hide this"
-          className="-mr-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl text-linen/55 hover:text-linen"
+          className="flex size-9 shrink-0 items-center justify-center rounded-xl text-mist hover:text-ink"
         >
           <MdClose aria-hidden className="text-[1.15rem]" />
         </button>

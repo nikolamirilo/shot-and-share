@@ -1,11 +1,8 @@
 import Link from "next/link";
-import {
-  MdOutlineAddCircleOutline,
-  MdOutlinePhotoLibrary,
-} from "react-icons/md";
+import { MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { LogoMark, Wordmark } from "@/components/layout/logo";
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, Hole } from "@/components/ui";
 import { TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
@@ -13,23 +10,27 @@ import { TIERS, photoCountLabel } from "@/lib/tiers";
  * /dev-banners. One of them replaces `platform-banner.tsx`; the other two get
  * deleted.
  *
- * All three answer the same question: a guest is on somebody else's event page
- * with photos in their hand, and the only thing we want out of that visit is
- * the thought "I want one of these for mine". So the rules they share:
+ * The first attempt at these was three adverts in the house colours - a black
+ * strip on top and a full-bleed claret band at the bottom - and it read as
+ * exactly that. This set is built out of the parts the product is already made
+ * of, so the rules are the system's rather than a campaign's:
  *
- * - The header stays out of the way. A guest who arrived to upload a photo is
- *   not shopping, and a loud bar over the host's cover is the fastest way to
- *   look like an advert on their wedding.
- * - The pitch goes at the bottom, after the guest has used the thing. By then
- *   they know what it does, and the footer only has to name it and price it.
- * - The price is the argument. "Free", the photo count and "no app, no
- *   account" do more work here than any adjective, so every variant states
- *   them, and states them from `TIERS.free` so they cannot drift.
- * - One button. A footer with three equal choices converts worse than a footer
- *   with one, so the second option is always a plain link.
+ * - Nothing is outlined. A pill is a pill because it floats; a band is divided
+ *   off by sinking a shade, the way the site footer's colophon is.
+ * - The only dark surface is a well, and a well is where a photograph goes.
+ *   Ink is for type, not for a strip across somebody's cover.
+ * - Claret is spent once, on the thing you press. A claret ground under our
+ *   own advertisement is the one place it cannot be spent.
+ * - Everything reads the theme variables rather than a fixed hex, so any of
+ *   these would follow a themed page if free events ever get one.
+ *
+ * What they share as an argument: the header stays out of the way (a guest
+ * arrived to upload, not to shop), the pitch waits for the bottom, and the
+ * price is the whole pitch - free, the photo count, no app - quoted from
+ * `TIERS.free` so it cannot drift from the pricing page.
  */
 
-/** Free plan, in the four words a footer has room for. Never hand-typed. */
+/** The free plan in the four words a footer has room for. Never hand-typed. */
 const FREE_FACTS = [
   "Free",
   `${photoCountLabel(TIERS.free.quotaBytes)} photos`,
@@ -37,68 +38,75 @@ const FREE_FACTS = [
   "no app",
 ].join(" · ");
 
-/* ---------------------------------------------------------------------------
-   A. Bar & Band
-
-   The smallest change from what is live: the same dark strip on top, and a
-   claret band at the bottom instead of the quiet blush one. Claret is the
-   colour the landing page spends on "press this", and the bottom of an event
-   page is the one place on a guest's screen where we are allowed to spend it.
-   Safest of the three, and the loudest at the point where loud is earned.
-   --------------------------------------------------------------------------- */
-
-export function PlatformHeaderA() {
+/**
+ * The house's own floating bar, borrowed from `HeaderShell`: paper at 92%, a
+ * soft shadow, blurred behind, on the page's gutter. The marketing site says
+ * "we are here" this way on every page, and it is the one shape on an event
+ * page that is unmistakably ours without taking anything from the host.
+ */
+function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-ink">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2 sm:px-5">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2"
-          target="_blank"
-          rel="noopener"
-        >
-          <LogoMark variant="reversed" className="h-6 w-auto" />
-          <span className="font-mono text-micro uppercase tracking-[0.16em] text-linen/70">
-            Shot &amp; Share
-          </span>
-        </Link>
-
-        {/* A pill rather than the underlined link that is there now. Same
-            words, same target; a shape is tappable on a phone in a way that
-            eleven pixels of underlined mono is not. `sm` and `onDark` keep it
-            a chip - a full button here would compete with the upload one. */}
-        <ButtonLink
-          href="/"
-          target="_blank"
-          rel="noopener"
-          size="sm"
-          variant="onDark"
-          className="rounded-full px-3 font-mono text-micro uppercase tracking-[0.14em]"
-        >
-          Try it free
-        </ButtonLink>
+    <div className="px-4 pt-3 sm:px-5 sm:pt-4">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl bg-paper/92 px-3.5 py-2 shadow-sm backdrop-blur sm:px-4 sm:py-2.5">
+        {children}
       </div>
     </div>
   );
 }
 
+/** The mark and our name, at caption size. */
+function MarkLabel({ className = "" }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-2 ${className}`}>
+      <LogoMark className="h-5 w-auto" />
+      <span className="eyebrow">Shot &amp; Share</span>
+    </span>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   A. Pill & Card
+
+   One object language, top and bottom: the site's floating pill over the
+   cover, and the same paper floating again at the end of the page as a card.
+   Nothing full-bleed, nothing dark, no rules - the two things that are ours
+   are the two things on the page that float, and the host's photographs are
+   the only colour in between.
+   --------------------------------------------------------------------------- */
+
+export function PlatformHeaderA() {
+  return (
+    <Pill>
+      <Link href="/" target="_blank" rel="noopener" className="min-w-0">
+        <MarkLabel />
+      </Link>
+      {/* Text, not a filled button. A second fill up here would be the page's
+          loudest object sitting above the host's own name. */}
+      <Link
+        href="/"
+        target="_blank"
+        rel="noopener"
+        className="shrink-0 font-mono text-micro uppercase tracking-[0.14em] text-claret underline decoration-claret/35 underline-offset-4 hover:decoration-claret"
+      >
+        Free for your event
+      </Link>
+    </Pill>
+  );
+}
+
 export function PlatformFooterA() {
   return (
-    <section className="bg-claret text-chalk">
-      <div className="mx-auto max-w-3xl px-4 py-12 text-center sm:px-5 sm:py-16">
-        <p className="font-mono text-micro uppercase tracking-[0.18em] text-chalk/70">
-          Made with Shot &amp; Share
-        </p>
+    <section className="px-4 pb-10 sm:px-5 sm:pb-12">
+      <div className="card mx-auto max-w-3xl px-6 py-8 text-center sm:px-8 sm:py-10">
+        <LogoMark className="mx-auto h-7 w-auto" />
 
-        <h2 className="mt-3 text-[1.875rem] leading-[1.08] sm:text-[2.75rem]">
-          Your event can have
-          <br />
-          one of these.
+        <h2 className="mt-4 text-h3 sm:text-h2">
+          Your event can have one of these.
         </h2>
 
-        <p className="mx-auto mt-4 max-w-md text-small leading-relaxed text-chalk/75 sm:text-body">
+        <p className="mx-auto mt-3 max-w-sm text-small leading-relaxed text-ash">
           One code on the table, and every photo your guests take lands in one
-          place. Set it up tonight and send the link to one friend.
+          place. Nothing for them to install.
         </p>
 
         <ButtonLink
@@ -106,15 +114,80 @@ export function PlatformFooterA() {
           target="_blank"
           rel="noopener"
           size="lg"
-          variant="onDark"
-          className="mt-7 w-full sm:w-auto"
+          className="mt-6 w-full sm:w-auto"
         >
           <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
           Create your free event
         </ButtonLink>
 
-        <p className="mt-5 font-mono text-micro uppercase tracking-[0.16em] text-chalk/65">
-          {FREE_FACTS}
+        <p className="eyebrow mt-4">{FREE_FACTS}</p>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   B. One more frame
+
+   The gallery does not stop, it just runs out of photographs: the last frame
+   on the roll is a well like every other tile, and what is inside it is our
+   mark instead of somebody's picture. It is the only variant that is made of
+   the page's own object rather than placed after it, and the only one a guest
+   meets while still scrolling photographs rather than after leaving them.
+
+   The riskiest of the three, and deliberately so - a well is where a picture
+   goes, and putting ourselves in one is a claim. It is also the reason it does
+   not read as an advert: it reads as the end of the film.
+   --------------------------------------------------------------------------- */
+
+export function PlatformHeaderB() {
+  return (
+    <Pill>
+      {/* Nothing to press up here at all. This variant spends its whole ask on
+          the frame at the end of the gallery. */}
+      <Link href="/" target="_blank" rel="noopener">
+        <Wordmark markClassName="h-5 w-auto" labelClassName="text-[0.9375rem]" />
+      </Link>
+      <span className="eyebrow shrink-0">Free event page</span>
+    </Pill>
+  );
+}
+
+export function PlatformFooterB() {
+  return (
+    <section className="px-4 pb-12 sm:px-5 sm:pb-14">
+      <div className="mx-auto max-w-3xl">
+        <p className="eyebrow">End of the roll</p>
+
+        {/* Square, same radius and same well as a tile in the Grid layout, so
+            it sits in the sequence rather than after it. Wider than a tile
+            because it holds a sentence: three columns of photographs, and this
+            takes the width of all three. */}
+        <div className="recess mt-3 flex flex-col items-center gap-5 px-6 py-9 text-center sm:flex-row sm:justify-between sm:gap-6 sm:px-8 sm:text-left">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
+            <LogoMark variant="reversed" className="h-9 w-auto shrink-0" />
+            <span>
+              <h2 className="text-[1.375rem] text-chalk">Your own, free</h2>
+              <span className="mt-1.5 block font-mono text-micro uppercase tracking-[0.16em] text-rose-soft">
+                {FREE_FACTS}
+              </span>
+            </span>
+          </div>
+
+          <ButtonLink
+            href="/"
+            target="_blank"
+            rel="noopener"
+            variant="onDark"
+            className="w-full shrink-0 sm:w-auto"
+          >
+            Collect photos at your event
+          </ButtonLink>
+        </div>
+
+        <p className="mt-3 text-label leading-relaxed text-mist">
+          This is how the host collected every photo above - one code on the
+          table, no app and no accounts.
         </p>
       </div>
     </section>
@@ -122,169 +195,65 @@ export function PlatformFooterA() {
 }
 
 /* ---------------------------------------------------------------------------
-   B. The receipt
+   C. The caption
 
-   Quietest header of the three - no call to action at all - and a footer that
-   explains the mechanism instead of selling it: three steps, in the order they
-   happened, ending on the guest's own tap. Somebody who has just uploaded a
-   photo already believes the product works; what they usually do not know is
-   how little the host had to do. That is the sentence that turns a guest into
-   a host, so it is the whole footer.
+   The quietest thing the page can say and still say something. No bar over the
+   cover at all: our name is a caption under it, in the register the system
+   keeps for machine-readable things, next to the host's date. At the end, the
+   ground sinks a shade - the site footer's own way of dividing without a rule -
+   and holds three holes, one line and one link.
 
-   The second link goes to /demo rather than to sign-up: it costs no account,
-   which makes it the cheapest possible next step for somebody who is curious
-   at midnight at a wedding.
-   --------------------------------------------------------------------------- */
-
-const STEPS = [
-  { n: "01", label: "The host made an event", note: "Two minutes, no card." },
-  { n: "02", label: "A code went on the table", note: "Printed, or on a phone." },
-  { n: "03", label: "You added a photo", note: "No app, no account." },
-];
-
-export function PlatformHeaderB() {
-  return (
-    <div className="border-b border-edge bg-paper">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
-        <Link href="/" target="_blank" rel="noopener">
-          <Wordmark markClassName="h-5 w-auto" labelClassName="text-[0.9375rem]" />
-        </Link>
-        {/* Not a button and not underlined: a caption. On a page that belongs
-            to somebody else, a caption is the most we should take. */}
-        <span className="font-mono text-micro uppercase tracking-[0.16em] text-mist">
-          Free event page
-        </span>
-      </div>
-    </div>
-  );
-}
-
-export function PlatformFooterB() {
-  return (
-    <section className="bg-blush">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-5 sm:py-12">
-        {/* A print on the table: paper, a shadow, nothing outlined - the same
-            object the gallery above is made of. */}
-        <div className="rounded-card bg-paper p-6 shadow-md sm:p-8">
-          <p className="eyebrow">How these photos got here</p>
-
-          <ol className="mt-5 grid gap-4 sm:grid-cols-3 sm:gap-6">
-            {STEPS.map((step) => (
-              <li key={step.n} className="flex gap-3 sm:block">
-                <span className="font-mono text-micro tracking-[0.16em] text-claret">
-                  {step.n}
-                </span>
-                <span className="block sm:mt-2">
-                  <span className="block text-small font-semibold leading-snug">
-                    {step.label}
-                  </span>
-                  <span className="mt-0.5 block text-label text-ash">
-                    {step.note}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
-
-          <div className="mt-7 border-t border-edge pt-6 text-center sm:mt-8">
-            <p className="text-body font-semibold sm:text-lead">
-              Doing the same for your own event costs nothing.
-            </p>
-            <p className="mx-auto mt-2 max-w-sm text-small leading-relaxed text-ash">
-              {photoCountLabel(TIERS.free.quotaBytes)} photos, kept{" "}
-              {TIERS.free.retentionDays} days, on the free plan. No card.
-            </p>
-
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
-              <ButtonLink
-                href="/"
-                target="_blank"
-                rel="noopener"
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-                Start a free event
-              </ButtonLink>
-              <Link
-                href="/demo"
-                target="_blank"
-                rel="noopener"
-                className="inline-flex min-h-11 items-center gap-2 font-semibold underline decoration-2 underline-offset-4 decoration-claret/40 hover:decoration-claret"
-              >
-                <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.15em]" />
-                See a finished gallery
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------------------------------------------------------------------------
-   C. Sticky invite
-
-   Nothing in the header but the mark, a short dark footer, and the actual
-   pitch in a bar that slides up once the guest has scrolled past the gallery -
-   see `platform-invite-bar.tsx`. The bar is the only variant here that catches
-   the guest who never reaches the bottom of the page, which on a phone at a
-   party is most of them.
-
-   The cost is that it is the only one that puts our shape on top of the host's
-   photographs. It is dismissible, stays dismissed for the session, and never
-   appears before the guest has seen the gallery - all three are the price of
-   being allowed to float at all.
+   Nothing here is filled, so nothing competes with the upload button. The bet
+   is that on somebody's wedding, the smallest voice is the most persuasive one.
    --------------------------------------------------------------------------- */
 
 export function PlatformHeaderC() {
   return (
-    <div className="bg-ink">
-      <div className="mx-auto flex max-w-3xl items-center justify-center px-4 py-2 sm:px-5">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2"
-          target="_blank"
-          rel="noopener"
-        >
-          <LogoMark variant="reversed" className="h-5 w-auto" />
-          <span className="font-mono text-micro uppercase tracking-[0.16em] text-linen/70">
-            Shot &amp; Share
-          </span>
-        </Link>
-      </div>
+    <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 pt-3 sm:px-5 sm:pt-4">
+      <LogoMark className="h-4 w-auto opacity-80" />
+      <Link
+        href="/"
+        target="_blank"
+        rel="noopener"
+        className="eyebrow underline decoration-edge underline-offset-4 hover:decoration-mist"
+      >
+        Free event page by Shot &amp; Share
+      </Link>
     </div>
   );
 }
 
 export function PlatformFooterC() {
   return (
-    <section className="bg-ink text-linen">
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 px-4 py-9 text-center sm:flex-row sm:justify-between sm:gap-6 sm:px-5 sm:py-10 sm:text-left">
-        <div>
-          <h2 className="text-h3 leading-tight text-linen sm:text-[1.75rem]">
-            Free for your event too
-          </h2>
-          <p className="mt-2 text-small leading-relaxed text-linen/70">
-            One code on the table, and every photo your guests take lands in
-            one place.
-          </p>
-          <p className="mt-3 font-mono text-micro uppercase tracking-[0.16em] text-linen/55">
-            {FREE_FACTS}
-          </p>
+    <section className="bg-blush">
+      <div className="mx-auto max-w-3xl px-4 py-11 text-center sm:px-5 sm:py-14">
+        {/* The three holes from the closed page: the house's way of signing
+            itself without a logo lockup. */}
+        <div className="flex justify-center gap-2.5">
+          <Hole size={14} />
+          <Hole size={22} />
+          <Hole size={11} />
         </div>
 
-        <ButtonLink
+        <h2 className="mt-6 text-h3 sm:text-h2">
+          Having an event of your own?
+        </h2>
+
+        <p className="mx-auto mt-3 max-w-md text-small leading-relaxed text-ash">
+          This is how the host collected every photo here - one code on the
+          table, no app and no accounts.
+        </p>
+
+        <p className="eyebrow mt-4">{FREE_FACTS}</p>
+
+        <Link
           href="/"
           target="_blank"
           rel="noopener"
-          size="lg"
-          variant="onDark"
-          className="w-full shrink-0 sm:w-auto"
+          className="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-claret underline decoration-2 decoration-claret/40 underline-offset-4 hover:decoration-claret"
         >
-          Create your event
-        </ButtonLink>
+          Set one up in two minutes
+        </Link>
       </div>
     </section>
   );

@@ -31,20 +31,20 @@ export default function DevBanners() {
         footer={<PlatformFooter />}
       />
       <Block
-        name="A · Bar & Band"
-        note="Same strip on top, claret closing band at the bottom."
+        name="A · Pill & Card"
+        note="The site's own floating pill over the cover, the same paper again as a card at the end."
         header={<PlatformHeaderA />}
         footer={<PlatformFooterA />}
       />
       <Block
-        name="B · The receipt"
-        note="No CTA in the header; the footer explains how the photos got here."
+        name="B · One more frame"
+        note="Quiet pill on top; the last frame on the roll is a well with our mark in it."
         header={<PlatformHeaderB />}
         footer={<PlatformFooterB />}
       />
       <Block
-        name="C · Sticky invite"
-        note="Mark only on top, short dark footer, and the bar pinned at the bottom of this window."
+        name="C · The caption"
+        note="No bar at all - a caption over the cover, and a sunk band at the end. The floating pill below is the optional add-on."
         header={<PlatformHeaderC />}
         footer={<PlatformFooterC />}
       />
