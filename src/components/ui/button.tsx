@@ -9,7 +9,7 @@ import { cx } from "@/lib/cx";
  * is a filled shape, which is what carries a button when nothing is outlined.
  */
 type Variant = "primary" | "secondary" | "ghost" | "onDark";
-type Size = "sm" | "md" | "lg";
+type Size = "xs" | "sm" | "md" | "lg";
 
 /**
  * `leading-tight` is load-bearing: body copy runs at 1.65 and a button inherits
@@ -49,6 +49,11 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
+  /* Below the 44px rule on purpose, and the only size that is: it exists for
+     a chip sitting inside another object - the platform bar's button next to
+     the wordmark - where a 40px pill inside a 44px bar is the bar. Anything a
+     thumb has to find on its own uses `sm` or larger. */
+  xs: "min-h-9 px-2.5 py-1.5 text-[0.875rem]",
   sm: "min-h-10 px-3.5 py-2 text-[0.9375rem]",
   md: "min-h-11 px-4.5 py-2.5 text-[1.0625rem] sm:px-5",
   lg: "min-h-12 px-5 py-3 text-[1.0625rem] sm:px-7 sm:py-3.5",

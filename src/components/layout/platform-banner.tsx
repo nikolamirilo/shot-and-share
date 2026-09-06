@@ -40,20 +40,30 @@ const HOME = { href: "/", target: "_blank", rel: "noopener" } as const;
 export function PlatformHeader() {
   return (
     <div className="px-4 pt-3 sm:px-5 sm:pt-4">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl bg-paper/92 px-3.5 py-2 shadow-sm backdrop-blur sm:px-4 sm:py-2.5">
-        <Link {...HOME} className="min-w-0" aria-label="Shot & Share, home">
-          {/* The name is the first thing to go on a narrow phone: below `xs`
-              the mark and the button are what the bar is for. */}
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl bg-paper/92 px-3 py-2 shadow-sm backdrop-blur sm:px-4 sm:py-2.5">
+        {/* `flex`, not the default inline: an inline anchor is as tall as the
+            line box around it - 29px at body leading - and the mark then sits
+            on that box's baseline rather than in its middle, which reads as a
+            logo hung four pixels too high. */}
+        <Link
+          {...HOME}
+          className="flex min-w-0 items-center"
+          aria-label="Shot & Share, home"
+        >
+          {/* The name holds down to a 375px phone - an iPhone mini. Below
+              that the bar is the mark and the button, which is what it is
+              for. */}
           <Wordmark
-            markClassName="h-5 w-auto"
-            labelClassName="hidden text-[0.9375rem] xs:inline"
+            markClassName="h-5 w-auto shrink-0"
+            labelClassName="whitespace-nowrap text-[0.875rem] max-[374px]:hidden xs:text-[0.9375rem]"
           />
         </Link>
 
-        {/* Small, but filled. Eleven pixels of underlined mono is not a tap
-            target on a phone, and this is the only thing in the bar a guest
-            can act on. */}
-        <ButtonLink {...HOME} size="sm" className="shrink-0">
+        {/* Filled, because eleven pixels of underlined mono is not a tap
+            target and this is the only thing in the bar a guest can act on -
+            but a size below `sm`, so it stays a chip next to the name rather
+            than the loudest thing above the host's cover. */}
+        <ButtonLink {...HOME} size="xs" className="shrink-0 rounded-xl">
           Start for Free
         </ButtonLink>
       </div>
