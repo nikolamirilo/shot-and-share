@@ -1,37 +1,61 @@
 import Link from "next/link";
+import { MdOutlineAddCircleOutline } from "react-icons/md";
 
-import { LogoMark } from "@/components/layout/logo";
+import { LogoMark, Wordmark } from "@/components/layout/logo";
 import { ButtonLink } from "@/components/ui";
+import { TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * The Shot & Share header and footer on a free event - the free plan's price,
- * and a small bar rather than a watermark across somebody's photographs.
- * Paid events remove it, which is most of what "custom event page" buys.
+ * and the only advertisement this product has: every guest at somebody's
+ * wedding sees it. Paid events remove both, which is most of what "custom
+ * event page" buys.
+ *
+ * Both are made of parts the product already has, so neither reads as a banner
+ * stuck onto the host's page. The header is the house's floating pill, the one
+ * from `HeaderShell` on every marketing page: paper at 92%, a soft shadow,
+ * blurred behind, on the page's own gutter. The footer is that same paper
+ * floating again as a card at the end. Nothing is outlined, nothing is
+ * full-bleed, and the only dark surface on the page stays what it always is -
+ * a well with a photograph in it.
+ *
+ * Everything reads the theme variables rather than a fixed hex, so both follow
+ * a themed page if free events ever get one.
  */
+
+/**
+ * The free plan in the three facts a card has room for on one line, quoted
+ * from the tier rather than typed, so it cannot drift from the pricing page.
+ * Retention is the fourth fact and the least persuasive of them: on a 320px
+ * phone it is what pushes this onto a second line with two words on it.
+ */
+const FREE_FACTS = [
+  "Free",
+  `${photoCountLabel(TIERS.free.quotaBytes)} photos`,
+  "no app",
+].join(" · ");
+
+const HOME = { href: "/", target: "_blank", rel: "noopener" } as const;
 
 export function PlatformHeader() {
   return (
-    <div className="bg-ink">
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 sm:px-5">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2"
-          target="_blank"
-          rel="noopener"
-        >
-          <LogoMark variant="reversed" className="h-6 w-auto" />
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-linen/70">
-            Shot & Share
-          </span>
+    <div className="px-4 pt-3 sm:px-5 sm:pt-4">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl bg-paper/92 px-3.5 py-2 shadow-sm backdrop-blur sm:px-4 sm:py-2.5">
+        <Link {...HOME} className="min-w-0" aria-label="Shot & Share, home">
+          {/* The name is the first thing to go on a narrow phone: below `xs`
+              the mark and the button are what the bar is for. */}
+          <Wordmark
+            markClassName="h-5 w-auto"
+            labelClassName="hidden text-[0.9375rem] xs:inline"
+          />
         </Link>
-        <Link
-          href="/"
-          target="_blank"
-          rel="noopener"
-          className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rose-soft underline underline-offset-4"
-        >
-          Collect photos at your event
-        </Link>
+
+        {/* Small, but filled. Eleven pixels of underlined mono is not a tap
+            target on a phone, and this is the only thing in the bar a guest
+            can act on. */}
+        <ButtonLink {...HOME} size="sm" className="shrink-0">
+          Start for Free
+        </ButtonLink>
       </div>
     </div>
   );
@@ -39,23 +63,24 @@ export function PlatformHeader() {
 
 export function PlatformFooter() {
   return (
-    <section className="bg-blush">
-      <div className="mx-auto max-w-3xl px-4 py-9 text-center sm:px-5 sm:py-10">
-        <p className="eyebrow text-ash">Made with Shot & Share</p>
-        <h2 className="mt-3 text-[1.625rem] sm:text-h2">Having an event of your own?</h2>
-        <p className="mx-auto mt-3 max-w-md text-[0.9375rem] leading-relaxed text-ash">
-          This is how the host collected every photo here - one code on the
-          table, no app and no accounts. Free to set up and try.
+    <section className="px-4 pb-10 sm:px-5 sm:pb-12">
+      <div className="card mx-auto max-w-3xl px-6 py-8 text-center sm:px-8 sm:py-10">
+        <LogoMark className="mx-auto h-7 w-auto" />
+
+        <h2 className="mt-4 text-h3 sm:text-h2">
+          Your event can have one of these.
+        </h2>
+
+        <p className="mx-auto mt-3 max-w-xs text-small leading-relaxed text-ash">
+          One code on the table, and every photo lands with you.
         </p>
-        <ButtonLink
-          href="/"
-          target="_blank"
-          rel="noopener"
-          size="lg"
-          className="mt-6 w-full sm:w-auto"
-        >
-          Create your own event
+
+        <ButtonLink {...HOME} size="lg" className="mt-6 w-full sm:w-auto">
+          <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
+          Create your event
         </ButtonLink>
+
+        <p className="eyebrow mt-4 text-balance">{FREE_FACTS}</p>
       </div>
     </section>
   );
