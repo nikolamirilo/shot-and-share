@@ -1,21 +1,17 @@
 import {
-  PlatformFooterA,
-  PlatformFooterB,
-  PlatformFooterC,
-  PlatformHeaderA,
-  PlatformHeaderB,
-  PlatformHeaderC,
+  type BannerVariant,
+  VARIANTS,
 } from "@/components/layout/platform-banner-variants";
-import { PlatformInviteBar } from "@/components/layout/platform-invite-bar";
 import {
   PlatformFooter,
   PlatformHeader,
 } from "@/components/layout/platform-banner";
+import { PlatformInviteBar } from "@/components/layout/platform-invite-bar";
 import { PhotoPlaceholder } from "@/components/ui";
 
 /**
- * Scratch page for eyeballing the free-event header and footer variants
- * against what is live. Delete with the two variants that lose.
+ * Scratch page for eyeballing the free-event header and footer candidates
+ * against what is live. Delete it with the nine that lose.
  *
  * Each block is a stand-in for a free event page: the bar, a cover, a few
  * frames, then the footer. The middle is deliberately dull - the thing being
@@ -30,29 +26,27 @@ export default function DevBanners() {
         header={<PlatformHeader />}
         footer={<PlatformFooter />}
       />
-      <Block
-        name="A · Pill & Card"
-        note="The site's own floating pill over the cover, the same paper again as a card at the end."
-        header={<PlatformHeaderA />}
-        footer={<PlatformFooterA />}
-      />
-      <Block
-        name="B · One more frame"
-        note="Quiet pill on top; the last frame on the roll is a well with our mark in it."
-        header={<PlatformHeaderB />}
-        footer={<PlatformFooterB />}
-      />
-      <Block
-        name="C · The caption"
-        note="No bar at all - a caption over the cover, and a sunk band at the end. The floating pill below is the optional add-on."
-        header={<PlatformHeaderC />}
-        footer={<PlatformFooterC />}
-      />
 
-      {/* Only one of these can be on screen at a time, so the bar is mounted
-          once for the page rather than per block. Scroll past halfway. */}
+      {VARIANTS.map((variant) => (
+        <VariantBlock key={variant.key} variant={variant} />
+      ))}
+
+      {/* Belongs to 10, and pairs with any of the others. Mounted once for the
+          page rather than per block; scroll past halfway. */}
       <PlatformInviteBar />
     </main>
+  );
+}
+
+function VariantBlock({ variant }: { variant: BannerVariant }) {
+  const { Header, Footer } = variant;
+  return (
+    <Block
+      name={variant.name}
+      note={variant.note}
+      header={<Header />}
+      footer={<Footer />}
+    />
   );
 }
 
