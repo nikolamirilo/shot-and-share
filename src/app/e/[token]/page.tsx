@@ -3,10 +3,7 @@ import type { Metadata } from "next";
 import { ClosedPage } from "@/components/event/closed-page";
 import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
 import { GuestExperience } from "@/components/event/guest-experience";
-import {
-  PlatformFooter,
-  PlatformHeader,
-} from "@/components/layout/platform-banner";
+import { PlatformBar } from "@/components/layout/platform-banner";
 import { resolveAppearance } from "@/lib/appearance";
 import { googleFontsHref } from "@/lib/fonts";
 import { formatEventDate } from "@/lib/format";
@@ -113,16 +110,7 @@ export default async function GuestPage({
         <link rel="stylesheet" href={fontsHref} precedence="default" />
       )}
 
-      {/*
-       * The platform bar and the cover share one screen-high column, so that
-       * "full screen" means the screen. Stacked the obvious way, a 100svh cover
-       * starts underneath the bar, which pushes the name and the scroll cue -
-       * the two things the cover exists for - below the fold on every phone.
-       * A paid event has no bar, so the cover takes the whole column.
-       */}
       <div className={fullScreenCover ? "flex min-h-svh flex-col" : undefined}>
-        {appearance.platformBranding && <PlatformHeader />}
-
         <EventCover
           variant={appearance.cover}
           name={event.name}
@@ -151,19 +139,17 @@ export default async function GuestPage({
           the small print either, which is the last thing on the page carrying
           our voice rather than the host's. */}
       {appearance.platformBranding && (
-        <>
-          <div>
-            <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-mist sm:px-5">
-              {tier.video
-                ? "Everything you add here goes to the host of this event."
-                : "Photos you add here go to the host of this event."}{" "}
-              Uploaded something by mistake? Ask the host to take it down.
-            </p>
-          </div>
-
-          <PlatformFooter />
-        </>
+        <div>
+          <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-mist sm:px-5">
+            {tier.video
+              ? "Everything you add here goes to the host of this event."
+              : "Photos you add here go to the host of this event."}{" "}
+            Uploaded something by mistake? Ask the host to take it down.
+          </p>
+        </div>
       )}
+
+      {appearance.platformBranding && <PlatformBar />}
     </EventThemeRoot>
   );
 }

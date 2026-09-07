@@ -1,62 +1,50 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { MdClose } from "react-icons/md";
 
 import { LogoMark } from "@/components/layout/logo";
-import { ButtonLink } from "@/components/ui";
 
 /**
- * The Shot & Share header and footer on a free event - the free plan's price,
- * and a small bar rather than a watermark across somebody's photographs.
- * Paid events remove it, which is most of what "custom event page" buys.
+ * The Shot & Share plug on a free event - the free plan's price, and a small
+ * bar rather than a watermark across somebody's photographs. Paid events
+ * remove it, which is most of what "custom event page" buys.
+ *
+ * It floats over the top of the page rather than sitting in the header or
+ * footer, so it never collides with the gallery's own floating controls
+ * further down - the "Select" button among them.
  */
+export function PlatformBar() {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
 
-export function PlatformHeader() {
   return (
-    <div className="bg-ink">
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 sm:px-5">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2"
-          target="_blank"
-          rel="noopener"
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="toast-in pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-ink/10 bg-blush px-4 py-3 shadow-lg">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linen">
+          <LogoMark className="h-5 w-auto" />
+        </span>
+        <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-ash">
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener"
+            className="font-semibold text-ink underline underline-offset-2"
+          >
+            Collect photos at your own event
+          </Link>{" "}
+          - free, no app.
+        </p>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss"
+          className="shrink-0 rounded-full p-1 text-ash/70 transition-colors hover:text-ash"
         >
-          <LogoMark variant="reversed" className="h-6 w-auto" />
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-linen/70">
-            Shot & Share
-          </span>
-        </Link>
-        <Link
-          href="/"
-          target="_blank"
-          rel="noopener"
-          className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-rose-soft underline underline-offset-4"
-        >
-          Collect photos at your event
-        </Link>
+          <MdClose aria-hidden className="text-[1.1em]" />
+        </button>
       </div>
     </div>
-  );
-}
-
-export function PlatformFooter() {
-  return (
-    <section className="bg-blush">
-      <div className="mx-auto max-w-3xl px-4 py-9 text-center sm:px-5 sm:py-10">
-        <p className="eyebrow text-ash">Made with Shot & Share</p>
-        <h2 className="mt-3 text-[1.625rem] sm:text-h2">Having an event of your own?</h2>
-        <p className="mx-auto mt-3 max-w-md text-[0.9375rem] leading-relaxed text-ash">
-          This is how the host collected every photo here - one code on the
-          table, no app and no accounts. Free to set up and try.
-        </p>
-        <ButtonLink
-          href="/"
-          target="_blank"
-          rel="noopener"
-          size="lg"
-          className="mt-6 w-full sm:w-auto"
-        >
-          Create your own event
-        </ButtonLink>
-      </div>
-    </section>
   );
 }
