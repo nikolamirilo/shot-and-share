@@ -5,6 +5,8 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdClose,
+  MdFavorite,
+  MdFavoriteBorder,
   MdOutlineFileDownload,
 } from "react-icons/md";
 
@@ -43,6 +45,8 @@ export function Lightbox({
   onStep,
   onClose,
   onReported,
+  favorite,
+  onToggleFavorite,
   demo,
 }: {
   token: string;
@@ -71,6 +75,10 @@ export function Lightbox({
    * rather than sitting there until the next refresh.
    */
   onReported?: (id: string) => void;
+  /** Whether this one is in the guest's favourites. */
+  favorite?: boolean;
+  /** Present on the guest wall only: the heart beside Download. */
+  onToggleFavorite?: (id: string) => void;
   /**
    * The demo gallery, whose photographs are files in `public` rather than rows
    * in a bucket. There is no signed URL to go and fetch, so the request is
@@ -354,6 +362,27 @@ export function Lightbox({
                     />
                     Download
                   </a>
+                )}
+                {onToggleFavorite && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleFavorite(item.id)}
+                    aria-pressed={favorite ? true : false}
+                    className={cx(
+                      "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-small font-semibold leading-tight",
+                      ON_SCRIM_FLOATING,
+                    )}
+                  >
+                    {favorite ? (
+                      <MdFavorite aria-hidden className="shrink-0 text-[1.25em]" />
+                    ) : (
+                      <MdFavoriteBorder
+                        aria-hidden
+                        className="shrink-0 text-[1.25em]"
+                      />
+                    )}
+                    {favorite ? "Favourite" : "Add to favourites"}
+                  </button>
                 )}
                 {onReported && (
                   <ReportButton

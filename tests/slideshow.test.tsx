@@ -124,6 +124,7 @@ function photo(over: Partial<MediaView> & { id: string }): MediaView {
     width: 2560,
     height: 1707,
     createdAt: "2026-08-01T00:00:00.000Z",
+    takenAt: "2026-08-01T00:00:00.000Z",
     uploaderFingerprint: null,
     sizeBytes: 1000,
     previewUrl: null,

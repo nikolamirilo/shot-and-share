@@ -2,7 +2,12 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database, MediaRow } from "@/lib/db/types";
+import type { Database, MediaKind, MediaRow } from "@/lib/db/types";
+import {
+  type GallerySort,
+  parseTakenCursor,
+  takenCursor,
+} from "@/lib/media-view";
 
 /**
  * Every read of the media table.
@@ -128,6 +133,11 @@ export interface MediaPage {
  * offset page two would repeat photographs pushed down by new arrivals. The
  * page size is the caller's - the gallery and the cover picker want different
  * numbers - and it also decides whether there is a next cursor.
+ *
+ * `kind` narrows it to the photographs or the clips, which are separate tabs.
+ * `sort` is the order: "added" by arrival, which is what everything but the
+ * guest wall uses, or "taken" by when the shutter went off - see migration
+ * 0024 and `takenCursor`.
  */
 export async function listGuestPage(
   client: Client,
@@ -135,20 +145,101 @@ export async function listGuestPage(
     eventId,
     before,
     pageSize,
-  }: { eventId: string; before?: string | null; pageSize: number },
+    kind,
+    sort = "added",
+  }: {
+    eventId: string;
+    before?: string | null;
+    pageSize: number;
+    kind?: MediaKind | null;
+    sort?: GallerySort;
+  },
 ): Promise<MediaPage> {
-  let query = visibleGuestMedia(client, eventId).limit(pageSize);
-  if (before) query = query.lt("created_at", before);
+  let query =
+    sort === "taken"
+      ? client
+          .from("media")
+          .select("*")
+          .eq("event_id", eventId)
+          .eq("status", "ready")
+          .eq("source", "guest")
+          .eq("review_state", "approved")
+          .order("sort_taken_at", { ascending: false })
+          .order("id", { ascending: false })
+      : visibleGuestMedia(client, eventId);
+  query = query.limit(pageSize);
+  if (kind) query = query.eq("kind", kind);
+
+  if (before && sort === "taken") {
+    const cursor = parseTakenCursor(before);
+    // A cursor that does not parse is a page one, not a filter built out of
+    // whatever the caller sent: it goes into a PostgREST expression.
+    if (cursor) {
+      query = query.or(
+        `sort_taken_at.lt."${cursor.at}",and(sort_taken_at.eq."${cursor.at}",id.lt.${cursor.id})`,
+      );
+    }
+  } else if (before) {
+    query = query.lt("created_at", before);
+  }
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   const rows = (data ?? []) as MediaRow[];
+  const last = rows[rows.length - 1];
   return {
     rows,
     nextCursor:
-      rows.length === pageSize ? rows[rows.length - 1].created_at : null,
+      rows.length === pageSize
+        ? sort === "taken"
+          ? takenCursor({ takenAt: last.sort_taken_at, id: last.id })
+          : last.created_at
+        : null,
   };
+}
+
+/**
+ * Specific photographs a guest may see, by id: their favourites, which are
+ * kept on their own phone and may be anywhere in the evening. Anything held,
+ * reported or deleted since simply does not come back.
+ */
+export async function listVisibleGuestMediaByIds(
+  client: Client,
+  eventId: string,
+  ids: string[],
+): Promise<MediaRow[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await visibleGuestMedia(client, eventId).in(
+    "id",
+    ids,
+  );
+  if (error) throw new Error(error.message);
+  return (data ?? []) as MediaRow[];
+}
+
+/**
+ * How many photographs, or how many clips, a guest can see - the number on
+ * each tab. Null rather than a throw, for the same reason as below.
+ */
+export async function countVisibleGuestMedia(
+  client: Client,
+  eventId: string,
+  kind: MediaKind,
+): Promise<number | null> {
+  const { count, error } = await client
+    .from("media")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("status", "ready")
+    .eq("source", "guest")
+    .eq("review_state", "approved")
+    .eq("kind", kind);
+  if (error) {
+    console.error("[gallery] could not count the event", error.message);
+    return null;
+  }
+  return count ?? null;
 }
 
 /**

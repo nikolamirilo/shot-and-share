@@ -29,6 +29,7 @@ export function PhotoGallery({
   layout,
   onActivate,
   isSelected,
+  isFavorite,
   pending = 0,
   className,
 }: {
@@ -37,6 +38,8 @@ export function PhotoGallery({
   onActivate: (item: MediaView) => void;
   /** Host mode. Omit entirely for a read-only gallery. */
   isSelected?: (item: MediaView) => boolean;
+  /** Guest mode: which tiles carry the favourite heart. */
+  isFavorite?: (item: MediaView) => boolean;
   /**
    * Photographs asked for and not yet arrived, drawn as empty shimmering frames
    * at the end of the wall. The wall answers the tap immediately and fills in
@@ -56,6 +59,7 @@ export function PhotoGallery({
     selectable: Boolean(isSelected),
     hold: held(index),
     onSettled: settle,
+    favorite: isFavorite?.(item) ?? false,
   });
 
   const Layout = LAYOUTS[layout] ?? GridLayout;

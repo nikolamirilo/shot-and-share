@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { MdFavorite } from "react-icons/md";
 
 import { PENDING_SURFACE } from "@/components/gallery/skeleton";
 import { Photo, cx } from "@/components/ui";
@@ -32,12 +33,20 @@ export interface TileProps {
   hold?: boolean;
   /** Loaded, or given up on. Either way the wave is one photograph nearer done. */
   onSettled?: (id: string) => void;
+  /** One of the guest's favourites: a small heart in the corner. */
+  favorite?: boolean;
 }
 
 /** The props a layout does not get to decide, per photograph. */
 export type TileTurn = Pick<
   TileProps,
-  "item" | "onActivate" | "selected" | "selectable" | "hold" | "onSettled"
+  | "item"
+  | "onActivate"
+  | "selected"
+  | "selectable"
+  | "hold"
+  | "onSettled"
+  | "favorite"
 >;
 
 export function Tile({
@@ -53,6 +62,7 @@ export function Tile({
   natural = false,
   hold = false,
   onSettled,
+  favorite = false,
 }: TileProps) {
   /** The thumbnail, unless a layout asked for a different copy. */
   const source = src ?? item.previewUrl;
@@ -176,6 +186,18 @@ export function Tile({
               <path d="M8 5v14l11-7z" />
             </svg>
           </span>
+        </span>
+      )}
+
+      {/* A mark, not a control: the tile is already a button, and a button
+          inside a button is neither valid nor reliably pressable. The heart
+          is toggled from the lightbox. */}
+      {favorite && !selected && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-[8%] top-[8%] grid h-7 w-7 place-items-center rounded-full bg-ink/55 text-linen shadow-md"
+        >
+          <MdFavorite className="h-4 w-4" />
         </span>
       )}
 

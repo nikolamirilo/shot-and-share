@@ -5,7 +5,7 @@
  * there they are managing photographs rather than looking at an event page.
  */
 
-import type { MediaView } from "@/lib/media-view";
+import type { GallerySort, MediaView } from "@/lib/media-view";
 
 export const GALLERY_LAYOUTS = [
   {
@@ -135,12 +135,15 @@ export function upcoming(
 export function withFreshHead(
   held: readonly MediaView[],
   head: readonly MediaView[],
+  sort: GallerySort = "added",
 ): MediaView[] {
   if (head.length === 0) return [];
-  const oldest = head[head.length - 1].createdAt;
+  const at = (item: MediaView) =>
+    sort === "taken" ? item.takenAt : item.createdAt;
+  const oldest = at(head[head.length - 1]);
   const arrived = new Set(head.map((item) => item.id));
   const older = held.filter(
-    (item) => item.createdAt < oldest && !arrived.has(item.id),
+    (item) => at(item) < oldest && !arrived.has(item.id),
   );
   return [...head, ...older];
 }

@@ -13,8 +13,14 @@ import { useServerAction } from "@/hooks/use-server-action";
 import { deleteMedia, setCoverPhoto } from "@/lib/actions/media";
 import { LayoutSwitcher } from "@/components/gallery/layout-switcher";
 import { PhotoGallery } from "@/components/gallery/photo-gallery";
+import { Segmented } from "@/components/gallery/segmented";
 import { Alert, Button, Hole } from "@/components/ui";
-import type { MediaView } from "@/lib/media-view";
+import {
+  DEFAULT_SORT,
+  GALLERY_SORTS,
+  type GallerySort,
+  type MediaView,
+} from "@/lib/media-view";
 import {
   type GalleryLayout,
   readViewerLayout,
@@ -36,7 +42,25 @@ export function HostGallery({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { pending, error, run } = useServerAction();
   const [layout, setLayout] = useState<GalleryLayout>(eventLayout);
+  const [kind, setKind] = useState<MediaView["kind"]>("photo");
+  const [sort, setSort] = useState<GallerySort>(DEFAULT_SORT);
   const router = useRouter();
+
+  /*
+   * The console already holds its whole seed of uploads, so the tabs and the
+   * order are worked out here rather than asked of the server again.
+   */
+  const photoCount = media.filter((item) => item.kind === "photo").length;
+  const videoCount = media.length - photoCount;
+  // Nothing but clips: open on them rather than on an empty Photos tab.
+  const shownKind = photoCount === 0 && videoCount > 0 ? "video" : kind;
+  const shown = media
+    .filter((item) => item.kind === shownKind)
+    .sort((a, b) => {
+      const at = (item: MediaView) =>
+        sort === "taken" ? item.takenAt : item.createdAt;
+      return at(a) < at(b) ? 1 : at(a) > at(b) ? -1 : 0;
+    });
 
   /**
    * The wall is rendered on the server, once, and guests keep uploading after
@@ -179,8 +203,32 @@ export function HostGallery({
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {videoCount > 0 && (
+          <Segmented
+            label="Show"
+            value={shownKind}
+            options={[
+              { id: "photo", name: "Photos", count: photoCount },
+              { id: "video", name: "Videos", count: videoCount },
+            ]}
+            onChange={(next) => {
+              setKind(next);
+              setSelected(new Set());
+            }}
+          />
+        )}
+        <Segmented
+          label="Order"
+          value={sort}
+          options={GALLERY_SORTS}
+          onChange={setSort}
+          className="sm:ml-auto"
+        />
+      </div>
+
       <PhotoGallery
-        items={media}
+        items={shown}
         layout={layout}
         onActivate={(item) => toggle(item.id)}
         isSelected={(item) => selected.has(item.id)}

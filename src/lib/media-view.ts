@@ -12,6 +12,11 @@ export interface MediaView {
   width: number | null;
   height: number | null;
   createdAt: string;
+  /**
+   * When it was taken, or when it arrived if the device did not say - the
+   * order of the "time taken" sort. See migration 0024.
+   */
+  takenAt: string;
   uploaderFingerprint: string | null;
   sizeBytes: number;
   /**
@@ -63,3 +68,47 @@ export interface MediaView {
  * pages on the client and shares the number with the route that serves it.
  */
 export const GALLERY_PAGE_SIZE = 50;
+
+/** The two orders a gallery can be in. */
+export const GALLERY_SORTS = [
+  { id: "added", name: "Last added" },
+  { id: "taken", name: "Time taken" },
+] as const;
+
+export type GallerySort = (typeof GALLERY_SORTS)[number]["id"];
+
+export const DEFAULT_SORT: GallerySort = "added";
+
+export function coerceSort(value: unknown): GallerySort {
+  return value === "taken" ? "taken" : DEFAULT_SORT;
+}
+
+/**
+ * The cursor for the "time taken" order: the timestamp and the id together,
+ * because a burst of shots shares its second and a cursor on the timestamp
+ * alone would skip the rest of the burst at a page boundary.
+ */
+export function takenCursor(item: { takenAt: string; id: string }): string {
+  return `${item.takenAt}|${item.id}`;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The other way, or null for anything that is not exactly a timestamp and a
+ * uuid. The result is spliced into a PostgREST filter, so nothing else passes.
+ */
+export function parseTakenCursor(
+  cursor: string,
+): { at: string; id: string } | null {
+  const [at, id, ...rest] = cursor.split("|");
+  if (rest.length > 0 || !at || !id || !UUID.test(id)) return null;
+  const time = Date.parse(at);
+  if (!Number.isFinite(time)) return null;
+  return { at: new Date(time).toISOString(), id };
+}
+
+/** Where the next page starts, for whichever order the wall is in. */
+export function cursorOf(item: MediaView, sort: GallerySort): string {
+  return sort === "taken" ? takenCursor(item) : item.createdAt;
+}
