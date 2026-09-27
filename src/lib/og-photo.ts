@@ -1,5 +1,7 @@
 import "server-only";
 
+import { env } from "@/lib/env";
+
 /**
  * Reading a cover photograph into a social card.
  *
@@ -48,12 +50,27 @@ export function sniffImageType(bytes: Uint8Array): string | null {
   return null;
 }
 
+/**
+ * An address the server can fetch.
+ *
+ * Without a CDN in front of the bucket the cover's address is relative - the
+ * app's own /api/media route - which is right for a browser and meaningless to
+ * `fetch` on the server. It threw, the throw read as "no photograph", and every
+ * shared link unfurled as the plain typographic card however good the cover
+ * was. Anchored to the site's own address it resolves to the same route.
+ */
+export function absoluteCardUrl(url: string, base = env.siteUrl): string {
+  return new URL(url, base).toString();
+}
+
 /** The cover as a data URL the card can draw, or null to draw it without one. */
 export async function fetchCardPhoto(url: string | null): Promise<string | null> {
   if (!url) return null;
 
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const res = await fetch(absoluteCardUrl(url), {
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
     if (!res.ok) return null;
 
     const declared = Number(res.headers.get("content-length"));

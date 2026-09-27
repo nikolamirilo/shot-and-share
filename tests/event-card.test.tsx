@@ -314,4 +314,20 @@ describe("reading a cover into a card", () => {
     // Sniffed, not taken from the header: this response claimed JPEG.
     expect(data?.startsWith("data:image/png;base64,")).toBe(true);
   });
+
+  it("fetches a cover served by the app's own media route", async () => {
+    // Without a CDN the cover's address is relative, which a server-side
+    // fetch cannot follow - every link unfurled without its photo.
+    const { absoluteCardUrl, fetchCardPhoto } = await import("@/lib/og-photo");
+    expect(absoluteCardUrl("/api/media/o/e/photos/full/c.jpg", "https://x.test")).toBe(
+      "https://x.test/api/media/o/e/photos/full/c.jpg",
+    );
+    expect(absoluteCardUrl("https://cdn.example/c.jpg", "https://x.test")).toBe(
+      "https://cdn.example/c.jpg",
+    );
+
+    servePhoto();
+    const data = await fetchCardPhoto("/api/media/o/e/photos/full/c.jpg");
+    expect(data?.startsWith("data:image/")).toBe(true);
+  });
 });
