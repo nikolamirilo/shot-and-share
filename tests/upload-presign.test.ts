@@ -238,13 +238,13 @@ describe("presigning an upload", () => {
     expect(upload.source).toBe("file");
     expect(upload.poster).toBeTruthy();
 
-    // The clip goes in full/ like a photo; its poster stays in the event
-    // folder, named after the clip rather than filed under it.
+    // A clip and its poster go in the event's videos/ folder, apart from
+    // the photos.
     expect(row.media_key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/full/${upload.mediaId}.mov`,
+      `${EVENT.owner_id}/${EVENT.id}/videos/full/${upload.mediaId}.mov`,
     );
     expect(row.poster_key).toBe(
-      `${EVENT.owner_id}/${EVENT.id}/${upload.mediaId}-poster.webp`,
+      `${EVENT.owner_id}/${EVENT.id}/videos/poster/${upload.mediaId}.webp`,
     );
     expect(row.thumb_key).toBeNull();
     expect(row.poster_size_bytes).toBe(40_000);

@@ -104,10 +104,13 @@ than trusting the application to keep to it.
 
 ### One object per upload
 
-An event folder holds one file per photo - the compressed copy, which is the only
-copy. No original, no thumbnail, no separate display rendition. A video keeps a
-second small object, `{media_id}-poster.jpg`, because a clip has no still of
-itself to show in a grid.
+An event folder is split in two: `photos/` and `videos/`. A photo is its
+compressed copy in `photos/full/` plus a small grid thumbnail in
+`photos/thumb/`. A video is the clip in `videos/full/` plus a still in
+`videos/poster/`, because a clip has no still of itself to show in a grid.
+Uploads from before the split sit directly under the event (`full/`, `thumb/`,
+`{media_id}-poster.jpg`) and are read from the key on their row, so they were
+not moved.
 
 That is a storage decision before it is anything else: three renditions of the
 same picture was three times the bill for a difference nobody can see on a phone,

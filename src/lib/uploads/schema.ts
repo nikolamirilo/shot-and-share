@@ -41,7 +41,32 @@ export const guestFileSchema = fileSchema.extend({
     .optional()
     .nullable(),
   durationSeconds: z.number().nonnegative().max(86_400).optional().nullable(),
+  /**
+   * When it was taken, by the guest's own device: the EXIF date, or the file's
+   * modified time. Only ever used to order the wall.
+   */
+  takenAt: z.string().datetime({ offset: true }).optional().nullable(),
 });
+
+/**
+ * A capture time worth sorting by, or null.
+ *
+ * A phone with its clock at the factory default says 1970 or 2000, and one set
+ * a year ahead says next summer; either would pin a photo to one end of the
+ * wall for ever. Anything outside a sane window reads as "no date", and the
+ * photo sorts by when it arrived instead.
+ */
+export function plausibleTakenAt(
+  value: string | null | undefined,
+  now = Date.now(),
+): string | null {
+  if (!value) return null;
+  const at = Date.parse(value);
+  if (!Number.isFinite(at)) return null;
+  const DAY = 86_400_000;
+  if (at < Date.UTC(2000, 0, 2) || at > now + DAY) return null;
+  return new Date(at).toISOString();
+}
 
 export const shareTokenSchema = z.string().min(20).max(64);
 export const fingerprintSchema = z.string().min(8).max(64);

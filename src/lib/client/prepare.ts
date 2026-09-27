@@ -1,6 +1,7 @@
 "use client";
 
 import { compressImage, probeVideo } from "@/lib/client/codec";
+import { readTakenAt } from "@/lib/client/taken-at";
 
 /**
  * What the browser can do for a file before it leaves the device, and what it
@@ -66,6 +67,9 @@ export async function prepare(
    */
   onProgress?: (fraction: number) => void,
 ): Promise<Prepared> {
+  // Read alongside the encode rather than after it: it only needs the header.
+  const takenAt = readTakenAt(file);
+
   if (file.type.startsWith("video/")) {
     const probe = await probeVideo(file, onProgress);
     onProgress?.(1);
@@ -90,6 +94,7 @@ export async function prepare(
         sourceWidth: probe.width,
         sourceHeight: probe.height,
         durationSeconds: probe.durationSeconds,
+        takenAt: await takenAt,
         needsServer: true,
       },
     };
@@ -124,6 +129,7 @@ export async function prepare(
         : null,
       sourceWidth: result.sourceWidth,
       sourceHeight: result.sourceHeight,
+      takenAt: await takenAt,
       needsServer: result.needsServer,
     },
   };
