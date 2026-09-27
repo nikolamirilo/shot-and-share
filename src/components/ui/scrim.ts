@@ -23,6 +23,14 @@ export const ON_SCRIM = "bg-scrim text-scrim-ink";
 export const ON_SCRIM_FLOATING = `${ON_SCRIM} shadow-lg`;
 
 /**
+ * The step arrows: the same pale chip, see-through, so it does not sit on the
+ * photograph as a solid white disc. The blur keeps the chevron readable over a
+ * busy picture, and the fill firms up under a finger or a pointer.
+ */
+export const ON_SCRIM_ARROW =
+  "bg-scrim/40 text-scrim-ink shadow-lg backdrop-blur-sm hover:bg-scrim/75";
+
+/**
  * The quiet register on the same scrim: the photo counter, the note about a
  * video still converting. Dark pill, light type - the inverse of a control, so
  * a label never competes with a button for attention on top of a photograph.

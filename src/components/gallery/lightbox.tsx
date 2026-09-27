@@ -9,7 +9,13 @@ import {
 } from "react-icons/md";
 
 import { ReportButton } from "@/components/gallery/report-button";
-import { ON_SCRIM_FLOATING, ON_SCRIM_QUIET, Photo, cx } from "@/components/ui";
+import {
+  ON_SCRIM_ARROW,
+  ON_SCRIM_FLOATING,
+  ON_SCRIM_QUIET,
+  Photo,
+  cx,
+} from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
 /** Below this a drag is a tap with a shaky hand, not a swipe. */
@@ -436,7 +442,7 @@ function StepArrow({
          * took its own middle with it. The picture is bounded by the window
          * now, so half of it is always somewhere a thumb can reach.
          */
-        `absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45 ${ON_SCRIM_FLOATING}`,
+        `absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45 ${ON_SCRIM_ARROW}`,
         back ? "left-2" : "right-2",
       )}
     >

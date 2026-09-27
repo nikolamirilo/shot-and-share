@@ -19,11 +19,12 @@ export const OPERATOR = {
   form: "sole proprietorship registered in the Republic of Serbia",
   /** Shorter, for a footer line where the full sentence will not fit. */
   shortForm: "sole proprietorship, Serbia",
+  /**
+   * City and country only. The street address is a home, so it is not
+   * published; the registration number is what a reviewer looks up.
+   */
   address: {
-    street: "Užička 7b, sprat 3, stan 7",
     city: "Zemun, Belgrade",
-    /** As it appears on the registration: the delivery post office. */
-    postOffice: "82 Beograd 82",
     country: "Serbia",
   },
   /** Matični broj, the company registration number. */
@@ -44,10 +45,10 @@ export const OPERATOR = {
 export const OPERATOR_LINE =
   `Shot & Share is a product of ${OPERATOR.legalName}, a ${OPERATOR.shortForm}.`;
 
-/** The postal address on one line, for a footer or a contact block. */
+/** Where the entity is registered, on one line, for a footer or a contact block. */
 export function addressLine(): string {
-  const { street, city, country } = OPERATOR.address;
-  return `${street}, ${city}, ${country}`;
+  const { city, country } = OPERATOR.address;
+  return `${city}, ${country}`;
 }
 
 /**
