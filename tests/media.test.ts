@@ -89,7 +89,7 @@ describe("key layout", () => {
   const scope = { ownerId: owner, eventId: event };
 
   const everyKind = [
-    mediaKey(scope, media, "jpg"),
+    mediaKey(scope, "photo", media, "jpg"),
     posterKey(scope, media),
     archiveKey(scope),
   ];
@@ -101,26 +101,55 @@ describe("key layout", () => {
     }
   });
 
-  it("keeps an event folder shallow: one level of folders, never more", () => {
+  it("keeps an event folder shallow: two levels of folders, never more", () => {
     // The regression this guards: the layout used to nest originals/, display/
     // and thumbs/ under a `u/` root, so an event was four folders deep and held
-    // three copies of every photo. Two copies live in named folders now, but a
-    // host opening their own folder should still see the whole event at a
-    // glance rather than digging.
+    // three copies of every photo. Photos and videos each have a folder now,
+    // with the copies named inside it, and that is as deep as it goes.
     for (const key of [
-      mediaKey(scope, media, "jpg"),
+      mediaKey(scope, "photo", media, "jpg"),
       thumbKey(scope, media),
       posterKey(scope, media),
       archiveKey(scope),
     ]) {
       const withinEvent = key.slice(eventPrefix(scope).length);
-      expect(withinEvent.split("/").length).toBeLessThanOrEqual(2);
+      expect(withinEvent.split("/").length).toBeLessThanOrEqual(3);
     }
+  });
+
+  it("keeps photos and videos in folders of their own", () => {
+    const photos = `${eventPrefix(scope)}photos/`;
+    const videos = `${eventPrefix(scope)}videos/`;
+    expect(mediaKey(scope, "photo", media, "jpg").startsWith(photos)).toBe(true);
+    expect(thumbKey(scope, media).startsWith(photos)).toBe(true);
+    expect(mediaKey(scope, "video", media, "mp4").startsWith(videos)).toBe(true);
+    expect(posterKey(scope, media).startsWith(videos)).toBe(true);
+  });
+
+  it("still serves the folders written before photos and videos split", () => {
+    expect(publicImageType(`${owner}/${event}/full/${media}.jpg`)).toBe(
+      "image/jpeg",
+    );
+    expect(publicImageType(`${owner}/${event}/thumb/${media}.webp`)).toBe(
+      "image/webp",
+    );
+    expect(publicImageType(`${owner}/${event}/${media}-poster.webp`)).toBe(
+      "image/webp",
+    );
+  });
+
+  it("never serves anything out of the video folder but its posters", () => {
+    expect(
+      publicImageType(`${owner}/${event}/videos/full/${media}.jpg`),
+    ).toBeNull();
+    expect(
+      publicImageType(`${owner}/${event}/photos/poster/${media}.jpg`),
+    ).toBeNull();
   });
 
   it("serves both copies without a token", () => {
     expect(publicImageType(thumbKey(scope, media))).toBe("image/webp");
-    expect(publicImageType(mediaKey(scope, media, "jpg"))).toBe("image/jpeg");
+    expect(publicImageType(mediaKey(scope, "photo", media, "jpg"))).toBe("image/jpeg");
   });
 
   it("still serves the flat keys written before the folders existed", () => {
@@ -150,8 +179,8 @@ describe("key layout", () => {
   });
 
   it("refuses video, which stays behind a signed URL", () => {
-    expect(publicImageType(mediaKey(scope, media, "mp4"))).toBeNull();
-    expect(publicImageType(mediaKey(scope, media, "mov"))).toBeNull();
+    expect(publicImageType(mediaKey(scope, "video", media, "mp4"))).toBeNull();
+    expect(publicImageType(mediaKey(scope, "video", media, "mov"))).toBeNull();
   });
 
   it("refuses anything that is not shaped like an owner-scoped key", () => {

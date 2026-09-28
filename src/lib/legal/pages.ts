@@ -57,7 +57,7 @@ const TERMS: LegalPage = {
     {
       heading: "Who you are buying from",
       body: [
-        `${OPERATOR_LINE} The registered address is ${addressLine()}, and post is delivered through ${OPERATOR.address.postOffice}.`,
+        `${OPERATOR_LINE} It is registered in ${addressLine()}.`,
         `Company registration number (matični broj) ${OPERATOR.registrationNumber}. Tax number (PIB) ${OPERATOR.taxNumber}. Registered activity ${OPERATOR.activity}, trading since ${OPERATOR.registeredOn}.`,
         `${CONTACT} These terms are between you, the person creating an event, who we call the host, and us. Creating an event means you accept them.`,
       ],
@@ -464,7 +464,7 @@ const ACCEPTABLE_USE: LegalPage = {
       heading: "Who to reach",
       body: [
         `Reports, takedowns and anything urgent: ${SITE.email}. We answer within ${TAKEDOWN_RESPONSE_HOURS} hours.`,
-        `Postal address: ${OPERATOR.legalName}, ${addressLine()}.`,
+        `Operator: ${OPERATOR.legalName}, ${addressLine()}.`,
       ],
     },
   ],

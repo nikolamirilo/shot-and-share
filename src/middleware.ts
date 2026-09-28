@@ -38,9 +38,11 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims refreshes an expired session the same way getUser does, but
+  // checks the token against the project's signing keys locally instead of
+  // asking the auth server - and this runs on every single navigation.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
     const login = request.nextUrl.clone();

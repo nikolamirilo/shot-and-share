@@ -3,7 +3,11 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { ON_SCRIM, ON_SCRIM_FLOATING } from "@/components/ui/scrim";
+import {
+  ON_SCRIM,
+  ON_SCRIM_ARROW,
+  ON_SCRIM_FLOATING,
+} from "@/components/ui/scrim";
 import { BUTTON_FILL } from "@/components/ui/button";
 import { THEMES, buildCustomPalette, paletteToCssVars } from "@/lib/appearance";
 import { AA_CONTRAST, contrastRatio, parseHex } from "@/lib/color";
@@ -92,6 +96,7 @@ describe("controls on the scrim", () => {
   it("carry the scrim's own pair", () => {
     expectUnthemed("ON_SCRIM", ON_SCRIM);
     expectUnthemed("ON_SCRIM_FLOATING", ON_SCRIM_FLOATING);
+    expectUnthemed("ON_SCRIM_ARROW", ON_SCRIM_ARROW);
     expectUnthemed("the onDark button fill", BUTTON_FILL.onDark);
   });
 

@@ -67,6 +67,7 @@ export async function GET(request: Request) {
         const scope = scopeOfMedia(row);
         const outKey = mediaKey(
           scope,
+          row.kind,
           row.id,
           isVideo ? UNIVERSAL_VIDEO_FORMAT : IMAGE_EXT.jpeg,
         );
@@ -182,6 +183,7 @@ export async function POST(request: Request) {
     const scope = scopeOfMedia(media);
     const newKey = mediaKey(
       scope,
+      media.kind,
       media.id,
       isVideo ? UNIVERSAL_VIDEO_FORMAT : IMAGE_EXT.jpeg,
     );
@@ -253,6 +255,12 @@ export async function POST(request: Request) {
     // object rather than a broken photo.
     if (replaced && newKey !== media.media_key) {
       await storage.remove([media.media_key]);
+    }
+    // The same for a thumbnail written before photos had a folder of their
+    // own: the new one lands under photos/thumb/, and the old one is charged
+    // for as replaced, so it has to actually go.
+    if (wroteThumb && media.thumb_key && media.thumb_key !== newThumbKey) {
+      await storage.remove([media.thumb_key]);
     }
 
     await screenLate(media.id, media.event_id, {

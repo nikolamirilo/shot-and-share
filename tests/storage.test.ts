@@ -43,7 +43,7 @@ describe("local storage driver", () => {
 
     const removed = await localDriver.removePrefix(eventPrefix(SCOPE));
     expect(removed).toBeGreaterThanOrEqual(2);
-    expect(await localDriver.head(mediaKey(SCOPE, "media-1", "jpg"))).toBeNull();
+    expect(await localDriver.head(mediaKey(SCOPE, "photo", "media-1", "jpg"))).toBeNull();
   });
 
   it("returns 0 for a prefix that does not exist", async () => {
@@ -58,7 +58,7 @@ describe("local storage driver", () => {
 describe("local presigning", () => {
   it("signs an upload with a size limit and an expiry", async () => {
     const presigned = await localDriver.presignUpload({
-      key: mediaKey(SCOPE, "media-2", "jpg"),
+      key: mediaKey(SCOPE, "photo", "media-2", "jpg"),
       contentType: "image/jpeg",
       maxBytes: 1234,
     });
@@ -98,7 +98,7 @@ describe("local presigning", () => {
 
   it("signs downloads separately from uploads", async () => {
     const url = await localDriver.presignDownload({
-      key: mediaKey(SCOPE, "media-2", "jpg"),
+      key: mediaKey(SCOPE, "photo", "media-2", "jpg"),
       downloadName: "photo.jpg",
     });
     const params = new URL(url).searchParams;
@@ -130,14 +130,14 @@ describe("key safety", () => {
   it("allows the keys the application actually generates", () => {
     // Folders included: a key with one legitimate slash in it must survive the
     // traversal check, or every photo since migration 0015 is unreadable.
-    expect(safeKey(mediaKey(SCOPE, "m", "jpg"))).toBe(
-      `${OWNER}/${EVENT}/full/m.jpg`,
+    expect(safeKey(mediaKey(SCOPE, "photo", "m", "jpg"))).toBe(
+      `${OWNER}/${EVENT}/photos/full/m.jpg`,
     );
     expect(safeKey(thumbKey(SCOPE, "m"))).toBe(
-      `${OWNER}/${EVENT}/thumb/m.webp`,
+      `${OWNER}/${EVENT}/photos/thumb/m.webp`,
     );
     expect(safeKey(posterKey(SCOPE, "m"))).toBe(
-      `${OWNER}/${EVENT}/m-poster.webp`,
+      `${OWNER}/${EVENT}/videos/poster/m.webp`,
     );
   });
 });

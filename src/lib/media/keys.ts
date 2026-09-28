@@ -1,10 +1,17 @@
 /**
  * Key layout in the bucket:
  *
- *   {owner_id}/{event_id}/full/{media_id}.{ext}
- *   {owner_id}/{event_id}/thumb/{media_id}.{ext}
- *   {owner_id}/{event_id}/{media_id}-poster.{ext}
+ *   {owner_id}/{event_id}/photos/full/{media_id}.{ext}
+ *   {owner_id}/{event_id}/photos/thumb/{media_id}.{ext}
+ *   {owner_id}/{event_id}/videos/full/{media_id}.{ext}
+ *   {owner_id}/{event_id}/videos/poster/{media_id}.{ext}
  *   {owner_id}/{event_id}/archive/{event_id}.zip
+ *
+ * Photos and videos live in folders of their own, so an event's clips can be
+ * listed, measured or moved to another storage class without touching its
+ * photos. Rows written before the split keep `full/`, `thumb/` and
+ * `{media_id}-poster` directly under the event; every key is read off the row,
+ * so they keep working and are not moved.
  *
  * The folder is `full`, not `original`. What is in it is a re-encode - for an
  * iPhone photo a different format entirely - and a name that contradicts its
@@ -19,6 +26,8 @@
  * prefix a second time as a CHECK constraint, and 0016 extends it to the
  * thumbnail.
  */
+
+import type { MediaKind } from "@/lib/db/types";
 
 /**
  * Passed as an object rather than two positional arguments: both ids are
@@ -53,6 +62,11 @@ export function eventPrefix({ ownerId, eventId }: EventScope): string {
   return `${ownerId}/${eventId}/`;
 }
 
+/** The folder one kind of upload lives in: `photos/` or `videos/`. */
+export function kindPrefix(scope: EventScope, kind: MediaKind): string {
+  return `${eventPrefix(scope)}${kind === "video" ? "videos" : "photos"}/`;
+}
+
 /**
  * The full-size copy: every pixel the camera captured, as a JPEG.
  *
@@ -62,10 +76,11 @@ export function eventPrefix({ ownerId, eventId }: EventScope): string {
  */
 export function mediaKey(
   scope: EventScope,
+  kind: MediaKind,
   mediaId: string,
   ext: string,
 ): string {
-  return `${eventPrefix(scope)}full/${mediaId}.${ext}`;
+  return `${kindPrefix(scope, kind)}full/${mediaId}.${ext}`;
 }
 
 /**
@@ -77,7 +92,7 @@ export function thumbKey(
   mediaId: string,
   ext = "webp",
 ): string {
-  return `${eventPrefix(scope)}thumb/${mediaId}.${ext}`;
+  return `${kindPrefix(scope, "photo")}thumb/${mediaId}.${ext}`;
 }
 
 /** First usable frame of a video, so a gallery never shows a grey box. */
@@ -86,7 +101,7 @@ export function posterKey(
   mediaId: string,
   ext = "webp",
 ): string {
-  return `${eventPrefix(scope)}${mediaId}-poster.${ext}`;
+  return `${kindPrefix(scope, "video")}poster/${mediaId}.${ext}`;
 }
 
 export function archiveKey(scope: EventScope): string {
@@ -124,9 +139,10 @@ export function mediaBytes(row: {
 /**
  * Whether a key may be served unauthenticated by /api/media, and as what.
  *
- * The folder allowlist is the load-bearing part. `full/` and `thumb/` are
- * named; anything else under an event - `archive/{id}.zip` above all - is
- * refused, so a 30 GB archive cannot be pulled through the app process by
+ * The folder allowlist is the load-bearing part. `photos/full/`,
+ * `photos/thumb/` and `videos/poster/` are named, as are the `full/` and
+ * `thumb/` of rows written before the split; anything else under an event -
+ * `archive/{id}.zip` and `videos/full/` above all - is refused, so a 30 GB archive cannot be pulled through the app process by
  * guessing a URL. This used to be a count of path segments, which stopped
  * working the moment photos gained a folder of their own.
  *
@@ -140,7 +156,7 @@ export function mediaBytes(row: {
  */
 export function publicImageType(key: string): string | null {
   const match =
-    /^[^/]+\/[^/]+\/(?:(?:full|thumb)\/)?[^/]+\.(webp|jpe?g|png|gif|avif)$/i.exec(
+    /^[^/]+\/[^/]+\/(?:(?:photos\/full|photos\/thumb|videos\/poster|full|thumb)\/)?[^/]+\.(webp|jpe?g|png|gif|avif)$/i.exec(
       key,
     );
   if (!match) return null;

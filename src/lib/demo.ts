@@ -59,6 +59,8 @@ export const DEMO_MEDIA: MediaView[] = FRAMES.map((frame, index) => {
   const [width, height] = SHAPES[index % SHAPES.length];
   const url = `/hero/variants/${frame}.jpg`;
 
+  const createdAt = `2026-06-13T2${index < 6 ? 1 : 0}:${String(59 - index * 5).padStart(2, "0")}:00.000Z`;
+
   return {
     id: `demo-${frame}`,
     kind: "photo",
@@ -66,7 +68,8 @@ export const DEMO_MEDIA: MediaView[] = FRAMES.map((frame, index) => {
     height,
     /* Fixed timestamps, descending, so the order is the order of the array and
        the page renders identically on every request. */
-    createdAt: `2026-06-13T2${index < 6 ? 1 : 0}:${String(59 - index * 5).padStart(2, "0")}:00.000Z`,
+    createdAt,
+    takenAt: createdAt,
     uploaderFingerprint: null,
     sizeBytes: 2_400_000,
     previewUrl: url,

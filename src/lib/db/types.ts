@@ -154,6 +154,14 @@ export type MediaRow = {
   report_count: number;
   status: MediaStatus;
   created_at: string;
+  /**
+   * When the photo was taken, as the guest's device reported it: EXIF first,
+   * the file's modified time second. Null when neither was there, and on rows
+   * written before migration 0024.
+   */
+  taken_at: string | null;
+  /** `taken_at`, or `created_at` when there is none. Generated; see 0024. */
+  sort_taken_at: string;
 };
 
 /**
@@ -174,6 +182,8 @@ export type ReservedMedia = {
   height: number | null;
   processing: MediaProcessing;
   uploader_fingerprint: string | null;
+  /** Optional: reservations made before migration 0024 do not carry it. */
+  taken_at?: string | null;
 };
 
 /**
@@ -293,11 +303,15 @@ export interface Database {
           | "moderated_at"
           | "reported_at"
           | "report_count"
+          | "taken_at"
+          // Generated from taken_at and created_at; see migration 0024.
+          | "sort_taken_at"
         > &
           Partial<
             Pick<
               MediaRow,
               | "id"
+              | "taken_at"
               | "thumb_size_bytes"
               | "poster_size_bytes"
               | "processing"

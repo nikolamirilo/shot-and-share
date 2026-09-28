@@ -8,13 +8,20 @@ export default async function DashboardShellLayout({
 }: {
   children: React.ReactNode;
 }) {
+  /*
+   * Claims, not getUser. getUser is a round trip to the auth server, and this
+   * layout sits in front of every dashboard page - so every tap on "My events"
+   * waited on it before anything could draw, loading skeleton included. The
+   * claims are the signed session token, checked against the project's keys,
+   * which is the same proof without the wait. The middleware has already
+   * refreshed the session by the time this runs.
+   */
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims) redirect("/login");
 
-  const meta = user.user_metadata ?? {};
+  const meta = (claims.user_metadata ?? {}) as Record<string, unknown>;
   const name = (meta.full_name as string | undefined) ?? null;
   const avatarUrl =
     (meta.avatar_url as string | undefined) ??
@@ -25,7 +32,7 @@ export default async function DashboardShellLayout({
     <div className="flex min-h-dvh flex-col bg-linen">
       <DashboardHeader
         name={name}
-        email={user.email ?? null}
+        email={claims.email ?? null}
         avatarUrl={avatarUrl}
       />
 

@@ -69,6 +69,7 @@ function shot(id: string, minute: number): MediaView {
     width: 3000,
     height: 4000,
     createdAt: `2026-08-13 12:${String(minute).padStart(2, "0")}:00+00`,
+    takenAt: `2026-08-13 12:${String(minute).padStart(2, "0")}:00+00`,
     uploaderFingerprint: null,
     sizeBytes: 1000,
     previewUrl: `/media/${id}`,

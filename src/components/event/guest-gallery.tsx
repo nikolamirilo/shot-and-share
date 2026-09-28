@@ -10,8 +10,16 @@ import {
 
 import { Lightbox } from "@/components/gallery/lightbox";
 import { PhotoGallery } from "@/components/gallery/photo-gallery";
+import { Segmented } from "@/components/gallery/segmented";
 import { Button, Hole, cx } from "@/components/ui";
-import type { MediaView } from "@/lib/media-view";
+import { useFavorites } from "@/lib/client/favorites";
+import {
+  DEFAULT_SORT,
+  GALLERY_SORTS,
+  type GallerySort,
+  type MediaView,
+  cursorOf,
+} from "@/lib/media-view";
 import {
   type GalleryLayout,
   neighbours,
@@ -32,6 +40,50 @@ const REFRESH_EVERY_MS = 3000;
  */
 const PENDING_TILES = 10;
 
+/** What the download route takes in one ZIP. Bigger lists become several. */
+const DOWNLOAD_BATCH = 100;
+
+/** Photos and videos are separate walls; favourites is the guest's own list. */
+type View = "photo" | "video" | "favorites";
+
+/**
+ * Save a ZIP of these ids through the download route. One ZIP per hundred,
+ * which is the route's ceiling, so a long shortlist still downloads whole.
+ */
+async function downloadZips(
+  token: string,
+  ids: string[],
+  link: HTMLAnchorElement | null,
+  name: string,
+) {
+  const batches: string[][] = [];
+  for (let at = 0; at < ids.length; at += DOWNLOAD_BATCH) {
+    batches.push(ids.slice(at, at + DOWNLOAD_BATCH));
+  }
+  for (const [index, batch] of batches.entries()) {
+    const res = await fetch("/api/photos/download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, ids: batch }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.error?.message ?? "Could not prepare the download.");
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (link) {
+      link.href = url;
+      link.download =
+        batches.length > 1
+          ? `${name}-${index + 1}-of-${batches.length}.zip`
+          : `${name}.zip`;
+      link.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+
 /**
  * What everyone else has uploaded. On by default, but it is the host's switch,
  * and the layout is theirs too - there is no switcher on this page.
@@ -47,6 +99,19 @@ export function GuestGallery({
   layout: GalleryLayout;
 }) {
   const [items, setItems] = useState<MediaView[]>([]);
+  /** Photos, videos, or the guest's favourites. Photos first. */
+  const [view, setView] = useState<View>("photo");
+  /** Newest arrivals first unless the guest asks for the evening in order. */
+  const [sort, setSort] = useState<GallerySort>(DEFAULT_SORT);
+  /** How many of each a guest can see, for the tab labels. */
+  const [counts, setCounts] = useState<{
+    photo: number | null;
+    video: number | null;
+  }>({ photo: null, video: null });
+  const favorites = useFavorites(token);
+  /** The favourites, as the server has them now - fetched by id. */
+  const [favoriteItems, setFavoriteItems] = useState<MediaView[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
   /**
    * Counted in the database, not the length of what is loaded - those agree
    * only up to the first page. Null until the first response.
@@ -92,14 +157,23 @@ export function GuestGallery({
   }, [items]);
 
   const lastLoadAt = useRef(0);
+  /**
+   * Bumped whenever the tab or the order changes. A response that set off
+   * under the old one is about a different wall and is dropped on arrival.
+   */
+  const generation = useRef(0);
 
   const load = useCallback(
     async (before: string | null, replace: boolean) => {
+      if (view === "favorites") return;
+      const asked = generation.current;
       setLoading(true);
       lastLoadAt.current = Date.now();
       try {
         const url = new URL("/api/gallery", window.location.origin);
         url.searchParams.set("token", token);
+        url.searchParams.set("kind", view);
+        url.searchParams.set("sort", sort);
         if (before) url.searchParams.set("before", before);
 
         // The one request in the product that must never be answered from a
@@ -107,35 +181,149 @@ export function GuestGallery({
         const res = await fetch(url, { cache: "no-store" });
         const body = await res.json();
         if (!res.ok) throw new Error(body?.error?.message ?? "Could not load.");
+        if (asked !== generation.current) return;
 
         const page = body.items as MediaView[];
         const next = replace
-          ? withFreshHead(shown.current, page)
+          ? withFreshHead(shown.current, page, sort)
           : withOlder(shown.current, page);
 
         setItems(next);
         setTotal(typeof body.total === "number" ? body.total : null);
+        if (body.counts) setCounts(body.counts);
         /*
          * The oldest photograph *held*, not the oldest in this response: a
          * refresh asks for the newest page while the guest may have scrolled
          * past several, and the head's cursor would refetch what they have.
          */
-        setCursor(
-          body.nextCursor ? (next[next.length - 1]?.createdAt ?? null) : null,
-        );
+        const oldest = next[next.length - 1];
+        setCursor(body.nextCursor && oldest ? cursorOf(oldest, sort) : null);
         setError(null);
         setStaleSince(false);
       } catch (e) {
+        if (asked !== generation.current) return;
         const message =
           e instanceof Error ? e.message : "Could not load the gallery.";
         if (shown.current.length > 0) setStaleSince(true);
         else setError(message);
       } finally {
-        setLoading(false);
+        if (asked === generation.current) setLoading(false);
       }
     },
-    [token],
+    [token, view, sort],
   );
+
+  /** A different tab or order is a different wall: start it from the top. */
+  function switchWall(nextView: View, nextSort: GallerySort) {
+    generation.current += 1;
+    shown.current = [];
+    setItems([]);
+    setCursor(null);
+    setTotal(null);
+    setError(null);
+    setStaleSince(false);
+    setOpenId(null);
+    setSelectedIds(new Set());
+    setLoading(nextView !== "favorites");
+    lastLoadAt.current = 0;
+    setView(nextView);
+    setSort(nextSort);
+  }
+
+  /*
+   * An event with clips and no photographs opens on the clips, rather than on
+   * an empty Photos tab above a Videos tab with everything in it.
+   */
+  const openedOnVideos = useRef(false);
+  useEffect(() => {
+    if (openedOnVideos.current) return;
+    if (counts.photo === null || counts.video === null) return;
+    openedOnVideos.current = true;
+    if (view === "photo" && counts.photo === 0 && counts.video > 0) {
+      switchWall("video", sort);
+    }
+    // switchWall is a plain function over state setters; the counts decide.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [counts]);
+
+  /*
+   * The favourites tab, fetched by id whenever it is open and the list
+   * changes. Anything the server no longer returns - deleted, held - is
+   * forgotten, so the count on the button stays true.
+   */
+  const favoriteIds = favorites.ids;
+  const forgetFavorites = favorites.forget;
+  useEffect(() => {
+    if (view !== "favorites") return;
+    if (favoriteIds.length === 0) {
+      setFavoriteItems([]);
+      return;
+    }
+    let live = true;
+    setFavoritesLoading(true);
+    (async () => {
+      try {
+        const found: MediaView[] = [];
+        for (let at = 0; at < favoriteIds.length; at += DOWNLOAD_BATCH) {
+          const url = new URL("/api/gallery", window.location.origin);
+          url.searchParams.set("token", token);
+          url.searchParams.set(
+            "ids",
+            favoriteIds.slice(at, at + DOWNLOAD_BATCH).join(","),
+          );
+          const res = await fetch(url, { cache: "no-store" });
+          const body = await res.json();
+          if (!res.ok) throw new Error(body?.error?.message ?? "Could not load.");
+          found.push(...(body.items as MediaView[]));
+        }
+        if (!live) return;
+        const byId = new Map(found.map((item) => [item.id, item]));
+        setFavoriteItems(
+          favoriteIds.flatMap((id) => byId.get(id) ?? []),
+        );
+        forgetFavorites(favoriteIds.filter((id) => !byId.has(id)));
+        setError(null);
+      } catch (e) {
+        if (live) {
+          setError(e instanceof Error ? e.message : "Could not load.");
+        }
+      } finally {
+        if (live) setFavoritesLoading(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [view, favoriteIds, forgetFavorites, token]);
+
+  /** What is on the wall right now: the tab's page, or the favourites. */
+  const wall =
+    view === "favorites"
+      ? // Unfavourited in the lightbox: gone from the list straight away.
+        favoriteItems.filter((item) => favoriteIds.includes(item.id))
+      : items;
+  const wallLoading = view === "favorites" ? favoritesLoading : loading;
+
+  const [savingFavorites, setSavingFavorites] = useState(false);
+  const downloadFavorites = useCallback(async () => {
+    if (favoriteIds.length === 0) return;
+    setSavingFavorites(true);
+    setDownloadError(null);
+    try {
+      await downloadZips(
+        token,
+        favoriteIds,
+        downloadLinkRef.current,
+        `favourites-${favoriteIds.length}`,
+      );
+    } catch (err) {
+      setDownloadError(
+        err instanceof Error ? err.message : "Could not download.",
+      );
+    } finally {
+      setSavingFavorites(false);
+    }
+  }, [token, favoriteIds]);
 
   /**
    * Photographs land one at a time, so a literal refresh each would be thirty
@@ -159,11 +347,11 @@ export function GuestGallery({
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  const openIndex = openId ? items.findIndex((i) => i.id === openId) : -1;
-  const open = openIndex === -1 ? null : items[openIndex];
+  const openIndex = openId ? wall.findIndex((i) => i.id === openId) : -1;
+  const open = openIndex === -1 ? null : wall[openIndex];
   const step = open
     ? neighbours(
-        items.map((i) => i.id),
+        wall.map((i) => i.id),
         open.id,
       )
     : null;
@@ -194,24 +382,12 @@ export function GuestGallery({
     setDownloading(true);
     setDownloadError(null);
     try {
-      const res = await fetch("/api/photos/download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, ids: [...selectedIds] }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error?.message ?? "Could not prepare the download.");
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = downloadLinkRef.current;
-      if (link) {
-        link.href = url;
-        link.download = `photos-${selectedIds.size}.zip`;
-        link.click();
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await downloadZips(
+        token,
+        [...selectedIds],
+        downloadLinkRef.current,
+        `photos-${selectedIds.size}`,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not download.";
       setDownloadError(message);
@@ -232,19 +408,35 @@ export function GuestGallery({
     setDownloadError(null);
   }, []);
 
-  if (error && items.length === 0) {
-    return (
-      <section className="mt-10">
-        <p className="text-[0.9375rem] text-ash">{error}</p>
-      </section>
-    );
-  }
+  /*
+   * Tabs only when there is a choice to make. An evening of photographs and
+   * nothing else keeps the plain wall it always had.
+   */
+  const showTabs =
+    (counts.video ?? 0) > 0 || favoriteIds.length > 0 || view !== "photo";
+  const tabs = [
+    { id: "photo" as const, name: "Photos", count: counts.photo },
+    ...((counts.video ?? 0) > 0 || view === "video"
+      ? [{ id: "video" as const, name: "Videos", count: counts.video }]
+      : []),
+    ...(favoriteIds.length > 0 || view === "favorites"
+      ? [
+          {
+            id: "favorites" as const,
+            name: "Favourites",
+            count: favoriteIds.length,
+          },
+        ]
+      : []),
+  ];
+
+  const noun = view === "video" ? "videos" : "photos";
 
   return (
     <section className="mt-10 sm:mt-12">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-[1.625rem] sm:text-h2">Everyone&apos;s photos</h2>
-        {items.length > 0 && !selecting && (
+        {view !== "favorites" && items.length > 0 && !selecting && (
           <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
             {/* The count can lag the wall by one refresh, so the larger of
                 the two is the honest one. */}
@@ -252,6 +444,34 @@ export function GuestGallery({
           </span>
         )}
       </div>
+
+      <div className="-mx-4 mt-4 flex flex-wrap items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        {showTabs && (
+          <Segmented
+            label="Show"
+            value={view}
+            options={tabs}
+            onChange={(next) => {
+              if (next !== view) switchWall(next, sort);
+            }}
+          />
+        )}
+        {view !== "favorites" && (
+          <Segmented
+            label="Order"
+            value={sort}
+            options={GALLERY_SORTS}
+            onChange={(next) => {
+              if (next !== sort) switchWall(view, next);
+            }}
+            className="sm:ml-auto"
+          />
+        )}
+      </div>
+
+      {error && wall.length === 0 && (
+        <p className="mt-6 text-[0.9375rem] text-ash">{error}</p>
+      )}
 
       {/* Not an error: what is on screen is real, just not the latest. A wall
           that quietly stopped updating looks like a failed upload. */}
@@ -268,28 +488,69 @@ export function GuestGallery({
         </p>
       )}
 
-      {items.length === 0 && !loading ? (
+      {view === "favorites" && favoriteIds.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-[0.9375rem] text-ash">
+            Saved on this phone only. Tap the heart on a photo to add or remove
+            it.
+          </p>
+          <Button
+            onClick={downloadFavorites}
+            disabled={savingFavorites}
+            size="sm"
+          >
+            <MdOutlineFileDownload
+              aria-hidden
+              className="shrink-0 text-[1.25em]"
+            />
+            {savingFavorites
+              ? "Preparing…"
+              : `Download ${favoriteIds.length === 1 ? "favourite" : `all ${favoriteIds.length}`}`}
+          </Button>
+          {downloadError && (
+            <p className="w-full text-[0.8125rem] text-claret">
+              {downloadError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {error && wall.length === 0 ? null : wall.length === 0 && !wallLoading ? (
         <div className="inset-shadow-well mt-6 rounded-[1.25rem] bg-ink/5 px-5 py-8 text-center sm:p-8">
           <div className="mx-auto flex w-fit gap-2">
             <Hole size={16} />
             <Hole size={24} />
             <Hole size={12} />
           </div>
-          <p className="mt-5 text-lead">Nothing here yet.</p>
-          <p className="mt-1 text-[0.9375rem] text-ash">
-            Be the first - yours will appear right here.
-          </p>
+          {view === "favorites" ? (
+            <>
+              <p className="mt-5 text-lead">No favourites yet.</p>
+              <p className="mt-1 text-[0.9375rem] text-ash">
+                Open a photo and tap the heart to keep it here.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-5 text-lead">No {noun} yet.</p>
+              <p className="mt-1 text-[0.9375rem] text-ash">
+                Be the first - yours will appear right here.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <PhotoGallery
-          items={items}
+          items={wall}
           layout={layout}
           onActivate={handleActivate}
           isSelected={selecting ? isSelected : undefined}
+          isFavorite={(item) => favoriteIds.includes(item.id)}
           /* The first load draws the whole wall as frames rather than an
              empty container. */
           pending={
-            loadingMore || (items.length === 0 && loading) ? PENDING_TILES : 0
+            loadingMore || (wall.length === 0 && wallLoading)
+              ? PENDING_TILES
+              : 0
           }
           className={cx("mt-6", selecting && selectedIds.size > 0 && "pb-20")}
         />
@@ -341,7 +602,7 @@ export function GuestGallery({
         </div>
       )}
 
-      {!selecting && items.length > 0 && (
+      {!selecting && view !== "favorites" && items.length > 0 && (
         <button
           type="button"
           onClick={() => setSelecting(true)}
@@ -357,7 +618,7 @@ export function GuestGallery({
           kept mounted so we never pay the cost of creating one. */}
       <a ref={downloadLinkRef} aria-hidden="true" className="hidden" />
 
-      {cursor && (
+      {cursor && view !== "favorites" && (
         <Button
           onClick={() => {
             // Set before the request: the frames are the answer to the tap,
@@ -381,11 +642,13 @@ export function GuestGallery({
           prevId={step.prev}
           nextId={step.next}
           position={openIndex + 1}
-          total={items.length}
+          total={wall.length}
           /* Fetched behind this one so the next few steps are instant. Recut
              on every step and on every refresh, so a photograph that arrives
              mid-evening joins the queue instead of being the one slow frame. */
-          preload={upcoming(items, open.id)}
+          preload={upcoming(wall, open.id)}
+          favorite={favoriteIds.includes(open.id)}
+          onToggleFavorite={favorites.toggle}
           onStep={setOpenId}
           onClose={() => setOpenId(null)}
           onReported={(id) => {
@@ -394,6 +657,7 @@ export function GuestGallery({
                seconds of it still being there is the whole of their impression
                of whether the button worked. */
             setItems((current) => current.filter((i) => i.id !== id));
+            setFavoriteItems((current) => current.filter((i) => i.id !== id));
             setTotal((count) => (count === null ? null : Math.max(0, count - 1)));
             setOpenId(null);
           }}

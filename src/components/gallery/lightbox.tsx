@@ -5,11 +5,19 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdClose,
+  MdFavorite,
+  MdFavoriteBorder,
   MdOutlineFileDownload,
 } from "react-icons/md";
 
 import { ReportButton } from "@/components/gallery/report-button";
-import { ON_SCRIM_FLOATING, ON_SCRIM_QUIET, Photo, cx } from "@/components/ui";
+import {
+  ON_SCRIM_ARROW,
+  ON_SCRIM_FLOATING,
+  ON_SCRIM_QUIET,
+  Photo,
+  cx,
+} from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
 /** Below this a drag is a tap with a shaky hand, not a swipe. */
@@ -37,6 +45,8 @@ export function Lightbox({
   onStep,
   onClose,
   onReported,
+  favorite,
+  onToggleFavorite,
   demo,
 }: {
   token: string;
@@ -65,6 +75,10 @@ export function Lightbox({
    * rather than sitting there until the next refresh.
    */
   onReported?: (id: string) => void;
+  /** Whether this one is in the guest's favourites. */
+  favorite?: boolean;
+  /** Present on the guest wall only: the heart beside Download. */
+  onToggleFavorite?: (id: string) => void;
   /**
    * The demo gallery, whose photographs are files in `public` rather than rows
    * in a bucket. There is no signed URL to go and fetch, so the request is
@@ -349,6 +363,27 @@ export function Lightbox({
                     Download
                   </a>
                 )}
+                {onToggleFavorite && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleFavorite(item.id)}
+                    aria-pressed={favorite ? true : false}
+                    className={cx(
+                      "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-small font-semibold leading-tight",
+                      ON_SCRIM_FLOATING,
+                    )}
+                  >
+                    {favorite ? (
+                      <MdFavorite aria-hidden className="shrink-0 text-[1.25em]" />
+                    ) : (
+                      <MdFavoriteBorder
+                        aria-hidden
+                        className="shrink-0 text-[1.25em]"
+                      />
+                    )}
+                    {favorite ? "Favourite" : "Add to favourites"}
+                  </button>
+                )}
                 {onReported && (
                   <ReportButton
                     token={token}
@@ -436,7 +471,7 @@ function StepArrow({
          * took its own middle with it. The picture is bounded by the window
          * now, so half of it is always somewhere a thumb can reach.
          */
-        `absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45 ${ON_SCRIM_FLOATING}`,
+        `absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45 ${ON_SCRIM_ARROW}`,
         back ? "left-2" : "right-2",
       )}
     >

@@ -96,7 +96,7 @@ export async function POST(
     const result = await createReservation({
       event,
       mediaId,
-      key: mediaKey(scope, mediaId, stored.ext),
+      key: mediaKey(scope, "photo", mediaId, stored.ext),
       contentType: stored.contentType,
       bytes: stored.bytes,
       thumb,

@@ -116,7 +116,7 @@ describe("presigning a cover image", () => {
 
     const key = body.upload.media.fields.key;
     expect(key).toMatch(
-      new RegExp(`^${OWNER}/${event.id}/full/[0-9a-f-]+\\.webp$`),
+      new RegExp(`^${OWNER}/${event.id}/photos/full/[0-9a-f-]+\\.webp$`),
     );
     // The encoded copy is what goes up, never the six-megapixel original.
     expect(body.upload.source).toBe("compressed");

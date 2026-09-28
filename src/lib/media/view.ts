@@ -56,6 +56,8 @@ export async function toMediaView(
     width: row.width,
     height: row.height,
     createdAt: row.created_at,
+    // Absent until migration 0024 has run, so the arrival time stands in.
+    takenAt: row.sort_taken_at ?? row.created_at,
     uploaderFingerprint: row.uploader_fingerprint,
     sizeBytes: row.size_bytes,
     previewUrl,

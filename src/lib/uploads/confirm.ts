@@ -156,6 +156,7 @@ export async function confirmReservation(
     width: request.width ?? media.width,
     height: request.height ?? media.height,
     uploader_fingerprint: media.uploader_fingerprint,
+    taken_at: media.taken_at ?? null,
     source: request.source,
     status: "ready",
   };

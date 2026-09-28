@@ -22,6 +22,7 @@ export { Photo } from "@/components/ui/photo";
 export { PhotoPlaceholder } from "@/components/ui/photo-placeholder";
 export {
   ON_SCRIM,
+  ON_SCRIM_ARROW,
   ON_SCRIM_FLOATING,
   ON_SCRIM_QUIET,
 } from "@/components/ui/scrim";

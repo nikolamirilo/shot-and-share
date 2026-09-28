@@ -14,6 +14,7 @@ import { createReservation } from "@/lib/uploads/reservation";
 import {
   fingerprintSchema,
   guestFileSchema,
+  plausibleTakenAt,
   shareTokenSchema,
 } from "@/lib/uploads/schema";
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
     const result = await createReservation({
       event,
       mediaId,
-      key: mediaKey(scope, mediaId, stored.ext),
+      key: mediaKey(scope, stored.kind, mediaId, stored.ext),
       contentType: stored.contentType,
       bytes: stored.bytes,
       thumb,
@@ -125,6 +126,7 @@ export async function POST(request: Request) {
         // is not already a compressed, universally viewable file.
         processing: stored.useCompressed ? "done" : "pending",
         uploader_fingerprint: body.fingerprint,
+        taken_at: plausibleTakenAt(file.takenAt),
       },
     });
 

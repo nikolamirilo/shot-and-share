@@ -22,6 +22,7 @@ function photos(count: number): MediaView[] {
     width: 1200,
     height: 900,
     createdAt: new Date(Date.UTC(2026, 0, 1, 0, count - i)).toISOString(),
+    takenAt: new Date(Date.UTC(2026, 0, 1, 0, count - i)).toISOString(),
     uploaderFingerprint: null,
     sizeBytes: 1000,
     previewUrl: `/preview/${i + 1}.jpg`,
