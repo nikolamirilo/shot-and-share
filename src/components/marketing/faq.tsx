@@ -16,7 +16,7 @@ export function Faq() {
             <details key={q} className="card group px-4 py-1 sm:px-5">
               {/* The padding is on the summary, not the details, so the whole
                   strip is the tap target rather than the words alone. */}
-              <summary className="flex cursor-pointer list-none items-start gap-3 py-4 text-[1.15rem] font-extrabold leading-snug tracking-[-0.03em] marker:hidden sm:text-[1.3rem]">
+              <summary className="flex cursor-pointer list-none items-start gap-3 py-4 text-[1.15rem] font-extrabold leading-snug tracking-[-0.03em] [word-spacing:0.1em] marker:hidden sm:text-[1.3rem]">
                 <Hole
                   size={13}
                   className="mt-1.5 transition-transform group-open:scale-150"

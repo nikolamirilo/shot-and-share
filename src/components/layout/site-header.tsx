@@ -40,14 +40,16 @@ export function HeaderShell({
 /** The marketing pages' own links, in the order they are read. */
 const NAV = [
   { href: "/#how", label: "How it works" },
-  { href: "/demo", label: "Demo" },
+  { href: "/#demo", label: "Demo" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
   const cta = {
     href: signedIn ? "/dashboard" : "/login",
-    label: signedIn ? "My events" : "Create an event",
+    /* "Free" before the click: the cheapest lift on the page. */
+    label: signedIn ? "My events" : "Create free event",
     icon: signedIn ? MdOutlinePhotoLibrary : MdOutlineAddCircleOutline,
   };
   const CtaIcon = cta.icon;
@@ -58,7 +60,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
         <Wordmark labelClassName="hidden xs:inline" />
       </Link>
 
-      <nav className="hidden items-center gap-4 sm:flex sm:gap-5">
+      <nav className="hidden items-center gap-5 md:flex">
         {NAV.map((item) => (
           <Link
             key={item.href}
@@ -68,6 +70,16 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
             {item.label}
           </Link>
         ))}
+        {/* Returning hosts had to press "Create an event" to reach their
+            gallery. */}
+        {!signedIn && (
+          <Link
+            href="/login"
+            className="text-[0.9375rem] font-semibold text-ash hover:text-ink hover:underline"
+          >
+            Sign in
+          </Link>
+        )}
         <ButtonLink
           href={cta.href}
           size="sm"
@@ -82,7 +94,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
       {/* Below `sm` the same links and the same call to action, all of them
           inside the one menu rather than half on the bar beside it. */}
       <MobileMenu
-        className="sm:hidden"
+        className="md:hidden"
         items={[
           ...NAV.map((item) => ({
             key: item.href,
@@ -99,6 +111,22 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
               </Link>
             ),
           })),
+          ...(signedIn
+            ? []
+            : [
+                {
+                  key: "signin",
+                  render: (close: () => void) => (
+                    <Link
+                      href="/login"
+                      onClick={close}
+                      className="w-full py-2.5 text-right text-[0.9375rem] font-semibold hover:underline"
+                    >
+                      Sign in
+                    </Link>
+                  ),
+                },
+              ]),
           {
             key: "cta",
             className: "mt-2",

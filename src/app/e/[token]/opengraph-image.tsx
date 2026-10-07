@@ -40,7 +40,7 @@ export default async function EventOpengraphImage({
         <OgCard
           kicker={HERO.kicker}
           headline={heroHeadline()}
-          footnote={HERO.subline}
+          footnote={HERO.cardLine}
         />
       ),
       size,
