@@ -1,54 +1,76 @@
-import { Eyebrow, Hole } from "@/components/ui";
-import { TIERS } from "@/lib/tiers";
+import { MdHd, MdOutlineTouchApp, MdVerifiedUser } from "react-icons/md";
 
+import { Eyebrow, Hole } from "@/components/ui";
+import { formatBytes } from "@/lib/format";
+import { HARD_DELETE_GRACE_DAYS, KEEP_FOREVER, RETENTION_WARNING_DAYS, TIERS } from "@/lib/tiers";
+
+/** [14, 7, 1] as people say it: "14, 7 and 1". */
+const said = (n: number[]) => `${n.slice(0, -1).join(", ")} and ${n[n.length - 1]}`;
+
+/**
+ * Three promises, each answering a fear a host actually has: the guests will
+ * not bother, the photos will be bad, the photos will disappear. It used to be
+ * six equal items mixing policies with features, which read as a spec sheet.
+ */
 export function Why() {
-  const items = [
+  const pillars = [
     {
-      title: "The guest side is one screen",
-      body: "Open, choose photos, done. Every sign-in prompt is a guest who does not upload, so there are none.",
+      Icon: MdOutlineTouchApp,
+      title: "Guests actually upload",
+      points: [
+        ["No limit on how many at once.", "A whole camera roll goes in one tap."],
+        ["Uploads start with the first photo,", "so nobody waits for the slowest one."],
+        ["A dropped connection retries on its own,", "so a wobbly venue signal does not lose a photo."],
+      ],
     },
     {
-      title: "Gigabytes, not photo counts",
-      body: "A photo limit punishes anyone with a recent phone. We count storage, which is what actually costs money, and it lets us be far more generous.",
+      Icon: MdHd,
+      title: "The photos stay good",
+      points: [
+        ["Every photo keeps its pixels.", "Smaller files, not smaller pictures."],
+        ["iPhone photos open everywhere,", "saved in a format Windows and Android can read."],
+        [
+          "Videos play on any device.",
+          `On the paid plans, up to ${formatBytes(TIERS.pro.maxFileBytes, 0)} a clip.`,
+        ],
+      ],
     },
     {
-      title: "Nothing is deleted quietly",
-      body: "Warnings go out at 14, 7 and 1 days. After that the event is paused, not erased, and stays restorable for two more weeks.",
-    },
-    {
-      title: "Keep them forever for €29, once",
-      body: "Not a subscription. People plan one wedding, not twelve, and asking them to remember to cancel something afterwards is a bad experience.",
-    },
-    {
-      title: "You can shut the link off",
-      body: "If a link ends up somewhere it should not be, revoke it. It stops working immediately and you can issue a new one.",
-    },
-    {
-      title: "Live slideshow on the night",
-      body: `Point a laptop at the projector and photos appear as guests upload them. On the ${TIERS.pro.name} plan, no venue software needed.`,
+      Icon: MdVerifiedUser,
+      title: "Nothing gets lost",
+      points: [
+        [`Reminders at ${said(RETENTION_WARNING_DAYS)} days`, "before your storage window ends."],
+        ["Paused, not deleted,", `and restorable for another ${HARD_DELETE_GRACE_DAYS} days after that.`],
+        [`${KEEP_FOREVER.name} for €${KEEP_FOREVER.priceEur}, once,`, "and they stay for good."],
+      ],
     },
   ];
 
   return (
     <section className="bg-linen">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16 lg:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-5 sm:py-20 lg:py-24">
         <Eyebrow>Why this one</Eyebrow>
-        <h2 className="mt-3 max-w-2xl text-[2.25rem] sm:text-h1">
+        <h2 className="mt-3 max-w-3xl text-[2.25rem] [word-spacing:0.1em] sm:text-[3.5rem]">
           Built for the person who has to collect them afterwards.
         </h2>
 
-        <div className="mt-9 grid gap-x-10 gap-y-8 sm:mt-12 sm:grid-cols-2 sm:gap-y-9 lg:grid-cols-3">
-          {items.map((item) => (
-            <div key={item.title}>
-              <div className="flex items-center gap-3">
-                <Hole size={13} />
-                <h3 className="text-[1.3rem] font-extrabold tracking-[-0.03em]">
-                  {item.title}
-                </h3>
-              </div>
-              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ash">
-                {item.body}
-              </p>
+        <div className="mt-10 grid gap-9 md:grid-cols-3 md:gap-10">
+          {pillars.map(({ Icon, title, points }) => (
+            <div key={title}>
+              <span className="hole grid h-13 w-13 place-items-center text-rose-soft">
+                <Icon aria-hidden className="text-[24px]" />
+              </span>
+              <h3 className="mt-4 text-[1.6rem] [word-spacing:0.1em] sm:text-[1.875rem]">{title}</h3>
+              <ul className="mt-3.5 space-y-3">
+                {points.map(([strong, rest]) => (
+                  <li key={strong} className="flex gap-3 text-[0.9375rem] leading-relaxed text-ash">
+                    <Hole size={9} className="mt-2" />
+                    <span>
+                      <b className="font-semibold text-ink">{strong}</b> {rest}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>

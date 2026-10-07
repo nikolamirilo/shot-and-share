@@ -12,27 +12,43 @@ import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
 export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
   [
     [
-      "Do guests need an account?",
-      "No. They open the link, choose photos and upload. There is no sign-in prompt anywhere on the guest side, on purpose - it is the single biggest reason people fail to hand over their photos.",
+      "Do my guests need an app or an account?",
+      "No. They scan the code, the page opens in their browser, and they pick photos. There is no sign-in anywhere on the guest side, on purpose: every sign-in prompt is a guest who gives up.",
     ],
     [
-      "What happens when the storage window ends?",
-      `You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. Add ${KEEP_FOREVER.name} at any point and nothing is ever removed.`,
+      "Does it work on iPhone and Android?",
+      "Yes, in any modern browser. iPhones save photos as HEIC, which many Windows and Android devices can't open, so they are stored in a format every device can.",
     ],
     [
-      "Can I stop people uploading?",
-      "Yes. Revoke the link from your dashboard and it stops working immediately. You can issue a fresh one for the people who should still have it.",
+      "Are the photos compressed, like in WhatsApp?",
+      "They keep every pixel they were taken with. Each photo is re-encoded into a smaller file on the guest's phone before it uploads, which is why uploads finish on venue wifi, but nothing is scaled down.",
     ],
     [
       "How many photos actually fit?",
       `${TIERS.plus.name} holds about ${photoCountLabel(TIERS.plus.quotaBytes)} and ${TIERS.pro.name} about ${photoCountLabel(TIERS.pro.quotaBytes)}, based on a 7 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.`,
     ],
     [
+      "Do I have to pay before the event?",
+      `No. Create the event and print the QR card for free, and upgrade whenever you like. If you expect more than about ${photoCountLabel(TIERS.free.quotaBytes)} photos, upgrade before the day so no guest finds a full event.`,
+    ],
+    [
       "Can guests see the photos everyone else uploaded?",
       "That is your choice per event. The shared gallery is on by default because guests like seeing the night from other people's phones, and you can turn it off.",
     ],
     [
+      "What if someone uploads something they shouldn't?",
+      "Uploads are screened before they appear in the gallery, guests can report a photo, and you can delete anything. If the link ends up somewhere it shouldn't, revoke it and it stops working at once.",
+    ],
+    [
+      "What happens when the storage window ends?",
+      `You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. Add ${KEEP_FOREVER.name} at any point and nothing is ever removed.`,
+    ],
+    [
       "Is video included?",
       `On the paid plans: up to ${formatBytes(TIERS.plus.maxFileBytes, 0)} a clip on ${TIERS.plus.name}, and up to ${formatBytes(TIERS.pro.maxFileBytes, 0)} on ${TIERS.pro.name}. The free plan is photos only: one large video can eat the entire free allowance, which would make the free plan useless for what it is meant to prove.`,
+    ],
+    [
+      "What if it doesn't work on the day?",
+      "Then you get a full refund, even after the event. If uploads failed, the gallery didn't load, the QR code didn't work or you couldn't download your photos, write to us and the money goes back to your card.",
     ],
   ];

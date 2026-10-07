@@ -179,7 +179,7 @@ describe("the card an event link unfurls into", () => {
         <OgCard
           kicker={HERO.kicker}
           headline={heroHeadline()}
-          footnote={HERO.subline}
+          footnote={HERO.cardLine}
         />,
         OG_SIZE,
       ),

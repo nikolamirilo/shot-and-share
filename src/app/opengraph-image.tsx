@@ -23,7 +23,7 @@ export default function OpengraphImage() {
       <OgCard
         kicker={HERO.kicker}
         headline={heroHeadline()}
-        footnote={HERO.subline}
+        footnote={HERO.cardLine}
       />
     ),
     size,

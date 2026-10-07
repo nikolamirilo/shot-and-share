@@ -1,13 +1,32 @@
-import { MdOutlineAddCircleOutline } from "react-icons/md";
+import Link from "next/link";
+import { MdOutlineAddCircleOutline, MdVerifiedUser } from "react-icons/md";
 
 import { Badge, ButtonLink, Hole, cx } from "@/components/ui";
 import { formatBytes } from "@/lib/format";
-import { KEEP_FOREVER, TIER_ORDER, TIERS, photoCountLabel } from "@/lib/tiers";
+import {
+  KEEP_FOREVER,
+  TIER_ORDER,
+  TIERS,
+  photoCountLabel,
+  type PlanKey,
+} from "@/lib/tiers";
 
 /**
- * Three plans plus one add-on. The middle plan sits in Gouda, the only place
- * the pricing section spends colour.
+ * Three plans plus one add-on.
+ *
+ * One plan is recommended - Plus by default, or whichever the guest-count
+ * finder picks - and that plan gets both the lift and the claret button. It
+ * used to be the other way round: the highlighted plan had the white button
+ * while Free and Pro had claret, so the eye went to the plans nobody was
+ * recommending.
  */
+
+/** Who each plan is for, in the words a host would use. */
+const FOR: Record<PlanKey, string> = {
+  free: "For a dinner or a small party.",
+  plus: "For most weddings.",
+  pro: "For big weddings and whole weekends.",
+};
 
 function featureList(key: (typeof TIER_ORDER)[number]): string[] {
   const t = TIERS[key];
@@ -38,17 +57,21 @@ function featureList(key: (typeof TIER_ORDER)[number]): string[] {
 
 export function PricingTable({
   ctaHref = "/login",
-  ctaLabel = "Create an event",
+  recommended = "plus",
+  badge = "Most weddings",
 }: {
   ctaHref?: string;
-  ctaLabel?: string;
+  /** The plan that gets the lift and the claret button. */
+  recommended?: PlanKey;
+  /** What the recommended plan's badge says. */
+  badge?: string;
 }) {
   return (
     <div>
       <div className="grid gap-4 sm:gap-5 md:grid-cols-3">
         {TIER_ORDER.map((planKey) => {
           const tier = TIERS[planKey];
-          const highlighted = planKey === "plus";
+          const highlighted = planKey === recommended;
 
           return (
             <article
@@ -58,29 +81,33 @@ export function PricingTable({
                 // The recommended plan is the one that comes furthest off the
                 // page: same trick as before, height instead of a heavier line.
                 highlighted
-                  ? "bg-blush shadow-lg md:-mt-3 md:mb-3"
+                  ? "bg-blush shadow-lg md:-translate-y-3"
                   : "bg-paper shadow-md",
+                "transition-[transform,background-color,box-shadow] duration-500",
               )}
             >
               <div className="flex items-baseline justify-between gap-2">
                 <h3 className="text-h3">{tier.name}</h3>
-                {highlighted && <Badge tone="dark">Most events</Badge>}
+                {highlighted && <Badge tone="dark">{badge}</Badge>}
               </div>
-              <p className="mt-1 text-[0.9375rem] text-ash">{tier.meaning}</p>
+              <p className="mt-1 text-[0.9375rem] text-ash">{FOR[planKey]}</p>
 
               <p className="mt-5 flex items-baseline gap-2">
                 <span
                   className="font-display text-[2.75rem] font-extrabold leading-none tracking-[-0.045em]"
                   style={{ fontStretch: "86%" }}
                 >
-                  {tier.priceEur === 0 ? "Free" : `€${tier.priceEur}`}
+                  €{tier.priceEur}
                 </span>
-                {tier.priceEur > 0 && (
-                  <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-                    once, per event
-                  </span>
-                )}
+                <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
+                  {tier.priceEur === 0 ? "No card" : "once, per event"}
+                </span>
               </p>
+              {planKey === "plus" && (
+                <p className="mt-1.5 text-[0.84rem] text-ash">
+                  About the price of one disposable camera.
+                </p>
+              )}
 
               <ul className="mt-5 flex-1 space-y-2.5">
                 {featureList(planKey).map((line) => (
@@ -93,11 +120,11 @@ export function PricingTable({
 
               <ButtonLink
                 href={ctaHref}
-                variant={highlighted ? "secondary" : "primary"}
+                variant={highlighted ? "primary" : "secondary"}
                 className="mt-6 w-full"
               >
                 <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-                {tier.priceEur === 0 ? "Start free" : ctaLabel}
+                {tier.priceEur === 0 ? "Start free" : `Get ${tier.name}`}
               </ButtonLink>
             </article>
           );
@@ -125,6 +152,22 @@ export function PricingTable({
         >
           €{KEEP_FOREVER.priceEur}
         </p>
+      </div>
+
+      {/* The refund policy is unusually generous, so it does sales work here
+          rather than waiting on the legal page. Same promise, same words. */}
+      <div className="mt-4 flex items-start gap-4 rounded-[1.25rem] bg-linen p-5 sm:mt-5 sm:p-6">
+        <MdVerifiedUser aria-hidden className="mt-0.5 shrink-0 text-[30px] text-pine" />
+        <div>
+          <p className="font-semibold">14-day refund, no questions asked.</p>
+          <p className="mt-0.5 text-[0.9375rem] text-ash">
+            And if Shot &amp; Share didn&apos;t work at your event, you get your
+            money back even after the event.{" "}
+            <Link href="/refund-policy" className="underline underline-offset-2">
+              Read the refund policy
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

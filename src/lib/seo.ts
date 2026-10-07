@@ -43,9 +43,19 @@ export const SITE = {
  * the two are allowed to differ.
  */
 export const HERO = {
-  kicker: "Final touch to event organization",
-  headlineLines: ["Let your guests", "capture the moments you miss"],
-  subline: "One code on the table. No app, no account.",
+  kicker: "QR photo sharing for weddings & events",
+  /**
+   * The tagline, said as the thing the host does. "Every photo your guests
+   * take." was only in the footer and the meta tags while the hero said what
+   * every competitor says; this puts the sharpest line where it is read.
+   */
+  headlineLines: ["Collect every photo", "your guests take."],
+  /** The words the hero fills with photographs - they are the photographs. */
+  headlineFill: "every photo",
+  subline:
+    "Guests scan one code on the table and add photos from their own phone. You get the whole night in one gallery, and all of it in one download.",
+  /** The subline at the length a social card can hold on one line. */
+  cardLine: "One code on the table. No app, no account.",
 } as const;
 
 /** The headline as one line, for a card or an alt attribute. */
