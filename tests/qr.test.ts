@@ -7,7 +7,7 @@ import { THEMES, findTheme } from "@/lib/appearance/themes";
 import { contrastRatio, parseHex } from "@/lib/color";
 import { cardColours, qrCardPdf, qrSvg } from "@/lib/qr";
 
-const URL_UNDER_TEST = "https://saycheese.app/e/aVeryLongTokenValue123456";
+const URL_UNDER_TEST = "https://shotandshare.com/e/aVeryLongTokenValue123456";
 const HOUSE = findTheme("cheese").palette;
 
 async function card(opts: {
@@ -45,7 +45,7 @@ describe("the printable card", () => {
     // A share token is a long random string. Nobody types it correctly off a
     // table, and the line asking them to try was competing with the code.
     const { text } = await card({ eventName: "Ana and Marko", branded: true });
-    expect(text).not.toContain("saycheese.app");
+    expect(text).not.toContain("shotandshare.com");
     expect(text).not.toContain("aVeryLongTokenValue123456");
   });
 

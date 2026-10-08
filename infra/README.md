@@ -135,8 +135,8 @@ single photo at risk.
 ## The media hostname
 
 Serve gallery images from a hostname that is **separate from the app** from day
-one, for example `media.saycheese.app`, and point `NEXT_PUBLIC_MEDIA_BASE_URL` at
-it.
+one, for example `media.shotandshare.com`, and point
+`NEXT_PUBLIC_MEDIA_BASE_URL` at it.
 
 This matters more than it looks. AWS is not part of the Cloudflare Bandwidth
 Alliance, so putting Cloudflare in front of S3 does not make egress free - every
@@ -155,7 +155,7 @@ Set them before launch, not after the first surprise.
 
 ```bash
 aws budgets create-budget --account-id "$ACCOUNT_ID" --budget \
-  '{"BudgetName":"say-cheese-monthly","BudgetLimit":{"Amount":"100","Unit":"USD"},"TimeUnit":"MONTHLY","BudgetType":"COST"}'
+  '{"BudgetName":"shot-and-share-monthly","BudgetLimit":{"Amount":"100","Unit":"USD"},"TimeUnit":"MONTHLY","BudgetType":"COST"}'
 ```
 
 The number to watch is free-tier events: 1,000 fully maxed free events in a month

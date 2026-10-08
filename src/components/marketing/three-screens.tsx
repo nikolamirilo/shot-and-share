@@ -353,7 +353,7 @@ function HostPanel({ onSlideshow }: { onSlideshow: () => void }) {
             ))}
           </span>
           <span className="min-w-0 flex-1 truncate rounded-lg bg-paper px-2.5 py-1 font-mono text-[0.72rem] text-mist">
-            shotandshare.com/dashboard/events/ana-and-marko
+            shotandshare.com/dashboard/events/romeo-and-juliet
           </span>
         </div>
 
@@ -362,7 +362,7 @@ function HostPanel({ onSlideshow }: { onSlideshow: () => void }) {
             <div>
               <Eyebrow>Sat 13 June 2026 · Pro</Eyebrow>
               <h3 className="mt-1 text-[clamp(1.75rem,1.4rem+1.4vw,2.5rem)] [word-spacing:0.1em]">
-                Ana &amp; Marko
+                Romeo &amp; Juliet
               </h3>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -490,13 +490,13 @@ function HostPanel({ onSlideshow }: { onSlideshow: () => void }) {
               <MdOutlineFileDownload aria-hidden className="text-[18px] text-rose-soft" />
               {zip < 100 ? (
                 <>
-                  <span>Packing ana-and-marko.zip</span>
+                  <span>Packing romeo-and-juliet.zip</span>
                   <span className="h-1.5 w-28 overflow-hidden rounded-full bg-linen/20">
                     <span className="block h-full bg-rose-soft" style={{ width: `${zip}%` }} />
                   </span>
                 </>
               ) : (
-                <span>ana-and-marko.zip · {nf.format(1342)} photos · 36 videos. Ready.</span>
+                <span>romeo-and-juliet.zip · {nf.format(1342)} photos · 36 videos. Ready.</span>
               )}
             </div>
           )}
@@ -608,7 +608,7 @@ function WallPanel() {
         </div>
         <p className="absolute left-3.5 top-3 inline-flex items-center gap-2 rounded-full bg-[rgba(14,10,11,0.55)] py-1.5 pl-2.5 pr-3 font-mono text-micro uppercase tracking-[0.14em] text-chalk backdrop-blur">
           <span className="live-dot !h-2 !w-2" aria-hidden />
-          Live · Ana &amp; Marko
+          Live · Romeo &amp; Juliet
         </p>
         <div className="absolute bottom-3.5 left-3.5 flex gap-1.5">
           <button type="button" aria-label="Previous photo" onClick={() => setI((x) => (x + WALL.length - 1) % WALL.length)} className={round}>

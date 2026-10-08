@@ -377,6 +377,127 @@
   animation: rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* --- The headline's viewfinder --------------------------------------------
+   The mark's four corner brackets, closed around the two words of the headline
+   that are the photographs. Deliberately not the mark itself: the mark is 18
+   units of stroke on a 200 canvas and a bracket at that weight beside 74px
+   type reads as a box drawn round the words. These are the same proportion -
+   arm about three and a half times the stroke, the outer corner rounded by
+   about a third of the arm - rebuilt out of two borders so they scale with the
+   type instead of with a viewBox.
+
+   Every length is in `em` of the words they frame, so one declaration holds
+   from the smallest step of the headline's clamp to the largest.
+
+   They close clockwise from the top left, starting as the headline finishes
+   rising: a camera finding its subject, not four decorations fading in. Under
+   prefers-reduced-motion the frame is simply already closed.
+   -------------------------------------------------------------------------- */
+.viewfinder {
+  position: relative;
+  display: inline-block;
+  /* Clearance between the brackets and the letters: widest at the sides, and
+     deeper below than above because the tail of the `y` and the `p` hangs
+     under the line. The margin is the frame's own air - at `leading-0.97` the
+     lines above and below are close enough to touch a bracket without it. */
+  margin: 0.06em 0;
+  padding: 0.14em 0.32em 0.22em;
+}
+
+.viewfinder-corner {
+  position: absolute;
+  width: 0.28em;
+  height: 0.28em;
+  /* All four borders, two of them invisible: it is the mitre between them that
+     gives the arms their cut ends. */
+  border: 0.08em solid transparent;
+  animation: vf-snap 420ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+/* Each corner arrives from its own diagonal - outside the words, moving in. */
+@keyframes vf-snap {
+  from {
+    opacity: 0;
+    transform: translate(var(--vf-x), var(--vf-y));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.vf-tl {
+  top: 0;
+  left: 0;
+  border-top-color: var(--color-ink);
+  border-left-color: var(--color-ink);
+  border-top-left-radius: 0.1em;
+  --vf-x: -0.28em;
+  --vf-y: -0.28em;
+  animation-delay: 520ms;
+}
+
+.vf-tr {
+  top: 0;
+  right: 0;
+  border-top-color: var(--color-ink);
+  border-right-color: var(--color-ink);
+  border-top-right-radius: 0.1em;
+  --vf-x: 0.28em;
+  --vf-y: -0.28em;
+  animation-delay: 590ms;
+}
+
+.vf-br {
+  bottom: 0;
+  right: 0;
+  border-bottom-color: var(--color-ink);
+  border-right-color: var(--color-ink);
+  border-bottom-right-radius: 0.1em;
+  --vf-x: 0.28em;
+  --vf-y: 0.28em;
+  animation-delay: 660ms;
+}
+
+.vf-bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-color: var(--color-ink);
+  border-left-color: var(--color-ink);
+  border-bottom-left-radius: 0.1em;
+  --vf-x: -0.28em;
+  --vf-y: 0.28em;
+  animation-delay: 730ms;
+}
+
+/* --- The photographs moving inside the letters ----------------------------
+   `.photo-fill` sets the mosaic to `cover`, which fits a strip 1920x640 to a
+   line of type about five times wider than it is tall: the width binds and
+   there is nothing left over to travel across. So the fill is set to 150% of
+   the words' own width instead, which leaves half that width to pan through
+   and still covers any box wider than 2:1 - the words are nowhere near that
+   square at any step of the clamp.
+
+   Slow enough that it is noticed on the second look rather than the first, and
+   it alternates, so the night never cuts back to its beginning.
+
+   Unlayered on purpose: `.photo-fill` lives in `@layer components`, and an
+   unlayered rule wins over a layered one whatever the order of the two.
+   -------------------------------------------------------------------------- */
+@keyframes fill-drift {
+  from {
+    background-position: 12% 50%;
+  }
+  to {
+    background-position: 88% 50%;
+  }
+}
+
+.photo-fill-drift {
+  background-size: 150% auto;
+  animation: fill-drift 28s ease-in-out infinite alternate;
+}
+
 /* --- Over the bottom of a phone -------------------------------------------
    Below `sm` the console's tabs are a bar pinned across the bottom of the
    screen, with the raised Share button standing 32px proud of its top edge.
@@ -546,6 +667,8 @@
   .deal,
   .tile-in,
   .ribbon-reveal,
+  .viewfinder-corner,
+  .photo-fill-drift,
   .shimmer::after {
     animation: none !important;
   }

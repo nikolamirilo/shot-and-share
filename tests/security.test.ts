@@ -24,11 +24,11 @@ describe("share tokens", () => {
   });
 
   it("builds a share URL without doubling the slash", () => {
-    expect(shareUrl("https://saycheese.app/", "abc")).toBe(
-      "https://saycheese.app/e/abc",
+    expect(shareUrl("https://shotandshare.com/", "abc")).toBe(
+      "https://shotandshare.com/e/abc",
     );
-    expect(shareUrl("https://saycheese.app", "abc")).toBe(
-      "https://saycheese.app/e/abc",
+    expect(shareUrl("https://shotandshare.com", "abc")).toBe(
+      "https://shotandshare.com/e/abc",
     );
   });
 });

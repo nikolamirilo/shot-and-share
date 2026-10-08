@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Say Cheese transcode worker.
+ * Shot & Share transcode worker.
  *
  * Finishes the two jobs a browser cannot do:
  *
@@ -264,7 +264,7 @@ async function report(payload) {
 }
 
 async function processJob(job) {
-  const dir = await mkdtemp(path.join(tmpdir(), "saycheese-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "shot-and-share-"));
   try {
     const result =
       job.kind === "video"

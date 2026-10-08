@@ -2,7 +2,7 @@
 
 import type { PresignedUpload } from "@/lib/storage/types";
 
-const FINGERPRINT_KEY = "say-cheese:fingerprint";
+const FINGERPRINT_KEY = "shot-and-share:fingerprint";
 
 /**
  * A random identifier that does not need a secure context.
@@ -53,7 +53,7 @@ export function getFingerprint(): string {
 
 export function markOpened(eventId: string): boolean {
   try {
-    const key = `say-cheese:opened:${eventId}`;
+    const key = `shot-and-share:opened:${eventId}`;
     if (localStorage.getItem(key)) return false;
     localStorage.setItem(key, "1");
     return true;

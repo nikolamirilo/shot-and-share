@@ -21,7 +21,7 @@ import type { MediaView } from "@/lib/media-view";
  */
 
 export const DEMO_EVENT = {
-  name: "Ana & Marko",
+  name: "Romeo & Juliet",
   /** Fixed, never `new Date()`: a demo that says "today" every day reads as fake. */
   date: "2026-06-13",
   message:

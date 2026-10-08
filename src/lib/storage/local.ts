@@ -26,7 +26,7 @@ function secret(): string {
     process.env.LOCAL_STORAGE_SECRET ??
     process.env.SUPABASE_SECRET_KEY ??
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    "say-cheese-development-secret"
+    "shot-and-share-development-secret"
   );
 }
 

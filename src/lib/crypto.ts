@@ -43,7 +43,9 @@ function key(): Buffer {
   const fallback =
     process.env.SUPABASE_SECRET_KEY ??
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    "say-cheese-development-secret";
+    "shot-and-share-development-secret";
+  // The salt keeps the old brand name on purpose. It is an input to the key, so
+  // changing it would leave every token encrypted under the fallback unreadable.
   keyCache = scryptSync(fallback, "say-cheese-token-v1", 32);
   return keyCache;
 }

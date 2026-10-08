@@ -19,12 +19,12 @@ the browser before it leaves the phone and never reaches this queue.
 ## Running it
 
 ```bash
-docker build -t saycheese-transcode .
+docker build -t shot-and-share-transcode .
 
 docker run --rm \
-  -e APP_URL=https://saycheese.app \
+  -e APP_URL=https://shotandshare.com \
   -e WORKER_SECRET=... \
-  saycheese-transcode
+  shot-and-share-transcode
 ```
 
 Locally, with ffmpeg already installed:

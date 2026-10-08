@@ -171,7 +171,7 @@ export function HeroScene() {
                     className="mt-[1.2cqw] block font-display text-[11cqw] font-extrabold leading-[0.96] tracking-[-0.046em] [word-spacing:0.1em]"
                     style={{ fontStretch: "82%" }}
                   >
-                    Ana &amp; Marko
+                    Romeo &amp; Juliet
                   </span>
                 </div>
               </div>
@@ -218,7 +218,7 @@ export function HeroScene() {
                       Thank you!
                     </b>
                     <span className="mt-[0.6cqw] block text-[3.2cqw] leading-[1.3] text-ash">
-                      {PICKED.length} photos added to Ana &amp; Marko.
+                      {PICKED.length} photos added to Romeo &amp; Juliet.
                     </span>
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export function HeroScene() {
             className="mt-[3.4cqw] font-display text-[5.4cqw] font-extrabold leading-none tracking-[-0.046em] [word-spacing:0.1em]"
             style={{ fontStretch: "82%" }}
           >
-            Ana &amp; Marko
+            Romeo &amp; Juliet
           </p>
           <p className="mt-[1.4cqw] font-mono text-[1.75cqw] uppercase tracking-[0.14em] text-mist max-sm:text-[2.2cqw]">
             13.06.2026 · No app needed

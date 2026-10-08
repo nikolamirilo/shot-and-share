@@ -3,7 +3,7 @@
 --
 -- Theme, cover style and gallery layout are the "custom event page" the Slice
 -- and Wheel plans promise. A free event ignores all of it and renders the house
--- theme with the Say Cheese header and footer.
+-- theme with the Shot & Share header and footer.
 --
 -- Note that nothing here is enforced by a constraint tied to the tier. The gate
 -- lives in resolveAppearance() and is applied every time an event is rendered,

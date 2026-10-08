@@ -35,8 +35,8 @@ export const SITE = {
  * Here rather than inline in the hero because the social card has to say the
  * same thing: a card promising one headline and a page opening with another is
  * exactly the drift this file exists to stop. The hero sets the headline over
- * two lines, so it is kept as its lines and joined for anywhere that wants one
- * string - the card, an alt attribute.
+ * three lines, so it is kept as its lines and joined for anywhere that wants
+ * one string - the card, an alt attribute.
  *
  * Distinct from `SITE.tagline`, which is what the product calls itself in a
  * browser tab and in structured data. This is what the page says out loud, and
@@ -48,10 +48,15 @@ export const HERO = {
    * The tagline, said as the thing the host does. "Every photo your guests
    * take." was only in the footer and the meta tags while the hero said what
    * every competitor says; this puts the sharpest line where it is read.
+   *
+   * Three lines rather than two, because the middle one is the subject: the
+   * hero sets it a quarter larger than its neighbours, frames it in the mark's
+   * corner brackets and fills it with the photographs - so the words read
+   * first are the two that are the photographs. The sentence is unchanged,
+   * only where it breaks. Anything reordering these lines moves which words
+   * get that treatment.
    */
-  headlineLines: ["Collect every photo", "your guests take."],
-  /** The words the hero fills with photographs - they are the photographs. */
-  headlineFill: "every photo",
+  headlineLines: ["Collect", "every photo", "your guests take."],
   subline:
     "Guests scan one code on the table and add photos from their own phone. You get the whole night in one gallery, and all of it in one download.",
   /** The subline at the length a social card can hold on one line. */
