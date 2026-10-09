@@ -1,6 +1,7 @@
 "use server";
 
-import { requireOwnedEvent } from "@/lib/actions/guards";
+import { requireOwnedEvent, requireUser } from "@/lib/actions/guards";
+import { billingPortalUrl } from "@/lib/payments/creem";
 import { ApiError } from "@/lib/api";
 import { recoverPurchases } from "@/lib/payments/recover";
 import { checkoutUrlForEvent } from "@/lib/payments/checkout";
@@ -74,6 +75,53 @@ export async function recoverPurchase(
     return {
       error:
         "We could not reach the payment provider. Write to us and we will sort it by hand.",
+    };
+  }
+}
+
+/**
+ * "Where do I cancel?"
+ *
+ * Opens Creem's billing portal for the signed-in host, where they can see the
+ * renewal date, change the card, read invoices and cancel the keeping
+ * subscription. Creem holds all of that; mirroring any of it here to render a
+ * page would be a second source of truth about somebody's money.
+ *
+ * Takes no event id on purpose. A Creem customer is the host, not the event, so
+ * one portal covers every event they have ever paid for - which is also the
+ * right shape for the question, because a host wanting to cancel does not think
+ * in events.
+ *
+ * Nothing throws out of here, same as `startCheckout`: an unhandled throw in an
+ * action is a server render error, and "we could not reach the provider" belongs
+ * under the button.
+ */
+export async function openBillingPortal(): Promise<{
+  url?: string;
+  error?: string;
+}> {
+  const { user } = await requireUser();
+
+  if (!user.email) {
+    return {
+      error: "This account has no email address on it, so we cannot find your billing.",
+    };
+  }
+
+  try {
+    const url = await billingPortalUrl(user.email);
+    if (!url) {
+      return {
+        error:
+          "We could not find any billing for this account. If you have paid for something, write to us and we will sort it by hand.",
+      };
+    }
+    return { url };
+  } catch (error) {
+    console.error("[portal] failed", error);
+    return {
+      error:
+        "We could not reach the payment provider. Try again in a moment, and write to us if it keeps happening.",
     };
   }
 }

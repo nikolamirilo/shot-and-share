@@ -104,6 +104,26 @@ describe("the guest page cover", () => {
     expect(page.fullScreenCover).toBe(true);
   });
 
+  // The thumbnail is no longer only a fallback: blown up and blurred it is the
+  // right colours in the right places long before two megabytes have landed.
+  it("hands the thumbnail over as well, to stand in while it loads", async () => {
+    pushCover();
+
+    const page = await open();
+
+    expect(page.coverPreviewUrl).toBe(`https://cdn.example/${THUMB_KEY}`);
+  });
+
+  it("has nothing to stand in when the thumbnail is the cover", async () => {
+    // Nothing to fade a photograph in over except itself.
+    pushCover({ media_format: "heic", media_key: FULL_KEY.replace(".webp", ".heic") });
+
+    const page = await open();
+
+    expect(page.coverUrl).toBe(`https://cdn.example/${THUMB_KEY}`);
+    expect(page.coverPreviewUrl).toBeNull();
+  });
+
   // A HEIC the browser cannot open has no full copy to serve until the worker
   // has replaced it. A soft cover beats an empty one.
   it("falls back to the thumbnail when there is no viewable full copy", async () => {

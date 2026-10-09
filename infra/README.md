@@ -3,250 +3,71 @@
 Everything here is applied once, by hand or by whatever provisioning you prefer.
 None of it is in the application's hot path.
 
-## The bucket
+One file per thing, because these get read at different moments: the bucket and
+CORS when uploads stop working, the lifecycle rules when the bill arrives, the
+CDN when the gallery is slow, the IAM policy when something returns 403.
 
-Frankfurt (`eu-central-1`) is closest to the expected customer base and keeps the
-GDPR conversation simple. It costs roughly 5 to 8 percent more than `us-east-1`,
-which is worth it.
+## The order to apply them in
+
+| | What | Why in this position |
+|---|---|---|
+| 1 | [The bucket](guides/bucket.md) | Nothing else exists without it |
+| 2 | [CORS](guides/cors.md) | Uploads fail silently until this is right |
+| 3 | [The IAM policy](guides/iam.md) | The application cannot read or write without it |
+| 4 | [Lifecycle rules](guides/lifecycle.md) | Six dollars of margin per wedding, and it has to exist before the first paying customer |
+| 5 | [Budget alarms](guides/budget.md) | Before the first surprise, not after |
+| 6 | [The CDN](guides/cdn.md) | Every photograph goes through a function until this lands |
+| 7 | [CDN purge](guides/cdn-purge.md) | Required *by* step 6 - a CDN without it is worse than no CDN |
+| 8 | [Upload moderation](guides/moderation.md) | Optional, and off on every laptop |
+
+[The key layout](guides/key-layout.md) is not a step. It is the thing steps 4, 6 and 7
+all refer to, and it is worth reading before any of them.
+
+## Shared variables
+
+Every guide assumes these, and assumes you are running from `infra/` - the
+`file://` paths in them are relative to that directory, not to `guides/`.
 
 ```bash
+cd infra
+
 BUCKET=shot-and-share-application
 REGION=eu-central-1
-
-aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" \
-  --create-bucket-configuration LocationConstraint="$REGION"
-
-# The bucket is private. Every read goes through the CDN or a presigned URL.
-aws s3api put-public-access-block --bucket "$BUCKET" \
-  --public-access-block-configuration \
-  "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
-
-aws s3api put-bucket-encryption --bucket "$BUCKET" \
-  --server-side-encryption-configuration \
-  '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
-
-aws s3api put-bucket-cors --bucket "$BUCKET" \
-  --cors-configuration file://s3-cors.json
-
-aws s3api put-bucket-lifecycle-configuration --bucket "$BUCKET" \
-  --lifecycle-configuration file://s3-lifecycle.json
+ACCOUNT_ID=...
 ```
 
-## CORS is the one that breaks uploads silently
+## The configuration files
 
-`s3-cors.json` has to name every hostname the app is served from, and it has to
-be reapplied when that list changes. This is the failure mode to know by sight,
-because nothing in the system reports it as an error:
-
-- `/api/upload/presign` answers **200**. Signing does not touch CORS.
-- The browser refuses to send the POST, so the bucket never sees a request and
-  there is nothing in the S3 logs either.
-- The app gets an XHR status of `0` - no response at all, not a rejection - and
-  retries twice more before giving up, which is why a failed batch takes about
-  six seconds to report itself.
-- The guest is told "Could not reach storage. The bucket's CORS rules may not
-  allow this site." The client also logs the key and the size to the console.
-- The confirm step hands the reserved quota back, so the counters stay correct
-  and there is no wreckage to find afterwards.
-
-The tell is that presign succeeds and confirm arrives seconds later with
-`failed: true` and a reason, with no media row written. A rejection *by* the
-bucket looks different: it comes back as a 403 with an XML body naming the
-cause, is reported immediately rather than after a retry, and is not retried at
-all.
-
-```bash
-aws s3api put-bucket-cors --bucket "$BUCKET" \
-  --cors-configuration file://s3-cors.json
-
-# Read it back, and check the live hostname is in the list.
-aws s3api get-bucket-cors --bucket "$BUCKET"
-```
-
-Renaming the site is what makes this bite: the rules keep pointing at the old
-domain, every other page goes on working, and only the upload stops.
-
-## The lifecycle rules are not optional
-
-Leaving 30 GB on S3 Standard for twelve months costs about \$8.28. Moving it to
-Glacier Instant Retrieval after 30 days costs about \$2.01. That is six dollars of
-margin on every single wedding, and it has to exist before the first paying
-customer, not after.
-
-Three rules are in `s3-lifecycle.json`:
-
-| Rule | What it does | Why |
+| File | Applied with | Explained in |
 |---|---|---|
-| `media-to-glacier-ir-after-30-days` | Everything in the bucket moves to Glacier IR at 30 days | The whole retention model rests on this |
-| `keep-forever-to-deep-archive` | Objects tagged `retention=forever` move to Deep Archive at 400 days | 30 GB costs about \$0.36 a year there, so a €29 one-off covers decades |
-| `expire-generated-archives` | Objects tagged `kind=archive` expire at 30 days | The ZIP is derived data and can be rebuilt |
+| `s3-cors.json` | `aws s3api put-bucket-cors` | [cors.md](guides/cors.md) |
+| `s3-lifecycle.json` | `aws s3api put-bucket-lifecycle-configuration` | [lifecycle.md](guides/lifecycle.md) |
+| `cloudfront-response-headers.json` | `aws cloudfront create-response-headers-policy` | [cdn.md](guides/cdn.md) |
+| `cloudfront-viewer-request.js` | `aws cloudfront create-function` | [cdn.md](guides/cdn.md) |
 
-Two of them filter on **tags**, not prefixes, and that is deliberate: S3 prefix
-filters are literal strings. There is no way to write `*/*/archive/`, so a prefix
-rule intended for archives would match every photo in the bucket and expire the
-lot.
+## The two rules that run through all of it
 
-### The key layout
+**The bucket is private and stays private.** Guests upload through a presigned
+POST; reads come through the CDN, which is granted access as a service principal,
+or through a presigned GET. No step here should ever ask you to undo the public
+access block.
 
-Objects are laid out `{owner_id}/{event_id}/…` at the **root of the bucket**, so
-that a host's whole estate is one prefix and an event is one prefix inside it.
-There is deliberately no wrapper prefix above the owner folders: `aws s3 ls
-s3://$BUCKET/` lists hosts and nothing else, and every path a human reads - in
-the console, in a log line, in a signed URL - is one level shorter.
+**Postgres is the source of truth for what exists.** The bucket is only where
+the bytes live. The application never calls `ListObjects` to find out what is in
+an event - LIST is billed at the expensive request rate and would run on every
+page load.
 
-Nothing needs a constant first segment. The transition rule above wants the whole
-bucket anyway, and the IAM policy below scopes per-owner, which is where the
-boundary actually is.
+## Known gaps
 
-That also makes it the seam for per-tenant credentials later: an STS session
-scoped to `{owner_id}/*` would let S3 enforce the tenant boundary itself, rather
-than trusting the application to keep to it.
+Stated here rather than left to be discovered. Each is explained where it
+belongs:
 
-### One object per upload
-
-An event folder is split in two: `photos/` and `videos/`. A photo is its
-compressed copy in `photos/full/` plus a small grid thumbnail in
-`photos/thumb/`. A video is the clip in `videos/full/` plus a still in
-`videos/poster/`, because a clip has no still of itself to show in a grid.
-Uploads from before the split sit directly under the event (`full/`, `thumb/`,
-`{media_id}-poster.jpg`) and are read from the key on their row, so they were
-not moved.
-
-That is a storage decision before it is anything else: three renditions of the
-same picture was three times the bill for a difference nobody can see on a phone,
-and it is the difference between a free event holding 250 photos and holding a
-thousand.
-
-### One gap, stated plainly
-
-Uploads are tagged `tier=<tier>` at upload time by the presigned policy, which
-costs no extra requests. The `retention=forever` tag is **not** applied
-retroactively when a host buys The Cellar after the fact - re-tagging thousands
-of existing objects needs an S3 Batch Operations job, which is the right tool and
-is not wired up yet.
-
-Until it is, Keep Forever still works correctly and safely: the retention job
-excludes those events from expiry, so nothing is ever deleted. The only cost is
-that the objects sit in Glacier IR at \$0.004 per GB-month rather than Deep
-Archive at \$0.00099. On 30 GB that is about \$1.44 a year against \$0.36 - a real
-but small margin leak against a €29 one-time payment, and it does not put a
-single photo at risk.
-
-## The media hostname
-
-Serve gallery images from a hostname that is **separate from the app** from day
-one, for example `media.shotandshare.com`, and point
-`NEXT_PUBLIC_MEDIA_BASE_URL` at it.
-
-This matters more than it looks. AWS is not part of the Cloudflare Bandwidth
-Alliance, so putting Cloudflare in front of S3 does not make egress free - every
-byte Cloudflare pulls is billed at \$0.09 per GB. What Cloudflare buys is cache
-hits, which turns egress from *bytes × viewers* into *bytes × a handful of edge
-locations*. If that stops being enough, S3 to CloudFront transfer **is** free, and
-with a separate hostname the swap is a DNS change instead of a rewrite.
-
-Cloudflare's free plan also restricts serving large volumes of non-HTML content,
-and a photo gallery is exactly that. Check the current terms before launch and
-budget for a paid plan, Cloudflare Images, R2, or CloudFront.
-
-## Budget alarms
-
-Set them before launch, not after the first surprise.
-
-```bash
-aws budgets create-budget --account-id "$ACCOUNT_ID" --budget \
-  '{"BudgetName":"shot-and-share-monthly","BudgetLimit":{"Amount":"100","Unit":"USD"},"TimeUnit":"MONTHLY","BudgetType":"COST"}'
-```
-
-The number to watch is free-tier events: 1,000 fully maxed free events in a month
-costs about \$210 with no revenue attached. That is the figure that decides
-whether the free plan stays as generous as it is.
-
-## The IAM policy
-
-The application needs exactly this much and no more. Storage and moderation are
-one policy on one user, because Rekognition reads the object with these same
-credentials.
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "BucketLevel",
-      "Effect": "Allow",
-      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
-      "Resource": "arn:aws:s3:::shot-and-share-application"
-    },
-    {
-      "Sid": "ObjectLevel",
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:PutObjectTagging",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:AbortMultipartUpload"
-      ],
-      "Resource": "arn:aws:s3:::shot-and-share-application/*"
-    },
-    {
-      "Sid": "UploadModeration",
-      "Effect": "Allow",
-      "Action": "rekognition:DetectModerationLabels",
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": { "aws:RequestedRegion": "eu-central-1" }
-      }
-    }
-  ]
-}
-```
-
-`ListBucket` is granted because the retention job deletes a whole event prefix at
-the end of its life. The application never uses it to read a gallery - LIST is
-billed at the expensive request rate, and Postgres is the source of truth for
-what exists.
-
-`PutObjectTagging` is not optional. Uploads carry a `Tagging` header, and S3
-refuses a tagged PutObject outright without it, so leaving it out breaks every
-upload rather than just the tags.
-
-`GetObject` is also what makes moderation work. Rekognition reads the object
-using these credentials rather than a service role of its own, so a narrower
-object statement fails with an access error that reads like a Rekognition
-problem and is not one.
-
-`DetectModerationLabels` takes no resource ARN, which is why its resource is
-`*`. The region condition is what stops these credentials calling Rekognition
-somewhere else, and it is the line that turns "no photograph leaves the EU" from
-a configuration habit into something enforced.
-
-Nothing here grants bucket configuration - CORS, lifecycle, the public access
-block. That is deliberate. Those are one-time operations you run yourself, and
-the application should not be able to undo them.
-
-## Upload moderation
-
-Every photo is screened as it arrives, before it is visible in any gallery. The
-driver is chosen by `MODERATION_PROVIDER`; leave it blank and nothing is
-screened, which is the state every laptop and preview deployment runs in.
-
-`MODERATION_PROVIDER=rekognition` uses Amazon Rekognition against the object
-already sitting in the bucket, so nothing leaves the region and the call is a
-key rather than an upload.
-
-The IAM user the app already uses for S3 needs `rekognition:DetectModerationLabels`,
-which is in the policy above. Without it every call fails, and because the upload
-path fails open, every photo goes through unscreened while `moderated_at` stays
-null. That is deliberate - an AWS outage must not stop a wedding - but it does
-mean a missing permission is silent apart from the logs. Check for
-`[moderation] rekognition failed` after turning it on.
-
-Rekognition has to be available in the bucket's region. `eu-central-1` has it.
-Moving the bucket to a region that does not would leave uploads unscreened
-rather than broken, for the same fail-open reason.
-
-Cost is roughly $1 per 1,000 images, so a 300-photo wedding is about 30 cents.
-Video is screened on its poster frame rather than through the video API, which
-is a different order of money.
+- The `retention=forever` tag is never applied retroactively -
+  [lifecycle.md](guides/lifecycle.md)
+- The 30-day Glacier transition costs money rather than saving it on free events
+  - [lifecycle.md](guides/lifecycle.md)
+- A *reported* photo is hidden from the gallery but still readable at its URL -
+  [cdn-purge.md](guides/cdn-purge.md)
+- CloudFront cannot keep cached copies inside the EU - [cdn.md](guides/cdn.md)
+- Video moderation depends on a worker that is not deployed -
+  [moderation.md](guides/moderation.md)

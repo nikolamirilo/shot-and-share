@@ -1,3 +1,4 @@
+import { CoverImage } from "@/components/event/cover-image";
 import type { Palette } from "@/lib/appearance/themes";
 import {
   type CoverHorizontal,
@@ -181,6 +182,12 @@ export interface CoverProps {
   date: string;
   message?: string | null;
   coverUrl?: string | null;
+  /**
+   * The cover's stored thumbnail, which stands in - blurred - for the seconds
+   * the full copy is in flight. Guest page only: the host's preview is already
+   * holding the file it just picked.
+   */
+  coverPreviewUrl?: string | null;
   palette: Palette;
   /** Where the type sits on the photograph. Nothing to sit on without one. */
   position?: CoverPosition;
@@ -283,16 +290,30 @@ function Title({
  */
 function CoverPhoto({
   url,
+  previewUrl,
   label = "your photo",
   className,
   emptyClassName,
+  preview,
 }: {
   url?: string | null;
+  /** The thumbnail the full copy fades in over. See CoverImage. */
+  previewUrl?: string | null;
   label?: string;
   className?: string;
   /** Only the empty frame: a photo must not be padded or it stops covering. */
   emptyClassName?: string;
+  /**
+   * The host's preview, which does not fade. A host stepping through four
+   * covers of the same photograph is comparing crops, and a cross-fade on
+   * every tap reads as the setting being slow to take.
+   */
+  preview?: boolean;
 }) {
+  if (url && !preview) {
+    return <CoverImage url={url} previewUrl={previewUrl} className={className} />;
+  }
+
   if (url) {
     return (
       <img
@@ -332,6 +353,7 @@ function PhotoCover({
   date,
   message,
   coverUrl,
+  coverPreviewUrl,
   preview,
   photoLabel,
   position = DEFAULT_POSITION,
@@ -405,7 +427,13 @@ function PhotoCover({
       )}
     >
       <div className="absolute inset-0">
-        <CoverPhoto url={coverUrl} label={photoLabel} emptyClassName={empty} />
+        <CoverPhoto
+          url={coverUrl}
+          previewUrl={coverPreviewUrl}
+          label={photoLabel}
+          emptyClassName={empty}
+          preview={preview}
+        />
       </div>
 
       {/* Heaviest where the type is: a full-bleed photograph can be bright at
@@ -507,6 +535,7 @@ function ClassicCover({
   date,
   message,
   coverUrl,
+  coverPreviewUrl,
   preview,
   photoLabel,
   position = DEFAULT_POSITION,
@@ -554,8 +583,10 @@ function ClassicCover({
               printed underneath it, whichever end the name is at. */}
           <CoverPhoto
             url={coverUrl}
+            previewUrl={coverPreviewUrl}
             label={photoLabel}
             emptyClassName={empty}
+            preview={preview}
           />
         </div>
         {/* One wash: it is there for the photograph under the type, not for

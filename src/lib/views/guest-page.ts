@@ -27,6 +27,12 @@ export type GuestPage =
       remainingBytes: number;
       coverUrl: string | null;
       /**
+       * The cover's thumbnail, which stands in blurred while the full copy is
+       * in flight - see components/event/cover-image.tsx. Null when the row
+       * has none, or when it is already what `coverUrl` is serving.
+       */
+      coverPreviewUrl: string | null;
+      /**
        * Whether the cover about to render is the screen-filling one. It has to
        * match what EventCover decides rather than what the row says: a "full
        * screen" cover with no photo falls back to "just type", and stretching
@@ -49,6 +55,7 @@ export async function loadGuestPage(token: string): Promise<GuestPage> {
   const appearance = resolveAppearance(event);
 
   let coverUrl: string | null = null;
+  let coverPreviewUrl: string | null = null;
   if (event.cover_media_id && appearance.cover !== "type") {
     const row = await findReadyMedia(createAdminClient(), event.cover_media_id);
     // A cover held by the automated check falls back to the typographic header
@@ -61,6 +68,13 @@ export async function loadGuestPage(token: string): Promise<GuestPage> {
       // thumbnail is only the fallback, for a row with no full copy - one
       // still waiting on the worker, or written before the folders existed.
       coverUrl = view.fullUrl ?? view.previewUrl;
+      /*
+       * And the thumbnail as well, to stand in while those two megabytes are
+       * in flight. Not when it is already the cover being served: there is
+       * nothing to fade a photograph in over except itself.
+       */
+      coverPreviewUrl =
+        view.previewUrl && view.previewUrl !== coverUrl ? view.previewUrl : null;
     }
   }
 
@@ -71,6 +85,7 @@ export async function loadGuestPage(token: string): Promise<GuestPage> {
     appearance,
     remainingBytes: storageSummary(event).remaining,
     coverUrl,
+    coverPreviewUrl,
     fullScreenCover: appearance.cover === "full" && coverUrl !== null,
   };
 }

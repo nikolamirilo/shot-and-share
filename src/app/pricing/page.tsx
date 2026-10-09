@@ -12,7 +12,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { ButtonLink, Eyebrow } from "@/components/ui";
 import { JsonLd } from "@/components/seo/json-ld";
 import { hasSupabase } from "@/lib/env";
-import { KEEP_FOREVER, TIERS, VAT_NOTE, photoCountLabel } from "@/lib/tiers";
+import { KEEPING, TIERS, VAT_NOTE, photoCountLabel } from "@/lib/tiers";
 import { breadcrumbSchema, graph, softwareApplicationSchema } from "@/lib/seo";
 import { getSessionUser } from "@/lib/supabase/server";
 
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   // comparison table now is: this said 250 while the plan cards below it said
   // 150, and a search result that disagrees with the page it opens is the
   // worst place of all to be caught contradicting yourself.
-  description: `One payment per event. No subscription. A free plan that holds about ${photoCountLabel(TIERS.free.quotaBytes)} photos, and a €${KEEP_FOREVER.priceEur} add-on that keeps them permanently.`,
+  description: `One payment per event. A free plan that holds about ${photoCountLabel(TIERS.free.quotaBytes)} photos, and keeping them online afterwards from €${KEEPING.plus.priceEur} a year.`,
   alternates: { canonical: "/pricing" },
 };
 
@@ -49,12 +49,13 @@ export default async function PricingPage() {
           <div className="mx-auto max-w-6xl px-4 py-11 sm:px-5 sm:py-14 lg:py-20">
             <Eyebrow>Pricing</Eyebrow>
             <h1 className="mt-3 max-w-3xl text-[2.375rem] xs:text-[2.75rem] sm:text-[4rem]">
-              One payment, per event. Then nothing.
+              One payment, per event.
             </h1>
             <p className="mt-5 max-w-2xl text-body text-ash sm:text-lead">
-              People plan one wedding, not twelve. Asking someone to remember to
-              cancel a subscription afterwards is a bad experience and we are not
-              going to build one.
+              People plan one wedding, not twelve, so the plans are bought once
+              and none of them renew. The only thing that recurs is optional:
+              when your window runs out you can keep the photos online for a few
+              euros a year instead of downloading them and letting them go.
             </p>
 
             <div className="mt-9 sm:mt-12">
@@ -75,9 +76,11 @@ export default async function PricingPage() {
               VAT on your invoice is already handled.
             </p>
             <p className="mt-2 max-w-2xl text-[0.9375rem] text-ash">
-              There is no subscription anywhere in this product. Every plan is a
-              single payment for a single event, nothing renews, and there is
-              nothing to cancel. No plan is hidden behind a sales call.
+              Every plan is a single payment for a single event and none of
+              them renew. The one recurring charge is keeping the photos online
+              after your window ends - you choose it, it starts only when that
+              window actually runs out, and cancelling always leaves the year
+              you paid for standing. No plan is hidden behind a sales call.
             </p>
           </div>
         </section>

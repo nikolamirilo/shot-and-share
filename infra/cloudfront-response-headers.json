@@ -1,0 +1,21 @@
+{
+  "Comment": "Shot & Share media. Keeps wedding photographs out of image search.",
+  "Name": "shot-and-share-media-headers",
+  "CustomHeadersConfig": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Header": "X-Robots-Tag",
+        "Value": "noindex, nofollow, noarchive, noimageindex",
+        "Override": true
+      }
+    ]
+  },
+  "SecurityHeadersConfig": {
+    "ContentTypeOptions": { "Override": true },
+    "ReferrerPolicy": {
+      "ReferrerPolicy": "strict-origin-when-cross-origin",
+      "Override": true
+    }
+  }
+}

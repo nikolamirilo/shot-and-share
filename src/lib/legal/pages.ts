@@ -5,7 +5,7 @@ import {
   addressLine,
 } from "@/lib/legal/operator";
 import { SITE } from "@/lib/seo";
-import { HARD_DELETE_GRACE_DAYS, KEEP_FOREVER, TIERS, VAT_NOTE } from "@/lib/tiers";
+import { HARD_DELETE_GRACE_DAYS, KEEPING, KEEPING_NAME, TIERS, VAT_NOTE } from "@/lib/tiers";
 
 /**
  * The four documents a merchant of record looks for.
@@ -88,8 +88,8 @@ const TERMS: LegalPage = {
     {
       heading: "Plans and payment",
       body: [
-        `Every plan is a one-time payment for one event. ${TIERS.plus.name} is €${TIERS.plus.priceEur} and ${TIERS.pro.name} is €${TIERS.pro.priceEur}. The ${KEEP_FOREVER.name} add-on is €${KEEP_FOREVER.priceEur}, also paid once, and keeps that event's photos permanently.`,
-        "Nothing renews and nothing needs cancelling. There is no subscription, no trial that turns into a charge, and no card of yours stored by us.",
+        `Every plan is a one-time payment for one event. ${TIERS.plus.name} is €${TIERS.plus.priceEur} and ${TIERS.pro.name} is €${TIERS.pro.priceEur}. Keeping an event online after its included window ends is a yearly subscription - €${KEEPING.plus.priceEur} a year on ${TIERS.plus.name}, €${KEEPING.pro.priceEur} on ${TIERS.pro.name} - which you can cancel at any time, and which only ever begins after the window the plan already included.`,
+        "No plan renews and no trial turns into a charge. The yearly keeping subscription described above is the only recurring charge, it is never started without you choosing it, and you can cancel it at any time. No card of yours is stored by us either way - Creem holds it.",
         `Payment is handled by Creem, who act as merchant of record. Your card details never reach us and your receipt comes from them. ${VAT_NOTE}`,
         `Upgrading an event pays the new plan's price in full. Nothing is taken off for the plan you already bought and nothing is refunded, so moving from ${TIERS.plus.name} to ${TIERS.pro.name} costs €${TIERS.pro.priceEur}, not the €${TIERS.pro.priceEur - TIERS.plus.priceEur} difference.`,
         `The event moves onto the better plan as soon as the payment reaches us. Its storage allowance becomes the new plan's, and its photos are kept for the new plan's window - counted from the date of the event itself rather than from the day you upgraded, so none of the time you paid for is lost. The earlier payment stays on record, which is why a refunded upgrade drops the event back to the plan it was on before instead of to ${TIERS.free.name}.`,
@@ -113,7 +113,7 @@ const TERMS: LegalPage = {
       body: [
         `Every plan states a storage window: ${TIERS.free.retentionDays} days on ${TIERS.free.name}, six months on ${TIERS.plus.name}, twelve months on ${TIERS.pro.name}, counted from the date of the event rather than the date you paid. We email you 14 days, 7 days and 1 day before it ends.`,
         `When it ends the event is paused rather than deleted. Nothing is removed, guests see a closed page, and you can restore it for ${HARD_DELETE_GRACE_DAYS} days. Only after that does anything get erased, and erasure is permanent.`,
-        `The ${KEEP_FOREVER.name} add-on removes the window entirely.`,
+        `A ${KEEPING_NAME} subscription extends the window by a year at a time, for as long as it is active.`,
       ],
     },
     {
@@ -269,7 +269,7 @@ const PRIVACY: LegalPage = {
       heading: "How long it stays",
       body: [
         `Photographs live as long as the event's storage window: ${TIERS.free.retentionDays} days on ${TIERS.free.name}, six months on ${TIERS.plus.name}, twelve months on ${TIERS.pro.name}, counted from the date of the event.`,
-        `After that the event is paused for ${HARD_DELETE_GRACE_DAYS} days, during which nothing has been removed and the host can restore it. At the end of those ${HARD_DELETE_GRACE_DAYS} days the files are deleted permanently by a job that runs every day. With the ${KEEP_FOREVER.name} add-on they stay until the host deletes them.`,
+        `After that the event is paused for ${HARD_DELETE_GRACE_DAYS} days, during which nothing has been removed and the host can restore it. At the end of those ${HARD_DELETE_GRACE_DAYS} days the files are deleted permanently by a job that runs every day. While a ${KEEPING_NAME} subscription is active the window is extended a year at a time and none of this runs; if it lapses, the event keeps the year already paid for and then follows the ordinary schedule above.`,
         "Deleting an event deletes its files immediately. Your account stays until you ask us to close it, at which point it and everything in it goes, except the payment records tax law requires us to keep.",
       ],
     },
@@ -352,7 +352,7 @@ const REFUND_POLICY: LegalPage = {
     {
       heading: "Keep Forever",
       body: [
-        `${KEEP_FOREVER.name} is a one-time payment of €${KEEP_FOREVER.priceEur} that removes the storage window on an event. The same fourteen days apply.`,
+        `${KEEPING_NAME} is a yearly subscription that extends an event's storage window. The same fourteen days apply to the first payment; afterwards you can cancel at any time and keep the year you have paid for.`,
         "Refunding it puts the event back on the storage window of its plan. Nothing is deleted on the day of the refund, and the usual warning emails run before anything is.",
       ],
     },

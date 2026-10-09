@@ -30,6 +30,30 @@ export const OPTIMISER_DISABLED =
   process.env.NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION === "true";
 
 /**
+ * Whether the stored thumbnail is already coming from a CDN, in which case a
+ * grid tile should ask for it directly and skip the optimiser.
+ *
+ * This is the one case where resizing buys nothing. The stored thumbnail is a
+ * ~25 KB WebP cut for roughly tile size, it is uploaded with a year-long
+ * `immutable` cache header, and behind a CDN it is served from an edge in the
+ * guest's own country. Putting the optimiser in front of that spends a metered
+ * transformation per tile *per width* to turn 25 KB into perhaps 8 KB - on a
+ * wall of fifty photographs across four layouts, which is how a monthly quota
+ * disappears in a fortnight.
+ *
+ * It only ever applies to the stored thumbnail. The lightbox and the Stack
+ * layout show the full-size copy, which is a couple of megabytes and worth
+ * every transformation it costs.
+ *
+ * Without a CDN this stays off: the fallback address is the app's own
+ * `/api/media` route, where an unresized copy is a function invocation
+ * streaming the bytes and the optimiser's cache is what keeps that rare.
+ */
+export const THUMBS_FROM_CDN = Boolean(
+  process.env.NEXT_PUBLIC_MEDIA_BASE_URL,
+);
+
+/**
  * How many photographs must fail before the page gives up on the optimiser
  * for all of them.
  *

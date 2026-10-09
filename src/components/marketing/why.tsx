@@ -2,7 +2,7 @@ import { MdHd, MdOutlineTouchApp, MdVerifiedUser } from "react-icons/md";
 
 import { Eyebrow, Hole } from "@/components/ui";
 import { formatBytes } from "@/lib/format";
-import { HARD_DELETE_GRACE_DAYS, KEEP_FOREVER, RETENTION_WARNING_DAYS, TIERS } from "@/lib/tiers";
+import { HARD_DELETE_GRACE_DAYS, KEEPING, RETENTION_WARNING_DAYS, TIERS } from "@/lib/tiers";
 
 /** [14, 7, 1] as people say it: "14, 7 and 1". */
 const said = (n: number[]) => `${n.slice(0, -1).join(", ")} and ${n[n.length - 1]}`;
@@ -41,7 +41,7 @@ export function Why() {
       points: [
         [`Reminders at ${said(RETENTION_WARNING_DAYS)} days`, "before your storage window ends."],
         ["Paused, not deleted,", `and restorable for another ${HARD_DELETE_GRACE_DAYS} days after that.`],
-        [`${KEEP_FOREVER.name} for €${KEEP_FOREVER.priceEur}, once,`, "and they stay for good."],
+        [`Keep them online from €${KEEPING.plus.priceEur} a year,`, "for as long as you want them."],
       ],
     },
   ];

@@ -9,7 +9,7 @@ import { TIERS } from "@/lib/tiers";
  * is: a price that changed in one place and not the other is a card promising
  * something the page does not.
  */
-export const alt = "Pricing - one payment per event, then nothing";
+export const alt = "Pricing - one payment per event";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
@@ -18,8 +18,8 @@ export default function PricingOpengraphImage() {
     (
       <OgCard
         kicker="Pricing"
-        headline="One payment, per event. Then nothing."
-        footnote={`Free plan, then €${TIERS.plus.priceEur} or €${TIERS.pro.priceEur} once. No subscription.`}
+        headline="One payment, per event."
+        footnote={`Free plan, then €${TIERS.plus.priceEur} or €${TIERS.pro.priceEur} once. Plans never renew.`}
       />
     ),
     size,

@@ -2,7 +2,10 @@ import "server-only";
 
 import type { Database, EventRow, ReservedMedia } from "@/lib/db/types";
 import { storage } from "@/lib/storage";
-import type { PresignedUpload } from "@/lib/storage/types";
+import {
+  IMMUTABLE_CACHE_CONTROL,
+  type PresignedUpload,
+} from "@/lib/storage/types";
 import { release, reserve } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -144,5 +147,12 @@ function sign(
     contentType,
     maxBytes: Math.max(bytes + slack, 32 * 1024),
     tags: { tier: tierId },
+    /*
+     * Every key here carries a media id minted seconds ago, so nothing is ever
+     * rewritten under it and the CDN can keep it for a year. This is the
+     * header that decides whether a gallery is served from the edge or
+     * revalidated against the bucket on every visit.
+     */
+    cacheControl: IMMUTABLE_CACHE_CONTROL,
   });
 }

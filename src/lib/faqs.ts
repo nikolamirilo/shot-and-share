@@ -1,5 +1,5 @@
 import { formatBytes } from "@/lib/format";
-import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
+import { KEEPING, TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * The questions on the landing page.
@@ -41,7 +41,7 @@ export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
     ],
     [
       "What happens when the storage window ends?",
-      `You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. Add ${KEEP_FOREVER.name} at any point and nothing is ever removed.`,
+      `You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. You can also keep the photos online past the window for €${KEEPING.plus.priceEur} a year on Plus or €${KEEPING.pro.priceEur} on Pro, cancellable whenever you like.`,
     ],
     [
       "Is video included?",

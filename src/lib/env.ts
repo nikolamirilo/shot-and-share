@@ -90,11 +90,40 @@ export const env = {
   },
 
   /**
-   * A separate hostname from the app from day one, so moving media from
-   * Cloudflare to CloudFront is a DNS change rather than a rewrite.
+   * A separate hostname from the app from day one, so changing CDN is a DNS
+   * change rather than a rewrite.
    */
   get mediaBaseUrl() {
     return opt("NEXT_PUBLIC_MEDIA_BASE_URL");
+  },
+
+  /**
+   * Which CDN sits in front of the bucket, and what it needs to purge.
+   *
+   * Separate from `mediaBaseUrl` because they answer different questions.
+   * `mediaBaseUrl` is where a browser reads a photograph from; this is how we
+   * tell that cache to forget one. A deployment can have the first without the
+   * second - and then a deleted photograph stays readable at the edge for a
+   * year, which is why `@/lib/cdn/purge` says so loudly in its own comment.
+   */
+  cdn: {
+    /**
+     * `cloudfront`, `bunny`, or unset for no CDN. Anything unrecognised reads
+     * as unset, which is the safe direction: a typo means purges are logged as
+     * skipped rather than silently attempted against the wrong provider.
+     */
+    get provider(): "cloudfront" | "bunny" | undefined {
+      const value = opt("CDN_PROVIDER");
+      return value === "cloudfront" || value === "bunny" ? value : undefined;
+    },
+    /** CloudFront only. The distribution an invalidation is created against. */
+    get distributionId() {
+      return opt("CDN_DISTRIBUTION_ID");
+    },
+    /** Bunny only. CloudFront signs with the S3 credentials it already has. */
+    get apiKey() {
+      return opt("CDN_API_KEY");
+    },
   },
 
   creem: {

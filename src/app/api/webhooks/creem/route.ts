@@ -1,36 +1,64 @@
 import { fail, handle, ok } from "@/lib/api";
 import type { PurchaseStatus } from "@/lib/db/types";
 import { env } from "@/lib/env";
-import { grantPurchase, revokePurchase } from "@/lib/payments/grant";
+import {
+  eventForSubscription,
+  grantPurchase,
+  revokePurchase,
+} from "@/lib/payments/grant";
 import { parseWebhook, verifySignature } from "@/lib/payments/creem";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** The one event that moves an entitlement up. */
-const GRANTING = new Set(["checkout.completed"]);
+/**
+ * The events that move an entitlement up.
+ *
+ * `checkout.completed` is a plan being bought, or the first payment of a
+ * keeping subscription. `subscription.paid` is every renewal after that, and it
+ * has to grant too: a year of keeping is one purchase row, so a renewal that
+ * was merely acknowledged would leave the window where last year's payment put
+ * it and the photos would come down on somebody who is still paying.
+ *
+ * Both are idempotent through the unique constraint on `provider_txn_id`, and
+ * each year's payment is its own delivery with its own id - which is exactly
+ * what makes counting the rows the right way to measure the window.
+ */
+const GRANTING = new Set(["checkout.completed", "subscription.paid"]);
 
 /**
  * The ones that move it back down, and what each means for the purchase row.
  *
- * `refund.created` and `dispute.created` are the two that can fire today:
- * nothing recurring is sold. A dispute is treated as money gone rather than
- * money contested, because with a merchant of record the funds are pulled
+ * Only money actually coming back. A dispute is treated as money gone rather
+ * than money contested, because with a merchant of record the funds are pulled
  * immediately and the refund policy already says we will not contest a refund
  * we would have given anyway - so leaving the plan unlocked would be product
  * delivered for nothing.
  *
- * The subscription cases are here because a provider that starts sending one
- * should find something listening rather than a silent 200. Two are absent on
- * purpose, and both would be bugs if they were here:
+ * **No `subscription.*` event is here, and that is the change that matters.**
+ * They used to be, as guards written when nothing recurring was sold. Now that
+ * keeping is a yearly subscription they would be a bug with teeth: a keeping
+ * payment is one purchase row worth one year, and revoking on a cancellation
+ * would take back years somebody had already paid for and bring their photos
+ * down early.
  *
- *   * `subscription.past_due` is a dunning window, not a verdict. Creem retries
- *     the card and the subscription goes back to active if one succeeds, so
- *     revoking here takes a plan away from somebody who then keeps paying for
- *     it. `subscription.unpaid` is what that window ending looks like.
- *   * `subscription.scheduled_cancel` is reversible until the period ends, and
- *     the customer has paid for the period either way. `subscription.expired`
- *     is what the period actually ending looks like.
+ * What should happen when a subscription ends is that the window stops being
+ * extended - and that needs no code at all, because the window is counted from
+ * the payments that exist rather than stored. No renewal means no new row means
+ * no extra year, and the event falls back to the retention its plan always had.
+ * The absence is the implementation.
+ *
+ * So the whole family is acknowledged and ignored:
+ *
+ *   * `subscription.canceled`, `subscription.expired`, `subscription.paused` -
+ *     the customer stops paying forward. Everything already paid for stands.
+ *   * `subscription.past_due`, `subscription.unpaid` - a failed renewal. The
+ *     years already bought are untouched; the host simply does not get another.
+ *   * `subscription.scheduled_cancel` - reversible, and paid for either way.
+ *
+ * A refund of a specific keeping payment still works, and still takes exactly
+ * one year back off, because that arrives as `refund.created` against the order
+ * it was taken under.
  */
 const REVOKING: Record<
   string,
@@ -38,10 +66,6 @@ const REVOKING: Record<
 > = {
   "refund.created": "refunded",
   "dispute.created": "refunded",
-  "subscription.expired": "expired",
-  "subscription.canceled": "expired",
-  "subscription.paused": "expired",
-  "subscription.unpaid": "failed",
 };
 
 /**
@@ -99,16 +123,26 @@ export async function POST(request: Request) {
       return ok({ ignored: parsed.eventName });
     }
 
-    if (!parsed.eventId || !parsed.product) {
+    /*
+     * A renewal does not necessarily carry the metadata the original checkout
+     * did, so the event is looked up from the subscription that is paying for
+     * it. The first payment wrote a row with both, which is what makes this
+     * resolvable at all.
+     */
+    const eventId =
+      parsed.eventId ?? (await eventForSubscription(parsed.subscriptionId));
+
+    if (!eventId || !parsed.product) {
       console.warn(
         "[webhook] paid order with no event to apply it to",
         parsed.txnId,
+        { subscriptionId: parsed.subscriptionId },
       );
       return ok({ ignored: "no_target" });
     }
 
     const result = await grantPurchase({
-      eventId: parsed.eventId,
+      eventId,
       product: parsed.product,
       provider: "creem",
       providerTxnId: parsed.txnId,

@@ -5,8 +5,12 @@ import { ApiError, fail, handle } from "@/lib/api";
 import { requireOwnedEvent, requireUser } from "@/lib/host";
 import { env } from "@/lib/env";
 import { grantPurchase } from "@/lib/payments/grant";
-import { KEEP_FOREVER, PURCHASABLE_IDS, TIERS } from "@/lib/tiers";
-import type { Product } from "@/lib/db/types";
+import {
+  KEEPING,
+  PURCHASABLE_IDS,
+  TIERS,
+  type PurchasableId,
+} from "@/lib/tiers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +31,7 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const eventId = url.searchParams.get("eventId") ?? "";
-    const product = (url.searchParams.get("product") ?? "") as Product;
+    const product = (url.searchParams.get("product") ?? "") as PurchasableId;
 
     if (!PURCHASABLE_IDS.includes(product)) {
       throw new ApiError("bad_request", "Unknown product.");
@@ -38,10 +42,13 @@ export async function GET(request: Request) {
     await requireUser();
     await requireOwnedEvent(eventId);
 
+    /* A plan is priced by its tier; a year of keeping by its subscription. */
     const priceEur =
-      product === KEEP_FOREVER.key
-        ? KEEP_FOREVER.priceEur
-        : TIERS[product].priceEur;
+      product === "keeping_plus"
+        ? KEEPING.plus.priceEur
+        : product === "keeping_pro"
+          ? KEEPING.pro.priceEur
+          : TIERS[product].priceEur;
 
     await grantPurchase({
       eventId,

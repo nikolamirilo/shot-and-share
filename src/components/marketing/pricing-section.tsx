@@ -13,7 +13,7 @@ export function PricingSection({ ctaHref = "/login" }: { ctaHref?: string }) {
               Pay once per event. Or not at all.
             </h2>
             <p className="mt-3 max-w-xl text-body text-ash">
-              No subscription. Nothing renews and there is nothing to cancel.
+              Plans never renew. Keeping the photos afterwards is optional.
             </p>
           </div>
           <Badge tone="outline">{VAT_BADGE}</Badge>

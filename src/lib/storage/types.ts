@@ -17,6 +17,29 @@ export interface PresignedUpload {
   fileField: string;
 }
 
+/**
+ * What a freshly minted key is worth caching for: forever.
+ *
+ * Every key a guest upload is signed for carries a media id that has just been
+ * generated, so no object is ever rewritten under it. That is the condition
+ * `immutable` actually asks for, and without this header on the object a CDN
+ * in front of the bucket falls back to its own default TTL and every browser
+ * revalidates a photograph that cannot have changed.
+ *
+ * Set on the object at upload time rather than on the CDN behaviour, because
+ * the object outlives any one distribution and the guarantee belongs with the
+ * bytes.
+ */
+export const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
+/**
+ * What an object that *may* be rewritten under the same key is worth caching
+ * for. The transcode worker replaces a file in place when the format it is
+ * converting to is the one the key already names - an mp4 that still needs its
+ * container rebuilt - so those cannot claim to be immutable.
+ */
+export const REPLACEABLE_CACHE_CONTROL = "public, max-age=86400";
+
 export interface StorageDriver {
   readonly name: "s3" | "local";
 
@@ -31,6 +54,17 @@ export interface StorageDriver {
      * and it costs no extra requests because the tag rides along with the PUT.
      */
     tags?: Record<string, string>;
+    /**
+     * `Cache-Control` for the stored object, applied by the uploader as part
+     * of the signed policy.
+     *
+     * Worth passing on anything a gallery loads. A photograph served from a
+     * CDN with no `Cache-Control` is cached for whatever the distribution's
+     * default TTL happens to be and revalidated by every browser after that,
+     * which on a wall of fifty tiles is fifty conditional requests for objects
+     * that cannot have changed.
+     */
+    cacheControl?: string;
   }): Promise<PresignedUpload>;
 
   /** Short-lived read URL, so a leaked image link expires. */
@@ -54,6 +88,8 @@ export interface StorageDriver {
     contentType: string;
     contentLength?: number;
     tags?: Record<string, string>;
+    /** See `presignUpload`. Omitted on anything not served through the CDN. */
+    cacheControl?: string;
   }): Promise<void>;
 
   getStream(key: string): Promise<Readable>;

@@ -63,6 +63,7 @@ export const s3Driver: StorageDriver = {
     maxBytes,
     expiresInSeconds = 900,
     tags,
+    cacheControl,
   }) {
     const tagging = tags ? taggingXml(tags) : null;
 
@@ -79,9 +80,15 @@ export const s3Driver: StorageDriver = {
           ? [["eq", "$tagging", tagging] as ["eq", string, string]]
           : []),
       ],
+      /*
+       * Everything here is also a condition: `createPresignedPost` adds an
+       * exact-match condition for every field it is given, which is why
+       * Cache-Control needs no entry above. A guest cannot vary these.
+       */
       Fields: {
         "Content-Type": contentType,
         ...(tagging ? { tagging } : {}),
+        ...(cacheControl ? { "Cache-Control": cacheControl } : {}),
       },
     });
 
@@ -116,7 +123,7 @@ export const s3Driver: StorageDriver = {
     return `${env.mediaBaseUrl.replace(/\/$/, "")}/${key}`;
   },
 
-  async put({ key, body, contentType, contentLength, tags }) {
+  async put({ key, body, contentType, contentLength, tags, cacheControl }) {
     // PutObject and CreateMultipartUpload take tags as a query string, unlike
     // the XML a presigned POST wants.
     const Tagging = tags
@@ -131,6 +138,7 @@ export const s3Driver: StorageDriver = {
           Body: body,
           ContentType: contentType,
           ContentLength: contentLength ?? body.byteLength,
+          CacheControl: cacheControl,
           Tagging,
         }),
       );
@@ -146,6 +154,7 @@ export const s3Driver: StorageDriver = {
         Key: key,
         Body: body,
         ContentType: contentType,
+        CacheControl: cacheControl,
         Tagging,
       },
       queueSize: 4,

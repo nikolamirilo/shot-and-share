@@ -1,5 +1,5 @@
 import { Badge, Eyebrow } from "@/components/ui";
-import { KEEP_FOREVER } from "@/lib/tiers";
+import { KEEPING_NAME } from "@/lib/tiers";
 
 export function PricingDetail() {
   const points: Array<[string, string]> = [
@@ -12,8 +12,8 @@ export function PricingDetail() {
       "You cannot judge this product on fifty photos. The thing you most want to test is what happens when a hundred arrive at once, so the free plan lets you do exactly that.",
     ],
     [
-      `Why ${KEEP_FOREVER.name} is not a subscription`,
-      "A wedding happens once. An annual charge for storage is the wrong shape for it: people forget, cards expire, and one day the photos are gone. €29, paid once, and they stay.",
+      `Why ${KEEPING_NAME} is billed yearly`,
+      "Holding thirty gigabytes has a bill attached every month it is held. The one-off we used to sell could only fund that by moving the files somewhere that takes two days to read - which is not a gallery, it is a box in a warehouse. So the plan is bought once and only the storage recurs, starting when the window you already paid for runs out.",
     ],
     [
       "Why we are not the cheapest",
@@ -26,7 +26,7 @@ export function PricingDetail() {
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
         <div className="flex flex-wrap items-center gap-3">
           <Eyebrow>The reasoning</Eyebrow>
-          <Badge tone="outline">No subscription anywhere</Badge>
+          <Badge tone="outline">Plans never renew</Badge>
         </div>
 
         <div className="mt-8 grid gap-x-10 gap-y-8 sm:mt-9 sm:grid-cols-2">

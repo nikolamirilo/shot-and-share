@@ -69,9 +69,12 @@ that mirrors the S3 contract - signed, expiring, size-limited uploads and signed
 reads. Everything works end to end without an AWS account: guest upload, quota
 rejection, gallery, ZIP download, retention deletion.
 
-For real infrastructure, see [`infra/README.md`](infra/README.md). The lifecycle
-rules there are not optional; they are the difference between $2 and $8 of
-storage cost per wedding.
+For real infrastructure, see [`infra/`](infra/README.md) - one file per piece,
+in the order they are applied. The
+[lifecycle rules](infra/guides/lifecycle.md) are not optional; they are the difference
+between $2 and $8 of storage cost per wedding. The
+[CDN](infra/guides/cdn.md) is what stops every photograph being served through a
+function.
 
 ### Payments
 
@@ -163,7 +166,8 @@ out over the network. They are different machines - the processor and the radio 
 and paying for them one after the other was most of the guest's wait.
 
 Every object lands at `{owner_id}/{event_id}/{media_id}.{ext}` - owner folders at
-the root of the bucket, one file per upload. See `infra/README.md`.
+the root of the bucket, one file per upload. See
+[`infra/guides/key-layout.md`](infra/guides/key-layout.md).
 
 **A `media` row means the bytes are in the bucket.** Nothing is written there
 until the object exists, so the table needs no status filter to be read and a
@@ -400,7 +404,7 @@ warn at 14, 7 and 1 days  →  expire (nothing removed)  →  14-day grace  → 
 `/api/cron/retention` runs daily (see `vercel.json`) behind `CRON_SECRET`. Losing
 someone's wedding photos to a scheduling bug is the failure this product cannot
 survive, so the destructive step is always last and always delayed. A host can
-restore, or buy Keep Forever, at any point before the final arrow.
+restore, or start keeping the photos, at any point before the final arrow.
 
 ### Share tokens
 
@@ -421,7 +425,11 @@ role key.
 | **Free** | Free | 1 GB, ~150 photos | 30 days |
 | **Plus** | €19 once | 10 GB, ~1,500 photos | 6 months |
 | **Pro** | €39 once | 30 GB, ~4,400 photos | 12 months |
-| **Keep Forever** | €29 once | - | permanently |
+
+Plus the one optional recurring charge: **keeping the photos online** past the
+window the plan included, at €5 a year on Plus and €9 on Pro. Nothing is billed
+until that window actually runs out, and cancelling always leaves the year
+already paid for standing.
 
 Photo counts assume 7 MB each, which is what a current phone shooting 24-48MP
 produces once the stored copy keeps every pixel it was taken with. They are
@@ -429,11 +437,36 @@ derived from `AVG_PHOTO_BYTES`, never typed out.
 
 The unit is gigabytes, not photo counts: a count limit punishes anyone with a
 recent phone and rewards nobody, while storage is what actually costs money and
-lets us look far more generous for the same spend. Nothing is a subscription -
-people plan one wedding, not twelve.
+lets us look far more generous for the same spend.
 
-Pro stops at twelve months deliberately. If retention were unlimited, the
-Keep Forever add-on would have no job to do.
+**The plans are one-time payments; storage is the one thing that recurs**, and
+it recurs because the cost does. A plan is bought once because people plan one
+wedding, not twelve - but holding 30 GB has a bill attached every month it is
+held, and the only honest ways to fund that are a yearly fee or a cold storage
+class nobody can read.
+
+This replaced a €29 one-off called Keep Forever, and the reason was the second
+option. The only way a single payment covered "permanent" was the lifecycle rule
+that moved those objects to Deep Archive at 400 days, where reading one takes 12
+to 48 hours and needs a restore flow this product does not have - so about
+thirteen months after paying for permanence, a host's gallery would start
+serving broken images. That rule is gone, the files stay on Glacier Instant
+Retrieval where they open in milliseconds, and the yearly fee is what pays for
+it. See [`infra/guides/lifecycle.md`](infra/guides/lifecycle.md).
+
+Anybody who bought Keep Forever while it was on sale keeps it: a standing
+purchase of it still yields a null expiry, and nothing converts it to a
+subscription.
+
+**A year of keeping is one purchase row, not a flag.** `recomputeEntitlement`
+counts the keeping payments still standing and adds a year per payment, which is
+why a renewal needs no state, a refund takes back exactly one year, and a
+cancellation needs no code at all - the window stops growing because no new row
+arrives. "Falls back to normal retention" is the absence of an implementation
+rather than one.
+
+Pro stops at twelve months deliberately. If retention were unlimited, there
+would be nothing for the yearly fee to extend.
 
 **A plan has two identifiers.** `key` - `free`, `plus`, `pro` - is fixed forever
 and is what code says: `TIERS.pro`. `id` is the Creem product the plan is sold
@@ -548,11 +581,6 @@ Stated plainly rather than left to be discovered:
   buffered, but capped by the platform's function timeout. A 30 GB wedding
   archive will outrun it and belongs in a Lambda or a small Fargate task. Moving
   it is a change of host, not of logic.
-- **`retention=forever` is not applied retroactively** to objects when a host
-  buys Keep Forever after the event. Nothing is at risk - those events are excluded
-  from expiry - but the objects sit in Glacier IR rather than Deep Archive, which
-  leaks about a dollar a year per event. Fixing it needs an S3 Batch Operations
-  job. See `infra/README.md`.
 - **Rate limits are per instance.** The real controls belong at the CDN edge,
   where they work across every instance; what is in `lib/ratelimit.ts` is a
   second line, not a guarantee.

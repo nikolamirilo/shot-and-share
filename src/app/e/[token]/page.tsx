@@ -93,7 +93,8 @@ export default async function GuestPage({
     );
   }
 
-  const { event, tier, appearance, coverUrl, fullScreenCover } = page;
+  const { event, tier, appearance, coverUrl, coverPreviewUrl, fullScreenCover } =
+    page;
 
   // Only the pairing this event uses. Loading all five would put eight font
   // families on a phone on hotel wifi to render one of them, and the house
@@ -110,6 +111,18 @@ export default async function GuestPage({
         <link rel="stylesheet" href={fontsHref} precedence="default" />
       )}
 
+      {/* The thumbnail standing in for the cover is the first pixels of the
+          event a guest sees, so it is asked for in the document rather than
+          when the image element mounts. React hoists this into the head. */}
+      {coverPreviewUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={coverPreviewUrl}
+          fetchPriority="high"
+        />
+      )}
+
       <div className={fullScreenCover ? "flex min-h-svh flex-col" : undefined}>
         <EventCover
           variant={appearance.cover}
@@ -117,6 +130,7 @@ export default async function GuestPage({
           date={event.event_date}
           message={event.welcome_message}
           coverUrl={coverUrl}
+          coverPreviewUrl={coverPreviewUrl}
           palette={appearance.palette}
           position={appearance.coverPosition}
         />

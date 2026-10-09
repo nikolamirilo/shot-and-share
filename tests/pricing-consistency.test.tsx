@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { ComparisonTable } from "@/components/marketing/comparison-table";
 import { PricingTable } from "@/components/marketing/pricing-table";
-import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
+import { KEEPING, TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * The pricing page agreeing with itself.
@@ -44,7 +44,7 @@ describe("the prices agree", () => {
     const rendered = pages();
     expect(rendered).toContain(`€${TIERS.plus.priceEur}`);
     expect(rendered).toContain(`€${TIERS.pro.priceEur}`);
-    expect(rendered).toContain(`€${KEEP_FOREVER.priceEur}`);
+    expect(rendered).toContain(`€${KEEPING.plus.priceEur}`);
   });
 });
 
@@ -58,5 +58,39 @@ describe("the rounding is honest", () => {
     expect(photoCountLabel(TIERS.free.quotaBytes)).toBe("150");
     expect(photoCountLabel(TIERS.plus.quotaBytes)).toBe("1,500");
     expect(photoCountLabel(TIERS.pro.quotaBytes)).toBe("4,400");
+  });
+});
+
+describe("the plan cards only sell things that exist", () => {
+  /*
+   * "Multiple albums" and "Priority support" sat on the Pro card against flags
+   * in `tiers.ts` that no code anywhere read. There was no album table, no
+   * album UI and no support channel - the page was simply selling two features
+   * the product did not have, at a price quoted VAT-inclusive and final to EU
+   * consumers, which makes it a refund question rather than a copy question.
+   *
+   * Pinned by the words rather than by the flags, because the flags are what
+   * got deleted: an assertion derived from `TIERS` would pass by describing
+   * whatever the table happens to claim today.
+   */
+  it("has dropped the two features that were never built", () => {
+    const rendered = pages();
+    expect(rendered).not.toContain("Multiple albums");
+    expect(rendered).not.toContain("albums");
+    expect(rendered).not.toContain("Priority support");
+  });
+
+  /**
+   * Every feature flag on a plan has to be read by something other than the
+   * pricing page. A flag only the pricing page consults is, by definition, a
+   * promise with nothing behind it.
+   */
+  it("has no feature flag that only the pricing page reads", () => {
+    const sold = Object.keys(TIERS.pro).filter(
+      (key) => typeof TIERS.pro[key as keyof typeof TIERS.pro] === "boolean",
+    );
+    expect(sold.sort()).toEqual(
+      ["bulkZip", "brandedQr", "cleanQr", "customPage", "slideshow", "video"].sort(),
+    );
   });
 });

@@ -570,6 +570,82 @@
   animation: progress-drift 1.4s ease-in-out infinite;
 }
 
+/* --- Waiting for an event page --------------------------------------------
+   Two waits, with one vocabulary between them: the page itself, which cannot
+   draw anything until the database has answered, and the cover photograph,
+   which is one full-size file stretched across a whole phone.
+
+   The reel is the loading screen's centrepiece - a strip of film advancing
+   through the mark's frame. It loops on a translate of exactly half its own
+   height, so with six identical rows the second half arrives where the first
+   began and the seam is never visible. The sweep is the light going over it.
+   ------------------------------------------------------------------------- */
+@keyframes reel-advance {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.reel {
+  animation: reel-advance 2.6s linear infinite;
+}
+
+/* Down the frame rather than across it, because the film runs that way. */
+@keyframes reel-sweep {
+  0% {
+    transform: translateY(-140%);
+  }
+  100% {
+    transform: translateY(240%);
+  }
+}
+
+.reel-sweep {
+  animation: reel-sweep 2.6s ease-in-out infinite;
+}
+
+/* The mark's four brackets, pulled out and let back in - a lens hunting for
+   focus. Each corner is handed its own diagonal as --fx/--fy, so the one
+   declaration covers all four. */
+@keyframes focus-pull {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translate(var(--fx), var(--fy));
+  }
+}
+
+.focus-corner {
+  animation: focus-pull 2.6s ease-in-out infinite;
+}
+
+/* Over the empty well a cover photograph is about to land in. The band is
+   light because the well is the darkest surface in the system; `shimmer` is
+   the same idea in blush, for the pale frames further down the page. */
+@keyframes cover-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.cover-sweep {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(246, 242, 243, 0.14),
+    transparent
+  );
+  animation: cover-sweep 2s ease-in-out infinite;
+}
+
 
 /* --- The arc, unlayered ------------------------------------------------------
    Deliberately outside `@layer components`: Tailwind v4 emits utilities into a
@@ -669,6 +745,9 @@
   .ribbon-reveal,
   .viewfinder-corner,
   .photo-fill-drift,
+  .reel,
+  .reel-sweep,
+  .focus-corner,
   .shimmer::after {
     animation: none !important;
   }
@@ -679,6 +758,13 @@
     animation: none !important;
     width: 100%;
     opacity: 0.5;
+  }
+
+  /* Nothing to hold still: parked, the band is a stripe down the middle of an
+     empty frame. The frame itself is the loading state. */
+  .cover-sweep {
+    animation: none !important;
+    opacity: 0;
   }
 
   *,

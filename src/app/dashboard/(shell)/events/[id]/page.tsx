@@ -22,10 +22,10 @@ import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
 import { Alert, Badge, ButtonLink, Eyebrow, Stat } from "@/components/ui";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 import { findEventName } from "@/lib/db/event-repo";
-import { formatEventDate } from "@/lib/format";
+import { formatBytes, formatEventDate } from "@/lib/format";
 import { coerceLayout } from "@/lib/gallery";
 import { createClient } from "@/lib/supabase/server";
-import { KEEP_FOREVER, PURCHASABLE_IDS, TIERS } from "@/lib/tiers";
+import { KEEPING_NAME, PURCHASABLE_IDS, TIERS, isKeepingProduct } from "@/lib/tiers";
 import { recoverPurchases } from "@/lib/payments/recover";
 import { getSessionUser } from "@/lib/supabase/server";
 import { loadEventConsole } from "@/lib/views/event-console";
@@ -133,9 +133,9 @@ export default async function EventPage({
   const settled =
     bought === undefined
       ? null
-      : bought === KEEP_FOREVER.key
-        ? event.keep_forever
-        : tier.rank >= TIERS[bought].rank;
+      : isKeepingProduct(bought)
+        ? view.keptYears > 0
+        : tier.rank >= TIERS[bought as "plus" | "pro"].rank;
 
   return (
     /* The bottom padding is the bar's own height plus room to breathe. Without
@@ -170,7 +170,7 @@ export default async function EventPage({
         <Alert tone="notice" className="mt-5 sm:mt-6">
           The storage window for this event has ended.{" "}
           <strong>Nothing has been deleted.</strong> Restore it under Settings,
-          or add {KEEP_FOREVER.name} to keep the photos permanently.
+          or start {KEEPING_NAME.toLowerCase()} to keep them online for longer.
         </Alert>
       )}
 
@@ -225,10 +225,26 @@ export default async function EventPage({
             )}
           </div>
 
-          {/* What arrived, over the thing that arrived. Two numbers rather than
-              a panel: the gallery underneath is the real answer. */}
-          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-md">
-            <Stat label="Photos" value={photoCount.toLocaleString("en-GB")} />
+          {/* What arrived, over the thing that arrived. Numbers rather than a
+              panel: the gallery underneath is the real answer.
+
+              All four come from one `event_stats` call the page was already
+              making. Photographs and clips are separate because they are not
+              interchangeable to a host - one is the wall, the other is the
+              speeches - and a single total hid the difference. */}
+          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-xl sm:grid-cols-4">
+            <Stat label="Photos" value={view.photos.toLocaleString("en-GB")} />
+            <Stat label="Videos" value={view.videos.toLocaleString("en-GB")} />
+            <Stat
+              label="Guests"
+              value={view.uploaderCount.toLocaleString("en-GB")}
+              hint="Phones that uploaded"
+            />
+            <Stat
+              label="Storage"
+              value={formatBytes(summary.used)}
+              hint={`of ${formatBytes(summary.quota, 0)}`}
+            />
           </dl>
 
           {media.length < photoCount && (
@@ -276,6 +292,7 @@ export default async function EventPage({
             eventId={event.id}
             tier={event.tier}
             keepForever={event.keep_forever}
+            keptYears={view.keptYears}
           />
         </TabPanel>
 

@@ -5,6 +5,7 @@ import { MdFavorite } from "react-icons/md";
 
 import { PENDING_SURFACE } from "@/components/gallery/skeleton";
 import { Photo, cx } from "@/components/ui";
+import { THUMBS_FROM_CDN } from "@/lib/client/image-optimizer";
 import { aspectRatio } from "@/lib/gallery";
 import type { MediaView } from "@/lib/media-view";
 
@@ -68,6 +69,15 @@ export function Tile({
   const source = src ?? item.previewUrl;
 
   /*
+   * Behind a CDN the stored thumbnail is already the right file at the right
+   * size with a year-long cache on it, so it is fetched directly rather than
+   * resized again for every layout's `sizes`. A layout that asked for a
+   * different copy - Stack wants the full one - still goes through the
+   * optimiser. See THUMBS_FROM_CDN.
+   */
+  const storedThumb = !src && THUMBS_FROM_CDN;
+
+  /*
    * A photograph can finish loading before React has hydrated the page - the
    * host's wall is server-rendered, and a cached thumbnail arrives long before
    * the JavaScript does. Its `onLoad` fired at no one, so the wave would wait
@@ -118,13 +128,15 @@ export function Tile({
       ) : source ? (
         /*
          * Usually the stored 640px thumbnail, which is already close to what a
-         * tile needs. It still goes through the optimiser, because `sizes`
-         * varies enormously per layout - a 96px hole and a full-width stack row
-         * want very different files - and a cache miss now costs 25 KB out of
-         * the bucket rather than two megabytes.
+         * tile needs. Without a CDN it goes through the optimiser, because
+         * `sizes` varies enormously per layout - a 96px hole and a full-width
+         * stack row want very different files - and a cache miss then costs
+         * 25 KB out of the bucket rather than two megabytes. With one it is
+         * fetched as it is stored, which is cheaper than resizing it.
          */
         <Photo
           src={source}
+          unoptimized={storedThumb}
           alt=""
           {...(natural
             ? {

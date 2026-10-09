@@ -5,7 +5,7 @@ import { ComparisonTable } from "@/components/marketing/comparison-table";
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { PricingTable } from "@/components/marketing/pricing-table";
 import { LEGAL_PAGES } from "@/lib/legal/pages";
-import { KEEP_FOREVER, VAT_NOTE } from "@/lib/tiers";
+import { KEEPING_NAME, VAT_NOTE } from "@/lib/tiers";
 
 /**
  * The site agreeing with itself about what it sells and what it costs.
@@ -55,6 +55,6 @@ describe("the add-on has one name", () => {
   it("never calls Keep Forever The Archive", () => {
     const rendered = marketing();
     expect(rendered).not.toContain("The Archive");
-    expect(rendered).toContain(KEEP_FOREVER.name);
+    expect(rendered).toContain(KEEPING_NAME);
   });
 });

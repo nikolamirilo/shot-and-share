@@ -1,4 +1,4 @@
-import { KEEP_FOREVER, TIERS, TIER_ORDER } from "@/lib/tiers";
+import { KEEPING, KEEPING_NAME, TIERS, TIER_ORDER } from "@/lib/tiers";
 import { env } from "@/lib/env";
 import { FAQS } from "@/lib/faqs";
 
@@ -216,9 +216,10 @@ export function softwareApplicationSchema(): Json {
     };
   }).concat({
     "@type": "Offer",
-    name: KEEP_FOREVER.name,
-    description: KEEP_FOREVER.meaning,
-    price: KEEP_FOREVER.priceEur,
+    name: KEEPING_NAME,
+    description:
+      "Keep an event's photos online past the window the plan includes. Billed yearly, cancel any time.",
+    price: KEEPING.plus.priceEur,
     priceCurrency: "EUR",
     url: absoluteUrl("/pricing"),
     availability: "https://schema.org/InStock",

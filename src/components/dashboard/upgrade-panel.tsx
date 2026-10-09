@@ -4,21 +4,35 @@ import { MdOutlineReceiptLong, MdOutlineShoppingCartCheckout } from "react-icons
 
 import { useServerAction } from "@/hooks/use-server-action";
 
-import { recoverPurchase, startCheckout } from "@/lib/actions/billing";
+import {
+  openBillingPortal,
+  recoverPurchase,
+  startCheckout,
+} from "@/lib/actions/billing";
 import { Alert, Button, Hole, Panel } from "@/components/ui";
 import { useState } from "react";
-import { KEEP_FOREVER, type PurchasableId, TIERS, getTier } from "@/lib/tiers";
+import {
+  KEEPING_NAME,
+  type PurchasableId,
+  TIERS,
+  getTier,
+  keepingFor,
+} from "@/lib/tiers";
 import { formatBytes } from "@/lib/format";
 
 export function UpgradePanel({
   eventId,
   tier,
   keepForever,
+  keptYears,
 }: {
   eventId: string;
   /** The variant id off the event row, not a plan key. */
   tier: string;
+  /** Legacy Keep Forever, still honoured where somebody bought one. */
   keepForever: boolean;
+  /** Years of keeping already paid for. Non-zero means a subscription runs. */
+  keptYears: number;
 }) {
   const { pending, error, run } = useServerAction();
   const [chosen, setChosen] = useState<PurchasableId | null>(null);
@@ -63,12 +77,19 @@ export function UpgradePanel({
       price: TIERS.pro.priceEur,
     });
   }
-  if (!keepForever) {
+  /*
+   * Keeping is only offered on a paid plan, and only when one is not already
+   * running. A free event has nothing to extend - its host buys a plan first,
+   * which is why the Free branch here is a tier upgrade rather than a
+   * subscription.
+   */
+  const keeping = keepingFor(current);
+  if (keeping && !keptYears) {
     options.push({
-      product: "keep_forever",
-      title: `Add ${KEEP_FOREVER.name}`,
-      body: "Photos stay permanently. Paid once and never again - not every year.",
-      price: KEEP_FOREVER.priceEur,
+      product: keeping.key,
+      title: KEEPING_NAME,
+      body: `Keep the photos online after the ${current.name} window ends. €${keeping.priceEur} a year, cancel whenever - the first charge is only when the included window runs out.`,
+      price: keeping.priceEur,
     });
   }
 
@@ -76,10 +97,11 @@ export function UpgradePanel({
     return (
       <Panel title="Nothing left to buy">
         <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
-          This event is on {TIERS.pro.name} with {KEEP_FOREVER.name} added.
-          The photos are kept permanently and there is no subscription running
-          in the background.
+          {keepForever
+            ? `This event is on ${TIERS.pro.name} and its photos are kept permanently.`
+            : `This event is on ${TIERS.pro.name}, and ${KEEPING_NAME.toLowerCase()} is already running - the photos stay online for as long as it does.`}
         </p>
+        {keptYears > 0 && <ManageBilling />}
       </Panel>
     );
   }
@@ -87,8 +109,8 @@ export function UpgradePanel({
   return (
     <Panel title="More room, or more time">
       <p className="mt-2 max-w-prose text-[0.9375rem] text-ash">
-        One payment per event. Upgrading during the night works fine - the limit
-        lifts the moment the payment clears.
+        Plans are one payment per event. Upgrading during the night works fine -
+        the limit lifts the moment the payment clears.
       </p>
 
       {/* One offer, one row. On a phone the price sits against the title and
@@ -137,8 +159,56 @@ export function UpgradePanel({
 
       {error && <Alert className="mt-4">{error}</Alert>}
 
+      {keptYears > 0 && <ManageBilling />}
+
       <RecoverPurchase eventId={eventId} />
     </Panel>
+  );
+}
+
+/**
+ * Where a subscription is cancelled.
+ *
+ * Keeping the photos is the only recurring charge in this product, and a
+ * recurring charge with no visible way out of it is not a missing feature - EU
+ * consumer rules require cancelling to be as easy as subscribing, and a host
+ * who cannot find the exit opens a dispute with their bank instead of a ticket
+ * with us.
+ *
+ * It opens Creem's own portal rather than a page of ours. Creem holds the card,
+ * the invoices and the renewal date; mirroring any of that here to render it
+ * would be a second source of truth about somebody's money, and a stale one.
+ *
+ * Only shown when something is actually running - `keptYears > 0`. A host with
+ * nothing recurring has nothing to manage, and a billing link on that panel
+ * reads as though they are being charged for something.
+ */
+function ManageBilling() {
+  const { pending, error, run } = useServerAction();
+
+  return (
+    <div className="mt-5 border-t border-edge pt-4">
+      <Button
+        onClick={() =>
+          run(() => openBillingPortal(), {
+            onSuccess: (result) => {
+              if (result.url) window.location.href = result.url;
+            },
+          })
+        }
+        disabled={pending}
+        variant="secondary"
+        size="sm"
+      >
+        <MdOutlineReceiptLong aria-hidden className="shrink-0 text-[1.25em]" />
+        {pending ? "Opening…" : "Renewal date, invoices and cancelling"}
+      </Button>
+      <p className="mt-2 text-[0.8125rem] leading-snug text-mist">
+        Opens your billing with Creem, who take the payment. Cancel there at any
+        time - the year you have already paid for always stands.
+      </p>
+      {error && <Alert className="mt-3">{error}</Alert>}
+    </div>
   );
 }
 

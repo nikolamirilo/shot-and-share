@@ -56,7 +56,24 @@ const nextConfig: NextConfig = {
     // Matches the tile widths the gallery actually asks for. Without this the
     // optimiser rounds up to its own ladder and a 96px hole fetches 640px.
     imageSizes: [64, 96, 128, 192, 256, 384],
-    minimumCacheTTL: 31_536_000,
+    /*
+     * Thirty days, not a year.
+     *
+     * A year is the right answer for an object that is never rewritten and the
+     * wrong one for an object that can be *deleted*, which every photograph
+     * here can be. Vercel's image cache has no per-URL purge - only a
+     * dashboard-wide flush or a redeploy - so a photograph removed by its
+     * guest, its host, or on a takedown request went on being served from
+     * `/_next/image` long after it had left the bucket. Against a written
+     * promise to remove a reported photo within TAKEDOWN_RESPONSE_HOURS, a
+     * year-long cache was the part that could not keep it.
+     *
+     * Thirty days plus a real purge at the CDN - see `@/lib/cdn/purge` - is
+     * the honest combination. It costs transformations on the way back, which
+     * is affordable now for a reason that was not true before: with a CDN
+     * configured, grid tiles do not use the optimiser at all.
+     */
+    minimumCacheTTL: 2_592_000,
   },
   // The ZIP builder and the S3 client are Node-only and pull in native-ish deps.
   serverExternalPackages: ["archiver", "@aws-sdk/lib-storage"],

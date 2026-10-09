@@ -4,7 +4,8 @@ import { MdOutlineAddCircleOutline, MdVerifiedUser } from "react-icons/md";
 import { Badge, ButtonLink, Hole, cx } from "@/components/ui";
 import { formatBytes } from "@/lib/format";
 import {
-  KEEP_FOREVER,
+  KEEPING,
+  KEEPING_NAME,
   TIER_ORDER,
   TIERS,
   photoCountLabel,
@@ -28,6 +29,18 @@ const FOR: Record<PlanKey, string> = {
   pro: "For big weddings and whole weekends.",
 };
 
+/**
+ * What a plan card lists.
+ *
+ * Every line is read off a flag in `tiers.ts` that something in the product
+ * actually checks. Two were not: "Multiple albums" and "Priority support" were
+ * on the Pro card against flags no code anywhere read, so the page was selling
+ * two features that did not exist. Against prices quoted VAT-inclusive and
+ * final to EU consumers, that is a refund question rather than a copy question.
+ *
+ * So the rule is the removal: a line here needs a flag, and a flag needs a
+ * caller. Adding either one on its own is how it comes back.
+ */
 function featureList(key: (typeof TIER_ORDER)[number]): string[] {
   const t = TIERS[key];
   const retention =
@@ -50,8 +63,6 @@ function featureList(key: (typeof TIER_ORDER)[number]): string[] {
       : "Clean QR code, no watermark",
     ...(t.customPage ? ["Custom event page"] : []),
     ...(t.slideshow ? ["Live slideshow at the venue"] : []),
-    ...(t.albums ? ["Multiple albums"] : []),
-    ...(t.prioritySupport ? ["Priority support"] : []),
   ];
 }
 
@@ -132,25 +143,38 @@ export function PricingTable({
       </div>
 
       {/* The one thing here that is not a plan, and it says so by sitting *in*
-          the page while the three plans float above it. */}
+          the page while the three plans float above it.
+
+          It is also the only recurring charge in the product, so it says that
+          plainly and says when it starts. A yearly fee discovered at renewal
+          rather than at purchase is how a photo app gets a reputation. */}
       <div className="inset-shadow-well mt-4 rounded-[1.25rem] bg-ink/5 p-5 sm:mt-5 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
         <div>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h3 className="text-h3">{KEEP_FOREVER.name}</h3>
+            <h3 className="text-h3">{KEEPING_NAME}</h3>
             <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-              add-on
+              optional, yearly
             </span>
           </div>
           <p className="mt-1 max-w-lg text-[0.9375rem] text-ash">
-            {KEEP_FOREVER.meaning} Add it to any event and the photos stay
-            permanently. Paid once, never again - not every year.
+            When your plan&apos;s window runs out, keep the photos online
+            instead of downloading them. Nothing is charged until that point,
+            and you can cancel any time - the year you have paid for always
+            stands.
           </p>
         </div>
         <p
-          className="mt-4 font-display text-[2.25rem] font-extrabold leading-none tracking-[-0.045em] sm:mt-0 sm:text-[2.75rem]"
-          style={{ fontStretch: "86%" }}
+          className="mt-4 shrink-0 sm:mt-0"
         >
-          €{KEEP_FOREVER.priceEur}
+          <span
+            className="font-display text-[2.25rem] font-extrabold leading-none tracking-[-0.045em] sm:text-[2.75rem]"
+            style={{ fontStretch: "86%" }}
+          >
+            €{KEEPING.plus.priceEur}–{KEEPING.pro.priceEur}
+          </span>
+          <span className="ml-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
+            a year
+          </span>
         </p>
       </div>
 

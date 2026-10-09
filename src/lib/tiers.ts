@@ -44,8 +44,16 @@ export type PlanKey = "free" | "plus" | "pro";
 export const CREEM_PRODUCTS = {
   plus: process.env.NEXT_PUBLIC_CREEM_PRODUCT_PLUS || undefined,
   pro: process.env.NEXT_PUBLIC_CREEM_PRODUCT_PRO || undefined,
-  keep_forever:
-    process.env.NEXT_PUBLIC_CREEM_PRODUCT_KEEP_FOREVER || undefined,
+  /**
+   * The yearly keeping subscriptions. One per tier, because a Pro event holds
+   * three times the bytes of a Plus one and is priced accordingly.
+   *
+   * These are the only recurring products here. Everything else is paid once.
+   */
+  keeping_plus:
+    process.env.NEXT_PUBLIC_CREEM_PRODUCT_KEEPING_PLUS || undefined,
+  keeping_pro:
+    process.env.NEXT_PUBLIC_CREEM_PRODUCT_KEEPING_PRO || undefined,
 } as const satisfies Record<string, string | undefined>;
 
 export interface Tier {
@@ -90,8 +98,6 @@ export interface Tier {
   brandedQr: boolean;
   customPage: boolean;
   slideshow: boolean;
-  albums: boolean;
-  prioritySupport: boolean;
 }
 
 export const TIERS: Record<PlanKey, Tier> = {
@@ -112,8 +118,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     brandedQr: false,
     customPage: false,
     slideshow: false,
-    albums: false,
-    prioritySupport: false,
   },
   plus: {
     key: "plus",
@@ -131,8 +135,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     brandedQr: false,
     customPage: true,
     slideshow: false,
-    albums: false,
-    prioritySupport: false,
   },
   pro: {
     key: "pro",
@@ -150,28 +152,75 @@ export const TIERS: Record<PlanKey, Tier> = {
     brandedQr: true,
     customPage: true,
     slideshow: true,
-    albums: true,
-    prioritySupport: true,
   },
 };
 
 /**
- * Keep Forever. Paid once, never again.
+ * Keeping the photos past the window the plan included. Paid yearly.
  *
- * The Pro tier deliberately stops at 12 months. If retention were unlimited
- * this add-on would have no job to do. Twelve months is long enough to feel
- * generous next to a 90-day competitor and short enough that the upsell matters.
+ * This replaced a €29 one-off called Keep Forever, and the reason is storage
+ * rather than pricing strategy: "forever" is a promise with a running cost
+ * behind it, and the only way to fund it from a single payment was to push the
+ * files into Deep Archive, where reading one takes twelve to forty-eight hours
+ * and needs a restore flow this product does not have. A gallery that cannot be
+ * opened is not a gallery that was kept.
  *
- * Unlike a tier this is never stored in `events.tier` - it is a boolean column
- * on the event - so it carries only a key and the product to charge against.
+ * So the files stay on Glacier Instant Retrieval, where they open in
+ * milliseconds like any other photograph, and the yearly fee is what pays for
+ * that. It is deliberately small - a Pro event's 30 GB costs us under €2 a year
+ * to hold - because the job of this price is to cover the storage and be an
+ * easy yes in a renewal email, not to be a second revenue stream.
+ *
+ * One product per tier, because a Pro event holds three times what a Plus one
+ * does. Free is absent on purpose: a free event is one look, and a host who
+ * wants to keep it buys a plan first.
  */
-export const KEEP_FOREVER = {
-  key: "keep_forever" as const,
-  productId: CREEM_PRODUCTS.keep_forever,
-  name: "Keep Forever",
-  meaning: "Where the negatives go, so where photos are kept for good.",
-  priceEur: 29,
+export interface Keeping {
+  /** What `purchases.product` records, and what the code says. */
+  key: "keeping_plus" | "keeping_pro";
+  /** The Creem subscription to charge against. */
+  productId: string | undefined;
+  /** The plan this keeps the photos for. */
+  tier: PaidPlanKey;
+  priceEur: number;
+}
+
+export const KEEPING: Record<PaidPlanKey, Keeping> = {
+  plus: {
+    key: "keeping_plus",
+    productId: CREEM_PRODUCTS.keeping_plus,
+    tier: "plus",
+    priceEur: 5,
+  },
+  pro: {
+    key: "keeping_pro",
+    productId: CREEM_PRODUCTS.keeping_pro,
+    tier: "pro",
+    priceEur: 9,
+  },
 };
+
+/** What the thing is called wherever it is offered. */
+export const KEEPING_NAME = "Keep the photos";
+
+/**
+ * How much one payment buys. A year, and the renewal is what buys the next.
+ *
+ * Not stored on the event: `recomputeEntitlement` counts the payments that are
+ * still standing and adds this much per payment, so a refund takes a year back
+ * off without anything having to remember that it once added one.
+ */
+export const KEEPING_DAYS = 365;
+
+/** The keeping subscription that applies to a plan, or null for Free. */
+export function keepingFor(tier: Tier): Keeping | null {
+  return tier.key === "free" ? null : KEEPING[tier.key];
+}
+
+/** Whether a recorded purchase is a year of keeping rather than a plan. */
+export function isKeepingProduct(product: string): boolean {
+  return product === "keeping_plus" || product === "keeping_pro";
+}
 
 /**
  * How prices are quoted, in one sentence, in every place that quotes one.
@@ -209,13 +258,24 @@ export const VAT_BADGE = "VAT included";
  * changing stores is worth more than one that matches the row it will produce.
  */
 export type PaidPlanKey = Exclude<PlanKey, "free">;
-export type PurchasableId = PaidPlanKey | typeof KEEP_FOREVER.key;
+export type KeepingId = Keeping["key"];
+export type PurchasableId = PaidPlanKey | KeepingId;
 
 export const PURCHASABLE_IDS = [
   "plus",
   "pro",
-  "keep_forever",
+  "keeping_plus",
+  "keeping_pro",
 ] as const satisfies readonly PurchasableId[];
+
+/**
+ * `keep_forever` is not here, and that is the point: it can no longer be
+ * bought. It is still a value `purchases.product` may hold, because somebody
+ * may have bought one before it was withdrawn and that row has to keep
+ * meaning what it meant - see `LEGACY_PRODUCTS` and `EventRow.keep_forever`.
+ */
+export const LEGACY_PRODUCTS = ["keep_forever"] as const;
+export type LegacyProductId = (typeof LEGACY_PRODUCTS)[number];
 
 export const TIER_ORDER: PlanKey[] = ["free", "plus", "pro"];
 

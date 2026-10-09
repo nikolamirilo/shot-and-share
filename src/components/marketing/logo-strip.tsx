@@ -9,7 +9,7 @@ export function LogoStrip() {
     ["No app", "Opens in the phone's browser, straight from the camera."],
     ["No guest accounts", "Nobody signs up, logs in or gives an email."],
     ["Every phone", "iPhone and Android, at full resolution."],
-    ["Pay once", "No subscription, and a 14-day refund."],
+    ["Pay once", "The plan never renews, and a 14-day refund."],
   ];
 
   return (

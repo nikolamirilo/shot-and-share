@@ -6,7 +6,13 @@ import type {
   PurchaseRow,
   PurchaseStatus,
 } from "@/lib/db/types";
-import { KEEP_FOREVER, TIERS, computeExpiry, getTier } from "@/lib/tiers";
+import {
+  KEEPING_DAYS,
+  TIERS,
+  computeExpiry,
+  getTier,
+  isKeepingProduct,
+} from "@/lib/tiers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -152,10 +158,17 @@ export async function revokePurchase(args: {
 /**
  * What this event is entitled to, worked out from scratch.
  *
- * The rule is the highest paid tier still standing, plus Keep Forever if any
- * unrefunded purchase of it remains. Deriving it beats adjusting it: a refund
- * of Pro on an event that also bought Plus has to land on Plus, and no amount
- * of "step the tier down one" produces that.
+ * The rule is the highest paid tier still standing, and then one year of
+ * keeping added for every keeping payment that is still standing. Deriving it
+ * beats adjusting it: a refund of Pro on an event that also bought Plus has to
+ * land on Plus, and no amount of "step the tier down one" produces that.
+ *
+ * The same property is why keeping is counted rather than accumulated. A
+ * yearly subscription that renews five times leaves five rows, so the window
+ * is the plan's own plus five years - and a refund of one of them takes exactly
+ * one year back off without anything needing to remember that it once added
+ * one. Lapsing is simply the absence of the next row, which is what makes
+ * "falls back to normal retention" fall out instead of being implemented.
  *
  * A downgrade never deletes anything. It lowers the quota and puts an expiry
  * back, and the retention job's warnings run before any file is touched, which
@@ -163,7 +176,7 @@ export async function revokePurchase(args: {
  */
 export async function recomputeEntitlement(
   eventId: string,
-): Promise<{ tier: string; keepForever: boolean } | null> {
+): Promise<{ tier: string; keepForever: boolean; keptYears: number } | null> {
   const admin = createAdminClient();
 
   const [{ data: eventRow }, { data: purchaseRows }] = await Promise.all([
@@ -179,17 +192,32 @@ export async function recomputeEntitlement(
   const event = eventRow as EventRow;
   const paid = (purchaseRows ?? []) as PurchaseRow[];
 
-  const keepForever = paid.some((row) => row.product === KEEP_FOREVER.key);
+  /*
+   * Legacy. Keep Forever is withdrawn, but somebody who bought one was promised
+   * permanent storage and keeps it: a standing purchase of it still yields a
+   * null expiry.
+   *
+   * Derived from the purchase rather than read off `events.keep_forever`, for
+   * the same reason as everything else here - a refund has to be able to take
+   * it back, and a column that was only ever written true could not.
+   */
+  const keepForever = paid.some((row) => row.product === "keep_forever");
 
   const tier = paid
-    .filter((row) => row.product !== KEEP_FOREVER.key)
+    .filter((row) => row.product in TIERS)
     .map((row) => TIERS[row.product as keyof typeof TIERS])
     .filter(Boolean)
     .reduce((best, candidate) => (candidate.rank > best.rank ? candidate : best), TIERS.free);
 
+  /** One year per keeping payment still standing. */
+  const keptYears = paid.filter((row) => isKeepingProduct(row.product)).length;
+
   const expiresAt = keepForever
     ? null
-    : computeExpiry(event.event_date, tier).toISOString();
+    : addDays(
+        computeExpiry(event.event_date, tier),
+        keptYears * KEEPING_DAYS,
+      ).toISOString();
 
   /*
    * An expired or soft-deleted event that has just been paid for comes back.
@@ -197,7 +225,8 @@ export async function recomputeEntitlement(
    * its window recalculated and the retention job decides, with its warnings,
    * whether that window has already passed.
    */
-  const reactivate = tier.rank > getTier(event.tier).rank || keepForever;
+  const reactivate =
+    tier.rank > getTier(event.tier).rank || keepForever || keptYears > 0;
 
   const { error } = await admin
     .from("events")
@@ -214,5 +243,62 @@ export async function recomputeEntitlement(
     .eq("id", eventId);
 
   if (error) throw error;
-  return { tier: tier.id, keepForever };
+  return { tier: tier.id, keepForever, keptYears };
+}
+
+/** Days onto a date, without pulling in a date library for one addition. */
+function addDays(from: Date, days: number): Date {
+  const d = new Date(from);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+/**
+ * Years of keeping an event has paid for and not had refunded.
+ *
+ * The same count `recomputeEntitlement` uses to work out the expiry, exposed
+ * for the places that need to know whether a subscription is running - the
+ * upgrade panel offers one only when there is not one already, and the
+ * retention warning email only quotes a price to somebody who has not bought.
+ *
+ * Counts rows rather than reading a flag, so a refund is reflected without
+ * anything having to remember it happened.
+ */
+export async function countKeepingYears(eventId: string): Promise<number> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("purchases")
+    .select("product")
+    .eq("event_id", eventId)
+    .eq("status", "paid");
+
+  return (data ?? []).filter((row) => isKeepingProduct(row.product)).length;
+}
+
+/**
+ * Which event a subscription is paying for, read off the purchase its first
+ * payment wrote.
+ *
+ * A renewal arrives as its own webhook and need not repeat the metadata the
+ * original checkout carried, so the subscription id is the only thing reliably
+ * tying it back to an event. Returns null when nothing matches, which is a
+ * normal outcome - a subscription from another deployment, or one whose first
+ * payment this database never recorded.
+ */
+export async function eventForSubscription(
+  subscriptionId: string | null | undefined,
+): Promise<string | null> {
+  if (!subscriptionId) return null;
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("purchases")
+    .select("event_id")
+    .eq("subscription_id", subscriptionId)
+    .not("event_id", "is", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return (data as { event_id: string } | null)?.event_id ?? null;
 }

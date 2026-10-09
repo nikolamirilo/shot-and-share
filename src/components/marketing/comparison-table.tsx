@@ -1,5 +1,5 @@
 import { Eyebrow } from "@/components/ui";
-import { KEEP_FOREVER, TIERS, photoCountLabel } from "@/lib/tiers";
+import { KEEPING, TIERS, photoCountLabel } from "@/lib/tiers";
 
 /**
  * The comparison against the obvious alternative. Every line here is a fact
@@ -26,7 +26,7 @@ export function ComparisonTable() {
     [
       "Keep photos permanently",
       "$49 every year",
-      `€${KEEP_FOREVER.priceEur} once`,
+      `from €${KEEPING.plus.priceEur}/year`,
     ],
   ];
 

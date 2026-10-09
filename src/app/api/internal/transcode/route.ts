@@ -13,6 +13,7 @@ import { mediaKey, posterKey, scopeOfMedia, thumbKey } from "@/lib/media";
 import { decideReview, screenableKey } from "@/lib/moderation/review";
 import { storage } from "@/lib/storage";
 import { adjust } from "@/lib/storage/quota";
+import { REPLACEABLE_CACHE_CONTROL } from "@/lib/storage/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -102,6 +103,14 @@ export async function GET(request: Request) {
                 // a file that Chrome cannot play.
                 maxBytes: Math.max(Number(row.size_bytes) * 3, 32 * 1024 * 1024),
                 expiresInSeconds: CLAIM_MINUTES * 60,
+                /*
+                 * Not immutable, unlike a guest's upload: this replaces the
+                 * object in the bucket, and when the format it converts to is
+                 * the one the key already names the key does not change. A day
+                 * is long enough to be worth caching and short enough that a
+                 * replaced file corrects itself without an invalidation.
+                 */
+                cacheControl: REPLACEABLE_CACHE_CONTROL,
               }),
             },
             /*
@@ -118,6 +127,8 @@ export async function GET(request: Request) {
                     contentType: IMAGE_MIME.webp,
                     maxBytes: 1024 * 1024,
                     expiresInSeconds: CLAIM_MINUTES * 60,
+                    // A retried job rewrites this key, so same as the media.
+                    cacheControl: REPLACEABLE_CACHE_CONTROL,
                   }),
                 },
             poster:
@@ -129,6 +140,7 @@ export async function GET(request: Request) {
                       contentType: IMAGE_MIME.jpeg,
                       maxBytes: 4 * 1024 * 1024,
                       expiresInSeconds: CLAIM_MINUTES * 60,
+                      cacheControl: REPLACEABLE_CACHE_CONTROL,
                     }),
                   }
                 : null,

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { purge } from "@/lib/cdn/purge";
 import type { MediaRow } from "@/lib/db/types";
 import { mediaBytes, mediaKeys } from "@/lib/media/keys";
 import { storage } from "@/lib/storage";
@@ -12,6 +13,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Objects first, then the row, then the quota. Three call sites wrote this out
  * by hand and one of them forgot the cover check, which left the event page
  * pointing at a photograph that no longer existed.
+ *
+ * The CDN is told last and is allowed to fail. Removing the object is what
+ * makes the photograph gone; purging the edge is what makes it gone *quickly*,
+ * and the stored objects carry a year-long cache header, so skipping it leaves
+ * a deleted photograph readable by anyone still holding its URL. See
+ * `@/lib/cdn/purge`.
  */
 export async function deleteMediaRows(
   eventId: string,
@@ -34,6 +41,7 @@ export async function deleteMediaRows(
     );
   await release(eventId, bytes);
   await clearCoverIfDeleted(eventId, rows);
+  await purge(keys);
 
   return { removed: rows.length, bytes };
 }

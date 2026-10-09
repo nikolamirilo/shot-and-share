@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { hasDecoded } from "@/components/event/cover-image";
 import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
 import { EventPreview } from "@/components/event/event-preview";
 import { UploadPanel } from "@/components/upload/upload-panel";
@@ -332,5 +333,91 @@ describe("the name's position on the cover", () => {
         "linear-gradient(to top",
       );
     }
+  });
+});
+
+/**
+ * The seconds before the cover photograph arrives.
+ *
+ * The cover is the one place that loads the full copy on purpose - a couple of
+ * megabytes across a whole phone - so a guest's first sight of the event used
+ * to be the name printed on an empty rectangle. These pin down what stands in
+ * its place, and that the host's preview is left alone.
+ */
+describe("the cover while it is still loading", () => {
+  const PHOTO = "https://media.example.com/full.jpg";
+  const THUMB = "https://media.example.com/thumb.webp";
+
+  it("puts the blurred thumbnail in while the full copy is in flight", () => {
+    const html = renderToStaticMarkup(
+      <EventCover
+        variant="full"
+        name="Ana and Marko"
+        date="2026-09-12"
+        coverUrl={PHOTO}
+        coverPreviewUrl={THUMB}
+        palette={palette}
+      />,
+    );
+
+    expect(html).toContain(THUMB);
+    expect(html).toContain("blur-xl");
+    // The full copy is behind it until it has loaded, not instead of it.
+    expect(html).toContain(PHOTO);
+    expect(html).toContain("opacity-0");
+  });
+
+  it("falls back to a frame with a light over it when there is no thumbnail", () => {
+    const html = renderToStaticMarkup(
+      <EventCover
+        variant="classic"
+        name="Ana and Marko"
+        date="2026-09-12"
+        coverUrl={PHOTO}
+        palette={palette}
+      />,
+    );
+
+    expect(html).toContain("cover-sweep");
+    expect(html).toContain("bg-well");
+  });
+
+  it("does not fade in the host's preview", () => {
+    // A host stepping through four covers of the same photograph is comparing
+    // crops. A cross-fade on every tap reads as the setting being slow.
+    const html = renderToStaticMarkup(
+      <EventCover
+        variant="full"
+        name="Ana and Marko"
+        date="2026-09-12"
+        coverUrl={PHOTO}
+        coverPreviewUrl={THUMB}
+        palette={palette}
+        preview
+      />,
+    );
+
+    expect(html).toContain(PHOTO);
+    expect(html).not.toContain(THUMB);
+    expect(html).not.toContain("transition-opacity");
+  });
+});
+
+/**
+ * The one decision the cover makes at runtime: has the photograph arrived, or
+ * is the blurred stand-in still the best thing on the screen.
+ */
+describe("deciding the cover has arrived", () => {
+  it("waits for pixels, not just for the browser to stop trying", () => {
+    // `complete` is true for a photograph that 404ed as well as for one that
+    // decoded. On that alone a dead cover hid the stand-in and put a
+    // broken-image icon across the top of somebody's wedding.
+    expect(hasDecoded({ complete: true, naturalWidth: 0 })).toBe(false);
+    expect(hasDecoded({ complete: true, naturalWidth: 2560 })).toBe(true);
+  });
+
+  it("is not ready before the browser has finished", () => {
+    expect(hasDecoded({ complete: false, naturalWidth: 0 })).toBe(false);
+    expect(hasDecoded(null)).toBe(false);
   });
 });

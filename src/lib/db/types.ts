@@ -5,7 +5,7 @@
  */
 
 import type { GalleryLayout } from "@/lib/gallery";
-import type { PurchasableId } from "@/lib/tiers";
+import type { LegacyProductId, PurchasableId } from "@/lib/tiers";
 
 export type EventStatus = "active" | "expired" | "deleted";
 export type MediaStatus = "pending" | "ready" | "deleted";
@@ -26,10 +26,13 @@ export type ModerationLabelRecord = {
   parent?: string;
 };
 /**
- * What the `purchases.product` column records. Historical rows only, so it is
- * the purchasable set and nothing wider.
+ * What the `purchases.product` column records.
+ *
+ * Wider than what can be *bought*: `keep_forever` was withdrawn when keeping
+ * became a yearly subscription, and a row written while it was on sale still
+ * has to read back as what somebody paid for. See `LEGACY_PRODUCTS`.
  */
-export type Product = PurchasableId;
+export type Product = PurchasableId | LegacyProductId;
 
 export type ProfileRow = {
   id: string;
@@ -52,6 +55,19 @@ export type EventRow = {
    * to check against.
    */
   tier: string;
+  /**
+   * Legacy, and honoured for as long as a row has it set.
+   *
+   * Keep Forever was a €29 one-off that promised permanent storage. It is no
+   * longer sold - keeping is a yearly subscription now - but anybody who
+   * bought one was promised "permanent" and gets it: an event with this true
+   * has a null `expires_at` and is excluded from expiry forever.
+   *
+   * Written by `recomputeEntitlement` from a standing `keep_forever` purchase
+   * and from nothing else, so it cannot appear on an event that never bought
+   * one - and a refund of that purchase clears it, like any other entitlement
+   * here.
+   */
   keep_forever: boolean;
   storage_quota_bytes: number;
   storage_used_bytes: number;

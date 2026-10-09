@@ -26,6 +26,7 @@ vi.mock("@/lib/tiers", async () => {
 
 const { grantPurchase, revokePurchase } = await import("@/lib/payments/grant");
 const { TIERS } = await import("@/lib/tiers");
+const tiersModule = await import("@/lib/tiers");
 
 const EVENT_ID = "11111111-2222-3333-4444-555555555555";
 const OWNER_ID = "00000000-1111-2222-3333-444444444444";
@@ -217,5 +218,124 @@ describe("recomputing", () => {
 
     expect(event().status).toBe("active");
     expect(event().deleted_at).toBeNull();
+  });
+});
+
+describe("keeping, as a yearly subscription", () => {
+  /**
+   * Days between an event's own expiry under its plan and where it actually
+   * sits, which is what a year of keeping is supposed to add.
+   */
+  function yearsAdded(): number {
+    const { computeExpiry, getTier, KEEPING_DAYS } = tiersModule;
+    const base = computeExpiry(
+      event().event_date as string,
+      getTier(event().tier as string),
+    ).getTime();
+    const actual = new Date(event().expires_at as string).getTime();
+    return Math.round((actual - base) / (KEEPING_DAYS * 86_400_000));
+  }
+
+  async function buy(product: string, txn: string) {
+    await grantPurchase({
+      eventId: EVENT_ID,
+      product: product as "pro" | "keeping_pro",
+      provider: "creem",
+      providerTxnId: txn,
+      orderId: txn,
+      subscriptionId: product.startsWith("keeping") ? "sub-1" : null,
+    });
+  }
+
+  it("adds a year to the window for one payment", async () => {
+    await buy("pro", "order-plan");
+    expect(yearsAdded()).toBe(0);
+
+    await buy("keeping_pro", "order-year-1");
+    expect(yearsAdded()).toBe(1);
+  });
+
+  /*
+   * The renewal case, and the reason the window is counted rather than stored.
+   * Three payments is three rows is three years, and nothing had to remember
+   * that the first two happened.
+   */
+  it("adds another year for every renewal", async () => {
+    await buy("pro", "order-plan");
+    await buy("keeping_pro", "order-year-1");
+    await buy("keeping_pro", "order-year-2");
+    await buy("keeping_pro", "order-year-3");
+
+    expect(yearsAdded()).toBe(3);
+  });
+
+  /*
+   * Lapsing is the absence of the next payment, so there is nothing to assert
+   * about a cancellation except that it changes nothing. This is the promise
+   * made to the customer: you keep the year you paid for.
+   */
+  it("keeps the years already paid for when the subscription stops", async () => {
+    await buy("pro", "order-plan");
+    await buy("keeping_pro", "order-year-1");
+    await buy("keeping_pro", "order-year-2");
+
+    const windowBefore = event().expires_at;
+
+    // No further renewal ever arrives. Nothing recomputes it downwards.
+    expect(event().expires_at).toBe(windowBefore);
+    expect(yearsAdded()).toBe(2);
+  });
+
+  it("takes exactly one year back when one payment is refunded", async () => {
+    await buy("pro", "order-plan");
+    await buy("keeping_pro", "order-year-1");
+    await buy("keeping_pro", "order-year-2");
+    expect(yearsAdded()).toBe(2);
+
+    await revokePurchase({
+      provider: "creem",
+      orderId: "order-year-2",
+      status: "refunded",
+    });
+
+    expect(yearsAdded()).toBe(1);
+  });
+
+  /*
+   * A refund of the plan must not take the keeping years with it. The window
+   * is shorter because Plus is shorter, but the years bought still count.
+   */
+  it("keeps the years when the plan underneath is refunded", async () => {
+    await buy("pro", "order-plan");
+    await buy("keeping_pro", "order-year-1");
+
+    await revokePurchase({
+      provider: "creem",
+      orderId: "order-plan",
+      status: "refunded",
+    });
+
+    expect(event().tier).toBe(TIERS.free.id);
+    // Still one year on top of whatever the (now Free) window is.
+    expect(yearsAdded()).toBe(1);
+  });
+
+  it("never leaves a keeping payment with an open-ended window", async () => {
+    // Only the withdrawn Keep Forever yields a null expiry. A subscription
+    // extends the window; it does not remove it.
+    await buy("pro", "order-plan");
+    await buy("keeping_pro", "order-year-1");
+
+    expect(event().expires_at).not.toBeNull();
+    expect(event().keep_forever).toBe(false);
+  });
+
+  it("brings an expired event back when a year is bought", async () => {
+    store.reset();
+    seedEvent({ status: "expired", tier: TIERS.pro.id });
+
+    await buy("keeping_pro", "order-year-1");
+
+    expect(event().status).toBe("active");
   });
 });

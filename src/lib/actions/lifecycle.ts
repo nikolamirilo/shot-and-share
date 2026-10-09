@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireOwnedEvent } from "@/lib/actions/guards";
+import { purgePrefix } from "@/lib/cdn/purge";
 import type { ActionState } from "@/lib/actions/types";
 import { archiveKey, eventPrefix, scopeOfEvent } from "@/lib/media";
 import { storage } from "@/lib/storage";
@@ -18,7 +19,11 @@ export async function deleteEvent(eventId: string): Promise<ActionState> {
   const { event } = await requireOwnedEvent(eventId);
   const admin = createAdminClient();
 
-  await storage.removePrefix(eventPrefix(scopeOfEvent(event)));
+  const prefix = eventPrefix(scopeOfEvent(event));
+  await storage.removePrefix(prefix);
+  // One wildcard for the whole event rather than three paths per photograph:
+  // CloudFront meters invalidation paths, and a wedding is a thousand of them.
+  await purgePrefix(prefix);
   const { error } = await admin.from("events").delete().eq("id", event.id);
   if (error) return { error: error.message };
 

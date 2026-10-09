@@ -4,7 +4,11 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
 import type { Product } from "@/lib/db/types";
 import { env, hasCreem } from "@/lib/env";
-import { CREEM_PRODUCTS, PURCHASABLE_IDS } from "@/lib/tiers";
+import {
+  CREEM_PRODUCTS,
+  PURCHASABLE_IDS,
+  type PurchasableId,
+} from "@/lib/tiers";
 
 /**
  * Creem acts as merchant of record.
@@ -30,8 +34,10 @@ import { CREEM_PRODUCTS, PURCHASABLE_IDS } from "@/lib/tiers";
  */
 
 /** A value off the wire, only if it names something that can be bought. */
-function asPurchasable(value: unknown): Product | null {
-  return PURCHASABLE_IDS.includes(value as Product) ? (value as Product) : null;
+function asPurchasable(value: unknown): PurchasableId | null {
+  return PURCHASABLE_IDS.includes(value as PurchasableId)
+    ? (value as PurchasableId)
+    : null;
 }
 
 /**
@@ -43,11 +49,12 @@ function asPurchasable(value: unknown): Product | null {
  * question `isCheckoutConfigured` and the webhook fallback are both really
  * asking.
  */
-function products(): Record<Product, string | undefined> {
+function products(): Record<PurchasableId, string | undefined> {
   return {
     plus: CREEM_PRODUCTS.plus,
     pro: CREEM_PRODUCTS.pro,
-    keep_forever: CREEM_PRODUCTS.keep_forever,
+    keeping_plus: CREEM_PRODUCTS.keeping_plus,
+    keeping_pro: CREEM_PRODUCTS.keeping_pro,
   };
 }
 
@@ -59,7 +66,7 @@ function planForProductId(productId: string | null): Product | null {
   );
 }
 
-export function isCheckoutConfigured(product: Product): boolean {
+export function isCheckoutConfigured(product: PurchasableId): boolean {
   return hasCreem() && Boolean(products()[product]);
 }
 
@@ -79,7 +86,7 @@ function headers(): Record<string, string> {
 }
 
 export async function createCheckoutUrl(args: {
-  product: Product;
+  product: PurchasableId;
   eventId: string;
   ownerId: string;
   email?: string | null;
@@ -531,4 +538,79 @@ export async function listRecentOrders(
     }))
     .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
     .slice(0, limit);
+}
+
+/**
+ * A link to Creem's own billing portal for this host.
+ *
+ * The one place a subscription can be cancelled. Keeping the photos is the only
+ * recurring charge in the product, and the EU consumer rules that require the
+ * price to be the price also require cancelling to be straightforward - so a
+ * yearly charge with no way out of it from the dashboard is not a missing
+ * feature, it is a compliance problem.
+ *
+ * Creem hosts the portal, which is the right answer here: it holds the card,
+ * the invoices and the renewal dates, and none of those should be mirrored into
+ * this database to render a page.
+ *
+ * Two calls, because the portal is addressed by customer id and we store the
+ * host's email: the customer is looked up, then a portal session is created.
+ * The same lookup `listRecentOrders` does, for the same reason - Creem indexes
+ * by customer rather than by email.
+ *
+ * Returns null rather than throwing when there is nothing to show: a host who
+ * has never bought anything has no customer record, which is ordinary and is
+ * why the button is not rendered for them.
+ */
+export async function billingPortalUrl(email: string): Promise<string | null> {
+  if (!hasCreem()) return null;
+
+  const customerRes = await get(
+    `/v1/customers?email=${encodeURIComponent(email)}`,
+  );
+
+  // Never bought anything. Ordinary, not an error.
+  if (customerRes.status === 404) return null;
+  if (!customerRes.ok) {
+    console.error(
+      "[portal] could not find the customer",
+      customerRes.status,
+      await customerRes.text(),
+    );
+    return null;
+  }
+
+  const customerId = idOf(await customerRes.json());
+  if (!customerId) return null;
+
+  const res = await fetch(`${env.creem.apiBase}/v1/customers/billing`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ customer_id: customerId }),
+  });
+
+  if (!res.ok) {
+    console.error("[portal] could not create a portal session", res.status, await res.text());
+    return null;
+  }
+
+  const body = (await res.json()) as Record<string, unknown>;
+
+  /*
+   * Creem has spelled this `customer_portal_link` and `url` across versions of
+   * its own docs, so both are read rather than one being assumed. A portal
+   * session that came back 200 with neither is worth a log line, because the
+   * button will have done nothing and the host will press it again.
+   */
+  const url =
+    typeof body.customer_portal_link === "string"
+      ? body.customer_portal_link
+      : typeof body.url === "string"
+        ? body.url
+        : null;
+
+  if (!url) {
+    console.error("[portal] portal session had no link", Object.keys(body));
+  }
+  return url;
 }

@@ -1,8 +1,8 @@
 import "server-only";
 
 import { ApiError } from "@/lib/api";
-import type { Product } from "@/lib/db/types";
 import { env } from "@/lib/env";
+import type { PurchasableId } from "@/lib/tiers";
 import { createCheckoutUrl, isCheckoutConfigured } from "@/lib/payments/creem";
 
 /**
@@ -23,7 +23,7 @@ import { createCheckoutUrl, isCheckoutConfigured } from "@/lib/payments/creem";
  * and folding that in would mean picking one and breaking the other.
  */
 export async function checkoutUrlForEvent(args: {
-  product: Product;
+  product: PurchasableId;
   eventId: string;
   ownerId: string;
   email?: string | null;

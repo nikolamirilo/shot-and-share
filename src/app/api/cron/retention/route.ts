@@ -1,4 +1,5 @@
 import { fail, handle, ok } from "@/lib/api";
+import { purgePrefix } from "@/lib/cdn/purge";
 import { countReadyMedia, mediaExistsById } from "@/lib/db/media-repo";
 import {
   listEventsToPurge,
@@ -15,7 +16,12 @@ import { eventPrefix, mediaBytes, mediaKeys, scopeOfEvent } from "@/lib/media";
 import { storage } from "@/lib/storage";
 import { release } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { HARD_DELETE_GRACE_DAYS, RETENTION_WARNING_DAYS } from "@/lib/tiers";
+import {
+  HARD_DELETE_GRACE_DAYS,
+  RETENTION_WARNING_DAYS,
+  getTier,
+  keepingFor,
+} from "@/lib/tiers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -145,6 +151,16 @@ async function sendWarnings(summary: { warned: number }) {
 
     const photoCount = await countReadyMedia(admin, event.id);
 
+    /*
+     * This email is the only place keeping is ever sold. Nobody shops for photo
+     * storage a year after their wedding - they are reminded of it by being
+     * told the photos are about to come down, which is what this is.
+     *
+     * The price is only quoted on a paid plan: a free event has no window to
+     * extend, so its host is pointed at a plan instead.
+     */
+    const keeping = keepingFor(getTier(event.tier));
+
     await sendEmail(
       retentionWarningEmail({
         to: event.profiles.email,
@@ -152,6 +168,7 @@ async function sendWarnings(summary: { warned: number }) {
         days: Math.max(1, daysLeft),
         photoCount,
         downloadUrl: `${env.siteUrl}/dashboard/events/${event.id}`,
+        keepingPriceEur: keeping?.priceEur ?? null,
       }),
     );
 
@@ -207,9 +224,10 @@ async function hardDelete(summary: {
   const events = await listEventsToPurge(admin, cutoff, 50);
 
   for (const event of events) {
-    summary.objectsRemoved += await storage.removePrefix(
-      eventPrefix(scopeOfEvent(event)),
-    );
+    const prefix = eventPrefix(scopeOfEvent(event));
+    summary.objectsRemoved += await storage.removePrefix(prefix);
+    // One wildcard per event, so a night's purging is a handful of paths.
+    await purgePrefix(prefix);
     // media and event_tokens cascade. Purchase rows survive with a null event,
     // because the accounting record of a payment must outlive the photos.
     await admin.from("events").delete().eq("id", event.id);
