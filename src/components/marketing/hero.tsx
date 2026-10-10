@@ -121,6 +121,18 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               </li>
             ))}
           </ul>
+          {/* The plain sentence, last in the column. Quiet, because a visitor
+              has already got it from the headline and the picture; present,
+              because anything reading the markup has not. Below the buttons
+              rather than above them, so three lines of copy a reader does not
+              need do not push the only thing they came to press off a phone
+              screen. */}
+          <p
+            className="rise mx-auto mt-6 max-w-[33rem] text-[0.9375rem] leading-relaxed text-ash sm:mx-0"
+            style={{ animationDelay: "240ms" }}
+          >
+            {HERO.purpose}
+          </p>
         </div>
 
         <HeroScene />

@@ -61,6 +61,18 @@ export const HERO = {
     "Guests scan one code on the table and add photos from their own phone. You get the whole night in one gallery, and all of it in one download.",
   /** The subline at the length a social card can hold on one line. */
   cardLine: "One code on the table. No app, no account.",
+  /**
+   * The app named, and what it does, in one plain sentence.
+   *
+   * The headline is the tagline said as an action and the subline describes the
+   * mechanism, so neither of them ever says "Shot & Share is a ...". A reader
+   * fills that in from the lockup above it. An automated reviewer does not,
+   * which is what Google's brand verification sends back as a home page that
+   * does not explain the app - so the sentence it looks for is on the page, in
+   * plain text, rather than left to be inferred.
+   */
+  purpose:
+    "Shot & Share is a web app for collecting photos from guests at a wedding, a birthday or any other event. You print a QR code, guests scan it and upload from their own phones, and every photo lands in one gallery you can download.",
 } as const;
 
 /** The headline as one line, for a card or an alt attribute. */

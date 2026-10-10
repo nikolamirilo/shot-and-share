@@ -20,7 +20,7 @@ import { HARD_DELETE_GRACE_DAYS, KEEPING, KEEPING_NAME, TIERS, VAT_NOTE } from "
  * someone to check.
  */
 
-export const UPDATED = "19 August 2026";
+export const UPDATED = "10 October 2026";
 
 export interface Section {
   heading: string;
@@ -200,6 +200,18 @@ const PRIVACY: LegalPage = {
       ],
     },
     {
+      /* Its own section because Google's verification of the sign-in button
+         reads this page looking for exactly this, and because a host choosing
+         that button is handing over an account they already have. */
+      heading: "Signing in with Google",
+      body: [
+        `${SITE.name} lets you create a host account with "Continue with Google" instead of a password. If you use it, Google tells us four things: your email address, your name, your profile picture and your Google account ID. Nothing else.`,
+        "We ask Google for your basic profile and email only. We never ask for Gmail, Drive, Calendar, Contacts or Google Photos, and we could not read them if we tried.",
+        "That data does one job. It creates your account and signs you in. We do not sell it, we do not pass it to advertisers, we do not use it to advertise this product, and we do not use it to train machine-learning models. The only other company that holds it is Supabase, which runs our accounts database.",
+        `It stays as long as your account does. Ask us to close the account and it goes with it. You can disconnect ${SITE.name} from your Google account at any time at myaccount.google.com/permissions, and your event photos are not affected.`,
+      ],
+    },
+    {
       heading: "What we hold about guests",
       body: [
         "No account, no email address, and no name. A guest uploads and leaves.",
@@ -256,6 +268,7 @@ const PRIVACY: LegalPage = {
         "Vercel - running and serving the website.",
         "Creem - payment, as merchant of record. They hold your payment details and we never see them.",
         "Resend - sending the emails this product sends, such as the warnings before a storage window ends.",
+        "Google - only if you choose to sign in with Google. It is the sign-in provider rather than one of our processors, and all it does is confirm who you are and pass on your name, email address and profile picture.",
       ],
     },
     {
