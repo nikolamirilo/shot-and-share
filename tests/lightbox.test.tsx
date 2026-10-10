@@ -47,8 +47,8 @@ function markup(over: Partial<Parameters<typeof Lightbox>[0]> = {}) {
       // No signed URL to go and fetch in a static render.
       demo
       item={PHOTO}
-      prevId="photo-0"
-      nextId="photo-2"
+      prev={{ ...PHOTO, id: "photo-0" }}
+      next={{ ...PHOTO, id: "photo-2" }}
       position={2}
       total={9}
       onStep={() => {}}
@@ -107,8 +107,17 @@ describe("the lightbox's controls", () => {
     expect(html.match(/pointer-events-auto/g)?.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("step aside on a touch screen, where the photo itself is the control", () => {
+    // Swiped, or tapped on either half. `sr-only` rather than `hidden`, so a
+    // screen reader - which cannot swipe a picture - still has the buttons.
+    const html = markup();
+    const arrow = /<button[^>]*aria-label="Next photo"[^>]*>/.exec(html)?.[0] ?? "";
+    expect(arrow).toContain("pointer-coarse:sr-only");
+    expect(arrow).not.toMatch(/(^|\s)hidden(\s|")/);
+  });
+
   it("drop the arrows when there is nowhere to step", () => {
-    const alone = markup({ prevId: null, nextId: null, total: 1, position: 1 });
+    const alone = markup({ prev: null, next: null, total: 1, position: 1 });
     expect(alone).not.toContain('aria-label="Previous photo"');
     expect(alone).not.toContain('aria-label="Next photo"');
     // And the counter goes with them: "1 of 1" is not information.
@@ -136,5 +145,42 @@ describe("the photographs fetched ahead", () => {
      */
     const html = markup({ preload: ahead });
     expect(html.match(/<img/g)).toHaveLength(1);
+  });
+});
+
+/**
+ * The photos either side sit on the strip beside this one, so a finger can
+ * drag the next one in rather than waiting for it to appear after letting go.
+ */
+describe("the strip", () => {
+  it("holds the photo on each side, out of the way of a screen reader", () => {
+    const html = markup();
+    // This one, plus one hidden either side of it.
+    expect(html.match(/aria-hidden="true" class="absolute inset-0 flex/g)).toHaveLength(2);
+    expect(html).toContain("translate3d(calc(-100% + -16px), 0, 0)");
+    expect(html).toContain("translate3d(calc(100% + 16px), 0, 0)");
+  });
+
+  it("leaves out a side that is not there", () => {
+    const first = markup({ prev: null });
+    expect(first.match(/aria-hidden="true" class="absolute inset-0 flex/g)).toHaveLength(1);
+    expect(first).not.toContain("translate3d(calc(-100%");
+  });
+
+  it("fetches the photos either side only once this one has arrived", () => {
+    // Same bargain as the ones fetched further ahead: the photograph somebody
+    // is looking at comes first.
+    expect(markup().match(/<img/g)).toHaveLength(1);
+  });
+
+  it("marks the photograph as the place a tap turns the page", () => {
+    // A tap anywhere else is a tap on the backdrop, and the backdrop closes.
+    expect(markup()).toMatch(/<img[^>]*data-picture=""/);
+  });
+
+  it("keeps pinch-zoom but takes the page's own scrolling off a swipe", () => {
+    // Otherwise a slightly diagonal swipe scrolls the page behind and
+    // collapses the browser's toolbar halfway through the turn.
+    expect(markup()).toContain("touch-action:pinch-zoom");
   });
 });
