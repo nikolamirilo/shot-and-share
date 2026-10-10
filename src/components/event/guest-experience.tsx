@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { GuestGallery } from "@/components/event/guest-gallery";
+import { GuestGallery } from "@/components/event/guest-gallery/guest-gallery";
 import { Uploader } from "@/components/upload/uploader";
 import type { UploadVariant } from "@/lib/appearance/variants";
 import { markOpened } from "@/lib/client/upload";

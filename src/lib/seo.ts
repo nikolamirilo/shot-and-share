@@ -17,6 +17,17 @@ export const SITE = {
   tagline: "Every photo your guests take.",
   description:
     "Guests scan a code and hand you their photos. No app, no account, nothing to install. Weddings, birthdays, offsites - anything with people and phones.",
+  /**
+   * The app named and described in one line.
+   *
+   * `tagline` is a slogan and `description` is a search result, so neither of
+   * them states plainly what this software is. This does, in the footer of
+   * every page, for a reader who landed on a legal document and for a reviewer
+   * who reads a site rather than looks at it. The name is written out because
+   * an object literal cannot refer to its own `name` field.
+   */
+  about:
+    "Shot & Share is a QR photo-sharing app for weddings, birthdays and other events. Guests scan a printed code and upload photos from their own phones, with no app and no account.",
   locale: "en",
   /**
    * Where support, legal notices, takedowns and erasure requests all go.

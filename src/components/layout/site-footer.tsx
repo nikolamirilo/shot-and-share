@@ -22,6 +22,12 @@ export function SiteFooter() {
           <p className="mt-3 max-w-xs text-[0.9375rem] text-linen/75">
             {SITE.tagline}
           </p>
+          {/* The slogan above says it to someone who already knows what this
+              is. This says it to someone who does not, on every page of the
+              site rather than only the one they were meant to land on. */}
+          <p className="mt-2 max-w-xs text-[0.8125rem] leading-relaxed text-linen/60">
+            {SITE.about}
+          </p>
           <a
             href={`mailto:${SITE.email}`}
             className="mt-3 inline-block py-1 text-[0.9375rem] text-linen/80 underline underline-offset-2 hover:text-linen"

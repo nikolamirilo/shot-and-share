@@ -126,11 +126,14 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               because anything reading the markup has not. Below the buttons
               rather than above them, so three lines of copy a reader does not
               need do not push the only thing they came to press off a phone
-              screen. */}
-          <p
-            className="rise mx-auto mt-6 max-w-[33rem] text-[0.9375rem] leading-relaxed text-ash sm:mx-0"
-            style={{ animationDelay: "240ms" }}
-          >
+              screen.
+
+              The one thing on this page that does not `rise`. Every other
+              block starts at opacity 0 and fades in, which is right for a
+              person and wrong for a tool that screenshots a page as soon as it
+              loads: this is the sentence such a tool is looking for, so it is
+              on screen at the first frame. */}
+          <p className="mx-auto mt-6 max-w-[33rem] text-[0.9375rem] leading-relaxed text-ash sm:mx-0">
             {HERO.purpose}
           </p>
         </div>
