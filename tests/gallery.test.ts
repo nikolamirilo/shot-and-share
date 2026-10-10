@@ -38,17 +38,20 @@ describe("masonry aspect ratios", () => {
 });
 
 describe("stepping between open photos", () => {
-  const wall = ["a", "b", "c"];
+  const [a, b, c] = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const wall = [a, b, c];
 
   it("hands back the photo on either side", () => {
-    expect(neighbours(wall, "b")).toEqual({ prev: "a", next: "c" });
+    // Whole items, not ids: the lightbox lays them on the strip beside the
+    // open one, ready to be dragged in.
+    expect(neighbours(wall, "b")).toEqual({ prev: a, next: c });
   });
 
   it("stops at the last one loaded", () => {
     // The gallery pages in with "Show more", so the end of this list is only
     // the end of what has arrived. The arrow greys out rather than fetching:
     // a guest who wants more asks for it.
-    expect(neighbours(wall, "c")).toEqual({ prev: "b", next: null });
+    expect(neighbours(wall, "c")).toEqual({ prev: b, next: null });
   });
 
   it("goes nowhere from a photo that is no longer there", () => {

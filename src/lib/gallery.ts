@@ -68,7 +68,8 @@ export function aspectRatio(
 
 /**
  * The photos either side of the open one, so the lightbox can point its arrows
- * somewhere or grey them out.
+ * somewhere or grey them out, and has the next picture on the strip ready to
+ * be dragged in.
  *
  * It works on the loaded list, not the whole event, so `next: null` means "no
  * further without asking" rather than "last photo of the night".
@@ -76,15 +77,15 @@ export function aspectRatio(
  * A missing id gives up in both directions: that is what happens when a guest
  * deletes their own photo while it is the one on screen.
  */
-export function neighbours(
-  ids: readonly string[],
+export function neighbours<T extends { id: string }>(
+  items: readonly T[],
   currentId: string,
-): { prev: string | null; next: string | null } {
-  const at = ids.indexOf(currentId);
+): { prev: T | null; next: T | null } {
+  const at = items.findIndex((item) => item.id === currentId);
   if (at === -1) return { prev: null, next: null };
   return {
-    prev: ids[at - 1] ?? null,
-    next: ids[at + 1] ?? null,
+    prev: items[at - 1] ?? null,
+    next: items[at + 1] ?? null,
   };
 }
 

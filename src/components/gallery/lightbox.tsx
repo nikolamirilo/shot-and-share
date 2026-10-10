@@ -11,11 +11,13 @@ import {
 } from "react-icons/md";
 
 import { ReportButton } from "@/components/gallery/report-button";
+import {
+  PICTURE_ATTR,
+  SLIDE_GAP_PX,
+  useSwipe,
+} from "@/components/gallery/use-swipe";
 import { GLASS, Photo, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
-
-/** Below this a drag is a tap with a shaky hand, not a swipe. */
-const SWIPE_MIN_PX = 50;
 
 /**
  * How wide the picture is going to be: full width on a phone, and the frame is
@@ -58,8 +60,8 @@ const DOCK_LABEL = "sr-only sm:not-sr-only";
 export function Lightbox({
   token,
   item,
-  prevId,
-  nextId,
+  prev,
+  next,
   position,
   total,
   preload = [],
@@ -72,9 +74,13 @@ export function Lightbox({
 }: {
   token: string;
   item: MediaView;
-  /** The photo on each side, or null at either end of what has loaded. */
-  prevId: string | null;
-  nextId: string | null;
+  /**
+   * The photo on each side, or null at either end of what has loaded. Whole
+   * items rather than ids, because they are on the strip beside this one,
+   * ready to be dragged in.
+   */
+  prev: MediaView | null;
+  next: MediaView | null;
   /** Which of the loaded photos this is, counting from one. */
   position: number;
   total: number;
@@ -113,14 +119,27 @@ export function Lightbox({
    * empty, which after the request means the link is not coming at all.
    */
   const [linkPending, setLinkPending] = useState(true);
-  /** False until this photo's pixels are on screen. Reset on every step. */
-  const [loaded, setLoaded] = useState(false);
+  /**
+   * The photographs whose pixels have arrived, this one or either side of it.
+   * A set rather than one flag, because the next photo usually lands while it
+   * is still beside this one - and when it slides in, it is already there.
+   */
+  const [ready, setReady] = useState<ReadonlySet<string>>(() => new Set());
+  const markReady = (id: string) =>
+    setReady((seen) => (seen.has(id) ? seen : new Set(seen).add(id)));
   /** The report sheet is open, which is the one time the arrows are in the way. */
   const [reporting, setReporting] = useState(false);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const swipe = useSwipe({
+    track,
+    prevId: prev?.id ?? null,
+    nextId: next?.id ?? null,
+    onStep,
+    disabled: reporting,
+  });
+  const { step } = swipe;
 
   useEffect(() => {
-    setLoaded(false);
     setReporting(false);
   }, [item.id]);
 
@@ -158,38 +177,15 @@ export function Lightbox({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && prevId) onStep(prevId);
-      if (e.key === "ArrowRight" && nextId) onStep(nextId);
+      if (e.key === "ArrowLeft" && prev) step(prev.id);
+      if (e.key === "ArrowRight" && next) step(next.id);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, onStep, prevId, nextId]);
+  }, [onClose, step, prev, next]);
 
-  // Swipe on photos only: dragging across a video is someone scrubbing.
-  function onTouchStart(e: React.TouchEvent) {
-    const touch = e.touches[0];
-    touchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
-  }
-
-  function onTouchEnd(e: React.TouchEvent) {
-    const start = touchStart.current;
-    const touch = e.changedTouches[0];
-    touchStart.current = null;
-    if (!start || !touch) return;
-
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    // Mostly sideways, or it belongs to the page.
-    if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) <= Math.abs(dy)) return;
-
-    const target = dx < 0 ? nextId : prevId;
-    if (target) onStep(target);
-  }
-
-  // A video waits for the signed URL; a photo shows the full copy through the
-  // optimiser, falling back to whatever the grid had if there is not one.
-  const viewUrl =
-    item.kind === "video" ? full?.url : (item.fullUrl ?? item.previewUrl);
+  /** A video plays from the signed URL, which only the one on screen asks for. */
+  const videoUrl = item.kind === "video" ? full?.url : undefined;
 
   /*
    * What the backdrop is made of: this photograph again, blown up, blurred and
@@ -208,7 +204,21 @@ export function Lightbox({
    * A clip counts as up once its URL resolves - it streams as it plays and is
    * never going to report itself finished.
    */
-  const onScreen = item.kind === "video" ? Boolean(viewUrl) : loaded;
+  const onScreen =
+    item.kind === "video" ? Boolean(videoUrl) : ready.has(item.id);
+
+  /*
+   * The strip: this photograph, with the one on each side waiting just off
+   * the screen. Keyed by id, so after a turn the photo that slid in is the same
+   * element, already decoded, rather than a new one starting from nothing.
+   */
+  const slides = [
+    { media: prev, at: -1 as const },
+    { media: item, at: 0 as const },
+    { media: next, at: 1 as const },
+  ].filter((slide): slide is { media: MediaView; at: -1 | 0 | 1 } =>
+    Boolean(slide.media),
+  );
 
   return (
     <div
@@ -232,144 +242,117 @@ export function Lightbox({
        * Scaled up because a blur that size pulls the edges of the picture
        * inwards and would otherwise leave a soft border all the way round.
        */}
-      {ambient && (
-        <div
-          aria-hidden
-          className="absolute inset-0 scale-110 bg-cover bg-center blur-2xl"
-          style={{ backgroundImage: `url("${ambient}")` }}
-        />
-      )}
-      {/* And the dark over it, so the picture in the middle is still the
-          brightest thing on the screen. */}
-      <div aria-hidden className="absolute inset-0 bg-ink/72" />
-
-      <div className={cx("flex h-full w-full items-center justify-center", SAFE_AREA)}>
+      {/*
+       * The stage: everything under the controls, and the surface a finger
+       * drags. The controls are a separate layer on top, so a touch on one of
+       * them never reaches it, and a swipe never starts on a button.
+       */}
+      <div
+        className="absolute inset-0"
+        style={{ touchAction: swipe.touchAction }}
+        {...swipe.handlers}
+      >
         {/*
-         * The frame. `h-full` and not `max-h-full`, which is the whole reason
-         * the controls used to disappear: a percentage height resolves against
-         * a parent that has one, and `max-h-full` leaves this box auto-height,
-         * so `max-h-full` on the picture inside it resolved to nothing at all.
-         * A portrait photo then rendered at its full height, overflowed the
-         * window, and pushed every button out of the bottom of the screen.
-         * With a real height here, the picture is bounded by the frame and the
-         * frame is bounded by the window.
+         * The photograph's own colours behind everything, out of focus.
+         *
+         * It is what makes the controls read as glass rather than as grey
+         * plastic: a see-through thing needs something behind it worth seeing.
+         * Scaled up because a blur that size pulls the edges of the picture
+         * inwards and would otherwise leave a soft border all the way round.
+         * Cross-faded on a step where the browser can, so the light behind the
+         * photo changes with it rather than in one hard cut.
          */}
+        {ambient && (
+          <div
+            aria-hidden
+            className="absolute inset-0 scale-110 bg-cover bg-center blur-2xl transition-[background-image] duration-300"
+            style={{ backgroundImage: `url("${ambient}")` }}
+          />
+        )}
+        {/* And the dark over it, so the picture in the middle is still the
+            brightest thing on the screen. */}
+        <div aria-hidden className="absolute inset-0 bg-ink/72" />
+
+        {/* The strip itself, the width of the window, moved by `useSwipe`. */}
+        <div ref={track} className="absolute inset-0 will-change-transform">
+          {slides.map(({ media, at }) => (
+            <Slide
+              key={media.id}
+              item={media}
+              at={at}
+              videoUrl={at === 0 ? videoUrl : undefined}
+              loaded={ready.has(media.id)}
+              onLoad={() => markReady(media.id)}
+              /* The ones either side wait for this one, like everything
+                 fetched ahead - unless they are already here. */
+              warm={at === 0 || onScreen || ready.has(media.id)}
+            />
+          ))}
+        </div>
+
+        {/*
+         * The photographs after this one, off-screen and at low priority.
+         *
+         * Real <Photo> elements rather than a hand-built preload link: they
+         * carry the same `sizes`, the same dimensions and the same fallback
+         * to an unoptimised copy, so the browser resolves the same URL it
+         * will want when the guest steps - and finds it already in the cache.
+         * The very next one is on the strip already, so it is not asked for
+         * twice.
+         *
+         * Clipped to nothing rather than `display: none`, which browsers are
+         * entitled to treat as a reason not to fetch at all.
+         */}
+        {onScreen && preload.length > 0 && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"
+          >
+            {preload.map((ahead) => {
+              const src = ahead.fullUrl ?? ahead.previewUrl;
+              return src && ahead.id !== next?.id ? (
+                <Photo
+                  key={ahead.id}
+                  src={src}
+                  alt=""
+                  width={ahead.width ?? 1200}
+                  height={ahead.height ?? 900}
+                  sizes={VIEW_SIZES}
+                  // Eager, or an image nowhere near the viewport is never
+                  // fetched at all - but behind everything the page still
+                  // wants, this photograph included.
+                  loading="eager"
+                  fetchPriority="low"
+                />
+              ) : null;
+            })}
+          </div>
+        )}
+      </div>
+
+      {/*
+       * The arrows, in a frame the same shape as the picture's but standing
+       * still while the strip moves underneath.
+       *
+       * Beside the picture rather than at the edge of the window, which on a
+       * wide screen is a long way from anything. Nothing to step to means one
+       * photo in the event, where two dead buttons would be furniture; and
+       * they go while the report sheet is open, because a guest choosing a
+       * reason should not be one mis-tap away from a different photograph.
+       */}
+      {(prev || next) && !reporting && (
         <div
           className={cx(
-            "relative flex h-full w-full max-w-2xl items-center justify-center",
-            /* A clip keeps its own controls along its bottom edge, and the
-               dock floats over that strip. The picture moves rather than the
-               dock: everything on the glass stays where it was put. */
-            item.kind === "video" && "pb-24",
+            "pointer-events-none absolute inset-0 z-10 flex items-center justify-center",
+            SAFE_AREA,
           )}
-          onTouchStart={item.kind === "video" ? undefined : onTouchStart}
-          onTouchEnd={item.kind === "video" ? undefined : onTouchEnd}
         >
-          {item.kind === "video" ? (
-            viewUrl ? (
-              <video
-                src={viewUrl}
-                poster={item.posterUrl ?? undefined}
-                controls
-                playsInline
-                preload="metadata"
-                onClick={(e) => e.stopPropagation()}
-                className="max-h-full max-w-full rounded-xl"
-              />
-            ) : (
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="shimmer aspect-video w-full overflow-hidden rounded-xl bg-well"
-              />
-            )
-          ) : viewUrl ? (
-            /*
-             * Through the optimiser rather than a bare <img>: `fullUrl` is the
-             * full-size copy, a couple of megabytes to fill 672 pixels.
-             *
-             * The shimmer sits *under* the image and the image is never faded
-             * in, so if `onLoad` never fires the photo still shows.
-             */
-            <>
-              {!loaded && (
-                <div className="shimmer absolute inset-0 overflow-hidden rounded-xl bg-well" />
-              )}
-              <Photo
-                src={viewUrl}
-                alt=""
-                // A 4:3 guess when we have no real dimensions: it only holds
-                // the shimmer's shape until the photo takes over.
-                width={item.width ?? 1200}
-                height={item.height ?? 900}
-                sizes={VIEW_SIZES}
-                onLoad={() => setLoaded(true)}
-                onClick={(e) => e.stopPropagation()}
-                // The point of the screen, so never lazy.
-                priority
-                /* Bounded both ways, and `w-auto`/`h-auto` so the aspect ratio
-                   survives the bounding: whichever edge runs out first is the
-                   one that holds the photograph. */
-                className="relative h-auto max-h-full w-auto max-w-full rounded-xl shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
-              />
-            </>
-          ) : (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="shimmer aspect-square w-full overflow-hidden rounded-xl bg-well"
-            />
-          )}
-
-          {/* Beside the picture rather than at the edge of the window, which on
-              a wide screen is a long way from anything. Nothing to step to
-              means one photo in the event, where two dead buttons would be
-              furniture; and they go while the report sheet is open, because a
-              guest choosing a reason should not be one mis-tap away from a
-              different photograph. */}
-          {(prevId || nextId) && !reporting && (
-            <>
-              <StepArrow direction="prev" targetId={prevId} onStep={onStep} />
-              <StepArrow direction="next" targetId={nextId} onStep={onStep} />
-            </>
-          )}
-
-          {/*
-           * The photographs after this one, off-screen and at low priority.
-           *
-           * Real <Photo> elements rather than a hand-built preload link: they
-           * carry the same `sizes`, the same dimensions and the same fallback
-           * to an unoptimised copy, so the browser resolves the same URL it
-           * will want when the guest steps - and finds it already in the cache.
-           *
-           * Clipped to nothing rather than `display: none`, which browsers are
-           * entitled to treat as a reason not to fetch at all.
-           */}
-          {onScreen && preload.length > 0 && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"
-            >
-              {preload.map((ahead) => {
-                const src = ahead.fullUrl ?? ahead.previewUrl;
-                return src ? (
-                  <Photo
-                    key={ahead.id}
-                    src={src}
-                    alt=""
-                    width={ahead.width ?? 1200}
-                    height={ahead.height ?? 900}
-                    sizes={VIEW_SIZES}
-                    // Eager, or an image nowhere near the viewport is never
-                    // fetched at all - but behind everything the page still
-                    // wants, this photograph included.
-                    loading="eager"
-                    fetchPriority="low"
-                  />
-                ) : null;
-              })}
-            </div>
-          )}
+          <div className="relative h-full w-full max-w-2xl">
+            <StepArrow direction="prev" targetId={prev?.id ?? null} onStep={step} />
+            <StepArrow direction="next" targetId={next?.id ?? null} onStep={step} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/*
        * The controls, on their own layer over the window rather than inside
@@ -518,9 +501,149 @@ function DockDivider() {
 }
 
 /**
+ * One photograph on the strip: the one on screen, or one either side of it
+ * waiting to be dragged in.
+ */
+function Slide({
+  item,
+  at,
+  videoUrl,
+  loaded,
+  onLoad,
+  warm,
+}: {
+  item: MediaView;
+  /** Left of the screen, on it, or right of it. */
+  at: -1 | 0 | 1;
+  /** Only for the clip on screen: the others show their poster. */
+  videoUrl?: string;
+  /** Its pixels have arrived, so the shimmer can go. */
+  loaded: boolean;
+  onLoad: () => void;
+  /** Whether its picture may be fetched yet. */
+  warm: boolean;
+}) {
+  /*
+   * What to show when it is not a playing clip. A photo shows the full copy
+   * through the optimiser, falling back to whatever the grid had if there is
+   * not one. A clip shows its poster until its URL arrives, so one dragged in
+   * from the side looks the same before and after it lands.
+   */
+  const still =
+    item.kind === "video"
+      ? (item.previewUrl ?? item.posterUrl)
+      : (item.fullUrl ?? item.previewUrl);
+  const picture = { [PICTURE_ATTR]: "" };
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+
+  return (
+    <div
+      aria-hidden={at === 0 ? undefined : true}
+      className={cx(
+        "absolute inset-0 flex items-center justify-center",
+        SAFE_AREA,
+      )}
+      style={
+        at === 0
+          ? undefined
+          : {
+              transform: `translate3d(calc(${at * 100}% + ${at * SLIDE_GAP_PX}px), 0, 0)`,
+            }
+      }
+    >
+      {/*
+       * The frame. `h-full` and not `max-h-full`, which is the whole reason
+       * the controls used to disappear: a percentage height resolves against
+       * a parent that has one, and `max-h-full` leaves this box auto-height,
+       * so `max-h-full` on the picture inside it resolved to nothing at all.
+       * A portrait photo then rendered at its full height, overflowed the
+       * window, and pushed every button out of the bottom of the screen.
+       * With a real height here, the picture is bounded by the frame and the
+       * frame is bounded by the window.
+       */}
+      <div
+        className={cx(
+          "relative flex h-full w-full max-w-2xl items-center justify-center",
+          /* A clip keeps its own controls along its bottom edge, and the
+             dock floats over that strip. The picture moves rather than the
+             dock: everything on the glass stays where it was put. */
+          item.kind === "video" && "pb-24",
+        )}
+      >
+        {videoUrl ? (
+          <video
+            src={videoUrl}
+            poster={item.posterUrl ?? undefined}
+            controls
+            playsInline
+            preload="metadata"
+            onClick={stop}
+            className="max-h-full max-w-full rounded-xl"
+          />
+        ) : (
+          /*
+           * Through the optimiser rather than a bare <img>: `fullUrl` is the
+           * full-size copy, a couple of megabytes to fill 672 pixels.
+           *
+           * The shimmer sits *under* the image and the image is never faded
+           * in, so if `onLoad` never fires the photo still shows.
+           */
+          <>
+            {!(still && loaded) && (
+              <div
+                {...picture}
+                onClick={stop}
+                className={cx(
+                  "shimmer overflow-hidden rounded-xl bg-well",
+                  still
+                    ? "absolute inset-0"
+                    : item.kind === "video"
+                      ? "aspect-video w-full"
+                      : "aspect-square w-full",
+                )}
+              />
+            )}
+            {still && warm && (
+              <Photo
+                {...picture}
+                src={still}
+                alt=""
+                // A 4:3 guess when we have no real dimensions: it only holds
+                // the shimmer's shape until the photo takes over.
+                width={item.width ?? 1200}
+                height={item.height ?? 900}
+                sizes={VIEW_SIZES}
+                // A poster is a small stored frame, already the right size.
+                unoptimized={item.kind === "video" || undefined}
+                onLoad={onLoad}
+                onClick={stop}
+                // The one on screen is the point of the screen, so never
+                // lazy. The ones beside it are eager too, or a picture off
+                // the edge is never fetched - but behind everything else.
+                {...(at === 0
+                  ? { priority: true }
+                  : { loading: "eager" as const, fetchPriority: "low" as const })}
+                /* Bounded both ways, and `w-auto`/`h-auto` so the aspect ratio
+                   survives the bounding: whichever edge runs out first is the
+                   one that holds the photograph. */
+                className="relative h-auto max-h-full w-auto max-w-full rounded-xl shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
+              />
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
  * One of the two arrows. A null target is the end of what has loaded: the
  * button stays put and greys out, because one that disappeared would move the
  * other and shift the photo underneath.
+ *
+ * On a touch screen they step aside: the photo itself is the control there,
+ * swiped or tapped on either half. Still in the page for a screen reader,
+ * which cannot swipe a picture, so `sr-only` rather than `hidden`.
  */
 function StepArrow({
   direction,
@@ -550,7 +673,7 @@ function StepArrow({
          * took its own middle with it. The picture is bounded by the window
          * now, so half of it is always somewhere a thumb can reach.
          */
-        "absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
+        "pointer-events-auto absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45 pointer-coarse:sr-only",
         GLASS,
         back ? "left-2" : "right-2",
       )}

@@ -349,12 +349,7 @@ export function GuestGallery({
 
   const openIndex = openId ? wall.findIndex((i) => i.id === openId) : -1;
   const open = openIndex === -1 ? null : wall[openIndex];
-  const step = open
-    ? neighbours(
-        wall.map((i) => i.id),
-        open.id,
-      )
-    : null;
+  const step = open ? neighbours(wall, open.id) : null;
 
   const isSelected = useCallback(
     (item: MediaView) => selectedIds.has(item.id),
@@ -639,8 +634,8 @@ export function GuestGallery({
         <Lightbox
           token={token}
           item={open}
-          prevId={step.prev}
-          nextId={step.next}
+          prev={step.prev}
+          next={step.next}
           position={openIndex + 1}
           total={wall.length}
           /* Fetched behind this one so the next few steps are instant. Recut

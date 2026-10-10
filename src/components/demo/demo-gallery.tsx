@@ -21,12 +21,7 @@ export function DemoGallery() {
     ? DEMO_MEDIA.findIndex((item) => item.id === openId)
     : -1;
   const open = openIndex === -1 ? null : DEMO_MEDIA[openIndex];
-  const step = open
-    ? neighbours(
-        DEMO_MEDIA.map((item) => item.id),
-        open.id,
-      )
-    : null;
+  const step = open ? neighbours(DEMO_MEDIA, open.id) : null;
 
   return (
     <section className="mt-10 sm:mt-12">
@@ -51,8 +46,8 @@ export function DemoGallery() {
           token=""
           demo
           item={open}
-          prevId={step.prev}
-          nextId={step.next}
+          prev={step.prev}
+          next={step.next}
           position={openIndex + 1}
           total={DEMO_MEDIA.length}
           preload={upcoming(DEMO_MEDIA, open.id)}
