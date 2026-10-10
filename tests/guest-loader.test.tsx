@@ -25,13 +25,17 @@ describe("the guest page's loading screen", () => {
     expect(html).toContain("min-h-dvh");
   });
 
-  it("runs the film through the frame", () => {
-    // Six rows is what lets the strip loop on half its own height without a
-    // visible seam - see `.reel` in globals.css.
-    expect(html).toContain("reel");
-    expect(html.match(/mb-2 flex h-14/g)).toHaveLength(6);
-    // The mark's four brackets around it, hunting for focus.
-    expect(html.match(/focus-corner/g)).toHaveLength(4);
+  it("is the mark, and nothing drawn on top of it", () => {
+    // A guest is waiting two seconds, not watching something. One object
+    // doing one thing: breathing, with its frame leaving it in echoes.
+    expect(html).toContain("Shot &amp; Share");
+    expect(html).toContain("mark-breathe");
+    expect(html.match(/mark-echo/g)).toHaveLength(2);
+  });
+
+  it("staggers the echoes so one is always leaving", () => {
+    // Both on the same beat is a blink rather than a pulse.
+    expect(html).toContain("animation-delay:1200ms");
   });
 
   it("opens on the page's own colour, not on the cover's", () => {

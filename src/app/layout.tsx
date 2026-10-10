@@ -111,7 +111,12 @@ export default function RootLayout({
           json={graph(organisationSchema(), websiteSchema())}
         />
       </head>
-      <body>{children}</body>
+      {/* Browser extensions write their own attributes onto <body> before
+          React hydrates - ColorZilla's `cz-shortcut-listen`, password
+          managers, translators - and every one of them is a hydration
+          mismatch nobody can fix from here. This forgives attributes on this
+          element only; a mismatch in anything inside it still shouts. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

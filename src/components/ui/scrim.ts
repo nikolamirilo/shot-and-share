@@ -1,6 +1,6 @@
 /**
- * The colours of anything sitting on the dark scrim: the lightbox's buttons,
- * its arrows, and the report sheet inside it.
+ * The colours of anything sitting on the dark scrim: the lightbox's controls
+ * and the report sheet inside it.
  *
  * These deliberately do not come from the event theme, and that is the whole
  * point of them. `chalk` means "whatever reads on the accent", so a host who
@@ -16,23 +16,33 @@
 export const ON_SCRIM = "bg-scrim text-scrim-ink";
 
 /**
- * The same pair for a control that sits over a photograph rather than over the
- * scrim - the step arrows. A pale chip on a pale photograph needs an edge, and
- * the shadow is what gives it one.
+ * Glass: white, mostly see-through, with the photograph blurred behind it.
+ * Every control in the lightbox is made of it - the dock, the counter, the
+ * close button, the two arrows and the report sheet - so none of them can
+ * drift into looking like a different kind of thing from the one beside it.
+ *
+ * A name rather than the bare class because this is a decision with a reason
+ * behind it, and the reason is written where the material is: globals.css,
+ * under "Glass". The short version is that the type on it is dark, which is
+ * what keeps it readable over a photograph of a night sky and over a
+ * photograph of a white dress.
  */
-export const ON_SCRIM_FLOATING = `${ON_SCRIM} shadow-lg`;
+export const GLASS = "glass";
 
 /**
- * The step arrows: the same pale chip, see-through, so it does not sit on the
- * photograph as a solid white disc. The blur keeps the chevron readable over a
- * busy picture, and the fill firms up under a finger or a pointer.
+ * The same glass, thickened, for a panel carrying sentences rather than a
+ * word: the report sheet. Thin glass is lovely under a four-letter label and
+ * hard work under a paragraph, because what shows through it is a photograph
+ * of a table full of flowers and the reader is trying to read.
  */
-export const ON_SCRIM_ARROW =
-  "bg-scrim/40 text-scrim-ink shadow-lg backdrop-blur-sm hover:bg-scrim/75";
+export const GLASS_DENSE = "glass bg-scrim/92";
 
 /**
- * The quiet register on the same scrim: the photo counter, the note about a
- * video still converting. Dark pill, light type - the inverse of a control, so
- * a label never competes with a button for attention on top of a photograph.
+ * The quiet register, and only on `GLASS_DENSE`: the second line of the report
+ * sheet, "Never mind". Softened ink on thin glass does not clear AA over a
+ * dark photograph, so it is not offered there - a label on the dock is held
+ * back by its size and its tracking instead.
+ *
+ * The scrim's own ink, never `ash` or `mist`, which the theme rewrites.
  */
-export const ON_SCRIM_QUIET = "bg-scrim-ink/72 text-scrim";
+export const GLASS_QUIET = "text-scrim-ink/70";

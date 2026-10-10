@@ -229,6 +229,53 @@
     box-shadow: var(--shadow-md);
   }
 
+  /* --- Glass -----------------------------------------------------------------
+     The one material every control in the lightbox is made of: white, mostly
+     see-through, with the photograph blurred behind it.
+
+     White with dark type on it, rather than something dark with light type,
+     and that is the whole trick. A pale panel stays pale over a night shot
+     *and* over a white dress, so the label reads either way; light type on
+     clear glass disappears the moment somebody photographs the sky. It is also
+     what replaced three fills that never looked related - a solid white pill
+     for the buttons, a see-through white disc for the arrows, and a dark pill
+     for the counter.
+
+     The pair is the scrim's own, `--color-scrim` and `--color-scrim-ink`:
+     literal hex, never handed to a theme, for the reason set out in
+     components/ui/scrim.ts. A host's accent cannot reach in here and paint the
+     controls black on black.
+
+     The line along the top edge is what makes it read as glass rather than as
+     a flat wash - it is where the light would catch.
+     -------------------------------------------------------------------------- */
+  .glass {
+    background-color: color-mix(in srgb, var(--color-scrim) 68%, transparent);
+    background-image: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.38),
+      rgba(255, 255, 255, 0.04)
+    );
+    -webkit-backdrop-filter: blur(24px) saturate(165%);
+    backdrop-filter: blur(24px) saturate(165%);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 10px 30px rgba(0, 0, 0, 0.3);
+    color: var(--color-scrim-ink);
+  }
+
+  /* Nothing to blur: an old Firefox, or a browser with the effect switched
+     off. See-through then just means hard to read, so it stops being
+     see-through. */
+  @supports not (
+    (backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))
+  ) {
+    .glass {
+      background-color: var(--color-scrim);
+    }
+  }
+
   /* --- Photographs inside the type ------------------------------------------
      The headline is not coloured, it is *filled*: a frame from an event behind
      the words and clipped to the letterforms, so the first thing a visitor sees
@@ -575,53 +622,44 @@
    draw anything until the database has answered, and the cover photograph,
    which is one full-size file stretched across a whole phone.
 
-   The reel is the loading screen's centrepiece - a strip of film advancing
-   through the mark's frame. It loops on a translate of exactly half its own
-   height, so with six identical rows the second half arrives where the first
-   began and the seam is never visible. The sweep is the light going over it.
+   The loading screen is the mark, breathing, with its own frame leaving it in
+   echoes - a shutter going off slowly. Nothing is drawn that is not already
+   the logo, because a guest is waiting two seconds, not watching a film.
    ------------------------------------------------------------------------- */
-@keyframes reel-advance {
-  from {
-    transform: none;
-  }
-  to {
-    transform: translateY(-50%);
-  }
-}
-
-.reel {
-  animation: reel-advance 2.6s linear infinite;
-}
-
-/* Down the frame rather than across it, because the film runs that way. */
-@keyframes reel-sweep {
-  0% {
-    transform: translateY(-140%);
-  }
-  100% {
-    transform: translateY(240%);
-  }
-}
-
-.reel-sweep {
-  animation: reel-sweep 2.6s ease-in-out infinite;
-}
-
-/* The mark's four brackets, pulled out and let back in - a lens hunting for
-   focus. Each corner is handed its own diagonal as --fx/--fy, so the one
-   declaration covers all four. */
-@keyframes focus-pull {
+@keyframes mark-breathe {
   0%,
   100% {
-    transform: none;
+    transform: scale(1);
   }
   50% {
-    transform: translate(var(--fx), var(--fy));
+    transform: scale(1.06);
   }
 }
 
-.focus-corner {
-  animation: focus-pull 2.6s ease-in-out infinite;
+.mark-breathe {
+  animation: mark-breathe 2.4s ease-in-out infinite;
+}
+
+/* The frame, let go of. Two of these run half a cycle apart, so one is always
+   on its way out as the next leaves - a pulse rather than a blink. */
+@keyframes mark-echo {
+  /* Out of the frame rather than sitting on it: at full strength from the
+     first frame the echo is a claret border glued to the logo. */
+  0% {
+    transform: scale(1);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.mark-echo {
+  animation: mark-echo 2.4s cubic-bezier(0.16, 0.8, 0.3, 1) infinite;
 }
 
 /* Over the empty well a cover photograph is about to land in. The band is
@@ -745,9 +783,8 @@
   .ribbon-reveal,
   .viewfinder-corner,
   .photo-fill-drift,
-  .reel,
-  .reel-sweep,
-  .focus-corner,
+  .mark-breathe,
+  .mark-echo,
   .shimmer::after {
     animation: none !important;
   }

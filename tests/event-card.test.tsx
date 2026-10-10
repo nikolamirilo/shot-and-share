@@ -206,8 +206,10 @@ describe("what the preview says", () => {
   it("leads with the event, not with us", async () => {
     const meta = await metadata();
 
-    expect(meta.title).toEqual({ absolute: "Share your photos from Ana and Marko" });
-    expect(meta.openGraph?.title).toBe("Share your photos from Ana and Marko");
+    // The name on its own: a guest reading a chat preview is deciding whether
+    // this is their friend's wedding, not reading an instruction.
+    expect(meta.title).toEqual({ absolute: "Ana and Marko" });
+    expect(meta.openGraph?.title).toBe("Ana and Marko");
     expect(meta.description).toContain("Ana and Marko");
     // The date a guest can check against the one in their calendar.
     expect(meta.description).toContain("1 August 2026");
@@ -243,12 +245,12 @@ describe("what the preview says", () => {
     // A paid page has no header and no footer of ours; the tab and the chat
     // preview are the two places our name used to survive that.
     const paid = await metadata();
-    expect(paid.title).toEqual({ absolute: "Share your photos from Ana and Marko" });
+    expect(paid.title).toEqual({ absolute: "Ana and Marko" });
     expect(paid.openGraph?.siteName).toBe("Ana and Marko");
 
     event = { ...EVENT, tier: TIERS.free.id };
     const free = await metadata();
-    expect(free.title).toBe("Share your photos from Ana and Marko");
+    expect(free.title).toBe("Ana and Marko");
     expect(free.openGraph?.siteName).toBe(SITE.name);
   });
 

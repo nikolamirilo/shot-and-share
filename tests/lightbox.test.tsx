@@ -31,6 +31,13 @@ const PHOTO: MediaView = {
   previewUrl: "/hero/variants/01.jpg",
   fullUrl: "/hero/variants/01.jpg",
   createdAt: "2026-01-01T00:00:00.000Z",
+  takenAt: "2026-01-01T00:00:00.000Z",
+  uploaderFingerprint: null,
+  sizeBytes: 1000,
+  posterUrl: null,
+  durationSeconds: null,
+  processing: false,
+  format: "jpeg",
 };
 
 function markup(over: Partial<Parameters<typeof Lightbox>[0]> = {}) {

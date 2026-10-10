@@ -11,13 +11,7 @@ import {
 } from "react-icons/md";
 
 import { ReportButton } from "@/components/gallery/report-button";
-import {
-  ON_SCRIM_ARROW,
-  ON_SCRIM_FLOATING,
-  ON_SCRIM_QUIET,
-  Photo,
-  cx,
-} from "@/components/ui";
+import { GLASS, Photo, cx } from "@/components/ui";
 import type { MediaView } from "@/lib/media-view";
 
 /** Below this a drag is a tap with a shaky hand, not a swipe. */
@@ -33,6 +27,33 @@ const SWIPE_MIN_PX = 50;
  * different URL is a fetch that warms nothing.
  */
 const VIEW_SIZES = "(max-width: 704px) 100vw, 672px";
+
+/**
+ * The notch at the top, the home indicator at the bottom, the rounded corners
+ * in landscape. Shared because the picture and the controls are two separate
+ * layers over the same window and have to agree on where its edges are.
+ */
+const SAFE_AREA =
+  "p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4";
+
+/**
+ * One command in the dock.
+ *
+ * A fixed height and a minimum width, so a command is the same shape whether
+ * its label is showing or not, and the pill around them cannot change size
+ * when one of them changes state. That is the bug this layout exists to fix:
+ * the old row was centred and wrapped, so "Add to favourites" becoming
+ * "Favourite" moved every other button sideways.
+ */
+const DOCK_ITEM =
+  "inline-flex h-12 min-w-12 shrink-0 items-center justify-center gap-2 rounded-full px-3.5 text-small font-semibold leading-none transition-colors hover:bg-scrim-ink/10 sm:px-4";
+
+/**
+ * The word beside the icon. Hidden on a phone, where four labels do not fit
+ * across a pill - but `sr-only` rather than `hidden`, because a button with
+ * its label set to `display: none` has no name for a screen reader to read.
+ */
+const DOCK_LABEL = "sr-only sm:not-sr-only";
 
 export function Lightbox({
   token,
@@ -77,7 +98,7 @@ export function Lightbox({
   onReported?: (id: string) => void;
   /** Whether this one is in the guest's favourites. */
   favorite?: boolean;
-  /** Present on the guest wall only: the heart beside Download. */
+  /** Present on the guest wall only: the heart in the dock. */
   onToggleFavorite?: (id: string) => void;
   /**
    * The demo gallery, whose photographs are files in `public` rather than rows
@@ -171,6 +192,14 @@ export function Lightbox({
     item.kind === "video" ? full?.url : (item.fullUrl ?? item.previewUrl);
 
   /*
+   * What the backdrop is made of: this photograph again, blown up, blurred and
+   * dimmed. The thumbnail rather than the full copy - it is about to be thrown
+   * out of focus, and the wall has already fetched it, so it costs nothing and
+   * is there before the big one lands.
+   */
+  const ambient = item.previewUrl ?? item.posterUrl ?? item.fullUrl;
+
+  /*
    * This photograph is up, so the connection is free for the next ones. Waiting
    * on it rather than firing everything at once is the same bargain the wall
    * makes in `useLoadQueue`: on a venue's wifi, six requests at once means the
@@ -190,14 +219,31 @@ export function Lightbox({
        * Safari's toolbar, taking whatever was down there with it. The dynamic
        * unit is the window as it actually is right now.
        */
-      className="fixed inset-0 z-50 h-[100dvh] overscroll-contain bg-ink/92"
+      className="fixed inset-0 z-50 h-[100dvh] overflow-hidden overscroll-contain bg-ink/92"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
-      {/* Safe areas on all four sides: the notch at the top, the home
-          indicator at the bottom, and the rounded corners in landscape. */}
-      <div className="flex h-full w-full items-center justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-4">
+      {/*
+       * The photograph's own colours behind everything, out of focus.
+       *
+       * It is what makes the controls read as glass rather than as grey
+       * plastic: a see-through thing needs something behind it worth seeing.
+       * Scaled up because a blur that size pulls the edges of the picture
+       * inwards and would otherwise leave a soft border all the way round.
+       */}
+      {ambient && (
+        <div
+          aria-hidden
+          className="absolute inset-0 scale-110 bg-cover bg-center blur-2xl"
+          style={{ backgroundImage: `url("${ambient}")` }}
+        />
+      )}
+      {/* And the dark over it, so the picture in the middle is still the
+          brightest thing on the screen. */}
+      <div aria-hidden className="absolute inset-0 bg-ink/72" />
+
+      <div className={cx("flex h-full w-full items-center justify-center", SAFE_AREA)}>
         {/*
          * The frame. `h-full` and not `max-h-full`, which is the whole reason
          * the controls used to disappear: a percentage height resolves against
@@ -209,7 +255,13 @@ export function Lightbox({
          * frame is bounded by the window.
          */}
         <div
-          className="relative flex h-full w-full max-w-2xl items-center justify-center"
+          className={cx(
+            "relative flex h-full w-full max-w-2xl items-center justify-center",
+            /* A clip keeps its own controls along its bottom edge, and the
+               dock floats over that strip. The picture moves rather than the
+               dock: everything on the glass stays where it was put. */
+            item.kind === "video" && "pb-24",
+          )}
           onTouchStart={item.kind === "video" ? undefined : onTouchStart}
           onTouchEnd={item.kind === "video" ? undefined : onTouchEnd}
         >
@@ -257,7 +309,7 @@ export function Lightbox({
                 /* Bounded both ways, and `w-auto`/`h-auto` so the aspect ratio
                    survives the bounding: whichever edge runs out first is the
                    one that holds the photograph. */
-                className="relative h-auto max-h-full w-auto max-w-full rounded-xl"
+                className="relative h-auto max-h-full w-auto max-w-full rounded-xl shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
               />
             </>
           ) : (
@@ -267,134 +319,18 @@ export function Lightbox({
             />
           )}
 
-          {/* Nothing to step to means one photo in the event, where two dead
-              buttons would be furniture. Drawn before the layer below so that
-              anything on it - the report sheet especially - covers them rather
-              than fighting them for the same strip of screen. */}
+          {/* Beside the picture rather than at the edge of the window, which on
+              a wide screen is a long way from anything. Nothing to step to
+              means one photo in the event, where two dead buttons would be
+              furniture; and they go while the report sheet is open, because a
+              guest choosing a reason should not be one mis-tap away from a
+              different photograph. */}
           {(prevId || nextId) && !reporting && (
             <>
               <StepArrow direction="prev" targetId={prevId} onStep={onStep} />
               <StepArrow direction="next" targetId={nextId} onStep={onStep} />
             </>
           )}
-
-          {/*
-           * Every control is laid *on* the picture rather than in a row under
-           * it. A row under it is only reachable when the picture leaves room,
-           * and on a phone in portrait it never does.
-           *
-           * The layer itself takes no clicks - a tap beside the photograph
-           * still closes, and a swipe still steps - so each control turns them
-           * back on for itself.
-           */}
-          <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-2 sm:p-3">
-            <div className="flex items-start justify-between gap-2">
-              {total > 1 ? (
-                <span
-                  className={cx(
-                    "rounded-full px-3 py-1.5 font-mono text-micro uppercase tracking-[0.16em]",
-                    ON_SCRIM_QUIET,
-                  )}
-                >
-                  {position} of {total}
-                </span>
-              ) : (
-                <span />
-              )}
-
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                title="Close"
-                className={cx(
-                  "pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform hover:scale-105",
-                  ON_SCRIM_FLOATING,
-                )}
-              >
-                <MdClose aria-hidden className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Above the video's own controls rather than across the scrub
-                bar, which is the one strip of a video that has to stay free. */}
-            <div
-              className={cx(
-                "flex min-h-0 flex-col items-center gap-2 overflow-y-auto",
-                item.kind === "video" && "pb-12",
-              )}
-            >
-              {item.processing && (
-                <p
-                  className={cx(
-                    "rounded-xl px-3 py-2 text-center text-label",
-                    ON_SCRIM_QUIET,
-                  )}
-                >
-                  Still being converted so it plays everywhere. Check back
-                  shortly.
-                </p>
-              )}
-
-              <div
-                className="pointer-events-auto flex w-full max-w-sm flex-wrap items-center justify-center gap-2.5"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* One anchor in two states rather than one that appears when
-                    the link lands: stepping re-fetches, and a button that
-                    vanishes and returns moves the one beside it every time.
-                    Absent entirely once the request finishes with no link,
-                    since there is nothing to wait for. */}
-                {(linkPending || full?.downloadUrl) && (
-                  <a
-                    href={full?.downloadUrl}
-                    download={full?.downloadUrl ? true : undefined}
-                    aria-disabled={full?.downloadUrl ? undefined : true}
-                    className={cx(
-                      "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-small font-semibold leading-tight",
-                      ON_SCRIM_FLOATING,
-                      !full?.downloadUrl && "opacity-45",
-                    )}
-                  >
-                    <MdOutlineFileDownload
-                      aria-hidden
-                      className="shrink-0 text-[1.25em]"
-                    />
-                    Download
-                  </a>
-                )}
-                {onToggleFavorite && (
-                  <button
-                    type="button"
-                    onClick={() => onToggleFavorite(item.id)}
-                    aria-pressed={favorite ? true : false}
-                    className={cx(
-                      "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-small font-semibold leading-tight",
-                      ON_SCRIM_FLOATING,
-                    )}
-                  >
-                    {favorite ? (
-                      <MdFavorite aria-hidden className="shrink-0 text-[1.25em]" />
-                    ) : (
-                      <MdFavoriteBorder
-                        aria-hidden
-                        className="shrink-0 text-[1.25em]"
-                      />
-                    )}
-                    {favorite ? "Favourite" : "Add to favourites"}
-                  </button>
-                )}
-                {onReported && (
-                  <ReportButton
-                    token={token}
-                    mediaId={item.id}
-                    onReported={() => onReported(item.id)}
-                    onOpenChange={setReporting}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
 
           {/*
            * The photographs after this one, off-screen and at low priority.
@@ -434,8 +370,151 @@ export function Lightbox({
           )}
         </div>
       </div>
+
+      {/*
+       * The controls, on their own layer over the window rather than inside
+       * the frame. Pinned to the window and not to the picture, which is the
+       * point: a tall photograph and a wide one now give the same screen, and
+       * nothing down here moves when the one above it changes shape.
+       *
+       * The layer itself takes no clicks - a tap beside the photograph still
+       * closes, and a swipe still steps - so each control turns them back on
+       * for itself.
+       */}
+      <div
+        className={cx(
+          "pointer-events-none absolute inset-0 z-20 flex flex-col justify-between",
+          SAFE_AREA,
+        )}
+      >
+        <div className="flex items-start justify-between gap-2">
+          {total > 1 ? (
+            <span
+              /* Quiet by being 11px mono and widely tracked, rather than by
+                 being a faded ink: faded ink on thin glass over a dark
+                 photograph is the one combination that does not clear AA. */
+              className={cx(
+                "rounded-full px-3.5 py-2 font-mono text-micro uppercase tracking-[0.16em]",
+                GLASS,
+              )}
+            >
+              {position} of {total}
+            </span>
+          ) : (
+            <span />
+          )}
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close"
+            className={cx(
+              "pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform hover:scale-105",
+              GLASS,
+            )}
+          >
+            <MdClose aria-hidden className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-col items-center gap-2.5">
+          {item.processing && (
+            <p
+              className={cx(
+                "max-w-sm rounded-2xl px-3.5 py-2 text-center text-label",
+                GLASS,
+              )}
+            >
+              Still being converted so it plays everywhere. Check back shortly.
+            </p>
+          )}
+
+          {/*
+           * The dock: one pill holding every command, centred on the window.
+           *
+           * One shape rather than a row of separate buttons, and that is what
+           * the old layer got wrong - a white pill beside a see-through arrow
+           * beside a dark counter looked like three different interfaces
+           * fighting for the same strip of screen.
+           *
+           * `relative` because the report sheet opens upwards out of it.
+           */}
+          <div
+            className={cx(
+              "pointer-events-auto relative flex max-w-full items-center gap-1 rounded-full p-1.5",
+              GLASS,
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* One anchor in two states rather than one that appears when the
+                link lands: stepping re-fetches, and a button that vanishes and
+                returns moves the one beside it every time. Absent entirely
+                once the request finishes with no link, since there is nothing
+                left to wait for. */}
+            {(linkPending || full?.downloadUrl) && (
+              <a
+                href={full?.downloadUrl}
+                download={full?.downloadUrl ? true : undefined}
+                aria-disabled={full?.downloadUrl ? undefined : true}
+                className={cx(DOCK_ITEM, !full?.downloadUrl && "opacity-45")}
+              >
+                <MdOutlineFileDownload
+                  aria-hidden
+                  className="shrink-0 text-[1.25em]"
+                />
+                <span className={DOCK_LABEL}>Download</span>
+              </a>
+            )}
+
+            {onToggleFavorite && (
+              <>
+                <DockDivider />
+                <button
+                  type="button"
+                  onClick={() => onToggleFavorite(item.id)}
+                  aria-pressed={favorite ? true : false}
+                  className={DOCK_ITEM}
+                >
+                  {/* The heart fills in; the word stays put. A label that
+                      changed with the state would change the width of the
+                      pill, and the pill is centred. */}
+                  {favorite ? (
+                    <MdFavorite aria-hidden className="shrink-0 text-[1.25em]" />
+                  ) : (
+                    <MdFavoriteBorder
+                      aria-hidden
+                      className="shrink-0 text-[1.25em]"
+                    />
+                  )}
+                  <span className={DOCK_LABEL}>Favourite</span>
+                </button>
+              </>
+            )}
+
+            {onReported && (
+              <>
+                <DockDivider />
+                <ReportButton
+                  token={token}
+                  mediaId={item.id}
+                  className={DOCK_ITEM}
+                  labelClassName={DOCK_LABEL}
+                  onReported={() => onReported(item.id)}
+                  onOpenChange={setReporting}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
+}
+
+/** The hairline between two commands in the dock. */
+function DockDivider() {
+  return <span aria-hidden className="h-6 w-px shrink-0 bg-scrim-ink/15" />;
 }
 
 /**
@@ -471,7 +550,8 @@ function StepArrow({
          * took its own middle with it. The picture is bounded by the window
          * now, so half of it is always somewhere a thumb can reach.
          */
-        `absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45 ${ON_SCRIM_ARROW}`,
+        "absolute top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-105 disabled:pointer-events-none disabled:opacity-45",
+        GLASS,
         back ? "left-2" : "right-2",
       )}
     >
