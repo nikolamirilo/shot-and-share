@@ -30,8 +30,8 @@ const FULL_KEY = `${OWNER}/${EVENT_ID}/full/${COVER_ID}.jpg`;
 const EVENT: Record<string, unknown> = {
   id: EVENT_ID,
   owner_id: OWNER,
-  name: "Ana and Marko",
-  event_date: "2026-08-01",
+  name: "Romeo and Juliet",
+  retention_from: "2026-08-01T00:00:00.000Z",
   welcome_message: null,
   tier: TIERS.plus.id,
   status: "active",
@@ -208,11 +208,9 @@ describe("what the preview says", () => {
 
     // The name on its own: a guest reading a chat preview is deciding whether
     // this is their friend's wedding, not reading an instruction.
-    expect(meta.title).toEqual({ absolute: "Ana and Marko" });
-    expect(meta.openGraph?.title).toBe("Ana and Marko");
-    expect(meta.description).toContain("Ana and Marko");
-    // The date a guest can check against the one in their calendar.
-    expect(meta.description).toContain("1 August 2026");
+    expect(meta.title).toEqual({ absolute: "Romeo and Juliet" });
+    expect(meta.openGraph?.title).toBe("Romeo and Juliet");
+    expect(meta.description).toContain("Romeo and Juliet");
   });
 
   it("prefers the host's own welcome message", async () => {
@@ -245,12 +243,12 @@ describe("what the preview says", () => {
     // A paid page has no header and no footer of ours; the tab and the chat
     // preview are the two places our name used to survive that.
     const paid = await metadata();
-    expect(paid.title).toEqual({ absolute: "Ana and Marko" });
-    expect(paid.openGraph?.siteName).toBe("Ana and Marko");
+    expect(paid.title).toEqual({ absolute: "Romeo and Juliet" });
+    expect(paid.openGraph?.siteName).toBe("Romeo and Juliet");
 
     event = { ...EVENT, tier: TIERS.free.id };
     const free = await metadata();
-    expect(free.title).toBe("Ana and Marko");
+    expect(free.title).toBe("Romeo and Juliet");
     expect(free.openGraph?.siteName).toBe(SITE.name);
   });
 

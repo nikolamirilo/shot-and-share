@@ -57,7 +57,7 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <HeaderShell className="sticky top-0 z-40">
       <Link href="/" aria-label="Shot & Share, home" className="flex shrink-0 items-center">
-        <Wordmark labelClassName="hidden xs:inline" />
+        <Wordmark />
       </Link>
 
       <nav className="hidden items-center gap-5 md:flex">

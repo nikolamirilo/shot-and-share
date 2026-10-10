@@ -29,7 +29,7 @@ export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
     ],
     [
       "Do I have to pay before the event?",
-      `No. Create the event and print the QR card for free, and upgrade whenever you like. If you expect more than about ${photoCountLabel(TIERS.free.quotaBytes)} photos, upgrade before the day so no guest finds a full event.`,
+      `No. Create the event and print the QR code for free, and upgrade whenever you like. If you expect more than about ${photoCountLabel(TIERS.free.quotaBytes)} photos, upgrade before the day so no guest finds a full event.`,
     ],
     [
       "Can guests see the photos everyone else uploaded?",

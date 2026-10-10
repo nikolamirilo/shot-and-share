@@ -73,7 +73,7 @@ export function UpgradePanel({
     options.push({
       product: "pro",
       title: `Move up to ${TIERS.pro.name}`,
-      body: `${formatBytes(TIERS.pro.quotaBytes, 0)}, twelve months, a branded print-ready card, and the live slideshow.`,
+      body: `${formatBytes(TIERS.pro.quotaBytes, 0)}, twelve months, video up to ${formatBytes(TIERS.pro.maxFileBytes, 0)} a clip, and the live slideshow.`,
       price: TIERS.pro.priceEur,
     });
   }

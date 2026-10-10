@@ -27,8 +27,8 @@ export default function NewEventPage() {
         What are we collecting photos from?
       </h1>
       <p className="mt-3 max-w-xl text-body text-ash">
-        Two fields. You get a link and a printable QR code straight after, and
-        you can change any of this later.
+        Just a name. You get a link and a printable QR code straight after, and
+        you can change it later.
       </p>
 
       <div className="mt-8 grid gap-5 sm:mt-9 sm:gap-8 md:grid-cols-[1.2fr_1fr]">

@@ -11,16 +11,6 @@ export function formatBytes(bytes: number, digits = 1): string {
   return `${rounded} ${UNITS[i]}`;
 }
 
-export function formatEventDate(date: string | Date): string {
-  const d = typeof date === "string" ? new Date(`${date}T00:00:00Z`) : date;
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(d);
-}
-
 export function formatDateTime(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
   return new Intl.DateTimeFormat("en-GB", {

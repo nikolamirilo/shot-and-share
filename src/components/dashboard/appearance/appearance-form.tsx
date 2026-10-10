@@ -169,7 +169,6 @@ export function AppearanceForm({
         <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
           <EventPreview
             name={event.name || "Your event"}
-            date={event.event_date}
             message={event.welcome_message}
             palette={palette}
             font={font}

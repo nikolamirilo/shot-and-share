@@ -12,9 +12,9 @@ import {
 } from "@/lib/tiers";
 
 describe("tiers", () => {
-  it("counts expiry from the event date, not the purchase date", () => {
-    // A host who buys six months ahead of the wedding must not lose half the
-    // window they paid for.
+  it("lays the plan's days off the anchor it is given", () => {
+    // Which day that is belongs to `recomputeEntitlement` - see the anchor
+    // tests in billing-lifecycle. This is only the arithmetic.
     const expiry = computeExpiry("2026-06-20", TIERS.pro);
     expect(expiry.toISOString().slice(0, 10)).toBe("2027-06-20");
   });

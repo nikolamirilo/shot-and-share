@@ -6,8 +6,8 @@ export interface TabItem {
   /**
    * The two fields the bottom bar needs, and nothing else uses. Six labels
    * share the width of a phone there, which is about ten characters each -
-   * "Event page" and "Analytics" do not survive that, so they get a shorter
-   * name and an icon to carry the meaning the letters gave up.
+   * anything longer gets a shorter name and an icon to carry the meaning the
+   * letters gave up.
    */
   short?: string;
   icon?: ReactNode;

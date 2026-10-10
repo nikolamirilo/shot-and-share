@@ -109,7 +109,7 @@ async function notifyHost(
         eventId: args.eventId,
         eventName: args.eventName,
         reason: args.reason,
-        reviewUrl: `${env.siteUrl}/dashboard/events/${args.eventId}#photos`,
+        reviewUrl: `${env.siteUrl}/dashboard/events/${args.eventId}#event`,
       }),
     );
   } catch (error) {

@@ -61,7 +61,6 @@ export default function DemoPage() {
         <EventCover
           variant="classic"
           name={DEMO_EVENT.name}
-          date={DEMO_EVENT.date}
           message={DEMO_EVENT.message}
           coverUrl={DEMO_MEDIA[0].fullUrl}
           palette={palette}

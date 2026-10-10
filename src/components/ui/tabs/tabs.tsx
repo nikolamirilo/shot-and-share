@@ -210,9 +210,26 @@ export function Tabs({
                   {item.icon}
                 </span>
               )}
+              {/* The same icons beside the label once there is room for both.
+                  Five mono words in a column read as a list of settings; with
+                  the marks in front they read as the five places they go, and
+                  the rail agrees with the bar the phone showed. Not in a
+                  segmented control: those segments share one width and an icon
+                  takes it from the only thing that names them. */}
+              {item.icon && !shape.segmented && (
+                <span
+                  aria-hidden
+                  className={cx(
+                    "shrink-0 text-[0.9375rem]",
+                    shape.bar && "hidden sm:block",
+                  )}
+                >
+                  {item.icon}
+                </span>
+              )}
               {/* The short name is what the bar has room for; the full one is
                   the accessible name at every width, so a screen reader hears
-                  "Event page" rather than "Page" whatever the screen is. */}
+                  the whole label whatever the screen is. */}
               {shape.bar && (
                 <span aria-hidden className="tracking-[0.04em] sm:hidden">
                   {item.short ?? item.label}

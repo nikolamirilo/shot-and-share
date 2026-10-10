@@ -11,7 +11,6 @@ import {
 import { paletteToCssVars } from "@/lib/appearance";
 import type { FontSet } from "@/lib/fonts";
 import { fontToCssVars } from "@/lib/fonts";
-import { formatEventDate } from "@/lib/format";
 import { Hole, PhotoPlaceholder, cx } from "@/components/ui";
 
 /**
@@ -154,9 +153,9 @@ const BANNER_CENTRE_WASHES: Record<CoverHorizontal, string> = {
 };
 
 /**
- * The banner's own, lighter. It carries a date and a name rather than a whole
- * page of type, over a strip a fifth of the height - the full cover's wash on
- * it reads as a darkened photograph rather than a legible one.
+ * The banner's own, lighter. It carries a name rather than a whole page of
+ * type, over a strip a fifth of the height - the full cover's wash on it reads
+ * as a darkened photograph rather than a legible one.
  */
 const BANNER_WASHES: Record<"bottom" | "top", string> = {
   bottom:
@@ -179,7 +178,6 @@ function bannerWashFor(place: Placement): string {
 export interface CoverProps {
   variant: CoverVariant;
   name: string;
-  date: string;
   message?: string | null;
   coverUrl?: string | null;
   /**
@@ -196,6 +194,13 @@ export interface CoverProps {
    * container - the drawing itself, see EventPreview - not the window.
    */
   preview?: boolean;
+  /**
+   * The real cover, at real size, but inside a panel rather than at the top of
+   * its own page. Only the screen-filling variant cares: a `100svh` header in
+   * the console's Event tab pushes the photographs - the reason the host opened
+   * the tab - a whole screen below the fold.
+   */
+  embedded?: boolean;
   /** What the empty photo slot says. Preview only; a guest never sees one. */
   photoLabel?: string;
 }
@@ -224,7 +229,6 @@ export function EventCover(props: CoverProps) {
 
 function Title({
   name,
-  date,
   message,
   preview,
   hero,
@@ -232,7 +236,6 @@ function Title({
   className,
 }: {
   name: string;
-  date: string;
   message?: string | null;
   preview?: boolean;
   /** The full-screen cover, where the name has the whole phone to itself. */
@@ -247,12 +250,14 @@ function Title({
 }) {
   return (
     <div className={className}>
-      <p className="eyebrow">{formatEventDate(date)}</p>
       {/* Starts smaller on a phone and steps up, so it survives both "Ana and
-          Marko" and "The Thirtieth Birthday of Someone". */}
+          Marko" and "The Thirtieth Birthday of Someone".
+
+          No top margin: the event's date was the eyebrow above this line until
+          it was removed, and the name is now the first thing in the block. */}
       <h1
         className={cx(
-          "mt-2 leading-[0.98]",
+          "leading-[0.98]",
           preview
             ? hero
               ? "text-[1.75rem]"
@@ -350,11 +355,11 @@ function CoverPhoto({
  */
 function PhotoCover({
   name,
-  date,
   message,
   coverUrl,
   coverPreviewUrl,
   preview,
+  embedded,
   photoLabel,
   position = DEFAULT_POSITION,
   half,
@@ -423,7 +428,9 @@ function PhotoCover({
             : "h-56 @xs:h-64 @sm:h-72"
           : half
             ? "h-[50svh] min-h-72"
-            : "h-svh min-h-96 flex-1",
+            : embedded
+              ? "h-[60svh] min-h-80"
+              : "h-svh min-h-96 flex-1",
       )}
     >
       <div className="absolute inset-0">
@@ -456,7 +463,6 @@ function PhotoCover({
         <div className="text-white [&_.eyebrow]:text-white/75 [&_h1]:text-white [&_p]:text-white/85">
           <Title
             name={name}
-            date={date}
             message={message}
             preview={preview}
             horizontal={place.horizontal}
@@ -532,7 +538,6 @@ function ScrollCue({
 /** Photo across the top with the name over it. */
 function ClassicCover({
   name,
-  date,
   message,
   coverUrl,
   coverPreviewUrl,
@@ -609,7 +614,6 @@ function ClassicCover({
           <div className="text-white [&_.eyebrow]:text-white/70 [&_h1]:text-white">
             <Title
               name={name}
-              date={date}
               preview={preview}
               horizontal={place.horizontal}
             />
@@ -640,7 +644,7 @@ function ClassicCover({
 }
 
 /** No photo. Large type on the theme colour, with the hole vocabulary. */
-function TypeCover({ name, date, message, preview }: CoverProps) {
+function TypeCover({ name, message, preview }: CoverProps) {
   return (
     <header className="relative z-10 bg-blush shadow-md">
       <div
@@ -656,7 +660,6 @@ function TypeCover({ name, date, message, preview }: CoverProps) {
         </div>
         <Title
           name={name}
-          date={date}
           message={message}
           preview={preview}
           className={preview ? "mt-2" : "mt-5 sm:mt-6"}

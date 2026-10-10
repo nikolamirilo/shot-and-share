@@ -203,8 +203,8 @@ export async function recomputeEntitlement(
    */
   const keepForever = paid.some((row) => row.product === "keep_forever");
 
-  const tier = paid
-    .filter((row) => row.product in TIERS)
+  const plans = paid.filter((row) => row.product in TIERS);
+  const tier = plans
     .map((row) => TIERS[row.product as keyof typeof TIERS])
     .filter(Boolean)
     .reduce((best, candidate) => (candidate.rank > best.rank ? candidate : best), TIERS.free);
@@ -212,10 +212,34 @@ export async function recomputeEntitlement(
   /** One year per keeping payment still standing. */
   const keptYears = paid.filter((row) => isKeepingProduct(row.product)).length;
 
+  /*
+   * The window is laid off the later of the event's anchor and the day this
+   * plan was paid for, and the second half of that is what the event's own
+   * date used to do.
+   *
+   * Without it, an event created in March and upgraded to Pro in December
+   * would be given twelve months from March - three of them already spent, and
+   * on Free. The host paid for twelve. Moving the anchor to the payment is the
+   * honest reading of "twelve months", and it is derived from the purchase row
+   * rather than stored, so a refund that drops the event back to Plus lands on
+   * the day Plus was paid for without anything having to remember it.
+   *
+   * `retention_from` still wins where it is later. Events that predate
+   * migration 0026 carry their own date in it, which for a wedding bought
+   * months ahead is after the payment - and taking those months back off would
+   * be the bug that migration exists to avoid.
+   */
+  const paidAt = plans
+    .filter((row) => row.product === tier.key)
+    .map((row) => row.created_at)
+    .sort()
+    .at(-1);
+  const anchor = latest(event.retention_from, paidAt);
+
   const expiresAt = keepForever
     ? null
     : addDays(
-        computeExpiry(event.event_date, tier),
+        computeExpiry(anchor, tier),
         keptYears * KEEPING_DAYS,
       ).toISOString();
 
@@ -234,6 +258,10 @@ export async function recomputeEntitlement(
       tier: tier.id,
       keep_forever: keepForever,
       storage_quota_bytes: tier.quotaBytes,
+      // `retention_from` is deliberately not written back. The anchor above is
+      // derived every time, which is what lets a refund of Pro fall back to
+      // the day Plus was paid for; storing it would leave Pro's date behind on
+      // the row and hand back a window nobody bought.
       expires_at: expiresAt,
       status:
         reactivate && event.status === "expired" ? "active" : event.status,
@@ -244,6 +272,11 @@ export async function recomputeEntitlement(
 
   if (error) throw error;
   return { tier: tier.id, keepForever, keptYears };
+}
+
+/** The later of two instants. The second may be absent - a free event. */
+function latest(a: string, b?: string): string {
+  return b && Date.parse(b) > Date.parse(a) ? b : a;
 }
 
 /** Days onto a date, without pulling in a date library for one addition. */

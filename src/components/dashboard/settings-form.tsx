@@ -17,36 +17,21 @@ export function SettingsForm({ event }: { event: EventRow }) {
     <form action={formAction} className="card space-y-5 p-5 sm:p-6">
       <h2 className="text-h3">Settings</h2>
 
-      {/* A name and a date are both short answers. Stacked they make two
-          40rem-wide fields on a laptop, which reads as a much longer form than
-          this is - so from `sm` they share a line. Below that, unchanged. */}
-      <div className="space-y-5 sm:grid sm:grid-cols-2 sm:gap-5 sm:space-y-0">
-        <Field label="Event name" htmlFor="name">
-          <input
-            id="name"
-            name="name"
-            defaultValue={event.name}
-            required
-            maxLength={120}
-            className={inputClass}
-          />
-        </Field>
-
-        <Field
-          label="Date"
-          htmlFor="event_date"
-          hint="Moving the date moves the expiry with it."
-        >
-          <input
-            id="event_date"
-            name="event_date"
-            type="date"
-            defaultValue={event.event_date}
-            required
-            className={inputClass}
-          />
-        </Field>
-      </div>
+      {/* Held to a shorter measure rather than running the width of the card.
+          A name is a short answer, and a 40rem input for one reads as a field
+          expecting a paragraph. It shared a line with the event's date until
+          that was removed; on its own it keeps the narrower width the pair
+          had. */}
+      <Field label="Event name" htmlFor="name">
+        <input
+          id="name"
+          name="name"
+          defaultValue={event.name}
+          required
+          maxLength={120}
+          className={cx(inputClass, "sm:max-w-sm")}
+        />
+      </Field>
 
       <Field
         label="Message for guests"

@@ -24,7 +24,9 @@ vi.mock("@/lib/tiers", async () => {
   return actual;
 });
 
-const { grantPurchase, revokePurchase } = await import("@/lib/payments/grant");
+const { grantPurchase, recomputeEntitlement, revokePurchase } = await import(
+  "@/lib/payments/grant",
+);
 const { TIERS } = await import("@/lib/tiers");
 const tiersModule = await import("@/lib/tiers");
 
@@ -36,7 +38,7 @@ function seedEvent(over: Record<string, unknown> = {}) {
     id: EVENT_ID,
     owner_id: OWNER_ID,
     name: "A wedding",
-    event_date: "2026-09-01",
+    retention_from: "2026-09-01T00:00:00.000Z",
     tier: TIERS.free.id,
     keep_forever: false,
     storage_quota_bytes: TIERS.free.quotaBytes,
@@ -221,6 +223,64 @@ describe("recomputing", () => {
   });
 });
 
+describe("the day the window is counted from", () => {
+  /*
+   * The event's own date used to be the anchor, and a host who bought six
+   * months ahead of the wedding kept the whole window. With the date gone the
+   * payment has to do that job: twelve months on Pro has to mean twelve months
+   * from the day the money arrived, or an event that sat on Free since March
+   * and upgraded in December would be handed three months of what it paid for.
+   */
+  it("counts a paid window from the day the plan was paid for", async () => {
+    store.reset();
+    seedEvent({ retention_from: "2026-01-01T00:00:00.000Z" });
+    store.rows("purchases").push({
+      id: "p1",
+      event_id: EVENT_ID,
+      owner_id: OWNER_ID,
+      provider: "creem",
+      provider_txn_id: "txn-1",
+      order_id: "order-1",
+      subscription_id: null,
+      product: "pro",
+      status: "paid",
+      created_at: "2026-06-01T00:00:00.000Z",
+    });
+
+    await recomputeEntitlement(EVENT_ID);
+
+    // 365 days from the payment, not from the event's anchor five months back.
+    expect(event().expires_at).toBe("2027-06-01T00:00:00.000Z");
+  });
+
+  /*
+   * The case migration 0026 exists to protect. Events that predate it hold
+   * their own event date in `retention_from`, and for a wedding booked months
+   * ahead that date is *after* the payment. Re-anchoring those on the payment
+   * would take the difference off somebody's wedding photographs.
+   */
+  it("keeps a later anchor from before the event date was removed", async () => {
+    store.reset();
+    seedEvent({ retention_from: "2026-12-01T00:00:00.000Z" });
+    store.rows("purchases").push({
+      id: "p1",
+      event_id: EVENT_ID,
+      owner_id: OWNER_ID,
+      provider: "creem",
+      provider_txn_id: "txn-1",
+      order_id: "order-1",
+      subscription_id: null,
+      product: "pro",
+      status: "paid",
+      created_at: "2026-01-05T00:00:00.000Z",
+    });
+
+    await recomputeEntitlement(EVENT_ID);
+
+    expect(event().expires_at).toBe("2027-12-01T00:00:00.000Z");
+  });
+});
+
 describe("keeping, as a yearly subscription", () => {
   /**
    * Days between an event's own expiry under its plan and where it actually
@@ -229,7 +289,7 @@ describe("keeping, as a yearly subscription", () => {
   function yearsAdded(): number {
     const { computeExpiry, getTier, KEEPING_DAYS } = tiersModule;
     const base = computeExpiry(
-      event().event_date as string,
+      event().retention_from as string,
       getTier(event().tier as string),
     ).getTime();
     const actual = new Date(event().expires_at as string).getTime();

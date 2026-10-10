@@ -90,7 +90,7 @@ describe("the plan cards only sell things that exist", () => {
       (key) => typeof TIERS.pro[key as keyof typeof TIERS.pro] === "boolean",
     );
     expect(sold.sort()).toEqual(
-      ["bulkZip", "brandedQr", "cleanQr", "customPage", "slideshow", "video"].sort(),
+      ["bulkZip", "cleanQr", "customPage", "slideshow", "video"].sort(),
     );
   });
 });

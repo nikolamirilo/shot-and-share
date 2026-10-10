@@ -92,6 +92,10 @@ export function tabButtonClass(
     // leave `px-3.5` and `px-0.5` on one element to be settled by whichever the
     // compiler wrote last.
     !segmented && "font-mono text-micro uppercase",
+    // A row rather than a plain button, so an icon and an 11px label sit on one
+    // centre line instead of on a text baseline. The bar is already a flex
+    // column that turns into a row at `sm`.
+    !segmented && !bar && "inline-flex items-center justify-center gap-2",
     !segmented && !bar && "rounded-xl px-3.5 tracking-[0.16em]",
     !segmented && bar && "sm:tracking-[0.16em]",
     !segmented &&

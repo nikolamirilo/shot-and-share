@@ -1,5 +1,6 @@
 import "server-only";
 
+import { type Appearance, resolveAppearance } from "@/lib/appearance";
 import { findEvent } from "@/lib/db/event-repo";
 import {
   listCoverMedia,
@@ -15,6 +16,7 @@ import { countKeepingYears } from "@/lib/payments/grant";
 import { createClient } from "@/lib/supabase/server";
 import { type Tier, getTier } from "@/lib/tiers";
 import { shareUrl } from "@/lib/tokens";
+import { type CoverUrls, loadCoverUrls } from "@/lib/views/cover";
 
 /**
  * Everything the host's console needs, in one object.
@@ -27,9 +29,14 @@ import { shareUrl } from "@/lib/tokens";
 /** How many photographs the console loads. The gallery pages for the rest. */
 const GALLERY_SEED = 120;
 
-export interface EventConsole {
+export interface EventConsole extends CoverUrls {
   event: EventRow;
   tier: Tier;
+  /**
+   * How the event page looks to a guest, resolved through the same function
+   * the guest page itself uses. The Event tab renders it.
+   */
+  appearance: Appearance;
   summary: ReturnType<typeof storageSummary>;
   media: MediaView[];
   covers: MediaView[];
@@ -75,8 +82,19 @@ export async function loadEventConsole(
   const event = await findEvent(supabase, id);
   if (!event) return null;
 
-  const [{ data: stats }, mediaRows, coverRows, reviewRows, active, keptYears] =
-    await Promise.all([
+  // The gate is here rather than on the row: the console shows the host what
+  // guests actually get, which on a free event is the house styling.
+  const appearance = resolveAppearance(event);
+
+  const [
+    { data: stats },
+    mediaRows,
+    coverRows,
+    reviewRows,
+    active,
+    keptYears,
+    cover,
+  ] = await Promise.all([
     supabase.rpc("event_stats", { p_event: event.id }),
     listGuestMedia(supabase, event.id, GALLERY_SEED),
     // All of them: there are only ever a handful, and they get their own row at
@@ -92,6 +110,7 @@ export async function loadEventConsole(
      * simply is not returned here.
      */
     countKeepingYears(event.id),
+    loadCoverUrls(event, appearance),
   ]);
 
   const counts = stats?.[0] ?? {
@@ -104,6 +123,7 @@ export async function loadEventConsole(
   return {
     event,
     tier: getTier(event.tier),
+    appearance,
     summary: storageSummary(event),
     media: await toMediaViews(mediaRows),
     covers: await toMediaViews(coverRows),
@@ -114,5 +134,6 @@ export async function loadEventConsole(
     uploaderCount: Number(counts.uploader_count),
     keptYears,
     shareLink: active ? shareUrl(env.siteUrl, active.token) : null,
+    ...cover,
   };
 }

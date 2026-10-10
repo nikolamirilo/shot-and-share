@@ -31,7 +31,7 @@ function seedEvent() {
     id: EVENT_ID,
     owner_id: OWNER_ID,
     name: "A wedding",
-    event_date: "2026-09-01",
+    retention_from: "2026-09-01T00:00:00.000Z",
     tier: TIERS.free.id,
     keep_forever: false,
     storage_quota_bytes: TIERS.free.quotaBytes,

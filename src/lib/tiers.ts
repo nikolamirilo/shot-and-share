@@ -82,7 +82,7 @@ export interface Tier {
   meaning: string;
   priceEur: number;
   quotaBytes: number;
-  /** Days the photos are kept, counted from the event date. */
+  /** Days the photos are kept, counted from `events.retention_from`. */
   retentionDays: number;
   /** Video is off on Free entirely: one 500 MB clip eats half the tier. */
   video: boolean;
@@ -95,7 +95,6 @@ export interface Tier {
   maxFileBytes: number;
   bulkZip: boolean;
   cleanQr: boolean;
-  brandedQr: boolean;
   customPage: boolean;
   slideshow: boolean;
 }
@@ -115,7 +114,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     maxFileBytes: 50 * MB,
     bulkZip: true,
     cleanQr: true,
-    brandedQr: false,
     customPage: false,
     slideshow: false,
   },
@@ -132,7 +130,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     maxFileBytes: 200 * MB,
     bulkZip: true,
     cleanQr: true,
-    brandedQr: false,
     customPage: true,
     slideshow: false,
   },
@@ -149,7 +146,6 @@ export const TIERS: Record<PlanKey, Tier> = {
     maxFileBytes: 500 * MB,
     bulkZip: true,
     cleanQr: true,
-    brandedQr: true,
     customPage: true,
     slideshow: true,
   },
@@ -362,15 +358,17 @@ export function photoCountLabel(bytes: number): string {
 }
 
 /**
- * Expiry is measured from the event date, not the purchase date. A host who
- * buys six months ahead of the wedding should not lose half their window.
+ * The window laid off an anchor, which is `events.retention_from`.
+ *
+ * Nothing in here decides what the anchor is - that is `recomputeEntitlement`,
+ * and it moves it to the day a plan was paid for so none of the window a host
+ * bought is spent before they bought it.
  *
  * Takes the plan rather than an id: every caller already holds one, and the id
  * is now a product that would only have to be looked up again in here.
  */
-export function computeExpiry(eventDate: string | Date, tier: Tier): Date {
-  const base = new Date(eventDate);
-  const d = new Date(base);
+export function computeExpiry(from: string | Date, tier: Tier): Date {
+  const d = new Date(from);
   d.setUTCDate(d.getUTCDate() + tier.retentionDays);
   return d;
 }

@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 
 import { THEMES } from "@/lib/appearance/themes";
-import { formatEventDate } from "@/lib/format";
 import { EventOgCard, OG_SIZE, OgCard } from "@/lib/og-card";
 import { fetchCardPhoto } from "@/lib/og-photo";
 import { EVENT_LINK, HERO, SITE, heroHeadline } from "@/lib/seo";
@@ -69,7 +68,6 @@ export default async function EventOpengraphImage({
     (
       <EventOgCard
         name={event.name}
-        date={formatEventDate(event.event_date)}
         photo={await fetchCardPhoto(coverUrl)}
         palette={appearance.palette}
         invitation={

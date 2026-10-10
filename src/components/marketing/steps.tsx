@@ -28,7 +28,7 @@ export function Steps({ signedIn }: { signedIn: boolean }) {
       data: create,
       rest: 150,
       title: "Make your event",
-      body: "Add a name and a date, and you get a link and a QR card to print. It takes about a minute, and there is nothing to pay yet.",
+      body: "Add a name and a date, and you get a link and a QR code to print. It takes about a minute, and there is nothing to pay yet.",
     },
     {
       n: "02",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   MdArrowBackIosNew,
-  MdOutlinePalette,
+  MdOutlineEdit,
   MdOutlinePhotoLibrary,
   MdOutlineQrCode2,
   MdOutlineSettings,
@@ -12,18 +12,16 @@ import {
 import { AppearanceForm } from "@/components/dashboard/appearance/appearance-form";
 import { ArchivePanel } from "@/components/dashboard/archive-panel";
 import { DangerZone } from "@/components/dashboard/danger-zone";
-import { HostGallery } from "@/components/dashboard/host-gallery";
+import { EventAdminView } from "@/components/dashboard/event-admin-view";
 import { PurchaseBanner } from "@/components/dashboard/purchase-banner";
-import { ReviewPanel } from "@/components/dashboard/review-panel";
 import { SettingsForm } from "@/components/dashboard/settings-form";
 import { SharePanel } from "@/components/dashboard/share-panel";
 import { StoragePanel } from "@/components/dashboard/storage-panel";
 import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
-import { Alert, Badge, ButtonLink, Eyebrow, Stat } from "@/components/ui";
+import { Alert, Badge, ButtonLink, Stat } from "@/components/ui";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 import { findEventName } from "@/lib/db/event-repo";
-import { formatBytes, formatEventDate } from "@/lib/format";
-import { coerceLayout } from "@/lib/gallery";
+import { formatBytes } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { KEEPING_NAME, PURCHASABLE_IDS, TIERS, isKeepingProduct } from "@/lib/tiers";
 import { recoverPurchases } from "@/lib/payments/recover";
@@ -34,8 +32,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * The console, in the order a host meets it: get the code onto a table, look at
- * what arrived, dress the page up, buy more room if the night needs it, then
- * the settings and the ending.
+ * the event itself, dress the page up, buy more room if the night needs it,
+ * then the settings and the ending.
  *
  * Five, not six, because the bar wants an odd number: one button is raised out
  * of the middle and the rest divide evenly around it - see `Tabs`.
@@ -52,12 +50,12 @@ const TABS: TabItem[] = [
     raised: true,
   },
   {
-    id: "photos",
-    label: "Photos",
-    short: "Photos",
+    id: "event",
+    label: "Event",
+    short: "Event",
     icon: <MdOutlinePhotoLibrary />,
   },
-  { id: "page", label: "Event page", short: "Page", icon: <MdOutlinePalette /> },
+  { id: "edit", label: "Edit", short: "Edit", icon: <MdOutlineEdit /> },
   {
     id: "upgrade",
     label: "Plan",
@@ -154,7 +152,6 @@ export default async function EventPage({
           <h1 className="mt-2 text-[2.125rem] xs:text-[2.5rem] sm:text-h1">
             {event.name}
           </h1>
-          <Eyebrow>{formatEventDate(event.event_date)}</Eyebrow>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {event.keep_forever && <Badge tone="dark">Kept forever</Badge>}
@@ -195,7 +192,6 @@ export default async function EventPage({
           <SharePanel
             eventId={event.id}
             link={view.shareLink}
-            brandedQr={tier.brandedQr}
             revoked={view.shareLink === null}
             opens={event.link_opens}
             uploaders={view.uploaderCount}
@@ -204,35 +200,46 @@ export default async function EventPage({
           <ArchivePanel eventId={event.id} photoCount={photoCount} />
         </TabPanel>
 
-        <TabPanel id="photos" className="mt-5 sm:mt-6 lg:mt-0">
-          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-            <div>
-              <Eyebrow>Gallery</Eyebrow>
-              <h2 className="mt-2 text-[1.625rem] sm:text-h2">
-                {photoCount === 0
-                  ? "Waiting for the first photo"
-                  : "Everything so far"}
-              </h2>
-            </div>
-            {tier.slideshow && (
-              <ButtonLink
-                href={`/dashboard/events/${event.id}/slideshow`}
-                variant="secondary"
-                size="sm"
-              >
-                Open the live slideshow
-              </ButtonLink>
-            )}
-          </div>
+        {/* The page itself, with the host's own powers on it. Everything that
+            changes it is one tab along, under Edit. */}
+        <TabPanel id="event" className="mt-5 sm:mt-6 lg:mt-0">
+          <EventAdminView
+            event={event}
+            appearance={view.appearance}
+            media={media}
+            review={review}
+            photoCount={photoCount}
+            shareLink={view.shareLink}
+            coverUrl={view.coverUrl}
+            coverPreviewUrl={view.coverPreviewUrl}
+            slideshow={tier.slideshow}
+          />
+        </TabPanel>
 
-          {/* What arrived, over the thing that arrived. Numbers rather than a
-              panel: the gallery underneath is the real answer.
+        <TabPanel id="edit" className="mt-5 sm:mt-6 lg:mt-0">
+          <AppearanceForm
+            event={event}
+            media={media}
+            covers={covers}
+            photoCount={photoCount}
+            maxFileBytes={tier.maxFileBytes}
+            remainingBytes={summary.remaining}
+            locked={!tier.customPage}
+          />
+        </TabPanel>
 
-              All four come from one `event_stats` call the page was already
-              making. Photographs and clips are separate because they are not
-              interchangeable to a host - one is the wall, the other is the
-              speeches - and a single total hid the difference. */}
-          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-xl sm:grid-cols-4">
+        {/* What the event has used, the meter, and the price of more of it -
+            one thought, in that order. */}
+        <TabPanel
+          id="upgrade"
+          className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
+        >
+          {/* Numbers rather than a panel. All four come from one `event_stats`
+              call the page was already making. Photographs and clips are
+              separate because they are not interchangeable to a host - one is
+              the wall, the other is the speeches - and a single total hid the
+              difference. */}
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-xl sm:grid-cols-4">
             <Stat label="Photos" value={view.photos.toLocaleString("en-GB")} />
             <Stat label="Videos" value={view.videos.toLocaleString("en-GB")} />
             <Stat
@@ -247,46 +254,6 @@ export default async function EventPage({
             />
           </dl>
 
-          {media.length < photoCount && (
-            <p className="mt-4 text-[0.8125rem] text-ash">
-              Showing the {media.length} most recent of {photoCount}.
-            </p>
-          )}
-
-          {/* Above the wall, because anything waiting on the host is the one
-              thing on this tab that will not resolve itself. Draws nothing
-              when the queue is empty, which is nearly always. */}
-          <div className="mt-6">
-            <ReviewPanel eventId={event.id} items={review} />
-          </div>
-
-          <div className="mt-6">
-            <HostGallery
-              eventId={event.id}
-              media={media}
-              shareLink={view.shareLink}
-              eventLayout={coerceLayout(event.gallery_layout)}
-            />
-          </div>
-        </TabPanel>
-
-        <TabPanel id="page" className="mt-5 sm:mt-6 lg:mt-0">
-          <AppearanceForm
-            event={event}
-            media={media}
-            covers={covers}
-            photoCount={photoCount}
-            maxFileBytes={tier.maxFileBytes}
-            remainingBytes={summary.remaining}
-            locked={!tier.customPage}
-          />
-        </TabPanel>
-
-        {/* The meter above the price of more of it. */}
-        <TabPanel
-          id="upgrade"
-          className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
-        >
           <StoragePanel event={event} summary={summary} />
           <UpgradePanel
             eventId={event.id}

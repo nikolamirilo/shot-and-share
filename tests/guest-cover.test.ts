@@ -20,8 +20,8 @@ const COVER_ID = "99999999-8888-7777-6666-555555555555";
 const EVENT = {
   id: EVENT_ID,
   owner_id: OWNER,
-  name: "Ana and Marko",
-  event_date: "2026-08-01",
+  name: "Romeo and Juliet",
+  retention_from: "2026-08-01T00:00:00.000Z",
   welcome_message: null,
   tier: TIERS.plus.id,
   status: "active",

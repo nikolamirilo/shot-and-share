@@ -32,7 +32,6 @@ import type { UploadWording } from "@/lib/media";
 
 export interface EventPreviewProps {
   name: string;
-  date: string;
   message?: string | null;
   palette: Palette;
   font: FontSet;
@@ -53,7 +52,6 @@ export interface EventPreviewProps {
 
 export function EventPreview({
   name,
-  date,
   message,
   palette,
   font,
@@ -75,7 +73,6 @@ export function EventPreview({
           <EventCover
             variant={cover}
             name={name}
-            date={date}
             message={message}
             /* The one real photograph in the drawing. The label fills the
                frame until they have picked one. */

@@ -6,7 +6,6 @@ import { GuestExperience } from "@/components/event/guest-experience";
 import { PlatformBar } from "@/components/layout/platform-banner";
 import { resolveAppearance } from "@/lib/appearance";
 import { googleFontsHref } from "@/lib/fonts";
-import { formatEventDate } from "@/lib/format";
 import { resolveGuestToken } from "@/lib/guards/guest";
 import { SITE, eventLinkDescription, eventLinkTitle } from "@/lib/seo";
 import { loadGuestPage } from "@/lib/views/guest-page";
@@ -17,8 +16,8 @@ export const dynamic = "force-dynamic";
  * What this link looks like before anybody taps it.
  *
  * Nearly every guest arrives from a chat, so the preview is the page's first
- * impression: the name of their event, the date, and whatever the host wrote
- * to them. The words come from `seo.ts` and the picture from the sibling
+ * impression: the name of their event and whatever the host wrote to them. The
+ * words come from `seo.ts` and the picture from the sibling
  * `opengraph-image`, which Next attaches on its own.
  *
  * `openGraph` and `twitter` are set out in full rather than added to, because
@@ -44,11 +43,7 @@ export async function generateMetadata({
   const event = ctx.event;
   const { platformBranding } = resolveAppearance(event);
   const title = eventLinkTitle(event.name);
-  const description = eventLinkDescription(
-    event.name,
-    formatEventDate(event.event_date),
-    event.welcome_message,
-  );
+  const description = eventLinkDescription(event.name, event.welcome_message);
 
   return {
     /* A paid event page carries nothing of ours - no header, no footer, and
@@ -127,7 +122,6 @@ export default async function GuestPage({
         <EventCover
           variant={appearance.cover}
           name={event.name}
-          date={event.event_date}
           message={event.welcome_message}
           coverUrl={coverUrl}
           coverPreviewUrl={coverPreviewUrl}

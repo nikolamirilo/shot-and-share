@@ -7,8 +7,7 @@ export function EventsEmptyState() {
   return (
     <div className="mt-8 max-w-xl">
       <p className="text-lead text-ash">
-        Make an event, print the code, and send the link to one friend. Watch a
-        photo arrive before you decide anything else.
+        Make an event, print the code or send it to your friends. Enjoy and watch the magic happen!
       </p>
       <ButtonLink
         href="/dashboard/events/new"

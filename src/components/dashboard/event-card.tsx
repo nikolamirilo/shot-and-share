@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 import { EventCardMenu } from "@/components/dashboard/event-card-menu";
-import { Badge, Hole, ProgressBar } from "@/components/ui";
+import { Badge, ButtonLink, Hole, ProgressBar } from "@/components/ui";
 import type { EventRow } from "@/lib/db/types";
 import { storageSummary } from "@/lib/events";
-import { describeRetention, formatBytes, formatEventDate } from "@/lib/format";
+import { describeRetention, formatBytes } from "@/lib/format";
 
 export function EventCard({
   event,
@@ -45,9 +45,6 @@ export function EventCard({
               {event.name}
             </span>
           </Link>
-          <span className="mt-0.5 block font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-            {formatEventDate(event.event_date)}
-          </span>
         </div>
 
         {/* Above the stretched link, or the menu is a button you cannot press. */}
@@ -87,6 +84,24 @@ export function EventCard({
               : describeRetention(event.expires_at)}
           </span>
         </p>
+      </div>
+
+      {/* The card is already a link, but a link you cannot see is not an
+          invitation - this is the one thing on the card that looks pressable.
+          Above the stretched link like the menu is, or the shape is there and
+          the tap lands on the overlay instead.
+
+          `mt-auto` holds it on the card's own floor, so a row of cards of
+          different heights still has its buttons on one line. */}
+      <div className="relative z-10 mt-auto pt-5">
+        <ButtonLink
+          href={`/dashboard/events/${event.id}`}
+          size="sm"
+          aria-label={`View ${event.name}`}
+          className="w-full"
+        >
+          View event
+        </ButtonLink>
       </div>
     </li>
   );

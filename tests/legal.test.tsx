@@ -92,12 +92,13 @@ describe("the answers a reviewer is actually looking for", () => {
   });
 
   /*
-   * Retention counts from the event date, not the purchase date - see
-   * `computeExpiry`. Somebody upgrading a week before the wedding must not read
-   * this and think they have bought a window that starts today.
+   * An upgrade re-anchors the window on the payment - see the anchor tests in
+   * billing-lifecycle. Somebody upgrading an event they created months ago
+   * must not read this and think they are buying the remainder of a window
+   * that has already been running.
    */
-  it("says which date the upgraded window is counted from", () => {
-    expect(text("terms")).toContain("date of the event itself");
+  it("says which day the upgraded window is counted from", () => {
+    expect(text("terms")).toContain("counted from the day you upgraded");
   });
 
   it("states the refund window as a number of days", () => {

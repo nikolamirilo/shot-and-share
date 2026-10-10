@@ -29,7 +29,6 @@ describe("the cover a host is shown", () => {
         <EventCover
           variant={variant}
           name="Your event"
-          date="2026-09-12"
           coverUrl={null}
           palette={palette}
           preview
@@ -46,7 +45,6 @@ describe("the cover a host is shown", () => {
       <EventCover
         variant="classic"
         name="Your event"
-        date="2026-09-12"
         coverUrl={null}
         palette={palette}
       />,
@@ -63,7 +61,6 @@ describe("the cover a host is shown", () => {
       <EventCover
         variant="full"
         name="Your event"
-        date="2026-09-12"
         coverUrl="https://example.test/thumb.jpg"
         palette={palette}
       />,
@@ -124,8 +121,7 @@ describe("the upload panel", () => {
 function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
   return renderToStaticMarkup(
     <EventPreview
-      name="Ana and Marko"
-      date="2026-09-12"
+      name="Romeo and Juliet"
       palette={palette}
       font={findFontSet("cheese")}
       cover="classic"
@@ -146,7 +142,7 @@ describe("the drawing of the guest page", () => {
     // and every one of them carries a colour the host is choosing.
     const html = preview({ message: "Send us the ones you took." });
 
-    expect(html).toContain("Ana and Marko");
+    expect(html).toContain("Romeo and Juliet");
     expect(html).toContain("Send us the ones you took.");
     expect(html).toContain("Add your photos");
     expect(html).toContain(uploadWording(TIERS.free).hint);
@@ -247,8 +243,7 @@ describe("the name's position on the cover", () => {
     return renderToStaticMarkup(
       <EventCover
         variant="full"
-        name="Ana and Marko"
-        date="2026-09-12"
+        name="Romeo and Juliet"
         coverUrl="https://media.example.com/photo.jpg"
         palette={palette}
         {...props}
@@ -352,8 +347,7 @@ describe("the cover while it is still loading", () => {
     const html = renderToStaticMarkup(
       <EventCover
         variant="full"
-        name="Ana and Marko"
-        date="2026-09-12"
+        name="Romeo and Juliet"
         coverUrl={PHOTO}
         coverPreviewUrl={THUMB}
         palette={palette}
@@ -371,8 +365,7 @@ describe("the cover while it is still loading", () => {
     const html = renderToStaticMarkup(
       <EventCover
         variant="classic"
-        name="Ana and Marko"
-        date="2026-09-12"
+        name="Romeo and Juliet"
         coverUrl={PHOTO}
         palette={palette}
       />,
@@ -388,8 +381,7 @@ describe("the cover while it is still loading", () => {
     const html = renderToStaticMarkup(
       <EventCover
         variant="full"
-        name="Ana and Marko"
-        date="2026-09-12"
+        name="Romeo and Juliet"
         coverUrl={PHOTO}
         coverPreviewUrl={THUMB}
         palette={palette}

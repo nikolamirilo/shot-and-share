@@ -29,7 +29,7 @@ const EVENT = {
   id: "11111111-2222-3333-4444-555555555555",
   owner_id: "00000000-1111-2222-3333-444444444444",
   name: LONG_NAME,
-  event_date: "2026-08-30",
+  retention_from: "2026-08-30T00:00:00.000Z",
   tier: TIERS.pro.id,
   keep_forever: false,
   storage_quota_bytes: 30 * GB,

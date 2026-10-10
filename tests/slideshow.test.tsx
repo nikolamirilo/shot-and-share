@@ -29,7 +29,7 @@ const OWNER = "00000000-1111-2222-3333-444444444444";
 const EVENT = {
   id: "11111111-2222-3333-4444-555555555555",
   owner_id: OWNER,
-  name: "Ana and Marko",
+  name: "Romeo and Juliet",
   tier: TIERS.pro.id,
   status: "active",
 };

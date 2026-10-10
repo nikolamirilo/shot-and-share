@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       <Eyebrow>Your events</Eyebrow>
       <h1 className="mt-3 text-[2.25rem] sm:text-h1">
         {events.length === 0
-          ? "Nothing here yet."
+          ? "No events created."
           : `${events.length} ${events.length === 1 ? "event" : "events"}`}
       </h1>
 

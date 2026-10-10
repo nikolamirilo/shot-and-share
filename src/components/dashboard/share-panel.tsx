@@ -7,12 +7,13 @@ import {
   MdOutlineContentCopy,
   MdOutlineFileDownload,
   MdOutlineLinkOff,
+  MdOutlineOpenInNew,
 } from "react-icons/md";
 
 import { useServerAction } from "@/hooks/use-server-action";
 
 import { revokeShareLink, rotateShareLink } from "@/lib/actions/share-links";
-import { Alert, Button, Panel, Stat, cx } from "@/components/ui";
+import { Alert, Button, ButtonLink, Panel, Stat, cx } from "@/components/ui";
 import { pluralise } from "@/lib/format";
 
 /**
@@ -22,14 +23,12 @@ import { pluralise } from "@/lib/format";
 export function SharePanel({
   eventId,
   link,
-  brandedQr,
   revoked,
   opens,
   uploaders,
 }: {
   eventId: string;
   link: string | null;
-  brandedQr: boolean;
   revoked: boolean;
   /** Times the link has been opened, and how many of those ended in an upload. */
   opens: number;
@@ -37,45 +36,27 @@ export function SharePanel({
 }) {
   const [copied, setCopied] = useState(false);
   const [codeReady, setCodeReady] = useState(false);
-  const [busy, setBusy] = useState<"card" | "png" | null>(null);
+  const [saving, setSaving] = useState(false);
   const { pending, error, setError, run } = useServerAction();
 
   const conversion =
     opens > 0 ? Math.min(100, Math.round((uploaders / opens) * 100)) : null;
 
   /**
+   * The code on its own, for a host putting it in their own invitation. The
+   * server draws it once as SVG and the browser rasterises that, so the PNG is
+   * the same artwork the panel shows. 1024px prints at beer-mat size.
+   *
    * Fetched rather than navigated to: pointing the window at the endpoint
    * replaces the dashboard with a page of JSON in the case that matters - a
    * link revoked in another tab since this panel was drawn.
    */
-  async function downloadCard() {
-    setBusy("card");
-    setError(null);
-    try {
-      const res = await fetch(`/api/events/${eventId}/qr?format=card`);
-      if (!res.ok) {
-        setError(await reason(res, "The card could not be built."));
-        return;
-      }
-      save(await res.blob(), named(res, "shot-and-share-card.pdf"));
-    } catch {
-      setError("The card could not be built. Try again in a minute.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  /**
-   * The code alone, for a host putting it in their own invitation. The server
-   * draws it once as SVG and the browser rasterises that, so the PNG is the
-   * same artwork the panel shows. 1024px prints at beer-mat size.
-   */
   async function downloadPng() {
-    setBusy("png");
+    setSaving(true);
     setError(null);
     let objectUrl: string | null = null;
     try {
-      const res = await fetch(`/api/events/${eventId}/qr?format=code`);
+      const res = await fetch(`/api/events/${eventId}/qr`);
       if (!res.ok) {
         setError(await reason(res, "The code could not be built."));
         return;
@@ -89,7 +70,7 @@ export function SharePanel({
       setError("The code could not be saved. Try again in a minute.");
     } finally {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
-      setBusy(null);
+      setSaving(false);
     }
   }
 
@@ -158,9 +139,9 @@ export function SharePanel({
                     <span className="absolute bottom-[8%] left-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
                   </div>
                 )}
-                {/* Same plan the printable card is drawn from. */}
+                {/* Same artwork the host's PNG is rasterised from. */}
                 <img
-                  src={`/api/events/${eventId}/qr?format=code`}
+                  src={`/api/events/${eventId}/qr`}
                   alt="QR code for this event"
                   className={cx(
                     "size-full transition-opacity duration-200",
@@ -175,11 +156,11 @@ export function SharePanel({
               </div>
             </div>
 
-            {/* In the order a host does them: send the link, print our card,
-                or take the code into something of their own. Centred under the
-                code on a phone; from `sm` they line up with its left edge and
-                stop growing, because a 40rem-wide "Copy link" is not a better
-                button than a 16rem one. */}
+            {/* In the order a host does them: send the link, look at what the
+                link opens, or take the code into something of their own.
+                Centred under the code on a phone; from `sm` they line up with
+                its left edge and stop growing, because a 40rem-wide "Copy
+                link" is not a better button than a 16rem one. */}
             <div className="flex flex-col items-center gap-2 sm:max-w-64 sm:items-stretch">
               <Button
                 onClick={copy}
@@ -193,29 +174,30 @@ export function SharePanel({
                 )}
                 {copied ? "Copied" : "Copy link"}
               </Button>
-              <Button
-                onClick={downloadCard}
-                variant="secondary"
-                size="sm"
-                disabled={busy !== null}
-                className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
-              >
-                <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
-                {busy === "card"
-                  ? "Building…"
-                  : brandedQr
-                    ? "Download branded card"
-                    : "Download the card"}
-              </Button>
+              {/* A new tab, not this one: a host checking the page guests see
+                  is in the middle of setting the event up here. */}
+              {link && (
+                <ButtonLink
+                  href={link}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="secondary"
+                  size="sm"
+                  className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
+                >
+                  <MdOutlineOpenInNew aria-hidden className="shrink-0 text-[1.25em]" />
+                  Go to the Event
+                </ButtonLink>
+              )}
               <Button
                 onClick={downloadPng}
                 variant="secondary"
                 size="sm"
-                disabled={busy !== null}
+                disabled={saving}
                 className="w-10/12 max-w-[250px] sm:w-full sm:max-w-none"
               >
                 <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
-                {busy === "png" ? "Saving…" : "Download the code (PNG)"}
+                {saving ? "Saving…" : "Download the code (PNG)"}
               </Button>
             </div>
 
@@ -224,7 +206,7 @@ export function SharePanel({
                 margin below `sm` makes up the difference between the grid's own
                 gap and the margin this had when it stood outside. */}
             <p className="mt-1 text-[0.8125rem] leading-relaxed text-mist sm:mt-0 sm:col-span-2 lg:col-span-1 lg:border-l lg:border-edge lg:pl-6">
-              Print the card and put one on every table. Guests point a camera
+              Print the code and put one on every table. Guests point a camera
               at it - that is the whole instruction, and it is worth resisting
               the urge to add more.
             </p>
@@ -232,7 +214,7 @@ export function SharePanel({
 
           {/* About the link rather than the party, which is why they sit here:
               a guest who scans and does not upload is the clearest signal the
-              card is not working, and it only reads next to the card.
+              code is not working, and it only reads next to the code.
 
               The two numbers and the two things you can do to the link are one
               footer on a laptop rather than two stacked rows - the numbers keep

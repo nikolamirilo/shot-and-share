@@ -8,7 +8,7 @@ import { requireOwnedEvent, requireUser } from "@/lib/actions/guards";
 import type { ActionState } from "@/lib/actions/types";
 import { LIMITS, rateLimit } from "@/lib/ratelimit";
 import { issueTokenFor } from "@/lib/share-tokens";
-import { TIERS, computeExpiry, getTier, isKnownTierId } from "@/lib/tiers";
+import { TIERS, computeExpiry } from "@/lib/tiers";
 
 const createSchema = z.object({
   name: z
@@ -16,9 +16,6 @@ const createSchema = z.object({
     .trim()
     .min(1, "Give the event a name.")
     .max(120, "That name is too long."),
-  event_date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date for the event."),
 });
 
 export async function createEvent(
@@ -36,26 +33,30 @@ export async function createEvent(
     return { error: "That is a lot of events at once. Try again shortly." };
   }
 
-  const parsed = createSchema.safeParse({
-    name: formData.get("name"),
-    event_date: formData.get("event_date"),
-  });
+  const parsed = createSchema.safeParse({ name: formData.get("name") });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
   const tier = TIERS.free;
+  /*
+   * One instant for both columns rather than `now()` for the anchor and a
+   * separate clock reading for the expiry. They are the same fact written
+   * twice - the second is the first plus the plan's days - and two readings
+   * either side of midnight would disagree about which day that was.
+   */
+  const createdAt = new Date();
   const { data: event, error } = await supabase
     .from("events")
     .insert({
       owner_id: user.id,
       name: parsed.data.name,
-      event_date: parsed.data.event_date,
+      retention_from: createdAt.toISOString(),
       tier: tier.id,
       keep_forever: false,
       storage_quota_bytes: tier.quotaBytes,
       storage_used_bytes: 0,
-      expires_at: computeExpiry(parsed.data.event_date, tier).toISOString(),
+      expires_at: computeExpiry(createdAt, tier).toISOString(),
       status: "active",
       gallery_visible: true,
       // Off, and it stays off unless a host asks for it. Making somebody
@@ -87,7 +88,6 @@ export async function createEvent(
 
 const settingsSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gallery_visible: z.boolean(),
   require_approval: z.boolean(),
   auto_scan: z.boolean(),
@@ -99,12 +99,11 @@ export async function updateEventSettings(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const { supabase, event } = await requireOwnedEvent(eventId);
+  const { supabase } = await requireOwnedEvent(eventId);
 
   const welcome = String(formData.get("welcome_message") ?? "").trim();
   const parsed = settingsSchema.safeParse({
     name: formData.get("name"),
-    event_date: formData.get("event_date"),
     gallery_visible: formData.get("gallery_visible") === "on",
     require_approval: formData.get("require_approval") === "on",
     auto_scan: formData.get("auto_scan") === "on",
@@ -115,33 +114,25 @@ export async function updateEventSettings(
   }
 
   /*
-   * Retention is measured from the event date, so moving the date moves expiry.
+   * `expires_at` is not touched here, and nothing on this form can move it.
    *
-   * Unless we cannot tell what the event is entitled to. An id `getTier` does
-   * not recognise resolves to Free, and recomputing from Free turns a paid
-   * 365-day window into 30 days - written to the row, and still there long
-   * after the id starts resolving again. That window is the difference between
-   * somebody's wedding photographs being there next summer and the retention
-   * job having deleted them, so a save that only changed a name is not allowed
-   * to make it. Leave the stored expiry alone and let the next real purchase,
-   * or the migration, settle it.
+   * It used to be recomputed on every save, because the date of the event was
+   * one of the fields and retention was counted from it. That made a save
+   * which only changed a name a save that could rewrite the storage window -
+   * and if `events.tier` held a product id the code could not resolve it read
+   * as Free, which turned a paid 365-day window into 30 days. The guard
+   * against that was the awkward part of this function; removing the date
+   * removed the need for it. The window is settled by a purchase and by the
+   * retention job, which are the only two things that know anything about it.
    */
-  const expiresAt = event.keep_forever
-    ? null
-    : isKnownTierId(event.tier)
-      ? computeExpiry(parsed.data.event_date, getTier(event.tier)).toISOString()
-      : event.expires_at;
-
   const { error } = await supabase
     .from("events")
     .update({
       name: parsed.data.name,
-      event_date: parsed.data.event_date,
       gallery_visible: parsed.data.gallery_visible,
       require_approval: parsed.data.require_approval,
       auto_scan: parsed.data.auto_scan,
       welcome_message: parsed.data.welcome_message,
-      expires_at: expiresAt,
     })
     .eq("id", eventId);
 

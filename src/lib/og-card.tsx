@@ -155,7 +155,7 @@ const CARD_WASH =
 /**
  * Satori does not reflow to fit, so the name is sized here rather than by the
  * layout. Long ones step down and very long ones are cut: a name that runs off
- * the canvas takes the date and the invitation with it.
+ * the canvas takes the invitation with it.
  */
 function fitName(name: string): { text: string; fontSize: number } {
   const text = name.length > 64 ? `${name.slice(0, 63).trimEnd()}…` : name;
@@ -165,8 +165,6 @@ function fitName(name: string): { text: string; fontSize: number } {
 
 export interface EventCardProps {
   name: string;
-  /** Already formatted for reading. Absent on a card for a dead link. */
-  date?: string | null;
   /** The cover, as a data URL. Null renders the typographic card instead. */
   photo?: string | null;
   palette: Palette;
@@ -190,7 +188,6 @@ export interface EventCardProps {
  */
 export function EventOgCard({
   name,
-  date,
   photo,
   palette,
   invitation,
@@ -263,21 +260,8 @@ export function EventOgCard({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {date && (
-            <span
-              style={{
-                fontSize: 24,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                opacity: 0.82,
-              }}
-            >
-              {date}
-            </span>
-          )}
           <span
             style={{
-              marginTop: 22,
               fontSize,
               fontWeight: 700,
               lineHeight: 1.05,

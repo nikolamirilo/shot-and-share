@@ -43,7 +43,7 @@ export function DashboardHeader({
     <div className="relative z-30">
       <HeaderShell className="relative z-10">
         <Link href="/" aria-label="Shot & Share, home" className="flex shrink-0 items-center">
-          <Wordmark labelClassName="hidden xs:inline" />
+          <Wordmark />
         </Link>
 
         {/* `min-w-0` so the one thing here that can give - the account name -

@@ -58,9 +58,7 @@ function featureList(key: (typeof TIER_ORDER)[number]): string[] {
       ? `Video, up to ${formatBytes(t.maxFileBytes, 0)} a clip`
       : "Photos only",
     "Bulk ZIP download",
-    t.brandedQr
-      ? "Branded, print-ready QR card"
-      : "Clean QR code, no watermark",
+    ...(t.cleanQr ? ["Clean QR code, no watermark"] : []),
     ...(t.customPage ? ["Custom event page"] : []),
     ...(t.slideshow ? ["Live slideshow at the venue"] : []),
   ];

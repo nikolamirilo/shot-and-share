@@ -40,12 +40,12 @@ export async function findEventName(
   return data?.name ?? null;
 }
 
-/** Every event the signed-in host can see, newest date first. */
+/** Every event the signed-in host can see, newest first. */
 export async function listOwnEvents(client: Client): Promise<EventRow[]> {
   const { data, error } = await client
     .from("events")
     .select("*")
-    .order("event_date", { ascending: false });
+    .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as EventRow[];
 }

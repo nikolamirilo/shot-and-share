@@ -101,11 +101,13 @@ ask for Pro.
 **Cutover order.** `events.tier` stores the provider's own id for the plan, so
 the release and `supabase/migrations/0021` have to land together: between them,
 every paid event holds an id the code cannot resolve and reads as Free. That is
-temporary for quotas and features, which are computed per request, and would be
-permanent for the retention window, which is stored - so `updateEventSettings`
-refuses to recompute an expiry it cannot justify rather than writing Free's 30
-days over somebody's 365. Run the migration immediately after deploying, and
-read its header first - it needs four ids filled in.
+temporary for quotas and features, which are computed per request. It used to
+be a worse problem for the retention window, which is stored: saving an event's
+settings recomputed the expiry, so an unresolvable id could write Free's 30
+days over somebody's 365. Nothing on that form can move the window any more -
+only a purchase and the retention job write `expires_at`. Run the migration
+immediately after deploying, and read its header first - it needs four ids
+filled in.
 
 ```bash
 npm run dev        # development server
@@ -405,6 +407,18 @@ warn at 14, 7 and 1 days  →  expire (nothing removed)  →  14-day grace  → 
 someone's wedding photos to a scheduling bug is the failure this product cannot
 survive, so the destructive step is always last and always delayed. A host can
 restore, or start keeping the photos, at any point before the final arrow.
+
+**The window counts from `events.retention_from`**, which is the day the event
+was created, moved forward by `recomputeEntitlement` to the day a plan was paid
+for. The second half is what stops an event that sat on Free since March being
+handed three months when it buys twelve in December. The anchor is derived on
+every recompute rather than written back, which is what lets a refund of Pro
+fall back to the day Plus was paid for.
+
+Until `supabase/migrations/0026` this was the event's own date, typed by the
+host. The column it left behind holds that date for every event that predates
+it, and the anchor takes whichever is later - re-anchoring a wedding booked
+eight months ahead onto its payment would have taken those months off it.
 
 ### Share tokens
 

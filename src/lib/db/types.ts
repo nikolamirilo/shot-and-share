@@ -46,7 +46,16 @@ export type EventRow = {
   id: string;
   owner_id: string;
   name: string;
-  event_date: string;
+  /**
+   * The day the storage window is counted from.
+   *
+   * Written once when the event is created and moved forward by a purchase to
+   * the day the money arrived, so a plan always delivers its full window
+   * however long the event sat on Free first. Nothing a host types reaches it
+   * - the event's own date was removed in migration 0026, which backfilled
+   * this from it.
+   */
+  retention_from: string;
   /**
    * The Creem product id of the plan. Resolve it with `getTier`.
    *

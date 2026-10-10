@@ -11,7 +11,6 @@ import {
 import { useServerAction } from "@/hooks/use-server-action";
 
 import { deleteMedia, setCoverPhoto } from "@/lib/actions/media";
-import { LayoutSwitcher } from "@/components/gallery/layout-switcher";
 import { PhotoGallery } from "@/components/gallery/photo-gallery";
 import { Segmented } from "@/components/gallery/segmented";
 import { Alert, Button, Hole } from "@/components/ui";
@@ -21,27 +20,31 @@ import {
   type GallerySort,
   type MediaView,
 } from "@/lib/media-view";
-import {
-  type GalleryLayout,
-  readViewerLayout,
-  writeViewerLayout,
-} from "@/lib/gallery";
+import type { GalleryLayout } from "@/lib/gallery";
 
+/**
+ * The wall as the host sees it: every photograph at the event, laid out exactly
+ * the way guests get it, with the things only a host can do on top - select,
+ * delete, promote one to the cover.
+ *
+ * There is no layout switcher here. The layout is the event's one setting, it
+ * is changed under Edit, and a host judging their page needs this wall to be
+ * the page rather than their own private view of it.
+ */
 export function HostGallery({
   eventId,
   media,
   shareLink,
-  eventLayout,
+  layout,
 }: {
   eventId: string;
   media: MediaView[];
   shareLink: string | null;
-  /** The event's default, which is what guests land on. */
-  eventLayout: GalleryLayout;
+  /** The event's layout, which is what guests land on. Set under Edit. */
+  layout: GalleryLayout;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const { pending, error, run } = useServerAction();
-  const [layout, setLayout] = useState<GalleryLayout>(eventLayout);
   const [kind, setKind] = useState<MediaView["kind"]>("photo");
   const [sort, setSort] = useState<GallerySort>(DEFAULT_SORT);
   const router = useRouter();
@@ -84,19 +87,6 @@ export function HostGallery({
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [router]);
-
-  // Start on the event's layout - which is exactly what every guest gets - and
-  // let the host's own console preference take over once the browser has told
-  // us there is one. It is theirs alone: it never touches the event.
-  useEffect(() => {
-    const preferred = readViewerLayout();
-    if (preferred) setLayout(preferred);
-  }, []);
-
-  function chooseLayout(next: GalleryLayout) {
-    setLayout(next);
-    writeViewerLayout(next);
-  }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -148,59 +138,44 @@ export function HostGallery({
 
   return (
     <div>
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className="text-[0.9375rem] text-ash">
-            {selected.size === 0
-              ? "Tap a photo to select it."
-              : `${selected.size} selected`}
-          </p>
-          {selected.size > 0 && (
-            <>
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="text-[0.9375rem] text-ash">
+          {selected.size === 0
+            ? "Tap a photo to select it."
+            : `${selected.size} selected`}
+        </p>
+        {selected.size > 0 && (
+          <>
+            <Button
+              onClick={remove}
+              size="sm"
+              variant="secondary"
+              disabled={pending}
+            >
+              <MdOutlineDelete aria-hidden className="shrink-0 text-[1.25em]" />
+              {pending ? "Deleting…" : "Delete selected"}
+            </Button>
+            {selected.size === 1 && (
               <Button
-                onClick={remove}
-                size="sm"
-                variant="secondary"
-                disabled={pending}
-              >
-                <MdOutlineDelete aria-hidden className="shrink-0 text-[1.25em]" />
-                {pending ? "Deleting…" : "Delete selected"}
-              </Button>
-              {selected.size === 1 && (
-                <Button
-                  onClick={makeCover}
-                  size="sm"
-                  variant="ghost"
-                  disabled={pending}
-                >
-                  <MdOutlineImage aria-hidden className="shrink-0 text-[1.25em]" />
-                  Use as cover
-                </Button>
-              )}
-              <Button
-                onClick={() => setSelected(new Set())}
+                onClick={makeCover}
                 size="sm"
                 variant="ghost"
+                disabled={pending}
               >
-                <MdOutlineClose aria-hidden className="shrink-0 text-[1.25em]" />
-                Clear
+                <MdOutlineImage aria-hidden className="shrink-0 text-[1.25em]" />
+                Use as cover
               </Button>
-            </>
-          )}
-        </div>
-
-        {/* Four layout names plus a label do not fit beside the selection
-            controls on a phone, so they take their own row and scroll if even
-            that is not enough. */}
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 lg:overflow-visible">
-          <div className="flex min-w-max lg:justify-end">
-            <LayoutSwitcher
-              value={layout}
-              onChange={chooseLayout}
-              label="View"
-            />
-          </div>
-        </div>
+            )}
+            <Button
+              onClick={() => setSelected(new Set())}
+              size="sm"
+              variant="ghost"
+            >
+              <MdOutlineClose aria-hidden className="shrink-0 text-[1.25em]" />
+              Clear
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -233,13 +208,6 @@ export function HostGallery({
         onActivate={(item) => toggle(item.id)}
         isSelected={(item) => selected.has(item.id)}
       />
-
-      {layout !== eventLayout && (
-        <p className="mt-3 text-[0.8125rem] text-mist">
-          You are viewing this your way. Guests always see the layout set under
-          Event page.
-        </p>
-      )}
 
       {error && <Alert className="mt-4">{error}</Alert>}
     </div>

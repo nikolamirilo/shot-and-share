@@ -142,14 +142,12 @@ export function eventLinkTitle(name: string): string {
  */
 export function eventLinkDescription(
   name: string,
-  date: string | null,
   message?: string | null,
 ): string {
   const written = message?.trim();
   if (written) return clip(written, 200);
 
-  const occasion = date ? `${name}, ${date}` : name;
-  return `Add the photos you took at ${occasion}. Open the link, pick your photos, and they go straight to the host - no app and no account.`;
+  return `Add the photos you took at ${name}. Open the link, pick your photos, and they go straight to the host - no app and no account.`;
 }
 
 function clip(text: string, limit: number): string {

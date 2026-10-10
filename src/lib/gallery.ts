@@ -157,26 +157,3 @@ export function withOlder(
   const seen = new Set(held.map((item) => item.id));
   return [...held, ...page.filter((item) => !seen.has(item.id))];
 }
-
-const STORAGE_KEY = "shot-and-share:gallery-layout";
-
-/**
- * The host's own preference in their console, if they have expressed one.
- * Guest pages do not read or write it - they render the event's layout.
- */
-export function readViewerLayout(): GalleryLayout | null {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return isGalleryLayout(stored) ? stored : null;
-  } catch {
-    return null;
-  }
-}
-
-export function writeViewerLayout(layout: GalleryLayout) {
-  try {
-    localStorage.setItem(STORAGE_KEY, layout);
-  } catch {
-    // Private mode. The choice simply does not persist.
-  }
-}
