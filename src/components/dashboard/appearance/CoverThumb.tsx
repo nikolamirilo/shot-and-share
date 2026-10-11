@@ -1,0 +1,58 @@
+"use client";
+
+import { Photo, cx } from "@/components/ui";
+import { type MediaView } from "@/types/media";
+
+export const TILE =
+  "relative aspect-square w-full overflow-hidden rounded-xl bg-linen shadow-sm transition-shadow";
+export const TILE_SELECTED = "shadow-lg";
+
+export function Chosen() {
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute bottom-1.5 right-1.5 grid h-6 w-6 place-items-center rounded-full bg-claret text-chalk shadow-md"
+    >
+      <svg viewBox="0 0 12 12" className="h-3.5 w-3.5" fill="none">
+        <path
+          d="M2.5 6.4 4.9 8.8 9.5 3.4"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
+export function CoverThumb({
+  item,
+  selected,
+  onClick,
+}: {
+  item: MediaView;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={cx(TILE, selected && TILE_SELECTED)}
+    >
+      {item.previewUrl && (
+        <Photo
+          src={item.previewUrl}
+          alt=""
+          width={320}
+          height={320}
+          sizes="320px"
+          className="h-full w-full object-cover"
+        />
+      )}
+      {selected && <Chosen />}
+    </button>
+  );
+}

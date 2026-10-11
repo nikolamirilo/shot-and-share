@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
-import { EventCard } from "@/components/dashboard/event-card";
-import { EventsEmptyState } from "@/components/dashboard/events-empty-state";
+import { EventCard } from "@/components/dashboard/EventCard";
+import { EventsEmptyState } from "@/components/dashboard/EventsEmptyState";
+import { NewEventFab } from "@/components/dashboard/NewEventFab";
 import { Eyebrow } from "@/components/ui";
 import { listOwnEvents } from "@/lib/db/event-repo";
 import { countGuestMediaExact } from "@/lib/db/media-repo";
@@ -17,8 +18,6 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const events = await listOwnEvents(supabase);
 
-  // The links are here rather than on the card so that "copy link" is one tap
-  // from the list, the same link the event's own share panel hands out.
   const [counts, tokens] = await Promise.all([
     Promise.all(events.map((event) => countGuestMediaExact(supabase, event.id))),
     getActiveShareTokens(events.map((event) => event.id)),
@@ -50,6 +49,8 @@ export default async function DashboardPage() {
           })}
         </ul>
       )}
+
+      <NewEventFab />
     </div>
   );
 }

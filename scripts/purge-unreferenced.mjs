@@ -1,48 +1,6 @@
 /**
- * Delete objects no database row points at.
- *
- * Postgres is the source of truth for what exists. Anything in the bucket that
- * no row mentions is invisible to the application forever - no gallery will
- * render it, no ZIP will include it, no retention job will ever come looking -
- * and S3 bills for it every month regardless. This is what clears it out.
- *
- * It exists because the layouts changed under the data three times. Objects
- * were left in `{owner}/{event}/full/` by uploads that never confirmed, before
- * upload_reservations existed to track and sweep them; what is left shows up in
- * the console as a `full/` folder sitting next to `photos/` and `videos/`, with
- * nothing in the application able to see inside it.
- *
- * Different job from the two scripts beside it, and the distinction is the
- * point:
- *
- *   - purge-legacy-prefix.mjs deletes a whole prefix, by name, no questions
- *     asked. Right for `u/` or `_bench/`, catastrophic if pointed at an owner.
- *   - reorganize-storage-layout.mjs moves objects a row *does* point at.
- *   - this one asks the database about every key before deleting it.
- *
- * The failure mode worth designing against is not a missed object, it is a
- * truncated query: if the reference set came back short, every real photograph
- * would look like garbage. So the walk over `media` is keyset-paginated rather
- * than trusting a default limit, an empty reference set aborts, and anything
- * above --max-share of the bucket aborts too. Deleting a guest's photograph is
- * not recoverable; stopping and asking is free.
- *
- * Rows are consulted whatever their status. A soft-deleted row's object should
- * already be gone, so one that is still there is a failed delete - but it is
- * reported rather than purged, because "the database still mentions it" is
- * exactly the line this script does not cross.
- *
- *   node --env-file=.env scripts/purge-unreferenced.mjs
- *   node --env-file=.env scripts/purge-unreferenced.mjs --confirm
- *
- * Flags:
- *   --confirm            Actually delete. Off by default.
- *   --prefix=<p>         Only look under this prefix.
- *   --max-share=<n>      Abort if more than n% of listed objects look
- *                        unreferenced. Default 10.
- *   --include-foreign    Also delete keys that are not {owner}/{event}/… at
- *                        all, such as _bench/. Off by default.
- *   --force              Skip the --max-share abort. Read the list first.
+ * Delete objects no database row points at. Postgres is the source of truth for
+ * what exists; anything in the bucket nothing references is a leftover.
  */
 
 import {
@@ -97,16 +55,9 @@ const db = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-/* --- what the database knows about ---------------------------------------- */
-
 /**
- * Every key any row mentions, and separately the ones only a soft-deleted row
- * mentions.
- *
- * Keyset pagination on the primary key, not `.range()` or a bare `.limit()`:
- * this set is the only thing standing between the script and the bucket, and a
- * page quietly cut short at the PostgREST default would make 500 photographs
- * look abandoned.
+ * Keyset pagination on the primary key, so updates shifting rows cannot make the cursor
+ * re-read them.
  */
 async function referencedKeys() {
   const live = new Set();
@@ -134,8 +85,8 @@ async function referencedKeys() {
     cursor = data[data.length - 1].id;
   }
 
-  // A reservation is an upload in flight. Its object may not exist yet, and if
-  // it does it belongs to a guest who is still uploading.
+  // A reservation is an upload in flight: its object may not exist yet, and if it does
+  // it belongs to a guest who is still uploading.
   let reservations = 0;
   cursor = "00000000-0000-0000-0000-000000000000";
   for (;;) {
@@ -176,17 +127,15 @@ async function referencedKeys() {
     cursor = data[data.length - 1].id;
   }
 
-  // A soft-deleted row's key only counts as "mentioned" if nothing live claims
-  // it, so a re-used key is never reported as a failed delete.
+  // A soft-deleted row's key only counts as mentioned if nothing live claims it, so a
+  // re-used key is never reported as a failed delete.
   for (const key of live) softDeleted.delete(key);
 
   return { live, softDeleted, counts: { rows, reservations, events } };
 }
 
-/** Is this key laid out as {owner}/{event}/…, or something else entirely? */
+// Is this key laid out as {owner}/{event}/…, or something else entirely?
 const isEventKey = (key) => /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/.+/i.test(key);
-
-/* --- run ------------------------------------------------------------------- */
 
 console.log(
   CONFIRM
@@ -236,9 +185,8 @@ do {
       continue;
     }
 
-    // A key ending in a slash is a zero-byte marker the console creates. It can
-    // never be referenced, and it is what makes an emptied folder keep showing
-    // up in the console after its contents are gone.
+    // A key ending in a slash is a zero-byte marker the console creates. It can never
+    // be referenced, and it is what keeps an emptied folder showing up.
     const target = isEventKey(key) || key.endsWith("/") ? orphans : foreign;
     target.push({ key, size: object.Size ?? 0 });
   }

@@ -5,7 +5,8 @@ import { ApiError, handle } from "@/lib/api";
 import { requireVisibleGallery } from "@/lib/guards/guest";
 import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { MediaRow } from "@/lib/db/types";
+import { type MediaRow } from "@/types/db";
+import { zipEntryName } from "@/utils/media-name";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,9 +62,7 @@ export async function POST(request: Request) {
     for (const [index, row] of rows.entries()) {
       try {
         const stream = await storage.getStream(row.media_key);
-        const ext = row.media_key.split(".").pop() ?? "jpg";
-        const stamp = row.created_at.slice(0, 19).replace(/[:T]/g, "-");
-        const name = `${String(index + 1).padStart(3, "0")}-${stamp}.${ext}`;
+        const name = zipEntryName(row, index, 3);
         zip.append(stream, { name });
       } catch (err) {
         failures.push(row.id);

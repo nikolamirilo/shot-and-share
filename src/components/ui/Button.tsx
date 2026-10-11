@@ -1,0 +1,102 @@
+import Link from "next/link";
+import type { ComponentProps } from "react";
+
+import { ON_SCRIM } from "@/components/ui/scrim";
+import { cx } from "@/utils/cx";
+
+type Variant = "primary" | "secondary" | "ghost" | "onDark";
+type Size = "sm" | "md" | "lg";
+
+/**
+ * `leading-tight` is load-bearing: body copy runs at 1.65 and a button inherits it,
+ * which puts a 17px label in a 56px box. `min-h` is the 44px tap target.
+ */
+const BASE =
+  "inline-flex items-center justify-center gap-2 rounded-2xl text-center font-semibold leading-tight touch-manipulation transition-transform transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
+
+const LIFT =
+  "shadow-md hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm";
+
+export const BUTTON_FILL: Record<Variant, string> = {
+  primary: "bg-claret text-chalk",
+  secondary: "bg-paper text-ink",
+  onDark: ON_SCRIM,
+  ghost: "text-ink underline decoration-2 underline-offset-4 decoration-claret",
+};
+
+const VARIANTS: Record<Variant, string> = {
+  primary: `${BUTTON_FILL.primary} ${LIFT}`,
+  secondary: `${BUTTON_FILL.secondary} ${LIFT}`,
+  onDark: `${BUTTON_FILL.onDark} hover:-translate-y-0.5`,
+  ghost: `${BUTTON_FILL.ghost} hover:decoration-ink`,
+};
+
+const SIZES: Record<Size, string> = {
+  sm: "min-h-10 px-3.5 py-2 text-[0.9375rem]",
+  md: "min-h-11 px-4.5 py-2.5 text-[1.0625rem] sm:px-5",
+  lg: "min-h-12 px-5 py-3 text-[1.0625rem] sm:px-7 sm:py-3.5",
+};
+
+export function Button({
+  variant = "primary",
+  size = "md",
+  className,
+  ...props
+}: ComponentProps<"button"> & { variant?: Variant; size?: Size }) {
+  return (
+    <button
+      className={cx(
+        BASE,
+        VARIANTS[variant],
+        variant === "ghost" ? "min-h-10 px-1 py-2" : SIZES[size],
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function ButtonLabel({
+  variant = "primary",
+  size = "md",
+  className,
+  disabled,
+  ...props
+}: ComponentProps<"label"> & {
+  variant?: Variant;
+  size?: Size;
+  disabled?: boolean;
+}) {
+  return (
+    <label
+      className={cx(
+        BASE,
+        VARIANTS[variant],
+        variant === "ghost" ? "min-h-10 px-1 py-2" : SIZES[size],
+        "cursor-pointer",
+        disabled && "pointer-events-none opacity-45",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function ButtonLink({
+  variant = "primary",
+  size = "md",
+  className,
+  ...props
+}: ComponentProps<typeof Link> & { variant?: Variant; size?: Size }) {
+  return (
+    <Link
+      className={cx(
+        BASE,
+        VARIANTS[variant],
+        variant === "ghost" ? "min-h-10 px-1 py-2" : SIZES[size],
+        className,
+      )}
+      {...props}
+    />
+  );
+}

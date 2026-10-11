@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { requireOwnedEvent, requireUser } from "@/lib/actions/guards";
+import { requireOwnedEvent, requireUser } from "@/lib/guards/host-action";
 import type { ActionState } from "@/lib/actions/types";
-import { LIMITS, rateLimit } from "@/lib/ratelimit";
+import { LIMITS } from "@/constants/limits";
+import { rateLimit } from "@/lib/ratelimit";
 import { issueTokenFor } from "@/lib/share-tokens";
 import { TIERS, computeExpiry } from "@/lib/tiers";
 
@@ -39,12 +40,6 @@ export async function createEvent(
   }
 
   const tier = TIERS.free;
-  /*
-   * One instant for both columns rather than `now()` for the anchor and a
-   * separate clock reading for the expiry. They are the same fact written
-   * twice - the second is the first plus the plan's days - and two readings
-   * either side of midnight would disagree about which day that was.
-   */
   const createdAt = new Date();
   const { data: event, error } = await supabase
     .from("events")
@@ -59,12 +54,7 @@ export async function createEvent(
       expires_at: computeExpiry(createdAt, tier).toISOString(),
       status: "active",
       gallery_visible: true,
-      // Off, and it stays off unless a host asks for it. Making somebody
-      // approve four hundred wedding photographs one at a time would ruin the
-      // product for the people who never think about moderation at all.
       require_approval: false,
-      // Same reasoning, and a stronger version of it: nothing from this event
-      // goes to a moderation provider until its host asks for that.
       auto_scan: false,
       welcome_message: null,
       cover_media_id: null,
@@ -113,17 +103,9 @@ export async function updateEventSettings(
     return { error: parsed.error.issues[0].message ?? "Check the form." };
   }
 
-  /*
-   * `expires_at` is not touched here, and nothing on this form can move it.
-   *
-   * It used to be recomputed on every save, because the date of the event was
-   * one of the fields and retention was counted from it. That made a save
-   * which only changed a name a save that could rewrite the storage window -
-   * and if `events.tier` held a product id the code could not resolve it read
-   * as Free, which turned a paid 365-day window into 30 days. The guard
-   * against that was the awkward part of this function; removing the date
-   * removed the need for it. The window is settled by a purchase and by the
-   * retention job, which are the only two things that know anything about it.
+  /**
+   * `expires_at` is not touched here: recomputing it on every save reset the window a
+   * purchase had moved.
    */
   const { error } = await supabase
     .from("events")

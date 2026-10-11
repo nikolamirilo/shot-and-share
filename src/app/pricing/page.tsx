@@ -4,24 +4,20 @@ import {
   MdOutlinePhotoLibrary,
 } from "react-icons/md";
 
-import { ComparisonTable } from "@/components/marketing/comparison-table";
-import { PricingDetail } from "@/components/marketing/pricing-detail";
-import { PricingTable } from "@/components/marketing/pricing-table";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { ComparisonTable } from "@/components/marketing/ComparisonTable";
+import { PricingDetail } from "@/components/marketing/PricingDetail";
+import { PricingTable } from "@/components/marketing/PricingTable";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import { ButtonLink, Eyebrow } from "@/components/ui";
-import { JsonLd } from "@/components/seo/json-ld";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { hasSupabase } from "@/lib/env";
 import { KEEPING, TIERS, VAT_NOTE, photoCountLabel } from "@/lib/tiers";
 import { breadcrumbSchema, graph, softwareApplicationSchema } from "@/lib/seo";
-import { getSessionUser } from "@/lib/supabase/server";
+import { getSessionUser, headerUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  // Built from the tier table rather than typed, for the same reason the
-  // comparison table now is: this said 250 while the plan cards below it said
-  // 150, and a search result that disagrees with the page it opens is the
-  // worst place of all to be caught contradicting yourself.
   description: `One payment per event. A free plan that holds about ${photoCountLabel(TIERS.free.quotaBytes)} photos, and keeping them online afterwards from €${KEEPING.plus.priceEur} a year.`,
   alternates: { canonical: "/pricing" },
 };
@@ -42,7 +38,7 @@ export default async function PricingPage() {
         )}
       />
 
-      <SiteHeader signedIn={Boolean(user)} />
+      <SiteHeader user={headerUser(user)} />
 
       <main>
         <section className="bg-linen">
@@ -64,13 +60,6 @@ export default async function PricingPage() {
               />
             </div>
 
-            {/* The three sentences a payment reviewer is looking for, in the
-                order they check them: the price is real, nothing recurs, and
-                somebody named is taking the money.
-
-                The VAT sentence comes from the constant every other place
-                quotes, because saying it three slightly different ways is the
-                same as saying three different things. */}
             <p className="mt-6 max-w-2xl text-[0.9375rem] text-ash">
               {VAT_NOTE} Our payment provider is the merchant of record, so the
               VAT on your invoice is already handled.
@@ -106,8 +95,6 @@ export default async function PricingPage() {
                 <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
                 Create an event
               </ButtonLink>
-              {/* Somebody who arrived straight at the prices has still not seen
-                  what they are pricing. */}
               <ButtonLink
                 href="/demo"
                 variant="secondary"
@@ -126,8 +113,3 @@ export default async function PricingPage() {
     </>
   );
 }
-
-/**
- * The comparison against the obvious alternative. Every line here is a fact
- * about published pricing, which is the only kind of comparison worth making.
- */

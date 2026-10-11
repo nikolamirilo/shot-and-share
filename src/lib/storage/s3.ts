@@ -35,7 +35,7 @@ function bucket(): string {
   return env.s3.bucket!;
 }
 
-/** A presigned POST takes tags as XML, unlike the header form a PUT uses. */
+// A presigned POST takes tags as XML, unlike the header form a PUT uses.
 function taggingXml(tags: Record<string, string>): string {
   const entries = Object.entries(tags)
     .map(
@@ -72,8 +72,8 @@ export const s3Driver: StorageDriver = {
       Key: key,
       Expires: expiresInSeconds,
       Conditions: [
-        // S3 itself rejects an oversized body. Our numbers are advisory until
-        // this line makes them binding.
+        // S3 itself rejects an oversized body. Our numbers are advisory until this
+        // line.
         ["content-length-range", 1, maxBytes],
         ["eq", "$Content-Type", contentType],
         ...(tagging
@@ -81,9 +81,8 @@ export const s3Driver: StorageDriver = {
           : []),
       ],
       /*
-       * Everything here is also a condition: `createPresignedPost` adds an
-       * exact-match condition for every field it is given, which is why
-       * Cache-Control needs no entry above. A guest cannot vary these.
+       * `createPresignedPost` adds an exact-match condition for every field it is
+       * given, so a guest cannot vary these.
        */
       Fields: {
         "Content-Type": contentType,
@@ -109,23 +108,14 @@ export const s3Driver: StorageDriver = {
     );
   },
 
-  /**
-   * A CDN in front of the bucket when one is configured, and the app's own
-   * media route when it is not.
-   *
-   * Never null, and that is the point: the caller's fallback is a signed URL
-   * that expires in an hour, which is correct for a download and useless as the
-   * input to an image optimiser - the URL changes, so every page load
-   * re-transcodes the same photo. Both branches here are stable and cacheable.
-   */
   publicUrl(key) {
     if (!env.mediaBaseUrl) return `/api/media/${key}`;
     return `${env.mediaBaseUrl.replace(/\/$/, "")}/${key}`;
   },
 
   async put({ key, body, contentType, contentLength, tags, cacheControl }) {
-    // PutObject and CreateMultipartUpload take tags as a query string, unlike
-    // the XML a presigned POST wants.
+    // PutObject and CreateMultipartUpload take tags as a query string, unlike the XML a
+    // presigned POST wants.
     const Tagging = tags
       ? new URLSearchParams(tags).toString()
       : undefined;
@@ -145,8 +135,7 @@ export const s3Driver: StorageDriver = {
       return;
     }
 
-    // A 30 GB archive cannot be buffered, so streams go through the multipart
-    // uploader instead of a single PutObject.
+    // A 30 GB archive cannot be buffered, so streams go through the multipart uploader.
     const upload = new Upload({
       client: s3(),
       params: {
@@ -194,11 +183,6 @@ export const s3Driver: StorageDriver = {
     }
   },
 
-  /**
-   * LIST is billed at the expensive request rate, which is why the application
-   * never uses it to read a gallery. Here it is the right tool: the retention
-   * job runs once per event, at the very end of its life.
-   */
   async removePrefix(prefix) {
     let deleted = 0;
     let token: string | undefined;

@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ForgotForm } from "@/components/auth/forgot-form";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { ForgotForm } from "@/components/auth/ForgotForm";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Eyebrow } from "@/components/ui";
+import { getHeaderUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Reset your password",
   robots: { index: false, follow: false },
 };
 
-export default function ForgotPage() {
+export default async function ForgotPage() {
+  const user = await getHeaderUser();
+
   return (
     <>
-      <SiteHeader />
+      <SiteHeader user={user} />
       <main className="bg-linen">
         <div className="mx-auto max-w-md px-4 py-11 sm:px-5 sm:py-16 lg:py-24">
           <Eyebrow>Hosts only</Eyebrow>

@@ -1,12 +1,8 @@
-/*
- * Shot & Share - Lottie compositions, authored as code.
+/**
+ * Lottie compositions, authored as code.
  *
- * Every shape is taken from the brand's own drawings (components/layout/logo.tsx
- * and components/marketing/step-art.tsx) so the animations are those drawings
- * moving, not new illustrations. Output is plain Bodymovin JSON (v5.7), playable
- * by lottie-web, lottie-react, dotlottie or the LottieFiles editor.
- *
- * Regenerate with: node scripts/build-lottie.js
+ * Every shape is taken from the brand's own drawings, so an animation and its
+ * still are the same object.
  */
 const fs = require("fs");
 const path = require("path");
@@ -29,7 +25,7 @@ const rgba = (hex) => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => +(v / 255).toFixed(4)).concat(1);
 };
 
-/* ---- easing: [outX, outY, inX, inY] ----------------------------------- */
+// easing: [outX, outY, inX, inY]
 const EASE = {
   inOut: [0.42, 0, 0.58, 1],
   out: [0.22, 1, 0.36, 1],
@@ -64,7 +60,6 @@ function A(keys) {
   };
 }
 
-/* ---- shape items ------------------------------------------------------ */
 const rc = (w, h, r = 0, p = [0, 0]) => ({ ty: "rc", d: 1, s: S([w, h]), p: S(p), r: S(r), nm: "Rect" });
 const el = (w, h, p = [0, 0]) => ({ ty: "el", d: 1, s: S([w, h]), p: S(p), nm: "Ellipse" });
 function sh(v, { i, o, c = false } = {}) {
@@ -108,10 +103,9 @@ const tr = ({ p = [0, 0], a = [0, 0], s = [100, 100], r = 0, o = 100 } = {}) => 
 });
 const gr = (nm, items, t = {}) => ({ ty: "gr", nm, it: [...items, tr(t)], np: items.length, cix: 2, bm: 0 });
 
-/* A rect drawn at SVG coordinates (x, y, w, h). */
+/** A rect drawn at SVG coordinates (x, y, w, h). */
 const rectAt = (x, y, w, h, r = 0) => rc(w, h, r, [x + w / 2, y + h / 2]);
 
-/* ---- layers ------------------------------------------------------------ */
 function layer(nm, shapes, { ind, op, p = [0, 0, 0], a = [0, 0, 0], s = [100, 100, 100], r = 0, o = 100 }) {
   return {
     ddd: 0,
@@ -146,9 +140,8 @@ function comp(nm, w, h, op, layers) {
   };
 }
 
-/* A rounded corner bracket: the same object as the logo's, at any size. */
+/** A rounded corner bracket: the same object as the logo's, at any size. */
 function bracketPath(x0, y0, arm, radius) {
-  // From the end of the vertical arm, up to the corner, and along the top.
   const k = radius * (2 / 3);
   return sh(
     [
@@ -164,7 +157,7 @@ function bracketPath(x0, y0, arm, radius) {
   );
 }
 
-/* A circular arc as one cubic, angles in degrees, screen coordinates. */
+/** A circular arc as one cubic, angles in degrees, screen coordinates. */
 function arcPath(cx, cy, r, a0, a1) {
   const rad = (d) => (d * Math.PI) / 180;
   const t0 = rad(a0);
@@ -179,9 +172,7 @@ function arcPath(cx, cy, r, a0, a1) {
   });
 }
 
-/* ======================================================================== */
-/* 1. The mark: brackets close in, the print leaves the frame.              */
-/* ======================================================================== */
+// 1. The mark: brackets close in, the print leaves the frame.
 function mark({ bracket = HEX.ink, dot = HEX.claret, nm = "Shot & Share mark" } = {}) {
   const OP = 96;
   const corners = [0, 90, 180, 270];
@@ -255,10 +246,8 @@ function mark({ bracket = HEX.ink, dot = HEX.claret, nm = "Shot & Share mark" } 
   ]);
 }
 
-/* ======================================================================== */
-/* 2. Scan: a phone camera finding the code on the table card.             */
-/*    Transparent overlay, drawn over the QR itself.                        */
-/* ======================================================================== */
+// 2. Scan: a phone camera finding the code on the table card. Transparent overlay,
+// drawn over the QR itself.
 function scan() {
   const OP = 180;
   const corners = [0, 90, 180, 270];
@@ -312,7 +301,6 @@ function scan() {
     },
   );
 
-  // "Found": the whole viewfinder breathes once, then a pine tick lands.
   const tick = gr(
     "Found",
     [
@@ -338,9 +326,7 @@ function scan() {
   ]);
 }
 
-/* ======================================================================== */
-/* 3. Step one: a form fills in and a code comes out of the other end.     */
-/* ======================================================================== */
+// 3. Step one: a form fills in and a code comes out of the other end.
 function create() {
   const OP = 240;
   const grow = (nm, x, y, w, h, r, color, opacity, t0, t1, tOut) =>
@@ -421,9 +407,7 @@ function create() {
   ]);
 }
 
-/* ======================================================================== */
-/* 4. Step two: the card on the table, a phone reading it.                 */
-/* ======================================================================== */
+// 4. Step two: the card on the table, a phone reading it.
 function table() {
   const OP = 240;
 
@@ -444,7 +428,6 @@ function table() {
     gr("Card body", [rectAt(30, 22, 62, 82, 8), st(HEX.ink, 2, { o: 20 }), fl(HEX.paper)]),
   ]);
 
-  // Concentric waves leaving the code towards the phone, twice per loop.
   const wave = (r, t) =>
     A([
       [t, 0, "out"],
@@ -513,7 +496,6 @@ function table() {
     gr("Body", [rectAt(px, py, 46, 74, 9), st(HEX.ink, 2.5, { o: 28 }), fl(HEX.paper)]),
   ]);
 
-  // Two prints leave the phone: the photos, sent.
   const sent = [0, 1].map((n) => {
     const t = 134 + n * 10;
     return gr(
@@ -576,9 +558,7 @@ function table() {
   ]);
 }
 
-/* ======================================================================== */
-/* 5. Step three: the gallery fills, the night leaves as one bundle.       */
-/* ======================================================================== */
+// 5. Step three: the gallery fills, the night leaves as one bundle.
 function keep() {
   const OP = 240;
   const tiles = [
@@ -589,8 +569,6 @@ function keep() {
     [73, 65],
     [96, 65],
   ];
-  // Newest first, like the real gallery: they arrive bottom-right to top-left,
-  // and the last to land - top-left - stays claret, the frame still warm.
   const order = [5, 4, 3, 2, 1, 0];
   const at = (k) => 18 + order.indexOf(k) * 12;
 
@@ -682,7 +660,6 @@ function keep() {
   ]);
 }
 
-/* ------------------------------------------------------------------------ */
 const all = {
   mark: mark(),
   markOnClaret: mark({ bracket: HEX.chalk, dot: HEX.roseSoft, nm: "Shot & Share mark (on claret)" }),

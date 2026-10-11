@@ -1,34 +1,13 @@
-/**
- * The type on a guest's event page. A host picks a *pairing*, not a font -
- * five sets, each tested against the layout.
- *
- * The mono face never changes: it labels the machine-readable parts, and that
- * register is the product's rather than the event's.
- *
- * Each set carries the three display settings the stylesheet cannot assume.
- * `font-stretch: 82%` is right for Archivo, which has a width axis, and
- * meaningless for Playfair; -0.046em of tracking suits a heavy grotesque and is
- * too tight for a serif.
- */
-
 export interface FontSet {
   id: string;
   name: string;
   hint: string;
-  /** Headings. */
   display: string;
-  /** Body copy, buttons, inputs. */
   body: string;
   displayWeight: number;
-  /** Only does anything on a face with a width axis. */
   displayStretch: string;
   displayTracking: string;
-  /**
-   * Google Fonts family specifications, in the css2 API's own syntax.
-   *
-   * Empty for the house set: the root layout already loads it for every page,
-   * so the default costs a guest nothing.
-   */
+  /** Empty for the house set: the root layout already loads it for every page. */
   families: string[];
 }
 
@@ -106,13 +85,6 @@ export function coerceFont(value: unknown): string {
   return isFontSetId(value) ? value : DEFAULT_FONT_ID;
 }
 
-/**
- * The pairing as CSS custom properties.
- *
- * Same trick as the palette: these are the variable names the design system
- * already uses, so setting them on a wrapper re-types everything underneath
- * without any component knowing that fonts are configurable.
- */
 export function fontToCssVars(font: FontSet): Record<string, string> {
   return {
     "--font-display": font.display,
@@ -123,12 +95,6 @@ export function fontToCssVars(font: FontSet): Record<string, string> {
   };
 }
 
-/**
- * The stylesheet this set needs, or null when the root layout already has it.
- *
- * Only the chosen set is requested on a guest page. Loading all five would put
- * eight font families on a phone on hotel wifi to render one of them.
- */
 export function googleFontsHref(font: FontSet): string | null {
   if (font.families.length === 0) return null;
   const families = font.families.map((f) => `family=${f}`).join("&");

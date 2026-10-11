@@ -2,12 +2,14 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { ApiError, fail, handle, ok, parseBody } from "@/lib/api";
-import { requireGuestEvent, storageSummary } from "@/lib/events";
-import { formatBytes } from "@/lib/format";
-import { enforceRateLimit } from "@/lib/guards";
+import { storageSummary } from "@/lib/events";
+import { requireGuestEvent } from "@/lib/guards/guest";
+import { formatBytes } from "@/utils/format";
+import { enforceRateLimit } from "@/lib/guards/rate-limit";
 import { mediaKey, posterKey, scopeOfEvent, thumbKey } from "@/lib/media";
 import { IMAGE_EXT, IMAGE_MIME, type ImageFormat } from "@/lib/media/formats";
-import { LIMITS, clientIp } from "@/lib/ratelimit";
+import { LIMITS } from "@/constants/limits";
+import { clientIp } from "@/lib/ratelimit";
 import { getTier } from "@/lib/tiers";
 import { classifyUpload, decideStoredObject } from "@/lib/uploads/classify";
 import { createReservation } from "@/lib/uploads/reservation";
@@ -24,22 +26,13 @@ export const dynamic = "force-dynamic";
 const bodySchema = z.object({
   token: shareTokenSchema,
   fingerprint: fingerprintSchema,
-  /** One file, so uploading can start before the slowest has compressed. */
   file: guestFileSchema,
 });
 
-/**
- * Reserve the space, sign the URL, and write down what to do when the bytes
- * arrive. One file per request.
- */
 export async function POST(request: Request) {
   return handle(async () => {
     const body = await parseBody(request, bodySchema);
 
-    // Per device, not per venue: the fingerprint is what separates two guests
-    // sharing the room's wifi, and one guest's camera roll must not use up the
-    // next guest's allowance. The address stays in the key so a device that
-    // invents a new fingerprint per request is still bounded by the quota.
     enforceRateLimit(
       LIMITS.presign,
       `presign:${body.token.slice(0, 12)}:${clientIp(request.headers)}:${body.fingerprint}`,
@@ -72,8 +65,6 @@ export async function POST(request: Request) {
     }
 
     const mediaId = randomUUID();
-    // Every key this request signs is anchored to the host who owns the event,
-    // never to anything the guest sent.
     const scope = scopeOfEvent(event);
     const stored = decideStoredObject(file, classified);
 
@@ -90,8 +81,6 @@ export async function POST(request: Request) {
           }
         : null;
 
-    // Photos only. A video's poster frame is already the small copy, and the
-    // worker cuts one when the browser could not.
     const thumb =
       classified.kind === "photo" && file.thumb
         ? {
@@ -122,8 +111,6 @@ export async function POST(request: Request) {
         duration_seconds: file.durationSeconds ?? null,
         width: file.sourceWidth ?? null,
         height: file.sourceHeight ?? null,
-        // The worker still owes us something whenever the object in the bucket
-        // is not already a compressed, universally viewable file.
         processing: stored.useCompressed ? "done" : "pending",
         uploader_fingerprint: body.fingerprint,
         taken_at: plausibleTakenAt(file.takenAt),
@@ -146,7 +133,6 @@ export async function POST(request: Request) {
     return ok({
       upload: {
         mediaId,
-        /** Which blob to send: the compressed copy, or the file itself. */
         source: stored.useCompressed
           ? ("compressed" as const)
           : ("file" as const),

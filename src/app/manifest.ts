@@ -2,14 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { SITE } from "@/lib/seo";
 
-/**
- * The web app manifest. "Add to home screen" is not the point - declaring the
- * name, icon and colours is, because that is what the browser chrome, the share
- * sheet and the task switcher read.
- *
- * `display: browser` on purpose: standalone would strip the address bar from a
- * page whose whole promise is that it is an ordinary link.
- */
+/** `display: browser` on purpose: standalone would strip the address bar. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: `${SITE.name} - ${SITE.tagline}`,

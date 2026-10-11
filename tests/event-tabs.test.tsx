@@ -3,13 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 
-/**
- * The host's console shows one group at a time at every width - a strip across
- * the top of a phone, a rail down the side of a laptop. Both the switching and
- * the two shapes of the buttons are done in CSS, which is exactly the kind of
- * thing that gets quietly undone by a later class change.
- */
-
 const ITEMS: TabItem[] = [
   { id: "share", label: "Share" },
   { id: "upgrade", label: "Plan" },
@@ -30,8 +23,6 @@ function render() {
 
 describe("the tabs on the event console", () => {
   it("opens the first tab and closes the rest at every width", () => {
-    // `hidden lg:block` was right while a laptop showed the whole console at
-    // once. It would now leave every panel stacked behind the rail.
     const html = render();
     expect(html).toContain('id="share"');
     expect(html).not.toMatch(/id="share"[^>]*class="[^"]*hidden/);
@@ -41,8 +32,6 @@ describe("the tabs on the event console", () => {
   });
 
   it("points each tab at the panel it opens", () => {
-    // `#upgrade` is a link target elsewhere in the product, so the panel id is
-    // the tab id rather than something generated.
     const html = render();
     expect(html).toContain('aria-controls="upgrade"');
     expect(html).toContain('id="upgrade-tab"');
@@ -50,8 +39,6 @@ describe("the tabs on the event console", () => {
   });
 
   it("namespaces its ids when a second set of tabs is on the same page", () => {
-    // The event page editor sits inside a panel of the console and has tabs of
-    // its own. Two elements with id="gallery" would break both.
     const html = renderToStaticMarkup(
       <Tabs
         items={[{ id: "gallery", label: "Gallery" }]}
@@ -66,11 +53,6 @@ describe("the tabs on the event console", () => {
   });
 });
 
-/**
- * Six pills are 592px of content and no phone is that wide, so below `sm` the
- * same row is pinned across the bottom of the screen instead of scrolling off
- * the side of it.
- */
 const BAR: TabItem[] = [
   { id: "share", label: "Share", short: "Share", icon: <span>·</span> },
   { id: "upgrade", label: "Plan and room", short: "Plan", icon: <span>·</span> },
@@ -85,7 +67,6 @@ function renderBar() {
   );
 }
 
-/** The console's own five, in the order the rail reads them. */
 const FIVE: TabItem[] = [
   { id: "share", label: "Share", icon: <span>·</span>, raised: true },
   { id: "event", label: "Event", icon: <span>·</span> },
@@ -108,17 +89,12 @@ function renderRaised() {
 
 describe("the bottom bar on a phone", () => {
   it("is one tablist, not a bar and a strip", () => {
-    // Two rows over one set of panels would mean two elements carrying
-    // id="share-tab", and every aria-labelledby pointing at whichever the
-    // browser found first.
     const html = renderBar();
     expect(html.match(/role="tablist"/g)).toHaveLength(1);
     expect(html.match(/id="share-tab"/g)).toHaveLength(1);
   });
 
   it("raises one button out of the middle of the row", () => {
-    // Declared first, because that is where the desktop rail wants it, and
-    // drawn third, because that is the middle of five.
     const html = renderRaised();
     const order = (id: string) =>
       new RegExp(`id="${id}-tab"[^>]*class="([^"]*)"`).exec(html)![1];
@@ -130,9 +106,6 @@ describe("the bottom bar on a phone", () => {
   });
 
   it("leaves one shape per width rather than two fighting", () => {
-    // A button carrying both `px-3.5` and `px-0.5` is not a bug you can see -
-    // it is settled by whichever rule the compiler emitted last, which is not
-    // a decision this file gets to make.
     const html = renderRaised();
     const button = /id="event-tab"[^>]*class="([^"]*)"/.exec(html)![1];
     const classes = button.split(/\s+/);
@@ -145,9 +118,6 @@ describe("the bottom bar on a phone", () => {
   });
 
   it("shows an icon beside the label once there is room for both", () => {
-    // The icons used to be a phone-only thing, which left the laptop rail as
-    // five mono words. The two sizes are separate elements: the bar's own icon
-    // sits above its label, and the raised circle must not turn up beside one.
     const html = renderRaised();
     const button = (id: string) =>
       new RegExp(`id="${id}-tab"(.*?)</button>`, "s").exec(html)![1];
@@ -158,12 +128,9 @@ describe("the bottom bar on a phone", () => {
   });
 
   it("keeps the full label as the accessible name at every width", () => {
-    // The bar has room for "Plan". A screen reader should still hear the whole
-    // label, which is what the tab is called everywhere else.
     const html = renderBar();
     expect(html).toContain("Plan and room");
     expect(html).toContain("sr-only sm:not-sr-only");
-    // The short name and the icon are decoration on top of it, not instead.
     expect(html.match(/aria-hidden="true"/g)?.length ?? 0).toBeGreaterThan(1);
   });
 });

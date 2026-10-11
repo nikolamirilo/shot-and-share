@@ -1,0 +1,61 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { GuestGallery } from "@/components/event/guest-gallery/GuestGallery";
+import { Uploader } from "@/components/upload/Uploader";
+import type { UploadVariant } from "@/lib/appearance/variants";
+import { markOpened } from "@/lib/client/upload";
+import { type GalleryLayout } from "@/constants/gallery";
+
+export function GuestExperience({
+  token,
+  eventId,
+  galleryVisible,
+  galleryLayout,
+  uploadVariant,
+  allowVideo,
+  maxFileBytes,
+  remainingBytes,
+}: {
+  token: string;
+  eventId: string;
+  galleryVisible: boolean;
+  galleryLayout: GalleryLayout;
+  uploadVariant: UploadVariant;
+  allowVideo: boolean;
+  maxFileBytes: number;
+  remainingBytes: number;
+}) {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (!markOpened(eventId)) return;
+    fetch("/api/guest/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+      keepalive: true,
+    }).catch(() => {});
+  }, [eventId, token]);
+
+  return (
+    <>
+      <Uploader
+        token={token}
+        variant={uploadVariant}
+        allowVideo={allowVideo}
+        maxFileBytes={maxFileBytes}
+        remainingBytes={remainingBytes}
+        onUploaded={() => setRefreshKey((k) => k + 1)}
+      />
+      {galleryVisible && (
+        <GuestGallery
+          token={token}
+          refreshKey={refreshKey}
+          layout={galleryLayout}
+        />
+      )}
+    </>
+  );
+}

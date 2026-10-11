@@ -19,17 +19,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * The transcode worker's API. It handles the two things a browser cannot:
- * images it could not decode (chiefly HEIC outside Safari), and video, where
- * client-side compression means MediaRecorder re-encoding in real time.
- *
- * The worker never gets AWS credentials - it asks for jobs, receives presigned
- * URLs, and reports back. ffmpeg parsing a hostile file is a real attack
- * surface, and this is the process most likely to be compromised, so it holds
- * nothing worth stealing.
- */
-
 function authorised(request: Request): boolean {
   const secret = process.env.WORKER_SECRET;
   if (!secret) return false;
@@ -42,12 +31,8 @@ function authorised(request: Request): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** How long a job may sit claimed before another worker may take it. */
 const CLAIM_MINUTES = 20;
 
-/* -------------------------------------------------------------------------- */
-
-/** Claim a batch of work. */
 export async function GET(request: Request) {
   return handle(async () => {
     if (!authorised(request)) return fail("unauthorized", "Bad worker secret.");
@@ -62,9 +47,6 @@ export async function GET(request: Request) {
       rows.map(async (row) => {
         const isVideo = row.kind === "video";
 
-        // Decided here, not by the worker: it must not choose where in the
-        // bucket it writes. The scope comes off the row, so an output can only
-        // land in the folder of the host who owns the photo.
         const scope = scopeOfMedia(row);
         const outKey = mediaKey(
           scope,
@@ -87,37 +69,22 @@ export async function GET(request: Request) {
             expiresInSeconds: CLAIM_MINUTES * 60,
           }),
           outputs: {
-            // Not a second rendition: this replaces the object in the bucket,
-            // so the event folder is left holding one compressed file.
             media: {
               contentType: outMime,
               upload: await storage.presignUpload({
                 key: outKey,
                 contentType: outMime,
-                // Generous: the worker's output size is not known in advance,
-                // and the quota is reconciled when it reports back. Three times
-                // rather than two because video keeps its original dimensions
-                // now - an iPhone clip is HEVC, H.264 at the same size needs
-                // more bytes for the same picture, and a ceiling the output
-                // does not fit under fails the job and leaves the guest holding
-                // a file that Chrome cannot play.
+                // Generous, and reconciled when the worker reports back: H.264 at the
+                // source's dimensions needs more bytes than the HEVC it came from.
                 maxBytes: Math.max(Number(row.size_bytes) * 3, 32 * 1024 * 1024),
                 expiresInSeconds: CLAIM_MINUTES * 60,
-                /*
-                 * Not immutable, unlike a guest's upload: this replaces the
-                 * object in the bucket, and when the format it converts to is
-                 * the one the key already names the key does not change. A day
-                 * is long enough to be worth caching and short enough that a
-                 * replaced file corrects itself without an invalidation.
+                /**
+                 * The worker replaces the object in the bucket, so this key is not
+                 * immutable.
                  */
                 cacheControl: REPLACEABLE_CACHE_CONTROL,
               }),
             },
-            /*
-             * Only for a photo. A clip's poster frame is already its small
-             * copy, and it is signed just below when the browser could not cut
-             * one.
-             */
             thumb: isVideo
               ? null
               : {
@@ -127,7 +94,6 @@ export async function GET(request: Request) {
                     contentType: IMAGE_MIME.webp,
                     maxBytes: 1024 * 1024,
                     expiresInSeconds: CLAIM_MINUTES * 60,
-                    // A retried job rewrites this key, so same as the media.
                     cacheControl: REPLACEABLE_CACHE_CONTROL,
                   }),
                 },
@@ -153,12 +119,9 @@ export async function GET(request: Request) {
   });
 }
 
-/* -------------------------------------------------------------------------- */
-
 const completeSchema = z.object({
   mediaId: z.string().uuid(),
   ok: z.boolean(),
-  /** Bytes actually written, so the quota reflects reality. */
   mediaBytes: z.number().int().nonnegative().optional(),
   thumbBytes: z.number().int().nonnegative().optional(),
   posterBytes: z.number().int().nonnegative().optional(),
@@ -179,8 +142,6 @@ export async function POST(request: Request) {
     if (!media) return fail("not_found", "No such media row.");
 
     if (!body.ok) {
-      // A failed conversion is not a lost file: what the guest uploaded is
-      // untouched. The row is marked so it stops being retried forever.
       console.error("[transcode] failed", body.mediaId, body.error);
       await admin
         .from("media")
@@ -190,8 +151,6 @@ export async function POST(request: Request) {
     }
 
     const isVideo = media.kind === "video";
-    // Recomputed from the row rather than taken from the worker's report, for
-    // the same reason it was computed here when the job was handed out.
     const scope = scopeOfMedia(media);
     const newKey = mediaKey(
       scope,
@@ -208,19 +167,12 @@ export async function POST(request: Request) {
     const wrotePoster = isVideo && !media.poster_key && posterBytes > 0;
     const newThumbKey = thumbKey(scope, media.id, IMAGE_EXT.webp);
 
-    // The converted file replaces the upload, so the folder never holds both.
-    // The delta is usually negative. Reserving cannot happen before the size
-    // is known. A rewritten thumbnail replaces its predecessor at the same key,
-    // so only the difference is charged.
     const added =
       (replaced ? mediaBytes - Number(media.size_bytes) : 0) +
       (wroteThumb ? thumbBytes - Number(media.thumb_size_bytes) : 0) +
       (wrotePoster ? posterBytes : 0);
 
     if (!(await adjust(media.event_id, added))) {
-      // The event filled up between upload and conversion. Keep what the guest
-      // uploaded, drop what the worker wrote, and leave the row usable rather
-      // than silently pushing the host over their quota.
       if (newKey !== media.media_key) await storage.remove([newKey]);
       if (wroteThumb && newThumbKey !== media.thumb_key) {
         await storage.remove([newThumbKey]);
@@ -261,16 +213,9 @@ export async function POST(request: Request) {
       })
       .eq("id", media.id);
 
-    // Only once the row points at the new object. A HEIC becomes a JPEG and a
-    // MOV an MP4, so the key changes and the old object would otherwise be paid
-    // for and never read. After the update, so a failure here leaves a stray
-    // object rather than a broken photo.
     if (replaced && newKey !== media.media_key) {
       await storage.remove([media.media_key]);
     }
-    // The same for a thumbnail written before photos had a folder of their
-    // own: the new one lands under photos/thumb/, and the old one is charged
-    // for as replaced, so it has to actually go.
     if (wroteThumb && media.thumb_key && media.thumb_key !== newThumbKey) {
       await storage.remove([media.thumb_key]);
     }
@@ -288,22 +233,6 @@ export async function POST(request: Request) {
   });
 }
 
-/**
- * The second chance to screen a photograph.
- *
- * A HEIC from desktop Chrome reaches the bucket in a format Rekognition cannot
- * read, so it arrives unscreened and stays visible - the deliberate fail-open.
- * The worker has just written a JPEG of it, which is the first copy anything
- * could look at, so this is where that upload finally gets checked.
- *
- * Only rows nobody has screened. A photograph the host has already looked at
- * and approved must not be pulled back down by a conversion job hours later.
- *
- * And only for events that asked to be screened. This is the one moderation
- * call the upload path does not make, so the event's switch has to be read
- * here rather than inherited - otherwise every HEIC at every event would still
- * reach the provider by the back door.
- */
 async function screenLate(
   mediaId: string,
   eventId: string,
@@ -330,9 +259,6 @@ async function screenLate(
 
     if (!event?.auto_scan) return;
 
-    /* requireApproval is false on purpose. The event's hold-everything switch
-       was already applied when the row was written; asking again here would
-       hold a photograph the host has released. */
     const review = await decideReview({ key, requireApproval: false, autoScan: true });
     if (!review.moderated_at) return;
 
@@ -340,9 +266,6 @@ async function screenLate(
       .from("media")
       .update(review)
       .eq("id", mediaId)
-      // Nothing the host has since acted on. Between the upload and now they
-      // may have approved or a guest may have reported it, and this job is the
-      // least informed party in either case.
       .eq("review_state", "approved")
       .is("moderated_at", null);
   } catch (error) {

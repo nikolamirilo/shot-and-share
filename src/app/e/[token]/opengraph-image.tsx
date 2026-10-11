@@ -6,17 +6,6 @@ import { fetchCardPhoto } from "@/lib/og-photo";
 import { EVENT_LINK, HERO, SITE, heroHeadline } from "@/lib/seo";
 import { loadGuestPage } from "@/lib/views/guest-page";
 
-/**
- * The card an event's share link turns into.
- *
- * A share link is not indexed - it is pasted into a group chat, and the chat
- * unfurls it. Until this existed every event unfurled as the product's card:
- * the same claret rectangle selling photo sharing to twelve people who had
- * already been invited to a wedding. This one shows the wedding.
- *
- * Drawn per request rather than cached, because the cover, the name and the
- * theme are all the host's to change up to the morning of the event.
- */
 export const dynamic = "force-dynamic";
 
 export const alt = `${SITE.name} - ${EVENT_LINK.invitation}`;
@@ -31,8 +20,6 @@ export default async function EventOpengraphImage({
   const { token } = await params;
   const page = await loadGuestPage(token);
 
-  // A link that never worked says nothing about anybody's event, so it falls
-  // back to the product's own card rather than leaking a name.
   if (page.state === "unknown") {
     return new ImageResponse(
       (
@@ -46,8 +33,6 @@ export default async function EventOpengraphImage({
     );
   }
 
-  // A closed event still has a name worth showing: the link is usually being
-  // re-shared weeks later, and "this one has finished" is the useful answer.
   if (page.state === "closed") {
     return new ImageResponse(
       (

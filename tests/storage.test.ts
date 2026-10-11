@@ -67,7 +67,6 @@ describe("local presigning", () => {
     expect(presigned.fields.max).toBe("1234");
     expect(Number(presigned.fields.exp)).toBeGreaterThan(Date.now() / 1000);
 
-    // The endpoint recomputes exactly this.
     expect(
       verifyLocal(
         [
@@ -86,11 +85,8 @@ describe("local presigning", () => {
     const mine = "owner-a/event-a/1.jpg";
     const sig = signLocal(["put", mine, "999", "100", "image/jpeg"]);
 
-    // Swapping the event would let anyone overwrite another event's object.
     expect(verifyLocal(["put", "owner-a/event-b/1.jpg", "999", "100", "image/jpeg"], sig)).toBe(false);
-    // Swapping the owner is the cross-tenant case, and matters more.
     expect(verifyLocal(["put", "owner-b/event-a/1.jpg", "999", "100", "image/jpeg"], sig)).toBe(false);
-    // Raising the limit is the whole reason the size is in the signature.
     expect(verifyLocal(["put", mine, "999", "999999999", "image/jpeg"], sig)).toBe(false);
     expect(verifyLocal(["put", mine, "999", "100", "text/html"], sig)).toBe(false);
     expect(verifyLocal(["put", mine, "999", "100", "image/jpeg"], "")).toBe(false);
@@ -110,7 +106,6 @@ describe("local presigning", () => {
       ),
     ).toBe(true);
 
-    // A read signature must not be usable as a write signature.
     expect(
       verifyLocal(
         ["put", params.get("key")!, params.get("exp")!, params.get("name")!],
@@ -128,8 +123,6 @@ describe("key safety", () => {
   });
 
   it("allows the keys the application actually generates", () => {
-    // Folders included: a key with one legitimate slash in it must survive the
-    // traversal check, or every photo since migration 0015 is unreadable.
     expect(safeKey(mediaKey(SCOPE, "photo", "m", "jpg"))).toBe(
       `${OWNER}/${EVENT}/photos/full/m.jpg`,
     );

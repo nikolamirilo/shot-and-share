@@ -183,7 +183,7 @@ nightly job hands the quota back and removes any orphaned object. See migration
 Step 0, and the part that is not ours: the sheet the guest picks photos in
 belongs to the operating system, and the page is frozen or discarded while it is
 up. A guest who taps Add and lands back on a page where nothing happens has lost
-the whole product, so `src/lib/client/picker.ts` is deliberately more careful
+the whole product, so the picker hooks in `src/hooks/upload/` are deliberately more careful
 than the four lines this normally takes.
 
 | What breaks | What the picker does about it |
@@ -371,7 +371,7 @@ picture until a cover photo existed.
 ### Host colours are not trusted
 
 A host choosing their own colours can choose pale grey text on white and hand it
-to two hundred guests in a dark room. So `src/lib/color.ts` does real WCAG
+to two hundred guests in a dark room. So `src/utils/color.ts` does real WCAG
 contrast maths:
 
 - Text is **corrected**, not accepted. `readableInk()` keeps the host's colour

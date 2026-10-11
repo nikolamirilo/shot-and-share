@@ -1,88 +1,28 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-
-/**
- * Whether photographs still go through Vercel's image optimiser.
- *
- * The optimiser is metered: every distinct source-and-width pair is one
- * transformation, and a plan has a fixed number of them per month. Past that
- * ceiling Vercel stops serving `/_next/image` and answers with an error, which
- * in a photo app is not a slower page - it is a wall of broken frames, on the
- * gallery a host has already handed out.
- *
- * So the optimiser is treated as an enhancement that can go away, in two ways:
- *
- *  - The switch. `NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION=1` and a redeploy
- *    serves every photograph straight from the bucket, spending nothing. The
- *    stored thumbnail is already a ~25 KB WebP made for these tiles, so the
- *    wall costs about what it did; only the full-size copies get heavier.
- *
- *  - The catch. If the optimiser answers with an error anyway - the quota ran
- *    out mid-month, nobody was watching the email - each picture retries
- *    itself unoptimised, and once a few have had to, the rest of the page
- *    stops asking. See `<Photo>`.
- */
-
-/** Read once: it is inlined at build time and cannot change while running. */
 export const OPTIMISER_DISABLED =
   process.env.NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION === "1" ||
   process.env.NEXT_PUBLIC_DISABLE_IMAGE_OPTIMIZATION === "true";
 
-/**
- * Whether the stored thumbnail is already coming from a CDN, in which case a
- * grid tile should ask for it directly and skip the optimiser.
- *
- * This is the one case where resizing buys nothing. The stored thumbnail is a
- * ~25 KB WebP cut for roughly tile size, it is uploaded with a year-long
- * `immutable` cache header, and behind a CDN it is served from an edge in the
- * guest's own country. Putting the optimiser in front of that spends a metered
- * transformation per tile *per width* to turn 25 KB into perhaps 8 KB - on a
- * wall of fifty photographs across four layouts, which is how a monthly quota
- * disappears in a fortnight.
- *
- * It only ever applies to the stored thumbnail. The lightbox and the Stack
- * layout show the full-size copy, which is a couple of megabytes and worth
- * every transformation it costs.
- *
- * Without a CDN this stays off: the fallback address is the app's own
- * `/api/media` route, where an unresized copy is a function invocation
- * streaming the bytes and the optimiser's cache is what keeps that rare.
- */
 export const THUMBS_FROM_CDN = Boolean(
   process.env.NEXT_PUBLIC_MEDIA_BASE_URL,
 );
 
-/**
- * How many photographs must fail before the page gives up on the optimiser
- * for all of them.
- *
- * Not one. A single photograph can fail on its own account - an object deleted
- * from the bucket, a signature that expired while the tab was in a pocket -
- * and that is no reason to double the bytes of every other tile. Three
- * failures is not one photograph's bad luck; it is the service.
- */
 const GIVE_UP_AFTER = 3;
 
 let failures = 0;
 let off = OPTIMISER_DISABLED;
 const listeners = new Set<() => void>();
 
-/** True when photographs should be requested straight from their source. */
 export function isOptimiserOff(): boolean {
   return off;
 }
 
-/**
- * The server render never knows about a failure - it has not made a request
- * yet - so it must answer with the switch alone, or the markup it sends and
- * the markup the browser expects disagree.
- */
-function serverSnapshot(): boolean {
+/** Exported for the hook in @/hooks/useOptimiserOff, which is its only caller. */
+export function optimiserServerSnapshot(): boolean {
   return OPTIMISER_DISABLED;
 }
 
-/** Told when the answer to `isOptimiserOff` changes, which happens once. */
 export function subscribeToOptimiser(onChange: () => void): () => void {
   listeners.add(onChange);
   return () => {
@@ -90,7 +30,6 @@ export function subscribeToOptimiser(onChange: () => void): () => void {
   };
 }
 
-/** One photograph could not be fetched through the optimiser. */
 export function reportOptimiserFailure(): void {
   if (off) return;
   failures += 1;
@@ -98,13 +37,3 @@ export function reportOptimiserFailure(): void {
   off = true;
   for (const listener of listeners) listener();
 }
-
-/** The same, as a hook, so a component re-renders when it changes. */
-export function useOptimiserOff(): boolean {
-  return useSyncExternalStore(
-    subscribeToOptimiser,
-    isOptimiserOff,
-    serverSnapshot,
-  );
-}
-

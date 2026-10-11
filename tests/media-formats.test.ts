@@ -22,8 +22,6 @@ describe("format identification", () => {
 
 describe("universal viewability", () => {
   it("knows HEIC is the one that strands people", () => {
-    // This is the whole reason a conversion path exists: an iPhone photo that
-    // Windows, Chrome and Firefox cannot open is not a delivered photo.
     expect(isUniversallyViewable("heic")).toBe(false);
     expect(isUniversallyViewable("jpeg")).toBe(true);
     expect(isUniversallyViewable("png")).toBe(true);
@@ -39,8 +37,6 @@ describe("universal viewability", () => {
 
 describe("size budgeting", () => {
   it("scales the budget with the pixel count", () => {
-    // Quality is held roughly constant by budgeting per pixel rather than
-    // fixing an encoder quality, so a busy photo is pushed harder than a sky.
     expect(megapixels(4000, 3000)).toBeCloseTo(12);
     const small = sizeBudget(1000, 1000, 260_000);
     const large = sizeBudget(4000, 3000, 260_000);
@@ -48,16 +44,11 @@ describe("size budgeting", () => {
   });
 
   it("lets the caller lower the floor for a thumbnail", () => {
-    // The default floor is larger than a thumbnail's whole budget, so without
-    // a parameter every thumbnail would be encoded to a bigger target than
-    // asked for.
     expect(sizeBudget(50, 50, THUMB_BYTES_PER_MP)).toBe(30_000);
     expect(sizeBudget(50, 50, THUMB_BYTES_PER_MP, THUMB_MIN_BYTES)).toBe(6_000);
   });
 
   it("budgets a full-size photo close to the HEIC it replaces", () => {
-    // A 12MP iPhone photo is roughly 2MB as HEIC. Converting to JPEG normally
-    // inflates it; the budget is what cancels that out.
     const budget = sizeBudget(4032, 3024, FULL_BYTES_PER_MP);
     expect(budget).toBeGreaterThan(1_600_000);
     expect(budget).toBeLessThan(2_300_000);
@@ -80,8 +71,6 @@ describe("object bookkeeping", () => {
   };
 
   it("enumerates every object a row owns", () => {
-    // Missing one here means paying to store the thumbnails and poster frames
-    // of photos that were deleted months ago.
     expect(mediaKeys(photo)).toEqual(["o/e/full/m.jpg", "o/e/thumb/m.webp"]);
     expect(mediaKeys(video)).toEqual(["o/e/full/m.mp4", "o/e/m-poster.webp"]);
   });

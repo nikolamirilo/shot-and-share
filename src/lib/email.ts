@@ -2,15 +2,6 @@ import "server-only";
 
 import { env } from "@/lib/env";
 
-/**
- * Transactional email. Without an API key it logs instead of sending, so the
- * retention job can be run and inspected in development without a provider.
- *
- * The warning emails are not a nicety. "Losing someone's wedding photos" is the
- * failure this product cannot survive, and the warnings are the part of the
- * retention system the customer actually sees.
- */
-
 export interface Email {
   to: string;
   subject: string;
@@ -69,15 +60,6 @@ export function retentionWarningEmail(args: {
   days: number;
   photoCount: number;
   downloadUrl: string;
-  /**
-   * What a year of keeping this event online costs, or null when there is no
-   * subscription to offer - a free event, whose host upgrades rather than
-   * renews.
-   *
-   * This email is the whole sales surface for keeping. Nobody shops for photo
-   * storage a year after their wedding; they are reminded of it by being told
-   * the photos are about to go, which is exactly what this is.
-   */
   keepingPriceEur?: number | null;
 }): Email {
   const when =
@@ -125,14 +107,6 @@ export function eventReadyEmail(args: {
   return { to: args.to, subject, html: layout(body, { label: "Open my event", url: args.shareUrl }), text };
 }
 
-/**
- * A guest pressed report and the photograph is already hidden.
- *
- * Sent at once rather than batched, because the only person who can put it back
- * or delete it for good is the host, and until they look the wall is one photo
- * short. The reason is the guest's own words from a short list, so it says
- * "someone in it" rather than a category id.
- */
 export function photoReportedEmail(args: {
   to: string;
   eventId: string;

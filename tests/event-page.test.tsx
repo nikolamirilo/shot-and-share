@@ -1,29 +1,20 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { hasDecoded } from "@/components/event/cover-image";
-import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
-import { EventPreview } from "@/components/event/event-preview";
-import { UploadPanel } from "@/components/upload/upload-panel";
+import { hasDecoded } from "@/components/event/CoverImage";
+import { EventCover, EventThemeRoot } from "@/components/event/EventCover";
+import { EventPreview } from "@/components/event/EventPreview";
+import { UploadPanel } from "@/components/upload/UploadPanel";
 import { THEMES, buildCustomPalette } from "@/lib/appearance";
 import { findFontSet } from "@/lib/fonts";
-import { GALLERY_LAYOUTS, type GalleryLayout } from "@/lib/gallery";
+import { GALLERY_LAYOUTS, type GalleryLayout } from "@/constants/gallery";
 import { uploadWording } from "@/lib/media";
 import { TIERS } from "@/lib/tiers";
-
-/**
- * The host's preview, which is the one screen where a setting can look broken
- * without anything actually being broken. Both bugs these tests pin down came
- * from the preview drawing its own approximation of the guest page instead of
- * rendering it.
- */
 
 const palette = THEMES[0].palette;
 
 describe("the cover a host is shown", () => {
   it("shows the variant that was picked before a photo exists", () => {
-    // Every photo variant used to collapse into "Just type" here, so all four
-    // buttons produced the same picture and the choice looked dead.
     for (const variant of ["full", "classic", "half"] as const) {
       const html = renderToStaticMarkup(
         <EventCover
@@ -39,8 +30,6 @@ describe("the cover a host is shown", () => {
   });
 
   it("still falls back to type on the guest page itself", () => {
-    // An empty frame at the top of a wedding page is worse than no photo, so
-    // the fallback stays everywhere except the preview.
     const html = renderToStaticMarkup(
       <EventCover
         variant="classic"
@@ -53,10 +42,6 @@ describe("the cover a host is shown", () => {
   });
 
   it("lets the full-screen cover take the room the header left it", () => {
-    // "Full screen" has to mean the screen. The guest page stacks the header
-    // and this cover in one screen-high column; a cover that only knows how to
-    // be 100svh tall is a screen *plus* a header, and what falls off the bottom
-    // is the name and the scroll cue - the two reasons the variant exists.
     const html = renderToStaticMarkup(
       <EventCover
         variant="full"
@@ -66,7 +51,6 @@ describe("the cover a host is shown", () => {
       />,
     );
     expect(html).toContain("flex-1");
-    // Still correct standing on its own, where flex-1 does nothing.
     expect(html).toContain("h-svh");
   });
 });
@@ -85,8 +69,6 @@ describe("the colours a host is shown", () => {
 
 describe("the upload panel", () => {
   it("keeps the same two parts in every variant", () => {
-    // Shape is the only thing a host is choosing here. The action and the line
-    // saying what may be sent and how much room is left survive all four.
     for (const variant of ["button", "panel", "bar", "split"] as const) {
       const guest = renderToStaticMarkup(
         <UploadPanel
@@ -96,8 +78,6 @@ describe("the upload panel", () => {
         />,
       );
       expect(guest).toContain("Photos, up to 20 at a time.");
-      // Not the label itself: the split variant names its two halves instead,
-      // which is the one difference the markup is allowed to have.
       expect(guest).toContain("<button");
 
       const preview = renderToStaticMarkup(
@@ -113,11 +93,6 @@ describe("the upload panel", () => {
   });
 });
 
-/**
- * The drawing of the whole page. It replaced a cover, a panel and four squares
- * in a row, which said the same thing about all four gallery layouts and left
- * the host to imagine the rest of the page around it.
- */
 function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
   return renderToStaticMarkup(
     <EventPreview
@@ -138,8 +113,6 @@ function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
 
 describe("the drawing of the guest page", () => {
   it("draws the page a guest actually lands on", () => {
-    // Each of these is a part of the guest page that the old preview left out,
-    // and every one of them carries a colour the host is choosing.
     const html = preview({ message: "Send us the ones you took." });
 
     expect(html).toContain("Romeo and Juliet");
@@ -149,12 +122,6 @@ describe("the drawing of the guest page", () => {
     expect(html).toContain("Everyone&#x27;s photos");
   });
 
-  /**
-   * The preview is the only place a host sees the wording before their guests
-   * do, so a plan with video has to be drawn asking for video. It said "Add
-   * your photos" on every plan, which is the same copy the guest page itself
-   * was showing to people holding a clip they could not send.
-   */
   it("asks for video on a plan that takes video", () => {
     const html = preview({ wording: uploadWording(TIERS.pro) });
 
@@ -163,9 +130,6 @@ describe("the drawing of the guest page", () => {
   });
 
   it("draws the cover photo the host picked, and only that one", () => {
-    // The four cover styles are four crops of one picture. Judging between
-    // them against a grey frame is judging nothing, so this photograph - and
-    // no other - is real.
     const html = preview({
       cover: "full",
       coverUrl: "https://media.example.com/photo.jpg",
@@ -182,8 +146,6 @@ describe("the drawing of the guest page", () => {
   });
 
   it("gives every gallery layout its own shape", () => {
-    // The whole point of the layout buttons. Four identical rows of squares is
-    // what this used to draw, whichever one was selected.
     const drawn = new Map<GalleryLayout, string>();
     for (const layout of GALLERY_LAYOUTS) {
       drawn.set(layout.id, preview({ layout: layout.id }));
@@ -192,7 +154,6 @@ describe("the drawing of the guest page", () => {
     expect(new Set(drawn.values()).size).toBe(GALLERY_LAYOUTS.length);
     expect(drawn.get("grid")).toContain("grid-cols-3");
     expect(drawn.get("masonry")).toContain("columns-2");
-    // The uneven circle sequence, scaled to the frame rather than re-invented.
     expect(drawn.get("holes")).toContain("hole");
     expect(drawn.get("holes")).toMatch(/width:\d+px/);
     expect(drawn.get("stack")).toContain("aspect-ratio:1.75");
@@ -209,14 +170,10 @@ describe("the drawing of the guest page", () => {
 
     expect(html).toContain("--color-paper:#F5DEB3");
     expect(html).toContain("card");
-    // The wells the photos sit in are the theme's dark, not a fixed grey.
     expect(html).toContain("--color-well:");
   });
 
   it("paints the drawn upload button in the accent colour", () => {
-    // The drawing had its own fill - ink - so the one button on the guest page
-    // was the one thing on the drawing that ignored the accent the host was
-    // picking. Every variant that draws a button takes Button's own fill now.
     for (const upload of ["button", "bar", "split"] as const) {
       const html = preview({ upload });
       expect(html).toContain("bg-claret");
@@ -234,10 +191,6 @@ describe("the drawing of the guest page", () => {
   });
 });
 
-/**
- * Where the name sits on the photograph. The wash under it is the reason this
- * has its own block of tests: the type can move and still be unreadable.
- */
 describe("the name's position on the cover", () => {
   function cover(props: Partial<Parameters<typeof EventCover>[0]> = {}) {
     return renderToStaticMarkup(
@@ -252,8 +205,6 @@ describe("the name's position on the cover", () => {
   }
 
   it("leaves the cover alone when nothing was chosen", () => {
-    // Every event that existed before this setting did renders exactly the
-    // page it rendered before: type at the foot, under the foot-heavy wash.
     const before = cover();
     expect(before).toBe(cover({ position: "bottom-left" }));
     expect(before).toContain("linear-gradient(to top");
@@ -261,8 +212,6 @@ describe("the name's position on the cover", () => {
   });
 
   it("turns the wash over when the name goes to the top", () => {
-    // The whole point. White type at the head of a bright photograph under a
-    // gradient that is heaviest at the foot is white type on a white sky.
     const html = cover({ position: "top-left" });
 
     expect(html).toContain("linear-gradient(to bottom");
@@ -278,9 +227,6 @@ describe("the name's position on the cover", () => {
   });
 
   it("moves the scrim sideways with the name", () => {
-    // The middle row has no edge to hang a gradient off, so the dark patch is
-    // under the type itself - and a patch in the centre does nothing for a
-    // name in the left margin.
     expect(cover({ position: "middle-left" })).toContain("at 26% 50%");
     expect(cover({ position: "middle-right" })).toContain("at 74% 50%");
   });
@@ -288,8 +234,6 @@ describe("the name's position on the cover", () => {
   it("aligns the type, and the message and cue with it", () => {
     const right = cover({ position: "bottom-right", message: "Thank you." });
     expect(right).toContain("text-right");
-    // The message is narrower than the frame, so it is pushed to the same
-    // side rather than left hanging off the opposite one.
     expect(right).toContain("ml-auto");
     expect(right).toContain("justify-end");
 
@@ -300,20 +244,16 @@ describe("the name's position on the cover", () => {
   });
 
   it("keeps the scroll cue at the foot when the name leaves it", () => {
-    // The cue points at what is below the cover, not at the name, so it is
-    // pinned to the foot in its own box once the name is no longer down there.
     for (const position of ["middle-centre", "top-right"] as const) {
       const html = cover({ position });
       expect(html).toContain("add your photos");
       expect(html).toContain("absolute inset-x-0 bottom-0");
     }
 
-    // At the foot it still trails the name, in the same box, as it always has.
     const foot = cover({ position: "bottom-left" });
     expect(foot).toContain("add your photos");
     expect(foot).not.toContain("absolute inset-x-0 bottom-0 mx-auto max-w-3xl text-white");
 
-    // The half cover has never carried one: the ask is already on the screen.
     expect(cover({ variant: "half", position: "top-left" })).not.toContain(
       "add your photos",
     );
@@ -331,14 +271,6 @@ describe("the name's position on the cover", () => {
   });
 });
 
-/**
- * The seconds before the cover photograph arrives.
- *
- * The cover is the one place that loads the full copy on purpose - a couple of
- * megabytes across a whole phone - so a guest's first sight of the event used
- * to be the name printed on an empty rectangle. These pin down what stands in
- * its place, and that the host's preview is left alone.
- */
 describe("the cover while it is still loading", () => {
   const PHOTO = "https://media.example.com/full.jpg";
   const THUMB = "https://media.example.com/thumb.webp";
@@ -356,7 +288,6 @@ describe("the cover while it is still loading", () => {
 
     expect(html).toContain(THUMB);
     expect(html).toContain("blur-xl");
-    // The full copy is behind it until it has loaded, not instead of it.
     expect(html).toContain(PHOTO);
     expect(html).toContain("opacity-0");
   });
@@ -376,8 +307,6 @@ describe("the cover while it is still loading", () => {
   });
 
   it("does not fade in the host's preview", () => {
-    // A host stepping through four covers of the same photograph is comparing
-    // crops. A cross-fade on every tap reads as the setting being slow.
     const html = renderToStaticMarkup(
       <EventCover
         variant="full"
@@ -395,15 +324,8 @@ describe("the cover while it is still loading", () => {
   });
 });
 
-/**
- * The one decision the cover makes at runtime: has the photograph arrived, or
- * is the blurred stand-in still the best thing on the screen.
- */
 describe("deciding the cover has arrived", () => {
   it("waits for pixels, not just for the browser to stop trying", () => {
-    // `complete` is true for a photograph that 404ed as well as for one that
-    // decoded. On that alone a dead cover hid the stand-in and put a
-    // broken-image icon across the top of somebody's wedding.
     expect(hasDecoded({ complete: true, naturalWidth: 0 })).toBe(false);
     expect(hasDecoded({ complete: true, naturalWidth: 2560 })).toBe(true);
   });

@@ -1,11 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
-/**
- * The share link is the access control for the whole guest side, so the token
- * is high entropy and stored hashed. A database leak must not hand anybody a
- * working upload link.
- */
-
 const TOKEN_BYTES = 24; // 192 bits, 32 base64url characters
 
 export function generateToken(): string {
@@ -23,7 +17,7 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-/** Tokens appear in URLs, so reject anything that is not the shape we issue. */
+// Tokens appear in URLs, so reject anything that is not the shape we issue.
 export function looksLikeToken(value: string): boolean {
   return /^[A-Za-z0-9_-]{20,64}$/.test(value);
 }

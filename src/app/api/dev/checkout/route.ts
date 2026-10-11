@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { ApiError, fail, handle } from "@/lib/api";
-import { requireOwnedEvent, requireUser } from "@/lib/host";
+import { requireOwnedEvent, requireUser } from "@/lib/guards/host-api";
 import { env } from "@/lib/env";
 import { grantPurchase } from "@/lib/payments/grant";
 import {
@@ -15,14 +15,6 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Development stand-in for the hosted checkout.
- *
- * It exists so the upgrade path - quota rejection, upgrade prompt, tier change,
- * new expiry - can be exercised without a payment provider account. It refuses
- * to run in production, and it goes through the same grant function the real
- * webhook uses, so it cannot drift from the code that handles actual money.
- */
 export async function GET(request: Request) {
   return handle(async () => {
     if (env.isProduction || !env.mockCheckout) {
@@ -37,12 +29,9 @@ export async function GET(request: Request) {
       throw new ApiError("bad_request", "Unknown product.");
     }
 
-    // Both are guards here: nothing below needs the row, only the assurance
-    // that this host owns it.
     await requireUser();
     await requireOwnedEvent(eventId);
 
-    /* A plan is priced by its tier; a year of keeping by its subscription. */
     const priceEur =
       product === "keeping_plus"
         ? KEEPING.plus.priceEur

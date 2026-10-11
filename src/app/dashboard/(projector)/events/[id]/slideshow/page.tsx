@@ -2,30 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Slideshow } from "@/components/dashboard/slideshow";
-import { requireUser } from "@/lib/actions/guards";
+import { Slideshow } from "@/components/dashboard/Slideshow";
+import { requireUser } from "@/lib/guards/host-action";
 import { findEvent } from "@/lib/db/event-repo";
 import { listGuestPage } from "@/lib/db/media-repo";
-import { toMediaViews } from "@/lib/events";
+import { toMediaViews } from "@/lib/media/view";
 import { TIERS, getTier } from "@/lib/tiers";
 
 export const metadata: Metadata = { title: "Live slideshow" };
 export const dynamic = "force-dynamic";
 
-/**
- * Enough for the wall to start on, not the evening.
- *
- * The rest of the event follows from the browser a moment later - see the
- * backfill in `Slideshow` - because a host who opens the slideshow at midnight
- * should not sit through a server rendering three hundred photographs before
- * the first one appears.
- */
 const SLIDESHOW_SEED = 60;
 
-/**
- * Outside `(shell)`, so there is no header and no footer over the picture.
- * Signing in is therefore this page's own job rather than a layout's.
- */
 export default async function SlideshowPage({
   params,
 }: {
@@ -59,15 +47,6 @@ export default async function SlideshowPage({
     );
   }
 
-  /*
-   * The same query the gallery and the backfill page through. Approved only,
-   * and this is the seed rather than an afterthought: a held photograph on the
-   * first frame is on the wall in front of everybody before the host has looked
-   * at it, which is the entire point of holding it.
-   *
-   * `nextCursor` is what the wall goes back through: null means the seed is
-   * already the whole event and there is nothing to fetch.
-   */
   const { rows, nextCursor } = await listGuestPage(supabase, {
     eventId: event.id,
     pageSize: SLIDESHOW_SEED,

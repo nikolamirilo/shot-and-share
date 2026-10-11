@@ -1,3 +1,3 @@
-export { Tabs } from "@/components/ui/tabs/tabs";
-export { TabPanel } from "@/components/ui/tabs/tab-panel";
+export { Tabs } from "@/components/ui/tabs/Tabs";
+export { TabPanel } from "@/components/ui/tabs/TabPanel";
 export type { TabItem } from "@/components/ui/tabs/types";

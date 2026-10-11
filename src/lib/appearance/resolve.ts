@@ -22,8 +22,9 @@ import {
 } from "@/lib/appearance/variants";
 import type { FontSet } from "@/lib/fonts";
 import { DEFAULT_FONT_ID, coerceFont, findFontSet } from "@/lib/fonts";
-import type { GalleryLayout } from "@/lib/gallery";
-import { DEFAULT_LAYOUT, coerceLayout } from "@/lib/gallery";
+import { type GalleryLayout } from "@/constants/gallery";
+import { DEFAULT_LAYOUT } from "@/constants/gallery";
+import { coerceLayout } from "@/utils/gallery";
 import { getTier } from "@/lib/tiers";
 
 export interface Appearance {
@@ -31,13 +32,10 @@ export interface Appearance {
   themeId: string;
   font: FontSet;
   cover: CoverVariant;
-  /** Where the name sits on the cover photograph. */
   coverPosition: CoverPosition;
   upload: UploadVariant;
   layout: GalleryLayout;
-  /** Free events carry the Shot & Share header and footer. */
   platformBranding: boolean;
-  /** Whether the host may change any of the above. */
   customisable: boolean;
 }
 
@@ -52,14 +50,6 @@ interface AppearanceSource {
   gallery_layout?: string | null;
 }
 
-/**
- * The single source of truth for how an event page looks.
- *
- * Called by the guest page, the host preview and anything else that renders an
- * event. A free event gets the defaults here regardless of what is in its row,
- * which means a downgrade, a stale value or a hand-crafted request cannot buy
- * paid styling.
- */
 export function resolveAppearance(event: AppearanceSource): Appearance {
   const tier = getTier(event.tier);
 

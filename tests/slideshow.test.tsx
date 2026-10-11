@@ -5,23 +5,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStore } from "./stubs/supabase";
-import { Slideshow } from "@/components/dashboard/slideshow";
-import type { MediaView } from "@/lib/media-view";
+import { Slideshow } from "@/components/dashboard/Slideshow";
+import { type MediaView } from "@/types/media";
 import { TIERS } from "@/lib/tiers";
-
-/**
- * The wall at the venue.
- *
- * Everything here is about the one screen in the product nobody can look away
- * from: it is a projector pointed at a room full of people, so a mistake on it
- * is a mistake in public and stays there for seven seconds at a time.
- *
- * Two of them had been made. The seed query read the host's console view of
- * the media table rather than the guest's, so a photograph held for review was
- * on the wall on the first frame - the exact failure held-media-visibility.test
- * warns about and did not cover. Each slide was drawn from `previewUrl`, a
- * 640px thumbnail cut for grid tiles, blown up across 1080p.
- */
 
 const store = createStore();
 
@@ -34,7 +20,7 @@ const EVENT = {
   status: "active",
 };
 
-vi.mock("@/lib/actions/guards", () => ({
+vi.mock("@/lib/guards/host-action", () => ({
   requireUser: vi.fn(async () => ({
     supabase: store.client,
     user: { id: OWNER },
@@ -49,7 +35,7 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => store.client,
 }));
 
-vi.mock("@/lib/host", () => ({
+vi.mock("@/lib/guards/host-api", () => ({
   requireOwnedEvent: vi.fn(async () => EVENT),
 }));
 
@@ -72,7 +58,6 @@ const { default: SlideshowPage } = await import(
 const { listGuestMediaSince } = await import("@/lib/db/media-repo");
 const { GET } = await import("@/app/api/events/[id]/latest/route");
 
-/** The URL the page will resolve a stored object to, given the mock above. */
 function stored(id: string) {
   return `https://cdn.example/${OWNER}/${EVENT.id}/${id}.jpg`;
 }
@@ -113,7 +98,7 @@ async function wall() {
   );
 }
 
-/** next/image puts the source in a query string, so it arrives encoded. */
+// next/image puts the source in a query string, so it arrives encoded.
 function shows(html: string, url: string) {
   return html.includes(encodeURIComponent(url));
 }
@@ -171,8 +156,6 @@ describe("what reaches the projector", () => {
     push("held-b", "held", 2);
     push("approved-c", "approved", 3);
 
-    // The cursor sits just past the first photograph, which is where it would
-    // be an instant after the wall drew it.
     const rows = await listGuestMediaSince(
       store.client as never,
       EVENT.id,
@@ -185,10 +168,6 @@ describe("what reaches the projector", () => {
 });
 
 describe("each slide", () => {
-  /*
-   * THUMB_MAX_EDGE is 640. A wedding photograph at 640px across a projector is
-   * the one thing on this screen everybody in the room can see is wrong.
-   */
   it("is the full copy, not the thumbnail cut for grid tiles", () => {
     const html = show([
       photo({
@@ -202,11 +181,6 @@ describe("each slide", () => {
     expect(shows(html, "https://cdn.example/thumb/a.webp")).toBe(false);
   });
 
-  /*
-   * The fallback that made a wall of sharp photographs go soft every fourth
-   * slide: `previewUrl` resolves to the thumbnail whenever the full copy is
-   * missing, so anything not yet converted was quietly served at 640px.
-   */
   it("is nothing at all rather than a thumbnail standing in for one", () => {
     const html = show([
       photo({ id: "ready", fullUrl: "https://cdn.example/full/ready.jpg" }),
@@ -218,13 +192,6 @@ describe("each slide", () => {
   });
 });
 
-/**
- * The seed is a page, not the event, and the browser fetches the rest. Both
- * halves of that had to be got right: a wall holding only the newest sixty is a
- * slideshow of the last ten minutes, and one that keeps the seed under the
- * viewer's eye while the earlier photographs land in front of it opens the
- * evening on photograph 223 of 282.
- */
 describe("the rest of the evening", () => {
   it("opens on the first photograph, not part-way through", () => {
     const html = show([
@@ -237,14 +204,12 @@ describe("the rest of the evening", () => {
   });
 
   it("hands the wall a cursor when the seed does not cover the event", async () => {
-    // One more than the seed, so there is an earlier page to go and get.
     for (let i = 0; i <= 60; i++) push(`p-${i}`, "approved", i);
 
     const element = await SlideshowPage({
       params: Promise.resolve({ id: EVENT.id }),
     });
 
-    // The oldest of the sixty seeded, which is where the browser picks up.
     expect(element.props.olderThan).toBe("2026-08-01T00:01:00.000Z");
   });
 
@@ -264,9 +229,7 @@ describe("the rest of the evening", () => {
       nextCursor: string | null;
     };
 
-    // Newest first off the wire; the wall turns each page round itself.
     expect(body.items.map((item) => item.id)).toEqual(["c", "a"]);
-    // A short page is the end of the event, so there is nowhere further back.
     expect(body.nextCursor).toBeNull();
   });
 });
@@ -278,12 +241,6 @@ describe("the route", () => {
     "dashboard/(projector)/events/[id]/slideshow",
   );
 
-  /**
-   * The reason the slideshow sits outside `(shell)`: laid out with the rest of
-   * the dashboard it inherited the navigation card, which is `z-10` over a page
-   * that is `fixed inset-0` - a header, a wordmark and a sign-out badge across
-   * the top of somebody's wedding.
-   */
   it("inherits no layout that draws a header", () => {
     expect(existsSync(path.join(slideshow, "page.tsx"))).toBe(true);
 

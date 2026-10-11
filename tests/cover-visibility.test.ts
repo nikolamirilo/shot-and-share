@@ -3,16 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "./stubs/supabase";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * What guests are shown.
- *
- * A cover the host uploaded lives in the same table, the same event folder and
- * the same quota as a guest's photograph, and one column apart from it. If that
- * column is ever forgotten in a query the failure is quiet and embarrassing: a
- * stock picture the host chose as decoration is handed back to the party as one
- * of their own photos, and it downloads in their ZIP.
- */
-
 const store = createStore();
 
 const EVENT = {
@@ -24,8 +14,6 @@ const EVENT = {
   gallery_visible: true,
 };
 
-// The database lookup is stubbed; the gate and the gallery-visibility rules
-// around it are the real ones.
 vi.mock("@/lib/guards/guest-token", () => ({
   resolveGuestToken: vi.fn(async () => ({ event: EVENT, tokenId: "t" })),
 }));

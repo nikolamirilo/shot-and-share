@@ -6,18 +6,6 @@ import { OG_SIZE, OgCard } from "@/lib/og-card";
 import { HERO, SITE, heroHeadline } from "@/lib/seo";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * The card and the title an event's share link unfurls into.
- *
- * Nobody reaches an event page from a search: they are sent the link in a chat
- * and the chat draws a preview. It used to draw the product's - claret,
- * "Let your guests capture the moments you miss" - for a wedding whose guests
- * had already been invited. What matters here is that the event's own picture
- * and name reach the card, that a paid event's card carries none of our
- * branding, and above all that the thing renders: a card that throws at
- * request time is a link that unfurls as a bare URL.
- */
-
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 const store = createStore();
@@ -44,7 +32,6 @@ const EVENT: Record<string, unknown> = {
   theme: "ivory",
 };
 
-/** What the token resolves to for the next render. Reassigned per test. */
 let event: Record<string, unknown> | null = EVENT;
 
 vi.mock("@/lib/guards/guest-token", () => ({
@@ -108,11 +95,6 @@ function pushCover() {
   });
 }
 
-/**
- * A real photograph for the fetch to return. Drawn rather than checked in: the
- * renderer has to actually decode this, so a handful of magic bytes would pass
- * the sniff and then fail inside the card.
- */
 const PHOTO = await bytes(
   new ImageResponse(
     <OgCard kicker="A" headline="Photograph" footnote="B" />,
@@ -146,8 +128,6 @@ describe("the card an event link unfurls into", () => {
 
     const withPhoto = await render();
 
-    // Same event, same palette, no cover: whatever else changed, the picture
-    // is the difference, and a card that silently dropped it would match.
     store.reset();
     vi.unstubAllGlobals();
     const withoutPhoto = await render();
@@ -165,8 +145,6 @@ describe("the card an event link unfurls into", () => {
       }),
     );
 
-    // The whole point of fetching the bytes ourselves: this used to be a
-    // failure inside the render, which is a broken image rather than a card.
     expect((await render()).subarray(0, 4)).toEqual(PNG_MAGIC);
   });
 
@@ -185,7 +163,6 @@ describe("the card an event link unfurls into", () => {
       ),
     );
 
-    // A dead token must not put somebody's event name in a stranger's chat.
     expect(drawn.equals(site)).toBe(true);
   });
 
@@ -206,8 +183,6 @@ describe("what the preview says", () => {
   it("leads with the event, not with us", async () => {
     const meta = await metadata();
 
-    // The name on its own: a guest reading a chat preview is deciding whether
-    // this is their friend's wedding, not reading an instruction.
     expect(meta.title).toEqual({ absolute: "Romeo and Juliet" });
     expect(meta.openGraph?.title).toBe("Romeo and Juliet");
     expect(meta.description).toContain("Romeo and Juliet");
@@ -229,7 +204,6 @@ describe("what the preview says", () => {
 
     expect(meta.description!.length).toBeLessThanOrEqual(201);
     expect(meta.description!.endsWith("…")).toBe(true);
-    // Cut at a word: a description ending mid-word reads as broken.
     expect(meta.description).not.toMatch(/wo…$/);
   });
 
@@ -240,8 +214,6 @@ describe("what the preview says", () => {
   });
 
   it("leaves our name off a paid event and keeps it on a free one", async () => {
-    // A paid page has no header and no footer of ours; the tab and the chat
-    // preview are the two places our name used to survive that.
     const paid = await metadata();
     expect(paid.title).toEqual({ absolute: "Romeo and Juliet" });
     expect(paid.openGraph?.siteName).toBe("Romeo and Juliet");
@@ -270,8 +242,6 @@ describe("reading a cover into a card", () => {
       "image/jpeg",
     );
     expect(sniffImageType(PHOTO)).toBe("image/png");
-    // A WebP thumbnail: the renderer's decoder does not reliably take one,
-    // and a card drawn without the photo beats one that fails to draw.
     expect(sniffImageType(Buffer.from("RIFF0000WEBPVP8"))).toBeNull();
     expect(sniffImageType(new Uint8Array(0))).toBeNull();
   });
@@ -311,13 +281,10 @@ describe("reading a cover into a card", () => {
 
     const data = await fetchCardPhoto("https://cdn.example/cover.jpg");
 
-    // Sniffed, not taken from the header: this response claimed JPEG.
     expect(data?.startsWith("data:image/png;base64,")).toBe(true);
   });
 
   it("fetches a cover served by the app's own media route", async () => {
-    // Without a CDN the cover's address is relative, which a server-side
-    // fetch cannot follow - every link unfurled without its photo.
     const { absoluteCardUrl, fetchCardPhoto } = await import("@/lib/og-photo");
     expect(absoluteCardUrl("/api/media/o/e/photos/full/c.jpg", "https://x.test")).toBe(
       "https://x.test/api/media/o/e/photos/full/c.jpg",

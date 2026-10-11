@@ -3,16 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "./stubs/supabase";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * The report button.
- *
- * An acceptable use policy promising a takedown route is worth nothing if the
- * route is an email address nobody at a party will type. What has to hold: the
- * photograph comes down before anyone decides anything, two people reporting
- * the same one is not an error, and a failed email does not turn a successful
- * report into one.
- */
-
 const store = createStore();
 const sendEmail = vi.fn(async (email: Record<string, unknown>) => Boolean(email));
 
@@ -50,8 +40,7 @@ function report(mediaId = MEDIA_ID, reason = "someone_in_it") {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // A fresh address per test, so the rate limiter is not carrying state
-        // between them.
+        // A fresh address per test, so the rate limiter carries no state between them.
         "x-forwarded-for": `10.0.0.${Math.floor(Math.random() * 250) + 1}`,
       },
       body: JSON.stringify({ token: TOKEN, mediaId, reason }),
@@ -108,11 +97,6 @@ describe("reporting a photo", () => {
     });
   });
 
-  /*
-   * Two guests pressing the button on the same photograph within a second of
-   * each other is the normal case, not a conflict. The second must not be told
-   * they got it wrong.
-   */
   it("counts a second report without complaining", async () => {
     seedPhoto();
     await report();
@@ -122,7 +106,6 @@ describe("reporting a photo", () => {
 
     expect(res.status).toBe(200);
     expect(photo().report_count).toBe(2);
-    // The first report's timestamp is the one that means something.
     expect(photo().reported_at).toBe(first);
   });
 

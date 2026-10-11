@@ -2,112 +2,40 @@ import { KEEPING, KEEPING_NAME, TIERS, TIER_ORDER } from "@/lib/tiers";
 import { env } from "@/lib/env";
 import { FAQS } from "@/lib/faqs";
 
-/**
- * One place that knows how this site describes itself.
- *
- * Anything a crawler reads that also appears on screen is derived from the same
- * constant the screen reads, because the failure mode of SEO work is drift: a
- * price changes in `tiers.ts` and the JSON-LD keeps advertising the old one.
- */
-
 export const SITE = {
   name: "Shot & Share",
-  /** Used where a bare word reads better than the full lockup. */
   shortName: "Shot & Share",
   tagline: "Every photo your guests take.",
   description:
     "Guests scan a code and hand you their photos. No app, no account, nothing to install. Weddings, birthdays, offsites - anything with people and phones.",
-  /**
-   * The app named and described in one line.
-   *
-   * `tagline` is a slogan and `description` is a search result, so neither of
-   * them states plainly what this software is. This does, in the footer of
-   * every page, for a reader who landed on a legal document and for a reviewer
-   * who reads a site rather than looks at it. The name is written out because
-   * an object literal cannot refer to its own `name` field.
-   */
   about:
     "Shot & Share is a QR photo-sharing app for weddings, birthdays and other events. Guests scan a printed code and upload photos from their own phones, with no app and no account.",
   locale: "en",
-  /**
-   * Where support, legal notices, takedowns and erasure requests all go.
-   *
-   * One address on purpose. Four published addresses that all forward to the
-   * same inbox look like a bigger company and behave like a worse one: the
-   * legal pages promise a reply within a stated time, and a promise is only
-   * kept by an address somebody actually reads.
-   */
   email: "support@shotandshare.com",
 } as const;
 
-/**
- * The promise the landing page opens with, in the words it uses.
- *
- * Here rather than inline in the hero because the social card has to say the
- * same thing: a card promising one headline and a page opening with another is
- * exactly the drift this file exists to stop. The hero sets the headline over
- * three lines, so it is kept as its lines and joined for anywhere that wants
- * one string - the card, an alt attribute.
- *
- * Distinct from `SITE.tagline`, which is what the product calls itself in a
- * browser tab and in structured data. This is what the page says out loud, and
- * the two are allowed to differ.
- */
 export const HERO = {
   kicker: "QR photo sharing for weddings & events",
-  /**
-   * The tagline, said as the thing the host does. "Every photo your guests
-   * take." was only in the footer and the meta tags while the hero said what
-   * every competitor says; this puts the sharpest line where it is read.
-   *
-   * Three lines rather than two, because the middle one is the subject: the
-   * hero sets it a quarter larger than its neighbours, frames it in the mark's
-   * corner brackets and fills it with the photographs - so the words read
-   * first are the two that are the photographs. The sentence is unchanged,
-   * only where it breaks. Anything reordering these lines moves which words
-   * get that treatment.
-   */
   headlineLines: ["Collect", "every photo", "your guests take."],
   subline:
     "Guests scan one code on the table and add photos from their own phone. You get the whole night in one gallery, and all of it in one download.",
-  /** The subline at the length a social card can hold on one line. */
   cardLine: "One code on the table. No app, no account.",
-  /**
-   * The app named, and what it does, in one plain sentence.
-   *
-   * The headline is the tagline said as an action and the subline describes the
-   * mechanism, so neither of them ever says "Shot & Share is a ...". A reader
-   * fills that in from the lockup above it. An automated reviewer does not,
-   * which is what Google's brand verification sends back as a home page that
-   * does not explain the app - so the sentence it looks for is on the page, in
-   * plain text, rather than left to be inferred.
-   */
   purpose:
     "Shot & Share is a web app for collecting photos from guests at a wedding, a birthday or any other event. You print a QR code, guests scan it and upload from their own phones, and every photo lands in one gallery you can download.",
 } as const;
 
-/** The headline as one line, for a card or an alt attribute. */
 export function heroHeadline(): string {
   return HERO.headlineLines.join(" ");
 }
 
-/**
- * Never hard-coded: a canonical tag pointing at production from a preview
- * deployment is how a staging site ends up in the index.
- */
 export function siteUrl(): string {
   return env.siteUrl.replace(/\/$/, "");
 }
 
-/** An absolute URL for a path, which is what structured data requires. */
 export function absoluteUrl(path = "/"): string {
   return `${siteUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/**
- * The public pages. The sitemap and the breadcrumbs both read this, so a page
- * cannot be added to one and forgotten in the other.
- */
 export const PUBLIC_ROUTES = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/demo", changeFrequency: "monthly", priority: 0.9 },
@@ -118,12 +46,6 @@ export const PUBLIC_ROUTES = [
   { path: "/acceptable-use", changeFrequency: "yearly", priority: 0.3 },
 ] as const;
 
-/**
- * Blocked from crawling, which is not the same as noindex. A path that must
- * never be *indexed* has to stay crawlable so the directive is read - that is
- * `/e/` and `/login`. These are merely private, so nobody's crawl budget goes
- * on them.
- */
 export const DISALLOWED_PATHS = [
   "/api/",
   "/auth/",
@@ -131,23 +53,8 @@ export const DISALLOWED_PATHS = [
   "/account/",
 ] as const;
 
-/* -------------------------------------------------------------------------- */
-/*  An event's share link                                                      */
-/* -------------------------------------------------------------------------- */
-
-/**
- * What a share link says about itself - in the tab, in a chat preview, and on
- * the card drawn for it.
- *
- * Here rather than in the page for the reason everything else in this file is:
- * the title and the card used to be written separately, so a link could unfurl
- * with one sentence and open on another. A guest sent this by a friend decides
- * whether to tap it from these three lines alone.
- */
 export const EVENT_LINK = {
-  /** What the page asks for, in the fewest words that still ask for it. */
   invitation: "Add your photos",
-  /** The same, with the reason there is nothing to install. */
   invitationBranded: "Add your photos - no app, no account",
 } as const;
 
@@ -155,14 +62,6 @@ export function eventLinkTitle(name: string): string {
   return `${name}`;
 }
 
-/**
- * The sentence under the title in a preview.
- *
- * The host's own welcome message when there is one: they wrote it for the
- * guests this link is being sent to, and it beats anything written here. Long
- * ones are cut at a word, because a preview is clipped at around 200
- * characters anyway and a description ending mid-word reads as broken.
- */
 export function eventLinkDescription(
   name: string,
   message?: string | null,
@@ -180,16 +79,11 @@ function clip(text: string, limit: number): string {
   return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Structured data                                                            */
-/* -------------------------------------------------------------------------- */
-
 type Json = Record<string, unknown>;
 
 const ORGANISATION_ID = () => `${siteUrl()}/#organisation`;
 const WEBSITE_ID = () => `${siteUrl()}/#website`;
 
-/** Who publishes this. Referenced by @id from everything else. */
 export function organisationSchema(): Json {
   return {
     "@type": "Organization",
@@ -219,10 +113,6 @@ export function websiteSchema(): Json {
   };
 }
 
-/**
- * The product, priced from `tiers.ts`. `SoftwareApplication` carries an offer
- * list without pretending there is a thing being shipped.
- */
 export function softwareApplicationSchema(): Json {
   const offers = TIER_ORDER.map((key) => {
     const tier = TIERS[key];
@@ -269,10 +159,6 @@ export function softwareApplicationSchema(): Json {
   };
 }
 
-/**
- * Built from the same array the page renders, so the markup can never promise
- * an answer a visitor cannot find - which is what earns a manual action.
- */
 export function faqSchema(): Json {
   return {
     "@type": "FAQPage",
@@ -299,10 +185,6 @@ export function breadcrumbSchema(
   };
 }
 
-/**
- * One document per page with the nodes cross-referenced by `@id`, so a crawler
- * reads the application, the FAQ and the publisher as one site.
- */
 export function graph(...nodes: Json[]): string {
   return JSON.stringify({
     "@context": "https://schema.org",

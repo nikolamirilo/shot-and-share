@@ -32,8 +32,6 @@ describe("rate limiting", () => {
   });
 
   it("reads the client IP from the CDN header first", () => {
-    // Cloudflare sits in front, so its header is the trustworthy one; the
-    // others are only a development fallback and can be spoofed.
     const headers = new Headers({
       "cf-connecting-ip": "203.0.113.7",
       "x-forwarded-for": "10.0.0.1, 10.0.0.2",

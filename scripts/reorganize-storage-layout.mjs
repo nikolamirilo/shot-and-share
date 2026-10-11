@@ -1,68 +1,6 @@
 /**
- * One-shot: move every event's objects into the current key layout, and point
- * the database rows at where they landed.
- *
- * The bucket has carried three layouts, and all three are still in it:
- *
- *   1. flat          {owner}/{event}/{media_id}.{ext}
- *                    {owner}/{event}/{media_id}-poster.{ext}   (no thumbnails)
- *   2. renditions    {owner}/{event}/full/{media_id}.{ext}
- *                    {owner}/{event}/thumb/{media_id}.{ext}
- *                    - with some objects still flat beside the folders, because
- *                      migration 0016 backfilled nothing
- *   3. current       {owner}/{event}/photos/full/{media_id}.{ext}
- *                    {owner}/{event}/photos/thumb/{media_id}.{ext}
- *                    {owner}/{event}/videos/full/{media_id}.{ext}
- *                    {owner}/{event}/videos/poster/{media_id}.{ext}
- *                    {owner}/{event}/archive/{event_id}.zip
- *
- * Nothing is broken by the mix - every read path takes the key off the row - so
- * this is housekeeping, not a fix. What it buys is that an event's clips can be
- * listed, measured or moved to another storage class without touching its
- * photos, which is the whole reason layout 3 exists, and that is worth nothing
- * while almost every object is still in layout 2.
- *
- * Postgres is the source of truth for what exists, so the walk is over `media`
- * rows rather than over the bucket. An object nobody has a row for is not moved
- * - it is reported by --scan-leftovers and deleted, if you want it gone, by
- * scripts/purge-legacy-prefix.mjs.
- *
- * Order per object is copy, then update the row, then delete the source. A
- * crash in the middle leaves a duplicate object, which costs money and is
- * reported; the other order leaves a row pointing at nothing, which loses a
- * photograph. Re-running is safe and picks up where it stopped.
- *
- * Deliberately standalone rather than importing the storage driver and
- * `@/lib/media/keys`: it is a maintenance job that runs once against live data,
- * and it should not be able to break because an unrelated module in the
- * application changed. The key layout it writes is duplicated from
- * src/lib/media/keys.ts on purpose - if the two ever disagree, this script is
- * the one that is wrong, and the copy is what makes that visible in review.
- *
- *   node --env-file=.env scripts/reorganize-storage-layout.mjs
- *   node --env-file=.env scripts/reorganize-storage-layout.mjs --confirm
- *
- * Flags:
- *   --confirm              Actually copy, update and delete. Off by default.
- *   --event=<uuid>         One event only. Use this for the first run.
- *   --owner=<uuid>         One host's events only.
- *   --limit=<n>            Stop after n media rows needed moving.
- *   --concurrency=<n>      Parallel objects in flight. Default 8.
- *   --fresh-minutes=<n>    Leave uploads newer than this alone. Default 30.
- *   --keep-source          Copy without deleting the old object.
- *   --scan-leftovers       LIST each touched event and report unreferenced keys.
- *   --report=<file>        Append one JSON line per action taken.
- *
- * Two things to know before the first --confirm run:
- *
- *   - A copy resets the object's lifecycle clock and its creation date. Source
- *     objects already in Glacier IR are copied straight back into Glacier IR
- *     rather than landing in Standard, so the storage price does not change,
- *     but Glacier IR bills a 90-day minimum per object: deleting a source that
- *     has been there less than 90 days costs the remainder. Events older than
- *     that are free to move.
- *   - Objects in Glacier Flexible Retrieval or Deep Archive cannot be copied
- *     until they are restored. They are counted and skipped, never failed on.
+ * One-shot: move every event's objects into the current key layout and point the
+ * database rows at where they landed.
  */
 
 import {
@@ -75,8 +13,6 @@ import {
 } from "@aws-sdk/client-s3";
 import { appendFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-
-/* --- arguments and configuration ----------------------------------------- */
 
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(`--${name}`);
@@ -127,14 +63,14 @@ const db = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-/* --- the key layout, copied from src/lib/media/keys.ts -------------------- */
+// --- the key layout, copied from src/lib/media/keys.ts
 
 const kindFolder = (kind) => (kind === "video" ? "videos" : "photos");
 
 const fullKey = (row, ext) =>
   `${row.owner_id}/${row.event_id}/${kindFolder(row.kind)}/full/${row.id}.${ext}`;
 
-/** Photos only, which is why the folder is not `kindFolder(row.kind)`. */
+// Photos only, which is why the folder is not `kindFolder(row.kind)`.
 const thumbKey = (row, ext) =>
   `${row.owner_id}/${row.event_id}/photos/thumb/${row.id}.${ext}`;
 
@@ -144,14 +80,9 @@ const posterKey = (row, ext) =>
 const archiveKey = (event) =>
   `${event.owner_id}/${event.id}/archive/${event.id}.zip`;
 
-/* --- extensions ----------------------------------------------------------- */
-
 /**
- * The extension comes off the existing key rather than from `media_format`,
- * because the key is what the object is actually called: the transcode worker
- * replaces a HEIC with a JPEG and the format column is what it writes last.
- * Format and MIME are the fallbacks for the oldest rows, whose keys predate
- * extensions entirely.
+ * The extension comes off the existing key rather than from `media_format`: the key is
+ * where the object actually is.
  */
 const EXT_FROM_FORMAT = {
   jpeg: "jpg",
@@ -191,16 +122,6 @@ function extOfKey(key) {
 const normaliseMime = (mime) =>
   String(mime ?? "").toLowerCase().split(";")[0].trim();
 
-/**
- * The extension to give the new key.
- *
- * When the old key has one, that is the answer and it costs nothing. When it
- * does not - the first layout wrote `image1` with no extension at all - the
- * object itself is asked, because /api/media turns the extension back into the
- * Content-Type it serves: naming a WebP `.jpg` would have the gallery send the
- * wrong type for every thumbnail in the oldest events. The format column is the
- * last resort, since the transcode worker writes it after the object.
- */
 async function extForObject(key, format, mime, fallback) {
   const fromKey = extOfKey(key);
   if (fromKey) return fromKey;
@@ -214,42 +135,15 @@ async function extForObject(key, format, mime, fallback) {
   );
 }
 
-/* --- S3 helpers ----------------------------------------------------------- */
-
-/** Classes whose objects have to be restored before anything can read them. */
+// Classes whose objects have to be restored before anything can read them.
 const FROZEN = new Set(["GLACIER", "DEEP_ARCHIVE"]);
 
-/** CopyObject caps at 5 GB. Nothing we store comes close; assert it anyway. */
+// CopyObject caps at 5 GB. Nothing we store comes close; assert it anyway.
 const COPY_MAX_BYTES = 5 * 1024 * 1024 * 1024;
 
 /**
- * Tags, which are the one part of this that is not mechanical.
- *
- * A copy has to carry the source's tags forward, and S3 offers two ways to do
- * it. `TaggingDirective: COPY` looks free and is not: it requires
- * `s3:GetObjectTagging` on the source, which the application's IAM policy does
- * not grant because the application has never needed to read a tag. Without it
- * CopyObject fails outright with AccessDenied - not silently, but not usefully
- * either.
- *
- * So the tags are rebuilt and written with `REPLACE`, which needs only
- * `s3:PutObjectTagging`, already in the policy. That is honest here because
- * there is exactly one tag on a media object - `tier`, applied by the presigned
- * upload policy in src/lib/uploads/reservation.ts - and the event knows its own
- * tier. The one difference from a true copy is a host who changed plan after
- * uploading: their objects carry the tier they were uploaded under, and come
- * out carrying the tier the event is on now.
- *
- * That difference is checked, not assumed. No rule in infra/s3-lifecycle.json
- * filters on `tier` - the Glacier IR transition covers the whole bucket
- * unfiltered, and the other two filter on `retention=forever` and
- * `kind=archive`. `kind=archive` is only ever on a ZIP, which this script does
- * not move, and nothing in the codebase writes `retention=forever` at all.
- * So the tag is cost-allocation metadata, and rewriting it changes no object's
- * retention, storage class or price.
- *
- * When the permission *is* granted, the real tags are read and copied verbatim
- * and none of the above applies.
+ * Tags, the one part of this that is not mechanical: a copy has to carry the
+ * source's tags forward, which needs GetObjectTagging on the source.
  */
 let tagMode = "unknown";
 
@@ -314,8 +208,7 @@ async function head(key) {
     return {
       size: res.ContentLength ?? 0,
       contentType: res.ContentType ?? null,
-      // HeadObject omits StorageClass for Standard, which is the one class
-      // CopyObject also treats as the default.
+      // HeadObject omits StorageClass for Standard, which is also CopyObject's default.
       storageClass: res.StorageClass ?? "STANDARD",
       restored: typeof res.Restore === "string" && /ongoing-request="false"/.test(res.Restore),
     };
@@ -327,23 +220,15 @@ async function head(key) {
   }
 }
 
-/** CopySource is a path, so every segment is encoded - old keys had spaces. */
+// CopySource is a path, so every segment is encoded - old keys had spaces.
 const copySource = (key) =>
   [bucket, ...key.split("/")].map(encodeURIComponent).join("/");
 
-/**
- * Copy one object to its new key and report what happened. Never deletes - the
- * caller does that, and only once the row has been updated.
- *
- * Returns one of: "copied", "already" (the destination is already there and the
- * right size, so an earlier run got this far), "missing", "frozen", "too-big".
- */
 async function copyObject(from, to, row) {
   const source = await head(from);
   if (!source) {
-    // The destination existing without the source is the normal shape of a
-    // resumed run: the copy and the delete both happened, the row update did
-    // not.
+    // The destination existing without the source is the normal shape of a resumed run:
+    // the copy and the delete both happened, the row update did not.
     const landed = await head(to);
     return landed ? { state: "already", bytes: landed.size } : { state: "missing" };
   }
@@ -369,10 +254,9 @@ async function copyObject(from, to, row) {
       Bucket: bucket,
       Key: to,
       CopySource: copySource(from),
-      // Metadata is left at its default of COPY, so Content-Type rides along.
-      // Storage class is the one thing CopyObject does *not* inherit: omit it
-      // and a Glacier IR object lands in Standard at six times the price, then
-      // waits another 30 days for the lifecycle rule to put it back.
+      // Metadata defaults to COPY, so Content-Type rides along. Storage class is the
+      // one thing CopyObject does not inherit: omit it and a Glacier IR object lands in
+      // Standard at six times the price.
       StorageClass:
         source.storageClass === "STANDARD" ? undefined : source.storageClass,
       // Always REPLACE, never COPY - see the note on tagMode above.
@@ -391,8 +275,6 @@ async function copyObject(from, to, row) {
 
   return { state: "copied", bytes: source.size };
 }
-
-/* --- plumbing ------------------------------------------------------------- */
 
 async function mapLimit(items, limit, fn) {
   const results = new Array(items.length);
@@ -430,11 +312,9 @@ const stats = {
 const touchedEvents = new Map();
 const problems = [];
 
-/* --- the walk ------------------------------------------------------------- */
-
 /**
- * Keyset pagination on the primary key. An offset would re-read rows as the
- * updates shift them under the cursor; `id > last` cannot.
+ * Keyset pagination on the primary key: an offset would re-read rows as the updates
+ * shift them.
  */
 async function* mediaRows() {
   let cursor = "00000000-0000-0000-0000-000000000000";
@@ -508,19 +388,8 @@ async function migrateRow(row) {
   }
 
   /**
-   * A just-uploaded clip is left where it is.
-   *
-   * The transcode queue hands a worker a presigned URL for `media_key` that is
-   * good for twenty minutes, so moving the object under a job already in flight
-   * fails that job. It is not destructive - the queue re-reads the row next time
-   * round and picks up the new key - but a wedding video that needs a second
-   * pass for no reason is worth half an hour of patience.
-   *
-   * Deliberately an age check rather than `processing = 'pending'`. This
-   * database has pending video rows going back to August: nothing is claimed,
-   * because the queue has no claim column, so "pending" means "no worker has
-   * ever got to it" far more often than it means "busy right now". Skipping on
-   * the column would quietly exclude every clip in the bucket.
+   * A just-uploaded clip is left where it is: the transcode queue has already handed a
+   * worker a presigned URL for its current key.
    */
   const ageMinutes = (Date.now() - new Date(row.created_at).getTime()) / 60000;
   if (row.processing === "pending" && ageMinutes < FRESH_MINUTES) {
@@ -544,9 +413,8 @@ async function migrateRow(row) {
       patch[move.column] = move.to;
       done.push(move);
     } else {
-      // Missing, frozen or oversized. The column keeps pointing at the object
-      // that is actually there, and the row is left half-migrated rather than
-      // pointed at nothing. Re-running after a restore finishes the job.
+      // Missing, frozen or oversized: the column keeps pointing at the object that is
+      // actually there. Re-running after a restore finishes the job.
       if (result.state === "frozen") stats.objectsFrozen++;
       else stats.objectsMissing++;
       problems.push({
@@ -565,9 +433,8 @@ async function migrateRow(row) {
   if (CONFIRM) {
     const { error } = await db.from("media").update(patch).eq("id", row.id);
     if (error) {
-      // The copies are already in the bucket. Leaving the sources alone is what
-      // keeps that recoverable: the row still points at them and a re-run will
-      // see the destinations as "already" and only need the update.
+      // The copies are already in the bucket. Leaving the sources alone is what keeps
+      // this recoverable - a re-run sees the destinations as already done.
       throw new Error(`Updating media ${row.id} failed: ${error.message}`);
     }
   }
@@ -595,13 +462,9 @@ async function migrateRow(row) {
   }
 }
 
-/* --- events: the archive and the leftovers -------------------------------- */
-
 /**
- * A ZIP is derived data, expires at 30 days by lifecycle tag and is rebuilt on
- * demand, so a stale one is reported rather than copied - moving thirty
- * gigabytes to extend the life of a file nobody has asked for would be the most
- * expensive line in this script.
+ * A ZIP is derived data, expires on a lifecycle tag and is rebuilt on demand, so a
+ * stale one is reported rather than moved.
  */
 async function checkArchives() {
   let cursor = "00000000-0000-0000-0000-000000000000";
@@ -636,17 +499,7 @@ async function checkArchives() {
   }
 }
 
-/**
- * Reservations are reported and never moved.
- *
- * A reservation is the few seconds between "we signed you a URL and charged
- * your host's quota for it" and "the object is in the bucket". Rewriting its
- * key would invalidate a presigned POST a guest may be uploading into right
- * now, and there is nothing to copy because the object does not exist yet. One
- * on an old layout is simply old: it was signed before the folders existed, the
- * upload never finished, and the nightly sweep in /api/cron/retention is what
- * returns the quota it is still holding.
- */
+/** Reservations are reported and never moved: a reservation is an upload in flight. */
 async function checkReservations() {
   let query = db
     .from("upload_reservations")
@@ -669,19 +522,7 @@ async function checkReservations() {
   }
 }
 
-/**
- * Objects under an event that no row points at.
- *
- * A leftover is defined by the database, not by the shape of the key: the test
- * is "is any live row pointing at this?", so it reads the same whether the run
- * that preceded it moved anything or not. Checking the folder instead would
- * have a dry run report every object it is about to move as abandoned, which is
- * the opposite of useful.
- *
- * Reports only. LIST is billed at the expensive request rate and deleting a
- * host's photograph because a row was missed is not recoverable, so the list is
- * for a person to read.
- */
+/** A leftover is defined by the database, not by the shape of the key. */
 async function scanLeftovers() {
   console.log(`\nScanning ${touchedEvents.size} event prefix(es) for leftovers.`);
   let total = 0;
@@ -741,8 +582,6 @@ async function scanLeftovers() {
   );
 }
 
-/* --- run ------------------------------------------------------------------ */
-
 console.log(
   CONFIRM
     ? `Reorganising s3://${bucket} into the current key layout.`
@@ -752,10 +591,8 @@ if (ONE_EVENT) console.log(`Event ${ONE_EVENT} only.`);
 if (ONE_OWNER) console.log(`Owner ${ONE_OWNER} only.`);
 console.log("");
 
-/*
- * Settled before the walk rather than on the first copy, so that a dry run
- * reports it too. Which tags the copies carry is the one judgement call in this
- * script, and the place to see it is the run that changes nothing.
+/**
+ * Settled before the walk rather than on the first copy, so a dry run reports it too.
  */
 {
   let probe = db
@@ -800,8 +637,6 @@ async function drain() {
 await checkArchives();
 await checkReservations();
 if (SCAN_LEFTOVERS && touchedEvents.size > 0) await scanLeftovers();
-
-/* --- what happened -------------------------------------------------------- */
 
 const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 

@@ -1,13 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-/**
- * The card a link turns into in a chat.
- *
- * What is worth holding is that it renders at all: satori draws these, it
- * takes a deliberately small subset of CSS, and a card that throws at request
- * time is a link that unfurls as a bare URL.
- */
-
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 async function render(route: { default: () => Response }) {

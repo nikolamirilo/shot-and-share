@@ -3,19 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "./stubs/supabase";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * The presign endpoint, end to end with the database and the bucket mocked.
- *
- * It is the one route where a mistake is invisible until a guest is standing in
- * a venue: it decides what gets stored, reserves the quota, writes the
- * reservation and signs the URLs, and every one of those steps can fail in a
- * way the browser reports as "could not start the upload".
- *
- * What it must never do any more is touch `media`. A media row means a photo
- * that exists; until the bytes are in the bucket there is only a promise of
- * space, and the point of migration 0010 is that the two are different things.
- */
-
 const store = createStore();
 let signThrows = false;
 
@@ -28,9 +15,9 @@ const EVENT = {
   storage_used_bytes: 0,
 };
 
-vi.mock("@/lib/events", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/events")>(
-    "@/lib/events",
+vi.mock("@/lib/guards/guest", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/guards/guest")>(
+    "@/lib/guards/guest",
   );
   return {
     ...actual,
@@ -60,8 +47,7 @@ const { POST } = await import("@/app/api/upload/presign/route");
 let requests = 0;
 
 function request(file: unknown) {
-  // A fresh token per call: the rate limiter is per link and this file makes
-  // more than a handful of requests.
+  // A fresh token per call: the rate limiter is per link.
   requests += 1;
   return new Request("http://localhost/api/upload/presign", {
     method: "POST",
@@ -74,10 +60,6 @@ function request(file: unknown) {
   });
 }
 
-/**
- * What the browser sends for a photo it managed to encode: the full-size copy
- * at every pixel the camera captured, and a small one for the grid.
- */
 const compressedPhoto = {
   size: 4_000_000,
   type: "image/jpeg",
@@ -114,8 +96,6 @@ describe("presigning an upload", () => {
     expect(upload.media.fields.key).toMatch(/\/full\/[^/]+\.jpg$/);
     expect(upload.thumb.fields.key).toMatch(/\/thumb\/[^/]+\.webp$/);
 
-    // Both objects are promised, so both are charged for before a URL is
-    // issued. Charging afterwards means the bytes are already billable.
     const reservation = reservations().at(-1)!;
     expect(Number(reservation.size_bytes)).toBe(1_950_000);
     expect(Number(reservation.thumb_size_bytes)).toBe(25_000);
@@ -146,15 +126,12 @@ describe("presigning an upload", () => {
     const row = reservations()[0];
 
     expect(row.size_bytes).toBe(1_950_000);
-    // The thumbnail is charged for too, or a host is billed for one object and
-    // stores two.
     expect(store.reserved()).toBe(1_975_000);
 
     const media = row.media as Record<string, unknown>;
     expect(media.media_format).toBe("jpeg");
     expect(media.mime_type).toBe("image/jpeg");
     expect(media.thumb_format).toBe("webp");
-    // Nothing left for the worker: the objects in the bucket are already right.
     expect(media.processing).toBe("done");
   });
 
@@ -173,7 +150,6 @@ describe("presigning an upload", () => {
     const row = reservations()[0];
     const media = row.media as Record<string, unknown>;
 
-    // It goes up as it came off the phone; the worker replaces it with a JPEG.
     expect(upload.source).toBe("file");
     expect(String(row.media_key).endsWith(".heic")).toBe(true);
     expect(row.size_bytes).toBe(3_000_000);
@@ -181,31 +157,16 @@ describe("presigning an upload", () => {
     expect(media.processing).toBe("pending");
   });
 
-  /**
-   * The bug this exists to kill. A file picker is not obliged to report a MIME
-   * type and frequently does not - HEIC on Android and Windows has no mapping
-   * at all, and a file dragged out of a file manager arrives with an empty type
-   * on every platform. The route used to refuse the request outright, so a
-   * guest whose browser had already decoded the photograph and handed over a
-   * finished WebP was told their file type was not supported.
-   */
   it("takes a photo whose type the picker never reported", async () => {
     const res = await POST(request({ ...compressedPhoto, type: "" }));
     const { upload } = await res.json();
 
     expect(res.status).toBe(200);
-    // Stored as what the browser actually produced, which is all that is going
-    // up: the source type was never going to describe the stored object.
     expect(upload.source).toBe("compressed");
     expect(upload.media.fields.key).toMatch(/\.jpg$/);
     expect(reservations()[0].size_bytes).toBe(1_950_000);
   });
 
-  /**
-   * An untyped file the browser could not decode either. There is nothing to
-   * infer from, so it is refused - but the refusal has to survive the change
-   * above rather than falling through it.
-   */
   it("refuses an untyped file the browser could not decode", async () => {
     const res = await POST(
       request({
@@ -238,8 +199,6 @@ describe("presigning an upload", () => {
     expect(upload.source).toBe("file");
     expect(upload.poster).toBeTruthy();
 
-    // A clip and its poster go in the event's videos/ folder, apart from
-    // the photos.
     expect(row.media_key).toBe(
       `${EVENT.owner_id}/${EVENT.id}/videos/full/${upload.mediaId}.mov`,
     );
@@ -248,8 +207,6 @@ describe("presigning an upload", () => {
     );
     expect(row.thumb_key).toBeNull();
     expect(row.poster_size_bytes).toBe(40_000);
-    // Both objects are charged for up front, or a guest could send a poster
-    // into an event with no room for it.
     expect(store.reserved()).toBe(8_040_000);
   });
 
@@ -259,16 +216,10 @@ describe("presigning an upload", () => {
     });
     const res = await POST(request(compressedPhoto));
 
-    // The guest sees a generic failure; the operator sees the cause in the log.
     expect(res.status).toBe(500);
     expect(store.released()).toBe(1_975_000);
   });
 
-  /**
-   * The regression this route was carrying: the rollback existed only on the
-   * insert path, so a bucket that had lost its credentials ate a host's quota
-   * one upload at a time, and left a row behind for each one.
-   */
   it("hands the quota back when signing fails, and keeps no reservation", async () => {
     signThrows = true;
     const res = await POST(request(compressedPhoto));

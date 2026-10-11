@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireOwnedEvent } from "@/lib/actions/guards";
+import { requireOwnedEvent } from "@/lib/guards/host-action";
 import { mediaExists } from "@/lib/db/media-repo";
 import type { ActionState } from "@/lib/actions/types";
 import { TIERS, getTier } from "@/lib/tiers";
@@ -12,13 +12,8 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 
 const appearanceSchema = z.object({
   theme: z.string().trim().min(1).max(32),
-  // Not an enum, for the same reason `theme` is not: pairings are defined in
-  // the application and an unknown one falls back when it is read.
   theme_font: z.string().trim().min(1).max(32),
   cover_variant: z.enum(["full", "classic", "half", "type"]),
-  // Any pairing of the three verticals and the three alignments. Spelled out
-  // rather than built from the two lists, so the shape the database's own
-  // check constraint allows is readable next to it.
   cover_position: z.enum([
     "top-left",
     "top-centre",
@@ -39,14 +34,6 @@ const appearanceSchema = z.object({
   custom_ink: z.string().regex(HEX).optional(),
 });
 
-/**
- * The custom event page.
- *
- * Refused outright on the free plan. resolveAppearance() would render a free
- * event with the house theme regardless of what is stored, so this check is not
- * what protects the paywall - it is what gives the host a clear answer instead
- * of a form that appears to save and then changes nothing.
- */
 export async function updateAppearance(
   eventId: string,
   _prev: ActionState,
@@ -79,8 +66,7 @@ export async function updateAppearance(
     return { error: "Those settings did not look right. Try again." };
   }
 
-  // A cover photo has to belong to this event. Without this check a host could
-  // point their cover at any media id they could guess.
+  // A cover photo has to belong to this event, or a host could point at any media id.
   if (parsed.data.cover_media_id) {
     const owned = await mediaExists(supabase, {
       id: parsed.data.cover_media_id,

@@ -7,13 +7,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * The stored object, one at a time, behind a short-lived signature.
- *
- * A gallery page never calls this - it resolves only when somebody opens a
- * photo to download it or plays a video, which keeps the signing work and the
- * expensive bytes off the common path.
- */
 export async function GET(request: Request) {
   return handle(async () => {
     const url = new URL(request.url);

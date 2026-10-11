@@ -9,38 +9,28 @@ import {
   MdOutlineWorkspacePremium,
 } from "react-icons/md";
 
-import { AppearanceForm } from "@/components/dashboard/appearance/appearance-form";
-import { ArchivePanel } from "@/components/dashboard/archive-panel";
-import { DangerZone } from "@/components/dashboard/danger-zone";
-import { EventAdminView } from "@/components/dashboard/event-admin-view";
-import { PurchaseBanner } from "@/components/dashboard/purchase-banner";
-import { SettingsForm } from "@/components/dashboard/settings-form";
-import { SharePanel } from "@/components/dashboard/share-panel";
-import { StoragePanel } from "@/components/dashboard/storage-panel";
-import { UpgradePanel } from "@/components/dashboard/upgrade-panel";
+import { AppearanceForm } from "@/components/dashboard/appearance/AppearanceForm";
+import { ArchivePanel } from "@/components/dashboard/ArchivePanel";
+import { DangerZone } from "@/components/dashboard/DangerZone";
+import { EventAdminView } from "@/components/dashboard/EventAdminView";
+import { PurchaseBanner } from "@/components/dashboard/PurchaseBanner";
+import { SettingsForm } from "@/components/dashboard/SettingsForm";
+import { SharePanel } from "@/components/dashboard/SharePanel";
+import { StoragePanel } from "@/components/dashboard/StoragePanel";
+import { UpgradePanel } from "@/components/dashboard/UpgradePanel";
 import { Alert, Badge, ButtonLink, Stat } from "@/components/ui";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 import { findEventName } from "@/lib/db/event-repo";
-import { formatBytes } from "@/lib/format";
+import { formatBytes } from "@/utils/format";
 import { createClient } from "@/lib/supabase/server";
 import { KEEPING_NAME, PURCHASABLE_IDS, TIERS, isKeepingProduct } from "@/lib/tiers";
 import { recoverPurchases } from "@/lib/payments/recover";
 import { getSessionUser } from "@/lib/supabase/server";
 import { loadEventConsole } from "@/lib/views/event-console";
+import { formatCount } from "@/utils/format";
 
 export const dynamic = "force-dynamic";
 
-/**
- * The console, in the order a host meets it: get the code onto a table, look at
- * the event itself, dress the page up, buy more room if the night needs it,
- * then the settings and the ending.
- *
- * Five, not six, because the bar wants an odd number: one button is raised out
- * of the middle and the rest divide evenly around it - see `Tabs`.
- *
- * Each id is the id of its panel, so `#upgrade` still lands on the plan even
- * though that panel is behind a tab.
- */
 const TABS: TabItem[] = [
   {
     id: "share",
@@ -93,19 +83,6 @@ export default async function EventPage({
   let view = await loadEventConsole(id);
   if (!view) notFound();
 
-  /*
-   * Coming back from checkout, verify rather than wait.
-   *
-   * The webhook is still the only thing that grants an entitlement, and it
-   * usually beats the browser back here by seconds. When it does not - it was
-   * slow, it was lost, the deployment was restarting - this asks the provider
-   * whether the order exists and applies it through the same code path. The
-   * alternative is the customer refreshing a page that never changes, which is
-   * how "I paid and got nothing" becomes a chargeback.
-   *
-   * Only on the return from checkout, never on an ordinary page load: it is an
-   * outbound API call and every other visit has nothing to find.
-   */
   if (purchase === "complete") {
     const user = await getSessionUser();
     const { applied } = await recoverPurchases(view.event, user?.email);
@@ -116,17 +93,6 @@ export default async function EventPage({
 
   const { event, tier, summary, media, covers, photoCount, review } = view;
 
-  /*
-   * Has the thing they just paid for actually arrived?
-   *
-   * Answered off the plan on the row rather than off whether recovery applied
-   * anything just now: the webhook usually gets here first, and "recovery found
-   * nothing to do" is what success looks like when it does.
-   *
-   * `null` where the URL does not name a product - a checkout link issued
-   * before this started naming one - and the banner then keeps its old advice
-   * rather than guessing.
-   */
   const bought = PURCHASABLE_IDS.find((id) => id === product);
   const settled =
     bought === undefined
@@ -136,13 +102,7 @@ export default async function EventPage({
         : tier.rank >= TIERS[bought as "plus" | "pro"].rank;
 
   return (
-    /* The bottom padding is the bar's own height plus room to breathe. Without
-       it the last thing on every panel sits underneath the navigation. */
     <div className="mx-auto max-w-6xl px-4 py-8 pb-28 sm:px-5 sm:py-10 sm:pb-10">
-      {/* Below xs the header has no room for "My events", and the mark goes to
-          the front of the site rather than the dashboard, so this is the way
-          back out of an event on a phone. That makes it a control rather than a
-          caption, and it is sized like one. */}
       <ButtonLink href="/dashboard" variant="secondary" size="sm">
         <MdArrowBackIosNew aria-hidden className="shrink-0" /> All events
       </ButtonLink>
@@ -178,13 +138,8 @@ export default async function EventPage({
         mobile="bar"
         sticky
         className="mt-6 sm:mt-7"
-        /* Below `sm` this is pinned across the bottom of the screen and needs
-           no margin. From `sm` it is a strip that runs to both edges of the
-           page, and at `lg` a rail that stops where the page does. */
         tablistClassName="sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0"
       >
-        {/* The code and the ZIP are the two ends of the same errand - hand the
-            link out, take everything home afterwards - so they stack. */}
         <TabPanel
           id="share"
           className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
@@ -200,8 +155,6 @@ export default async function EventPage({
           <ArchivePanel eventId={event.id} photoCount={photoCount} />
         </TabPanel>
 
-        {/* The page itself, with the host's own powers on it. Everything that
-            changes it is one tab along, under Edit. */}
         <TabPanel id="event" className="mt-5 sm:mt-6 lg:mt-0">
           <EventAdminView
             event={event}
@@ -228,23 +181,16 @@ export default async function EventPage({
           />
         </TabPanel>
 
-        {/* What the event has used, the meter, and the price of more of it -
-            one thought, in that order. */}
         <TabPanel
           id="upgrade"
           className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
         >
-          {/* Numbers rather than a panel. All four come from one `event_stats`
-              call the page was already making. Photographs and clips are
-              separate because they are not interchangeable to a host - one is
-              the wall, the other is the speeches - and a single total hid the
-              difference. */}
           <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-xl sm:grid-cols-4">
-            <Stat label="Photos" value={view.photos.toLocaleString("en-GB")} />
-            <Stat label="Videos" value={view.videos.toLocaleString("en-GB")} />
+            <Stat label="Photos" value={formatCount(view.photos)} />
+            <Stat label="Videos" value={formatCount(view.videos)} />
             <Stat
               label="Guests"
-              value={view.uploaderCount.toLocaleString("en-GB")}
+              value={formatCount(view.uploaderCount)}
               hint="Phones that uploaded"
             />
             <Stat

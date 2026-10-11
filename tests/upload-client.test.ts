@@ -9,15 +9,6 @@ import {
   withRetry,
 } from "@/lib/client/upload";
 
-/**
- * The three client-side pieces the guest's wait actually depends on.
- *
- * `gate` is what makes the uploader a pipeline instead of two phases; `withRetry`
- * is what stops one bad second on venue wifi costing a photo; and the retryable
- * flag is what stops a bucket misconfiguration being asked the same question
- * three times while the guest waits.
- */
-
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("gate", () => {
@@ -43,11 +34,6 @@ describe("gate", () => {
     expect(done).toBe(6);
   });
 
-  /**
-   * A slot that a failed task never gives back is a queue that stops moving.
-   * With one file in every batch failing - which is normal - that would leave
-   * the guest looking at a progress bar that has stopped for good.
-   */
   it("gives the slot back when a task throws", async () => {
     const pass = gate(1);
 
@@ -65,12 +51,6 @@ describe("gate", () => {
   });
 });
 
-/**
- * `crypto.randomUUID` exists only in a secure context. A phone opening the
- * share link by IP address on the venue wifi is not one, and neither is a LAN
- * preview - so the call threw a TypeError, took the whole batch down before a
- * single byte moved, and left the button disabled with nothing said.
- */
 describe("getFingerprint", () => {
   const store = new Map<string, string>();
 
@@ -96,7 +76,6 @@ describe("getFingerprint", () => {
 
     const id = getFingerprint();
     expect(id).toMatch(/^[0-9a-f]{32}$/);
-    // Remembered, so the guest can still delete the photo they just sent.
     expect(getFingerprint()).toBe(id);
   });
 
@@ -150,10 +129,6 @@ describe("withRetry", () => {
     expect(task).toHaveBeenCalledTimes(2);
   });
 
-  /**
-   * A bucket policy rejection will say exactly the same thing the third time it
-   * is asked. Retrying it only makes the guest wait longer for the same answer.
-   */
   it("does not retry a failure that will not change", async () => {
     const task = vi.fn(async () => {
       throw new UploadError("Storage rejected the upload - AccessDenied", false);
@@ -188,11 +163,6 @@ describe("postJson", () => {
     });
   });
 
-  /**
-   * The bug this exists to kill: the confirm call used to be an unchecked
-   * `await fetch(...)`, so a 500 read exactly like success and the guest was
-   * thanked for a photo that had never been written.
-   */
   it("throws the server's own message rather than swallowing it", async () => {
     fetchMock.mockResolvedValue(
       respond(413, { error: { message: "This event is full.", upgrade: true } }),
@@ -205,7 +175,6 @@ describe("postJson", () => {
     expect(error).toBeInstanceOf(UploadError);
     expect(error.message).toBe("This event is full.");
     expect(error.upgrade).toBe(true);
-    // A full event does not become emptier by asking again.
     expect(error.retryable).toBe(false);
   });
 
@@ -251,9 +220,8 @@ describe("uploadToPresigned", () => {
   let sent: FakeXhr | null = null;
 
   /**
-   * A constructor that returns an object literal rather than a class, so the
-   * test can hold a reference to the instance under test without aliasing
-   * `this`. `new` honours an explicitly returned object.
+   * A constructor returning an object literal rather than a class, so the test can hold
+   * a reference to the instance.
    */
   function FakeXhrCtor(this: unknown): FakeXhr {
     const xhr: FakeXhr = {
@@ -315,18 +283,12 @@ describe("uploadToPresigned", () => {
     await expect(promise).rejects.toMatchObject({ retryable: true });
   });
 
-  /**
-   * The old code carried an `ontimeout` handler and never set `xhr.timeout`, so
-   * it was unreachable: an upload that stopped moving hung forever and the
-   * guest's progress bar sat at 40% until they gave up and closed the tab.
-   */
   it("gives up on an upload that stops making progress", async () => {
     vi.useFakeTimers();
     try {
       const promise = uploadToPresigned(presigned, body());
       const failure = promise.catch((e) => e);
 
-      // Well inside the window: still going.
       await vi.advanceTimersByTimeAsync(30_000);
       expect(sent!.aborted).toBe(false);
 

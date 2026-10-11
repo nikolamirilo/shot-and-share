@@ -2,15 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStore } from "./stubs/supabase";
 
-/**
- * The fallback for a webhook that never arrived.
- *
- * "I paid and got nothing" is the biggest source of tickets on a one-time
- * purchase, and an unanswered ticket becomes a chargeback. What matters here is
- * as much what it refuses to do as what it does: it must never invent a
- * purchase, and it must never move an entitlement off another event.
- */
-
 const store = createStore();
 const listRecentOrders = vi.fn();
 
@@ -73,11 +64,6 @@ describe("finding a payment the webhook lost", () => {
     expect(event().tier).toBe(TIERS.pro.id);
   });
 
-  /*
-   * The same id the webhook would have used. If the delivery turns up late,
-   * the unique constraint recognises it and nobody is charged twice or granted
-   * twice.
-   */
   it("records the order under the id the webhook would have used", async () => {
     listRecentOrders.mockResolvedValue([order()]);
     await recoverPurchases(EVENT as never, "host@example.com");
@@ -87,11 +73,6 @@ describe("finding a payment the webhook lost", () => {
     expect(purchase.order_id).toBe("order-1");
   });
 
-  /*
-   * The rule that stops recovery quietly rearranging what somebody paid for.
-   * An order already unlocking another event is a previous purchase, and moving
-   * it here would take that event's plan away.
-   */
   it("leaves an order that already unlocked a different event alone", async () => {
     store.rows("purchases").push({
       event_id: "99999999-8888-7777-6666-555555555555",

@@ -1,12 +1,8 @@
 import { ImageResponse } from "next/og";
 
-import { MARK } from "@/components/layout/logo";
+import { MARK } from "@/components/layout/Logo";
 
-/**
- * The home-screen icon. Safari will not take an SVG here, so the mark is drawn
- * once at 180px and rendered to PNG at build time rather than a binary being
- * checked into `public/` and drifting from the logo it is meant to be.
- */
+/** Safari will not take an SVG here, so the mark is rendered to PNG at build time. */
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 

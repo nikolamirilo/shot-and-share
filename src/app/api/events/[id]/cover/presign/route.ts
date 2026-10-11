@@ -3,12 +3,12 @@ import { z } from "zod";
 
 import { ApiError, fail, handle, ok, parseBody } from "@/lib/api";
 import { storageSummary } from "@/lib/events";
-import { formatBytes } from "@/lib/format";
-import { enforceRateLimit } from "@/lib/guards";
-import { requireOwnedEvent } from "@/lib/host";
+import { formatBytes } from "@/utils/format";
+import { enforceRateLimit } from "@/lib/guards/rate-limit";
+import { requireOwnedEvent } from "@/lib/guards/host-api";
 import { mediaKey, scopeOfEvent, thumbKey } from "@/lib/media";
 import { IMAGE_EXT, IMAGE_MIME, type ImageFormat } from "@/lib/media/formats";
-import { LIMITS } from "@/lib/ratelimit";
+import { LIMITS } from "@/constants/limits";
 import { TIERS, getTier } from "@/lib/tiers";
 import { classifyUpload, decideStoredObject } from "@/lib/uploads/classify";
 import { createReservation } from "@/lib/uploads/reservation";
@@ -17,21 +17,8 @@ import { fileSchema } from "@/lib/uploads/schema";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** The guest presign shape minus the poster: a cover is a still image. */
 const bodySchema = z.object({ file: fileSchema });
 
-/**
- * A cover image the host uploaded themselves.
- *
- * The guest handshake with the token swapped for a session, landing in the same
- * place, reserved against the same quota, confirmed into the same table. Only
- * `source` differs, and the confirm sets that - see migration 0013 for why a
- * cover is kept out of the gallery.
- *
- * Photos only. Accepting a video here would mean either storing one nobody
- * plays or transcoding one to take a frame off it, and the picker already lets
- * a host pick any video's poster out of the event.
- */
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -47,9 +34,6 @@ export async function POST(
     );
 
     const tier = getTier(event.tier);
-    // The appearance form is behind the same paywall and this endpoint is not
-    // reachable from it, so this is about the request nobody made through the
-    // interface.
     if (!tier.customPage) {
       throw new ApiError(
         "forbidden",
@@ -79,8 +63,6 @@ export async function POST(
     const scope = scopeOfEvent(event);
     const stored = decideStoredObject(file, classified);
 
-    // The cover picker renders the same grid the gallery does, so it wants the
-    // same small copy.
     const thumb = file.thumb
       ? {
           key: thumbKey(
@@ -112,12 +94,9 @@ export async function POST(
         width: file.sourceWidth ?? null,
         height: file.sourceHeight ?? null,
         processing: stored.useCompressed ? "done" : "pending",
-        /*
-         * No fingerprint, and it is load-bearing. A null fingerprint is what
-         * the guest confirm compares against and always fails, so this
-         * reservation cannot be turned into a guest photo by anyone holding the
-         * share link - and it is what the cover confirm checks to be sure it is
-         * finishing an upload this endpoint started.
+        /**
+         * No fingerprint, and load-bearing: the guest confirm compares against it and
+         * always fails.
          */
         uploader_fingerprint: null,
       },
@@ -139,7 +118,6 @@ export async function POST(
     return ok({
       upload: {
         mediaId,
-        /** Which blob to send: the compressed copy, or the file itself. */
         source: stored.useCompressed
           ? ("compressed" as const)
           : ("file" as const),

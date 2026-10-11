@@ -1,20 +1,6 @@
 /**
  * One-shot: delete everything left under a superseded key prefix.
- *
- * Migration 0008 moved objects out of `u/{owner_id}/…` to `{owner_id}/…` at the
- * root of the bucket, and dropped the media rows that pointed at the old layout
- * along with the separate originals, thumbs and display renditions. Postgres is
- * the source of truth for what exists, so everything still under `u/` is now
- * unreferenced - but S3 bills for it all the same, and nothing else will ever go
- * looking. (0007 did the same thing to the older `events/` prefix; pass
- * --prefix=events/ if a bucket predates it.)
- *
- * Deliberately standalone rather than importing the storage driver: it is a
- * destructive maintenance job that runs once, and it should not be able to
- * break because an unrelated module in the application changed.
- *
- *   node scripts/purge-legacy-prefix.mjs            # dry run, lists only
- *   node scripts/purge-legacy-prefix.mjs --confirm  # actually deletes
+ * Migration 0008 moved objects out of `u/{owner_id}/...`.
  */
 
 import {
@@ -66,8 +52,8 @@ do {
   scanned += keys.length;
 
   if (keys.length > 0 && confirm) {
-    // DeleteObjects caps at 1000 keys per call, which is also the page size
-    // ListObjectsV2 returns, so one page is always one delete.
+    // DeleteObjects caps at 1000 keys per call, which is also ListObjectsV2's page size
+    // - so one page is always one delete.
     await s3.send(
       new DeleteObjectsCommand({
         Bucket: bucket,

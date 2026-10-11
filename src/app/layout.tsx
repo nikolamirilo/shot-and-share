@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
-import { JsonLd } from "@/components/seo/json-ld";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { env } from "@/lib/env";
 import {
   SITE,
@@ -12,16 +12,6 @@ import {
 
 import "./globals.css";
 
-/**
- * Everything below is inherited by every page and overridden per route where it
- * needs to be.
- *
- * `metadataBase` comes from the environment rather than a literal: it is what
- * every canonical, every Open Graph URL and every image path is resolved
- * against, so hard-coding production here would have preview deployments
- * declaring themselves canonical for the live site - the fastest way to get the
- * real one dropped from the index.
- */
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
@@ -34,11 +24,8 @@ export const metadata: Metadata = {
   creator: SITE.name,
   publisher: SITE.name,
   category: "technology",
-  /* Every page states its own canonical; this is the default for anything that
-     forgets to, and it is the site root rather than a guess at the path. */
   alternates: { canonical: "/" },
-  /* Safari turns anything shaped like a phone number into a call link, which on
-     a page full of storage figures and photo counts is a link to nowhere. */
+  /* Safari turns anything shaped like a phone number into a call link. */
   formatDetection: { telephone: false, address: false, email: false },
   robots: {
     index: true,
@@ -46,9 +33,6 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      /* The default is a 160-ish character clip and a thumbnail. A product
-         whose result is worth reading in full, with the social card as the
-         preview, wants both lifted. */
       "max-snippet": -1,
       "max-image-preview": "large",
       "max-video-preview": -1,
@@ -72,9 +56,6 @@ export const metadata: Metadata = {
     title: `${SITE.name} - every photo your guests take`,
     description: SITE.description,
   },
-  /* Console verification tokens, when the deployment has them. Absent in
-     development and in previews, which is correct: verifying a preview host
-     tells a search console about a site nobody should be looking at. */
   verification: {
     google: env.seo.googleVerification,
     other: env.seo.bingVerification
@@ -103,19 +84,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Azeret+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&display=swap"
           rel="stylesheet"
         />
-        {/* Who publishes this and what the site is, once, at the root. Pages
-            add their own nodes and point back at these by @id rather than
-            restating them. */}
         <JsonLd
           id="ld-site"
           json={graph(organisationSchema(), websiteSchema())}
         />
       </head>
-      {/* Browser extensions write their own attributes onto <body> before
-          React hydrates - ColorZilla's `cz-shortcut-listen`, password
-          managers, translators - and every one of them is a hydration
-          mismatch nobody can fix from here. This forgives attributes on this
-          element only; a mismatch in anything inside it still shouts. */}
+      {/* Extensions write attributes onto <body> before React hydrates. */}
       <body suppressHydrationWarning>{children}</body>
     </html>
   );

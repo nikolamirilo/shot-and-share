@@ -3,19 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "./stubs/supabase";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * A held photograph must not reach a guest.
- *
- * The same shape of quiet failure as the cover column next door: everything
- * held, flagged or reported sits in `media` alongside everything approved, one
- * column apart. Forget the column in one query and the whole point of screening
- * uploads is gone, silently, on the one evening it mattered.
- *
- * Worth being blunt about which query: the gallery is the obvious one, and the
- * slideshow is the one that hurts, because it is projected on a wall in front
- * of everybody.
- */
-
 const store = createStore();
 
 const EVENT = {
@@ -103,10 +90,6 @@ describe("the guest gallery", () => {
 });
 
 describe("the ZIP", () => {
-  /*
-   * A held photograph in the download would quietly undo the holding: the host
-   * gets it either way, but the point is that they look at it first.
-   */
   it("leaves out anything the host has not approved", async () => {
     push("approved-a", "approved", 1);
     push("held-b", "held", 2);

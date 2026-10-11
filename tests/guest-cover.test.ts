@@ -3,14 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "./stubs/supabase";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * Which stored copy the guest page's cover loads.
- *
- * The cover is one photograph across a whole phone, and the gallery grid is
- * fifty of them at 96px. They want opposite files, and the page used to ask for
- * the grid's: the 640px thumbnail, stretched to full screen and visibly soft.
- */
-
 const store = createStore();
 
 const OWNER = "00000000-1111-2222-3333-444444444444";
@@ -104,8 +96,6 @@ describe("the guest page cover", () => {
     expect(page.fullScreenCover).toBe(true);
   });
 
-  // The thumbnail is no longer only a fallback: blown up and blurred it is the
-  // right colours in the right places long before two megabytes have landed.
   it("hands the thumbnail over as well, to stand in while it loads", async () => {
     pushCover();
 
@@ -115,7 +105,6 @@ describe("the guest page cover", () => {
   });
 
   it("has nothing to stand in when the thumbnail is the cover", async () => {
-    // Nothing to fade a photograph in over except itself.
     pushCover({ media_format: "heic", media_key: FULL_KEY.replace(".webp", ".heic") });
 
     const page = await open();
@@ -124,8 +113,6 @@ describe("the guest page cover", () => {
     expect(page.coverPreviewUrl).toBeNull();
   });
 
-  // A HEIC the browser cannot open has no full copy to serve until the worker
-  // has replaced it. A soft cover beats an empty one.
   it("falls back to the thumbnail when there is no viewable full copy", async () => {
     pushCover({ media_format: "heic", media_key: FULL_KEY.replace(".webp", ".heic") });
 

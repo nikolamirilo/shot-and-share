@@ -10,12 +10,6 @@ import { storage } from "@/lib/storage";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Stands in for S3 in development. It enforces the same three things a
- * presigned POST does - expiry, key, and a maximum body size - so code that
- * works against this driver works against the real bucket.
- */
-
 function disabled() {
   return fail(
     "not_found",
@@ -44,7 +38,6 @@ export async function POST(request: Request) {
     return fail("forbidden", "This upload URL has expired.");
   }
   if (file.size > Number(max)) {
-    // The same rejection S3 gives on a content-length-range violation.
     return fail("bad_request", "File is larger than the signed limit.");
   }
   if (contentType && file.type && file.type !== contentType) {

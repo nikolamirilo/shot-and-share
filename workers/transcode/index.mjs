@@ -2,23 +2,9 @@
 /**
  * Shot & Share transcode worker.
  *
- * Finishes the two jobs a browser cannot do:
- *
- *   - Images the browser could not decode. In practice this is HEIC outside
- *     Safari. It becomes a JPEG so that every device on earth can open it.
- *   - Video. Anything a guest uploads becomes H.264 in an MP4 with AAC audio
- *     and the moov atom at the front, which is the one combination that plays
- *     on every phone, browser, laptop and smart TV without a codec argument.
- *     It also usually halves the size of a phone clip, because phones encode
- *     for speed rather than for size.
- *
- * It holds no AWS credentials. It asks the app for work, gets presigned URLs
- * to read the input and write the outputs, and reports back. A process running
- * ffmpeg over files uploaded by strangers is the most likely thing in this
- * system to be compromised, so it is given nothing worth stealing.
- *
- * Run it anywhere with ffmpeg: a container on Fargate, a Lambda with an ffmpeg
- * layer, or a spare box. See README.md in this directory.
+ * Finishes the two jobs a browser cannot: images it could not decode (chiefly
+ * HEIC outside Safari) and video. It never holds AWS credentials - it asks for
+ * jobs and uploads to presigned URLs.
  */
 
 import { spawn } from "node:child_process";
@@ -37,9 +23,8 @@ const FFMPEG = process.env.FFMPEG_PATH ?? "ffmpeg";
 const FFPROBE = process.env.FFPROBE_PATH ?? "ffprobe";
 
 /**
- * Constant Rate Factor. 23 is ffmpeg's default and visually transparent for
- * this material; 26 would halve the size again and start showing on a
- * projector, which is exactly where these get played.
+ * Constant Rate Factor. 23 is ffmpeg's default and visually transparent for this
+ * material.
  */
 const VIDEO_CRF = 23;
 
@@ -120,42 +105,30 @@ async function handleVideo(job, dir) {
   await run(FFMPEG, [
     "-y",
     "-i", input,
-    // The clip keeps the dimensions it was filmed at. It used to be capped at
-    // 1080p, which is fine on a phone and visibly soft on the projector these
-    // get played through - and the guest cannot re-upload the good copy later,
-    // because by then the original is gone. The only change made here is
-    // rounding to an even width and height, which H.264 requires.
+    // Even width and height, which H.264 requires. The clip otherwise keeps the
+    // dimensions it was filmed at - the original is gone once this lands.
     "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
     "-c:v", "libx264",
-    // Baseline-ish profile: old Android and smart TVs refuse High 10.
+    // High, not High 10: old Android and smart TVs refuse High 10.
     "-profile:v", "high",
-    // No fixed -level. It was pinned to 4.0, which tops out just above 1080p:
-    // now that a 4K clip stays 4K, the level has to follow the footage, and
-    // x264 works out the right one from the dimensions and frame rate.
+    // No fixed -level: a 4K clip stays 4K, so x264 works the level out from the
+    // dimensions and frame rate.
     "-pix_fmt", "yuv420p",
     "-preset", "medium",
     "-crf", String(VIDEO_CRF),
     "-c:a", "aac",
     "-b:a", "128k",
     "-ac", "2",
-    // Put the index at the front so the video starts playing before it has
-    // finished downloading. Without this a guest stares at a black rectangle.
+    // Index at the front, so the video plays before it has finished downloading.
     "-movflags", "+faststart",
-    // Drop everything the phone wrote into the container: the GPS location of
-    // the party, the device, the creation time. A guest filming inside
-    // somebody's house is handing over that address otherwise, and the privacy
-    // policy promises this happens.
-    //
-    // Photos need no equivalent: they are re-encoded through a canvas in the
-    // browser before they are uploaded, which drops the EXIF block on the way.
+    // Drops everything the phone wrote into the container - the GPS location of the
+    // party, the device, the creation time. The privacy policy promises this.
     "-map_metadata", "-1",
     outputPath,
   ]);
 
-  // This replaces the clip in the bucket rather than sitting beside it: the
-  // app drops the object the guest uploaded once the row points here.
-  //
-  // No thumbnail: a clip's poster frame is already its small copy.
+  // Replaces the clip in the bucket rather than sitting beside it. No thumbnail: a
+  // clip's poster frame is already its small copy.
   const outputs = { mediaBytes: 0, thumbBytes: 0, posterBytes: 0 };
   outputs.mediaBytes = await upload(
     job.outputs.media,
@@ -192,17 +165,12 @@ async function handleImage(job, dir) {
   const info = await probe(input);
   const outputs = { mediaBytes: 0, thumbBytes: 0, posterBytes: 0 };
 
-  // ffmpeg decodes HEIC where it was built with libheif, which is the case for
-  // every current build. One codec toolchain instead of two.
-  //
-  // No scale filter: the photo keeps every pixel it was taken with. It used to
-  // be capped at 2560, which is fine on a phone and throws away about 60% of a
-  // 12MP photo for anyone who wants to print it or crop into it - and the
-  // guest cannot re-upload the good copy later, because by then it is gone.
+  // ffmpeg decodes HEIC where it was built with libheif, which every current build is -
+  // so one codec toolchain instead of two. No scale filter: the photo keeps every pixel
+  // it was taken with.
   const fullPath = path.join(dir, "full.jpg");
-  // -map_metadata -1 for the same reason it is on the video: this is the one
-  // photo path that does not go through the browser's canvas, so it is the one
-  // place an EXIF GPS tag could still reach the bucket.
+  // -map_metadata -1 for the same reason it is on the video: this is the one photo path
+  // that does not go through the browser's canvas.
   await run(FFMPEG, [
     "-y",
     "-i", input,
@@ -211,17 +179,14 @@ async function handleImage(job, dir) {
     fullPath,
   ]);
 
-  // The JPEG replaces the file the guest uploaded; the app deletes the HEIC
-  // once the row moves.
   outputs.mediaBytes = await upload(
     job.outputs.media,
     fullPath,
     job.outputs.media.contentType,
   );
 
-  // The small copy for the grid. Written second on purpose: if this fails the
-  // photo is already stored and viewable, and the grid falls back to the full
-  // copy through the optimiser.
+  // Written second: if this fails the photo is already stored and viewable, and the
+  // grid falls back to the full copy.
   if (job.outputs.thumb) {
     try {
       const thumbPath = path.join(dir, "thumb.webp");
@@ -274,8 +239,7 @@ async function processJob(job) {
     await report({ mediaId: job.mediaId, ok: true, ...result });
     console.log(`[worker] done ${job.mediaId} (${job.kind})`);
   } catch (error) {
-    // The original is untouched and still downloadable. This marks the row so
-    // it is not retried forever and an operator can find it.
+    // The original is untouched. This marks the row so it is not retried forever.
     console.error(`[worker] failed ${job.mediaId}:`, error.message);
     await report({
       mediaId: job.mediaId,
@@ -302,7 +266,7 @@ async function claim() {
 
 async function main() {
   console.log(`[worker] polling ${APP_URL} every ${POLL_SECONDS}s`);
-  // Fail fast and loudly if the image is missing its whole reason for existing.
+  // Fail fast and loudly if ffmpeg is missing.
   await run(FFMPEG, ["-version"]);
 
   for (;;) {
@@ -312,8 +276,7 @@ async function main() {
         await new Promise((r) => setTimeout(r, POLL_SECONDS * 1000));
         continue;
       }
-      // Sequential on purpose: ffmpeg already saturates the cores it is given,
-      // and running three at once just makes all three slower.
+      // Sequential: ffmpeg already saturates the cores it is given.
       for (const job of jobs) await processJob(job);
     } catch (error) {
       console.error("[worker] loop error", error);

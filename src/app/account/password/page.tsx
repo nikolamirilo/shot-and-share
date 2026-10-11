@@ -1,23 +1,18 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { PasswordForm } from "@/components/auth/password-form";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { PasswordForm } from "@/components/auth/PasswordForm";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Eyebrow } from "@/components/ui";
 import { hasSupabase } from "@/lib/env";
-import { getSessionUser } from "@/lib/supabase/server";
+import { getSessionUser, headerUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Set a new password",
   robots: { index: false, follow: false },
 };
 
-/**
- * Reached from a recovery link, which /auth/confirm has already turned into a
- * session. A host who is simply signed in can also use it to give a
- * Google-created account a password.
- */
 export default async function PasswordPage() {
   if (!hasSupabase) redirect("/login");
 
@@ -26,7 +21,7 @@ export default async function PasswordPage() {
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader user={headerUser(user)} />
       <main className="bg-linen">
         <div className="mx-auto max-w-md px-4 py-11 sm:px-5 sm:py-16 lg:py-24">
           <Eyebrow>Hosts only</Eyebrow>

@@ -49,10 +49,6 @@ export function ok<T>(data: T, init?: ResponseInit) {
   return NextResponse.json(data, init);
 }
 
-/**
- * One place where an unexpected throw becomes a 500 without leaking a stack
- * trace to whoever is poking at the endpoint.
- */
 export async function handle(
   fn: () => Promise<Response>,
 ): Promise<Response> {
@@ -64,10 +60,6 @@ export async function handle(
     }
     console.error("[api]", error);
 
-    // A missing variable is a deployment problem, not a bug. Saying so with a
-    // distinct status means monitoring can tell "we are broken" apart from
-    // "we were never finished being set up", and the message is safe to show:
-    // it names a variable, never a value.
     if (
       error instanceof Error &&
       /Missing required environment/.test(error.message)
@@ -79,11 +71,6 @@ export async function handle(
   }
 }
 
-/**
- * The parsed body, typed as what the schema *produces* rather than what it
- * accepts - so a field with a `.default()` reads as set, which is the whole
- * point of giving it one.
- */
 export async function parseBody<S extends ZodTypeAny>(
   request: Request,
   schema: S,

@@ -27,20 +27,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/**
- * The daily retention job.
- *
- * Deletion here is slow, warned about repeatedly, and reversible for a grace
- * period. Losing someone's wedding photos to a scheduling bug is the failure
- * this product cannot survive, so the destructive step is always the last one
- * and always delayed:
- *
- *   warn at 14, 7 and 1 days  ->  expire (nothing removed)  ->  wait 14 days
- *   ->  hard delete
- *
- * A host can restore the event, or buy Keep Forever, at any point before the last
- * arrow.
- */
 export async function GET(request: Request) {
   return run(request);
 }
@@ -75,26 +61,8 @@ async function run(request: Request) {
   });
 }
 
-/* -------------------------------------------------------------------------- */
-
-/**
- * How long a promise of storage outlives the guest who was given it.
- *
- * Hours rather than the day the old pending-row sweep waited, because a
- * reservation is now cheap bookkeeping instead of a media row, and quota held
- * by an upload that will never happen is quota the host paid for. It still has
- * to clear the slowest real upload: 500 MB is the largest single file any tier
- * allows (the Pro clip cap), which is a few hours on genuinely bad wifi, and
- * the client's own stall watchdog gives up long before that if the connection
- * has actually died. Was two hours when the largest file was 200 MB.
- */
 const RESERVATION_TTL_MS = 4 * 3600_000;
 
-/**
- * Uploads that reserved quota and never confirmed - a phone that died halfway,
- * a tab closed mid-batch. The bytes may or may not be in the bucket, so the
- * reservation is returned and any object is removed.
- */
 async function sweepStaleReservations(summary: { reservationsSwept: number }) {
   const admin = createAdminClient();
   const cutoff = new Date(Date.now() - RESERVATION_TTL_MS).toISOString();
@@ -106,12 +74,6 @@ async function sweepStaleReservations(summary: { reservationsSwept: number }) {
     .limit(500);
 
   for (const row of rows ?? []) {
-    /*
-     * A confirm that wrote the media row and then failed to delete its own
-     * reservation leaves one behind pointing at a photo the host can see. This
-     * check is the difference between tidying up and deleting somebody's
-     * wedding photo, so it happens before anything is removed.
-     */
     if (await mediaExistsById(admin, row.id)) {
       await admin.from("upload_reservations").delete().eq("id", row.id);
       continue;
@@ -123,8 +85,6 @@ async function sweepStaleReservations(summary: { reservationsSwept: number }) {
     summary.reservationsSwept += 1;
   }
 }
-
-/* -------------------------------------------------------------------------- */
 
 async function sendWarnings(summary: { warned: number }) {
   const admin = createAdminClient();
@@ -140,25 +100,15 @@ async function sendWarnings(summary: { warned: number }) {
     const daysLeft = Math.ceil(
       (new Date(event.expires_at).getTime() - Date.now()) / 86_400_000,
     );
-    // The tightest threshold this event has now crossed.
     const threshold = RETENTION_WARNING_DAYS.filter((d) => daysLeft <= d).pop();
     if (threshold === undefined) continue;
 
-    // warned_at_days records the last threshold sent, so each one goes out once.
     if (event.warned_at_days !== null && event.warned_at_days <= threshold) {
       continue;
     }
 
     const photoCount = await countReadyMedia(admin, event.id);
 
-    /*
-     * This email is the only place keeping is ever sold. Nobody shops for photo
-     * storage a year after their wedding - they are reminded of it by being
-     * told the photos are about to come down, which is what this is.
-     *
-     * The price is only quoted on a paid plan: a free event has no window to
-     * extend, so its host is pointed at a plan instead.
-     */
     const keeping = keepingFor(getTier(event.tier));
 
     await sendEmail(
@@ -180,9 +130,6 @@ async function sendWarnings(summary: { warned: number }) {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-
-/** Expiry removes nothing. It starts a clock and sends one more email. */
 async function expireEvents(summary: { expired: number }) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
@@ -209,9 +156,6 @@ async function expireEvents(summary: { expired: number }) {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-
-/** The only destructive step, and it runs a fortnight after the last warning. */
 async function hardDelete(summary: {
   hardDeleted: number;
   objectsRemoved: number;
@@ -226,10 +170,7 @@ async function hardDelete(summary: {
   for (const event of events) {
     const prefix = eventPrefix(scopeOfEvent(event));
     summary.objectsRemoved += await storage.removePrefix(prefix);
-    // One wildcard per event, so a night's purging is a handful of paths.
     await purgePrefix(prefix);
-    // media and event_tokens cascade. Purchase rows survive with a null event,
-    // because the accounting record of a payment must outlive the photos.
     await admin.from("events").delete().eq("id", event.id);
     summary.hardDeleted += 1;
   }

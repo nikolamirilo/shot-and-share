@@ -16,7 +16,6 @@ describe("share tokens", () => {
   });
 
   it("rejects anything that is not the shape we issue", () => {
-    // Tokens arrive in a URL path, so the filter runs before any query.
     expect(looksLikeToken("short")).toBe(false);
     expect(looksLikeToken("../../etc/passwd")).toBe(false);
     expect(looksLikeToken("' or 1=1 --")).toBe(false);
@@ -67,7 +66,6 @@ describe("payment webhooks", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createHmac } = require("node:crypto");
 
-  /** The documented scheme: hex HMAC-SHA256 of the raw body. */
   function legacy(body: string, key = secret) {
     return new Headers({
       "creem-signature": createHmac("sha256", key).update(body).digest("hex"),
@@ -96,11 +94,6 @@ describe("payment webhooks", () => {
     );
   });
 
-  /*
-   * Creem's SDK accepts a `sha256=` prefix and an `x-creem-signature` spelling
-   * that the documentation never mentions. Both are cheap to accept and the
-   * cost of not accepting one is every delivery rejected.
-   */
   it("accepts the header spellings the provider's own SDK accepts", () => {
     const body = JSON.stringify({ hello: "world" });
     const digest = createHmac("sha256", secret).update(body).digest("hex");
@@ -119,12 +112,6 @@ describe("payment webhooks", () => {
     ).toBe(true);
   });
 
-  /*
-   * The scheme the documentation does not describe and the SDK checks first.
-   * An account on this one sends every delivery with these three headers, and
-   * an integration that only implements the documented scheme rejects all of
-   * them - which looks exactly like paying customers whose plan never changed.
-   */
   describe("the Standard Webhooks scheme", () => {
     const standardSecret = "whsec_" + Buffer.from("a-real-key").toString("base64");
 
@@ -180,7 +167,6 @@ describe("payment webhooks", () => {
       );
     });
 
-    /* A secret rotation sends both signatures for a while. Either may match. */
     it("takes any one of the versioned signatures offered", () => {
       const body = JSON.stringify({ hello: "world" });
       const headers = standard(body);

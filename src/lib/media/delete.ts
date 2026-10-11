@@ -1,25 +1,12 @@
 import "server-only";
 
 import { purge } from "@/lib/cdn/purge";
-import type { MediaRow } from "@/lib/db/types";
+import { type MediaRow } from "@/types/db";
 import { mediaBytes, mediaKeys } from "@/lib/media/keys";
 import { storage } from "@/lib/storage";
 import { release } from "@/lib/storage/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Removing photographs, in the one order that is safe.
- *
- * Objects first, then the row, then the quota. Three call sites wrote this out
- * by hand and one of them forgot the cover check, which left the event page
- * pointing at a photograph that no longer existed.
- *
- * The CDN is told last and is allowed to fail. Removing the object is what
- * makes the photograph gone; purging the edge is what makes it gone *quickly*,
- * and the stored objects carry a year-long cache header, so skipping it leaves
- * a deleted photograph readable by anyone still holding its URL. See
- * `@/lib/cdn/purge`.
- */
 export async function deleteMediaRows(
   eventId: string,
   rows: MediaRow[],
@@ -46,11 +33,6 @@ export async function deleteMediaRows(
   return { removed: rows.length, bytes };
 }
 
-/**
- * A deleted photograph cannot go on being the cover. Left pointing at it the
- * event page falls back to the plain cover, which reads as the cover style
- * having broken rather than as the photograph having been removed.
- */
 async function clearCoverIfDeleted(eventId: string, rows: MediaRow[]) {
   const admin = createAdminClient();
   const { data: event } = await admin

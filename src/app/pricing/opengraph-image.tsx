@@ -3,12 +3,6 @@ import { ImageResponse } from "next/og";
 import { OG_SIZE, OgCard } from "@/lib/og-card";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * Pricing gets its own card because the number is the reason anybody shares
- * this page. It is read from `tiers.ts` for the same reason the structured data
- * is: a price that changed in one place and not the other is a card promising
- * something the page does not.
- */
 export const alt = "Pricing - one payment per event";
 export const size = OG_SIZE;
 export const contentType = "image/png";

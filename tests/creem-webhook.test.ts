@@ -4,15 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStore } from "./stubs/supabase";
 
-/**
- * The webhook, end to end.
- *
- * The parser and the signature check have their own tests. This one is about
- * the route that joins them to the money: which event names move a tier, and
- * which are acknowledged and ignored. Every one of those is a decision that
- * only shows up in production, on somebody's wedding, if it is wrong.
- */
-
 const SECRET = "whsec_test_secret";
 const store = createStore();
 
@@ -51,7 +42,6 @@ beforeEach(() => {
   process.env.CREEM_WEBHOOK_SECRET = SECRET;
 });
 
-/** A delivery signed the way Creem signs one. */
 async function deliver(payload: unknown, over: { signature?: string } = {}) {
   const body = JSON.stringify(payload);
   const signature =
@@ -112,21 +102,10 @@ describe("a payment arriving", () => {
     const purchase = store.rows("purchases")[0];
     expect(purchase.provider).toBe("creem");
     expect(purchase.order_id).toBe("ord_1");
-    // The same id recovery would write, so a late delivery is a duplicate
-    // rather than a second grant.
     expect(purchase.provider_txn_id).toBe("ord_1");
     expect(purchase.amount_cents).toBe(3900);
   });
 
-  /*
-   * The one that would be theft.
-   *
-   * A Creem payment link takes `?metadata[key]=value` off the query string, and
-   * our product ids are in the browser bundle. So a buyer can open the Plus
-   * product's own link claiming `metadata[product]=pro`, pay €19, and produce a
-   * genuine, correctly signed delivery asking for the €39 plan. The plan has to
-   * come off the product Creem actually charged for.
-   */
   it("grants the plan that was paid for, not the one the metadata asks for", async () => {
     const lying = purchased({
       order: {
@@ -189,11 +168,6 @@ describe("money going back", () => {
     expect(store.rows("purchases")[0].status).toBe("refunded");
   });
 
-  /*
-   * A chargeback with a merchant of record is money already gone, not money
-   * being argued about. Leaving the plan unlocked is product delivered for
-   * nothing - and `dispute.created` is the only notice Creem gives.
-   */
   it("takes the plan back on a chargeback", async () => {
     const { status } = await deliver({
       id: "evt_3",
@@ -213,12 +187,6 @@ describe("money going back", () => {
     expect(event().tier).toBe(TIERS.free.id);
   });
 
-  /*
-   * The one that would be a bug. Creem retries a failed card and puts the
-   * subscription back to active if one succeeds, so past_due is a window
-   * rather than a verdict, and revoking here takes a plan away from somebody
-   * who goes on to pay for it.
-   */
   it("leaves the plan alone while a payment is still being retried", async () => {
     const { status, body } = await deliver({
       id: "evt_4",

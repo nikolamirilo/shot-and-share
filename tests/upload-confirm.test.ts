@@ -3,16 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "./stubs/supabase";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * The confirm endpoint: the only place a media row is ever created.
- *
- * Everything worth testing here is about what happens when something has
- * already gone wrong. The bytes are in the bucket by the time this runs, so the
- * failure modes are all variations on "the row and the object disagree" - and
- * each one of those is either a photo the host never sees or quota they paid
- * for and cannot use.
- */
-
 const store = createStore();
 
 const EVENT = {
@@ -27,9 +17,9 @@ const EVENT = {
 const FINGERPRINT = "f".repeat(16);
 const MEDIA_ID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
-vi.mock("@/lib/events", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/events")>(
-    "@/lib/events",
+vi.mock("@/lib/guards/guest", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/guards/guest")>(
+    "@/lib/guards/guest",
   );
   return {
     ...actual,
@@ -43,7 +33,6 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 const { POST } = await import("@/app/api/upload/confirm/route");
 
-/** A photo waiting to be confirmed. */
 function reserve(over: Record<string, unknown> = {}) {
   store.rows("upload_reservations").push({
     id: MEDIA_ID,
@@ -71,11 +60,9 @@ function reserve(over: Record<string, unknown> = {}) {
   });
 }
 
-/** A video, whose poster is a second object that can fail on its own. */
 function reserveVideo() {
   reserve({
     media_key: `${EVENT.owner_id}/${EVENT.id}/full/${MEDIA_ID}.mov`,
-    // A clip has no thumbnail of its own: its poster frame is the small copy.
     thumb_key: null,
     poster_key: `${EVENT.owner_id}/${EVENT.id}/${MEDIA_ID}-poster.webp`,
     size_bytes: 8_000_000,
@@ -152,19 +139,9 @@ describe("confirming an upload", () => {
     expect(await res.json()).toEqual({ confirmed: false, held: false });
     expect(media()).toHaveLength(0);
     expect(reservations()).toHaveLength(0);
-    // The clip and its poster were both charged for at presign time.
     expect(store.released()).toBe(8_040_000);
   });
 
-  /**
-   * The bytes go from the phone to the bucket without passing through us, so a
-   * failure between the two leaves no request of ours to inspect: presign
-   * answers 200 and confirm turns up seconds later saying it did not work.
-   * Whether that was one guest's wifi or a bucket refusing every upload at
-   * every event - stale CORS rules after a rename do exactly that - is only
-   * answerable if the browser says which, and it is only visible if we write it
-   * down.
-   */
   it("records why an upload never reached storage", async () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     reserve();
@@ -201,7 +178,6 @@ describe("confirming an upload", () => {
     expect(row.poster_key).toBeNull();
     expect(row.poster_size_bytes).toBe(0);
     expect(row.size_bytes).toBe(8_000_000);
-    // A poster that never arrived must not keep costing the host anything.
     expect(store.released()).toBe(40_000);
   });
 
@@ -231,9 +207,6 @@ describe("confirming an upload", () => {
   });
 
   it("keeps the photo when only the thumbnail failed, and refunds it", async () => {
-    // The grid falls back to the full copy, which is what a row written before
-    // migration 0016 does anyway. Losing the photograph over its 25 KB
-    // thumbnail would be the worst trade in the system.
     reserve();
     const res = await POST(
       request({ mediaUploaded: true, thumbUploaded: false }),
@@ -250,8 +223,6 @@ describe("confirming an upload", () => {
   });
 
   it("refunds both copies when the photo itself never reached storage", async () => {
-    // The whole promise goes back, thumbnail included. Refunding only the full
-    // copy leaks 25 KB of a host's quota per abandoned upload.
     reserve();
     const res = await POST(
       request({ mediaUploaded: false, thumbUploaded: false, failed: true }),
@@ -262,11 +233,6 @@ describe("confirming an upload", () => {
     expect(store.released()).toBe(1_975_000);
   });
 
-  /**
-   * The browser retries a confirm that failed on a flaky connection. By then
-   * the bytes are already in the bucket, so answering the second call with a
-   * failure would throw away a photo over a lost acknowledgement.
-   */
   it("is safe to call twice", async () => {
     reserve();
     await POST(request({ mediaUploaded: true }));
@@ -289,12 +255,6 @@ describe("confirming an upload", () => {
     expect(reservations()).toHaveLength(0);
   });
 
-  /**
-   * The reservation is the only record that the bytes were ever charged for. If
-   * the insert fails for a real reason it has to stay exactly where it is: the
-   * browser can retry against it, and the nightly sweep refunds it if the guest
-   * has gone. Deleting it here would lose the quota permanently.
-   */
   it("leaves the reservation alone when the insert fails for a real reason", async () => {
     reserve();
     store.failInsert("media", { message: "connection reset" });
@@ -315,7 +275,6 @@ describe("confirming an upload", () => {
 
     expect(await res.json()).toEqual({ confirmed: false, held: false });
     expect(media()).toHaveLength(0);
-    // And it does not refund somebody else's reservation either.
     expect(reservations()).toHaveLength(1);
     expect(store.released()).toBe(0);
   });

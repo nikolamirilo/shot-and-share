@@ -4,7 +4,6 @@ import { encryptToken } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateToken, hashToken } from "@/lib/tokens";
 
-/** Creates a fresh share link. Used at creation and when a host rotates one. */
 export async function issueTokenFor(eventId: string, label = "Primary link") {
   const admin = createAdminClient();
   const token = generateToken();

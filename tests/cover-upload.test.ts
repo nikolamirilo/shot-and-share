@@ -3,17 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TIERS } from "@/lib/tiers";
 import { createStore } from "./stubs/supabase";
 
-/**
- * The host's own cover image, end to end with the database and the bucket
- * mocked.
- *
- * It is the guest handshake with the token swapped for a session, so the things
- * worth asserting are the ones that differ: it takes photographs only, it is
- * behind the same paywall as the panel it is reached from, and the row it
- * finally writes carries `source = 'cover'` - which is the whole reason the
- * host's decoration does not turn up in their guests' gallery.
- */
-
 const store = createStore();
 
 const OWNER = "00000000-1111-2222-3333-444444444444";
@@ -21,11 +10,7 @@ const OWNER = "00000000-1111-2222-3333-444444444444";
 let events = 0;
 let event = freshEvent();
 
-/**
- * A new event id per test. The upload limiter is keyed on the event, and a file
- * that reused one id would start getting 429s partway down rather than testing
- * what it says it tests.
- */
+/** A new event id per test: the upload limiter is keyed on the event. */
 function freshEvent() {
   events += 1;
   return {
@@ -38,7 +23,7 @@ function freshEvent() {
   };
 }
 
-vi.mock("@/lib/host", () => ({
+vi.mock("@/lib/guards/host-api", () => ({
   requireOwnedEvent: vi.fn(async () => event),
 }));
 
@@ -91,7 +76,6 @@ function confirmRequest(body: unknown) {
   );
 }
 
-/** What the browser sends for an image it managed to compress. */
 const compressedImage = {
   size: 4_000_000,
   type: "image/jpeg",
@@ -118,7 +102,6 @@ describe("presigning a cover image", () => {
     expect(key).toMatch(
       new RegExp(`^${OWNER}/${event.id}/photos/full/[0-9a-f-]+\\.webp$`),
     );
-    // The encoded copy is what goes up, never the six-megapixel original.
     expect(body.upload.source).toBe("compressed");
   });
 
@@ -129,8 +112,6 @@ describe("presigning a cover image", () => {
     expect(reservation.event_id).toBe(event.id);
     expect(reservation.owner_id).toBe(OWNER);
     expect(reservation.poster_key).toBeNull();
-    // The null is what stops the guest confirm from ever accepting this
-    // reservation, and what the cover confirm checks for.
     expect((reservation.media as Record<string, unknown>).uploader_fingerprint)
       .toBeNull();
     expect((reservation.media as Record<string, unknown>).processing).toBe(
@@ -194,8 +175,6 @@ describe("confirming a cover image", () => {
     expect(body.item.id).toBe(mediaId);
 
     const [row] = store.rows("media");
-    // The one column that keeps this out of the gallery, the slideshow, the
-    // ZIP and the photo count.
     expect(row.source).toBe("cover");
     expect(row.kind).toBe("photo");
     expect(row.status).toBe("ready");
@@ -208,9 +187,6 @@ describe("confirming a cover image", () => {
 
   it("refuses to turn a guest's reservation into a cover", async () => {
     const mediaId = await reserve();
-    // A guest's reservation carries a fingerprint. Without the check the host
-    // could name one here and have the guest's photograph written in as their
-    // cover - which would then vanish from the gallery it was uploaded to.
     const [reservation] = store.rows("upload_reservations");
     (reservation.media as Record<string, unknown>).uploader_fingerprint =
       "f".repeat(16);
@@ -219,7 +195,6 @@ describe("confirming a cover image", () => {
 
     expect((await response.json()).confirmed).toBe(false);
     expect(store.rows("media")).toHaveLength(0);
-    // The reservation is left alone: it is not this endpoint's to reclaim.
     expect(store.rows("upload_reservations")).toHaveLength(1);
   });
 });

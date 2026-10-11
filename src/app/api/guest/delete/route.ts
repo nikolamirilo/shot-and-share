@@ -2,23 +2,13 @@ import { z } from "zod";
 
 import { ApiError, handle, ok, parseBody } from "@/lib/api";
 import { findGuestOwnMedia } from "@/lib/db/media-repo";
-import { requireGuestEvent } from "@/lib/events";
+import { requireGuestEvent } from "@/lib/guards/guest";
 import { deleteMediaRows } from "@/lib/media/delete";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * A guest removing something they just uploaded by mistake.
- *
- * There are no guest accounts, so ownership is the random fingerprint the
- * browser keeps in localStorage plus a short time window. That is weak proof
- * and it is the right amount of proof: the worst case is someone who cleared
- * their storage cannot undo their own blurry photo, and the host can always
- * delete anything. Widening it would mean guest accounts, which is the one
- * thing this product refuses to add.
- */
 const WINDOW_MINUTES = 60;
 
 const bodySchema = z.object({

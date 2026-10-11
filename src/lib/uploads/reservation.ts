@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Database, EventRow, ReservedMedia } from "@/lib/db/types";
+import { type Database, type EventRow, type ReservedMedia } from "@/types/db";
 import { storage } from "@/lib/storage";
 import {
   IMMUTABLE_CACHE_CONTROL,
@@ -12,14 +12,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 type ReservationInsert =
   Database["public"]["Tables"]["upload_reservations"]["Insert"];
 
-/** A second object to sign beside the media: only ever a video's poster. */
 export interface PosterTarget {
   key: string;
   bytes: number;
   mime: string;
 }
 
-/** The small copy for the grid, signed beside the photo it belongs to. */
 export interface ThumbTarget {
   key: string;
   bytes: number;
@@ -35,13 +33,10 @@ export interface ReservationRequest {
   thumb: ThumbTarget | null;
   poster: PosterTarget | null;
   media: ReservedMedia;
-  /** Tagged on the object so the S3 lifecycle rules can filter on it. */
   tierId: string;
   /**
-   * Headroom on the signed ceiling for the media object. Browser encoders are
-   * not byte-deterministic between the measuring encode and the upload. The
-   * cover route has always allowed for that and the guest route has not; the
-   * difference is preserved here rather than quietly unified.
+   * Headroom on the signed ceiling: browser encoders are not byte-deterministic between
+   * the measuring encode and the upload.
    */
   slack?: number;
 }
@@ -55,22 +50,6 @@ export type ReservationResult =
     }
   | { ok: false; reason: "quota" };
 
-/**
- * Reserve the space, write down what to do when the bytes arrive, and sign the
- * URLs. One file per call.
- *
- * The quota check happens before a single URL is issued. Checking afterwards
- * means the bytes are already in the bucket and already billable.
- *
- * What it does not do is write to `media`: a media row means a photo that
- * exists, and until the object lands there is only a reservation - the promised
- * bytes, the key they were promised for, and enough detail to build the real
- * row later. See migration 0010.
- *
- * Every failure after the reservation is charged for undoes it, signing
- * included - otherwise a bucket that has lost its credentials quietly eats a
- * host's quota one upload at a time.
- */
 export async function createReservation(
   request: ReservationRequest,
 ): Promise<ReservationResult> {
@@ -101,9 +80,6 @@ export async function createReservation(
 
   if (insertError) {
     await release(event.id, totalBytes);
-    // The guest gets a generic 500, so this is the only place the cause is
-    // visible. Naming the migration is not decoration: an insert against a
-    // database still on 0009 fails here and nowhere else.
     throw new Error(
       `reservation insert failed (schema must be at migration 0010): ${insertError.message}`,
     );
@@ -117,9 +93,8 @@ export async function createReservation(
       request.tierId,
       request.slack ?? 0,
     );
-    // 8 KB of slack: a browser encoder is not byte-deterministic between the
-    // measuring encode and the upload, and at 25 KB a percentage would be
-    // smaller than that wobble.
+    // 8 KB of slack, not a percentage: at 25 KB a percentage is smaller than the
+    // encoder's own wobble.
     const thumbUpload = thumb
       ? await sign(thumb.key, thumb.mime, thumb.bytes, request.tierId, 8 * 1024)
       : null;
@@ -147,12 +122,6 @@ function sign(
     contentType,
     maxBytes: Math.max(bytes + slack, 32 * 1024),
     tags: { tier: tierId },
-    /*
-     * Every key here carries a media id minted seconds ago, so nothing is ever
-     * rewritten under it and the CDN can keep it for a year. This is the
-     * header that decides whether a gallery is served from the edge or
-     * revalidated against the bucket on every visit.
-     */
     cacheControl: IMMUTABLE_CACHE_CONTROL,
   });
 }

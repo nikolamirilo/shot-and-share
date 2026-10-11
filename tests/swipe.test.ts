@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { landing, tapDirection } from "@/components/gallery/use-swipe";
-
-/**
- * Where a finger on the lightbox takes the guest. The drag itself is the
- * browser's to run; what is decided here is where it ends up, which is the
- * part that has to feel the same as the photo gallery on their phone.
- */
+import { landing, tapDirection } from "@/hooks/gallery/useSwipe";
 
 const WIDTH = 400;
 const both = { width: WIDTH, hasPrev: true, hasNext: true };
@@ -23,15 +17,11 @@ describe("letting go of a drag", () => {
   });
 
   it("turns the page on a short, quick flick", () => {
-    // A thumb flicked across the photo travels a few dozen pixels. Asking it
-    // to cover a quarter of the screen as well would make it feel stuck.
     expect(landing({ ...both, offset: -30, speed: -0.8 })).toBe(1);
     expect(landing({ ...both, offset: 30, speed: 0.8 })).toBe(-1);
   });
 
   it("does not let a flick one way turn the page the other", () => {
-    // Pulled right, then flicked back left as it let go: that is the guest
-    // changing their mind, and the strip goes home.
     expect(landing({ ...both, offset: 30, speed: -0.8 })).toBe(0);
   });
 

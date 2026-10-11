@@ -1,7 +1,7 @@
 import "server-only";
 
 import { decryptToken } from "@/lib/crypto";
-import type { EventRow } from "@/lib/db/types";
+import { type EventRow } from "@/types/db";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTier } from "@/lib/tiers";
 
@@ -20,9 +20,8 @@ export function storageSummary(event: EventRow) {
 }
 
 /**
- * The live share link for an event, decrypted so the dashboard can render the
- * QR code. Null when the host has revoked every link - which is the point of
- * revoking, so callers must handle it rather than reissue silently.
+ * Null when the host has revoked every link, so callers must handle it rather than
+ * reissue.
  */
 export async function getActiveShareToken(
   eventId: string,
@@ -42,11 +41,6 @@ export async function getActiveShareToken(
   return token ? { token, tokenId: data.id } : null;
 }
 
-/**
- * The same answer for a list of events, in one query rather than one per card.
- * An event with no live link is simply absent from the map, which is the same
- * thing the singular version says with null.
- */
 export async function getActiveShareTokens(
   eventIds: string[],
 ): Promise<Map<string, string>> {
@@ -63,9 +57,6 @@ export async function getActiveShareTokens(
   const tokens = new Map<string, string>();
   const seen = new Set<string>();
   for (const row of data ?? []) {
-    // Newest first, so the first row for an event is its current link. An
-    // event is marked seen whether or not that row decrypts, or a cipher we
-    // cannot read would quietly hand back a link the host has replaced.
     if (seen.has(row.event_id)) continue;
     seen.add(row.event_id);
     const token = row.token_cipher ? decryptToken(row.token_cipher) : null;
@@ -73,18 +64,3 @@ export async function getActiveShareTokens(
   }
   return tokens;
 }
-
-/**
- * Re-exported so `@/lib/events` keeps meaning what it meant. New code should
- * import from the module that owns each of these.
- */
-export {
-  gateGuest,
-  requireGuestEvent,
-  requireVisibleGallery,
-  resolveGuestToken,
-  type GuestContext,
-  type GuestGate,
-} from "@/lib/guards/guest";
-export { toMediaView, toMediaViews } from "@/lib/media/view";
-export { GALLERY_PAGE_SIZE, type MediaView } from "@/lib/media-view";

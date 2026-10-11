@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { NewEventForm } from "@/components/dashboard/new-event-form";
+import { NewEventForm } from "@/components/dashboard/NewEventForm";
 import { Eyebrow, Hole } from "@/components/ui";
 import { TIERS } from "@/lib/tiers";
-import { formatBytes } from "@/lib/format";
+import { formatBytes } from "@/utils/format";
 import { approxPhotos } from "@/lib/tiers";
 import { MdArrowBackIosNew } from "react-icons/md";
 

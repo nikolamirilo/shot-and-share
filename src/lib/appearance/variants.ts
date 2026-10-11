@@ -1,8 +1,3 @@
-/**
- * How the page opens. The four differ only in how much of the phone the
- * photograph gets before the ask, which is the one question a cover answers:
- * all of it, half of it, a strip across the top, or none at all.
- */
 export const COVER_VARIANTS = [
   {
     id: "full",
@@ -39,25 +34,6 @@ export function coerceCover(value: unknown): CoverVariant {
     : DEFAULT_COVER;
 }
 
-/* -------------------------------------------------------------------------- */
-
-/**
- * Where the name, the date and the message sit over the cover photograph.
- *
- * The cover variants above answer how much of the phone the photograph gets;
- * this answers where the type goes on it, which used to have one answer. Hosts
- * pick photographs of people, people stand in the lower half of a portrait
- * shot, and the name was printed across their faces with nothing to press.
- *
- * Two decisions rather than a list of presets, the way a word processor asks
- * it: how far down the photograph, and which way the lines are aligned. That
- * is nine positions from six buttons, and a host who wants the name in the top
- * right corner no longer has to settle for the nearest preset.
- *
- * The ids are the only hyphenated ones in the database, because these are the
- * only values that are genuinely two decisions in one word - `vertical-horizontal`,
- * always in that order.
- */
 export const COVER_VERTICALS = [
   { id: "top", name: "Top", hint: "Along the top, clear of anyone standing in the lower half." },
   { id: "middle", name: "Middle", hint: "Across the middle. For a wide shot with room above the people." },
@@ -76,7 +52,6 @@ export type CoverHorizontal = (typeof COVER_HORIZONTALS)[number]["id"];
 
 export type CoverPosition = `${CoverVertical}-${CoverHorizontal}`;
 
-/** All nine, in reading order: the grid the picker draws. */
 export const COVER_POSITIONS: {
   id: CoverPosition;
   name: string;
@@ -93,13 +68,6 @@ export const COVER_POSITIONS: {
 
 export const DEFAULT_POSITION: CoverPosition = "bottom-left";
 
-/**
- * Positions written before the grid existed.
- *
- * `centre` was one word when the middle row only had one column. Rows still
- * hold it - and so does a draft in somebody's browser - so it is translated
- * rather than coerced away, which would move a page the host never touched.
- */
 const LEGACY_POSITIONS: Record<string, CoverPosition> = {
   centre: "middle-centre",
 };
@@ -110,7 +78,6 @@ export function coercePosition(value: unknown): CoverPosition {
   return LEGACY_POSITIONS[value] ?? DEFAULT_POSITION;
 }
 
-/** The two halves of a position, for anything that renders or edits one. */
 export function splitPosition(value: CoverPosition): {
   vertical: CoverVertical;
   horizontal: CoverHorizontal;
@@ -129,16 +96,6 @@ export function joinPosition(
   return `${vertical}-${horizontal}`;
 }
 
-/* -------------------------------------------------------------------------- */
-
-/**
- * How the guest is asked for their photos.
- *
- * This is the one component on the page that has a job to do, so the variants
- * differ in shape and prominence rather than in decoration. Every one of them
- * keeps the same three things: one obvious action, the optional name field, and
- * the line saying what may be sent.
- */
 export const UPLOAD_VARIANTS = [
   {
     id: "button",
@@ -170,5 +127,3 @@ export function coerceUpload(value: unknown): UploadVariant {
     ? (value as UploadVariant)
     : DEFAULT_UPLOAD;
 }
-
-/* -------------------------------------------------------------------------- */

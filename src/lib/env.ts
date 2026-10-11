@@ -5,16 +5,6 @@ import {
   hasSupabase,
 } from "@/lib/supabase/config";
 
-/**
- * Environment access in one place, so that "is S3 configured?" is a question
- * with a single answer rather than five scattered truthiness checks.
- *
- * Every field is a getter. Reading `process.env` once at import time looks
- * tidier and is a trap: the value gets frozen into the module the first time
- * anything imports it, which makes the code untestable and hides late-bound
- * configuration. Getters cost nothing and always tell the truth.
- */
-
 function opt(name: string): string | undefined {
   const v = process.env[name];
   return v && v.length > 0 ? v : undefined;
@@ -40,13 +30,6 @@ export const env = {
     );
   },
 
-  /**
-   * Search console ownership tokens.
-   *
-   * Optional everywhere and absent by design in development and on previews:
-   * verifying a preview host tells a search console about a site nobody should
-   * be looking at.
-   */
   seo: {
     get googleVerification() {
       return opt("GOOGLE_SITE_VERIFICATION");
@@ -89,38 +72,18 @@ export const env = {
     },
   },
 
-  /**
-   * A separate hostname from the app from day one, so changing CDN is a DNS
-   * change rather than a rewrite.
-   */
   get mediaBaseUrl() {
     return opt("NEXT_PUBLIC_MEDIA_BASE_URL");
   },
 
-  /**
-   * Which CDN sits in front of the bucket, and what it needs to purge.
-   *
-   * Separate from `mediaBaseUrl` because they answer different questions.
-   * `mediaBaseUrl` is where a browser reads a photograph from; this is how we
-   * tell that cache to forget one. A deployment can have the first without the
-   * second - and then a deleted photograph stays readable at the edge for a
-   * year, which is why `@/lib/cdn/purge` says so loudly in its own comment.
-   */
   cdn: {
-    /**
-     * `cloudfront`, `bunny`, or unset for no CDN. Anything unrecognised reads
-     * as unset, which is the safe direction: a typo means purges are logged as
-     * skipped rather than silently attempted against the wrong provider.
-     */
     get provider(): "cloudfront" | "bunny" | undefined {
       const value = opt("CDN_PROVIDER");
       return value === "cloudfront" || value === "bunny" ? value : undefined;
     },
-    /** CloudFront only. The distribution an invalidation is created against. */
     get distributionId() {
       return opt("CDN_DISTRIBUTION_ID");
     },
-    /** Bunny only. CloudFront signs with the S3 credentials it already has. */
     get apiKey() {
       return opt("CDN_API_KEY");
     },
@@ -133,30 +96,14 @@ export const env = {
     get webhookSecret() {
       return opt("CREEM_WEBHOOK_SECRET");
     },
-    /**
-     * Sandbox or real money, decided by the key rather than by a second switch.
-     *
-     * Creem issues test keys prefixed `creem_test_` and live keys prefixed
-     * `creem_`, and the two live on different hosts. A separate flag would be
-     * one more thing that can disagree with the key beside it - and the way
-     * that disagreement shows up is a live key quietly charging cards from a
-     * preview deployment, or a test key answering 401 in production.
-     */
     get apiBase() {
       return opt("CREEM_API_KEY")?.startsWith("creem_test_")
         ? "https://test-api.creem.io"
         : "https://api.creem.io";
     },
-    /** True while pointed at the sandbox. Only used to say so out loud. */
     get isTestMode() {
       return Boolean(opt("CREEM_API_KEY")?.startsWith("creem_test_"));
     },
-    /**
-     * Product ids deliberately do not live here. They are read in
-     * `@/lib/tiers` from `NEXT_PUBLIC_` names instead, because that module is
-     * imported by client components and this one is server-only. A product id
-     * is not a secret - it appears in every checkout URL.
-     */
   },
 
   get resendApiKey() {
@@ -170,13 +117,6 @@ export const env = {
     return opt("CRON_SECRET");
   },
 
-  /**
-   * Who screens uploads. "rekognition" or nothing at all.
-   *
-   * Opt-in rather than inferred from the AWS keys being present: turning on a
-   * per-image cost and a call on the upload path should be a decision someone
-   * made, not a side effect of configuring storage.
-   */
   get moderationProvider(): "rekognition" | "none" {
     return opt("MODERATION_PROVIDER") === "rekognition" ? "rekognition" : "none";
   },
@@ -190,27 +130,14 @@ export const env = {
   },
 };
     
-/**
- * Re-exported rather than recomputed: a second copy of the key fallback is how
- * this reports "configured" for a deployment the client then refuses to start
- * against.
- */
 export { hasSupabase };
 
-/**
- * Evaluated at import: the storage driver is chosen once per process and
- * swapping it mid-run would leave objects split across two backends.
- */
 export const hasS3 = Boolean(
   process.env.S3_BUCKET &&
     process.env.S3_ACCESS_KEY_ID &&
     process.env.S3_SECRET_ACCESS_KEY,
 );
 
-/**
- * One key is the whole configuration: Creem scopes everything to the account
- * the key belongs to, so there is no store id to get wrong alongside it.
- */
 export function hasCreem(): boolean {
   return Boolean(env.creem.apiKey);
 }

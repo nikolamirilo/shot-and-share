@@ -1,29 +1,13 @@
-/**
- * The look of a guest's event page - the "custom event page" the paid plans
- * promise. A free event gets the product's own theme and a small header and
- * footer.
- *
- * The gate is applied when the appearance is *read*, not only when written: on
- * write alone, a stale row or any path that skips the form serves paid styling.
- */
-
 export interface Palette {
-  /** Page background. */
   bg: string;
-  /** Cards and panels sitting on the background. */
   surface: string;
   accent: string;
   accentSoft: string;
   accentDeep: string;
-  /** Text, buttons, shadows. */
   ink: string;
-  /** Secondary text. */
   muted: string;
-  /** Body copy that is not quite ink. */
   deep: string;
-  /** The inside of every well a photograph sits in. */
   hole: string;
-  /** Text that has to read on `accent`. Chosen, never assumed. */
   onAccent: string;
 }
 
@@ -34,21 +18,6 @@ export interface Theme {
   palette: Palette;
 }
 
-/**
- * Every preset is light, and that is a rule rather than a coincidence.
- *
- * An event page is looked at twice: on a phone held up at the party, and on a
- * laptop the next morning. A dark page wins the first and loses the second, and
- * it fights every photograph on it - a wedding is white dresses and daylight,
- * a birthday is a lit cake, and both sit in a dark frame like a mistake. Light
- * pages also print, screenshot and paste into a group chat without surprises.
- *
- * The ten are the colours events are actually held in, in the order a host
- * meets them: the house claret for anything at night, ivory and gold, dusty
- * rose, terracotta, butter yellow, sage, dusty blue, navy, lilac, and white. A
- * host who wants something else has the custom picker - which is held to the
- * same rule, see buildCustomPalette.
- */
 export const THEMES: Theme[] = [
   {
     id: "cheese",
@@ -228,5 +197,3 @@ export const CUSTOM_THEME_ID = "custom";
 export function findTheme(id: string | null | undefined): Theme {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }
-
-/* -------------------------------------------------------------------------- */

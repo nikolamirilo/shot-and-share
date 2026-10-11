@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOwnedEvent } from "@/lib/actions/guards";
+import { requireOwnedEvent } from "@/lib/guards/host-action";
 import type { ActionState } from "@/lib/actions/types";
 import { findMediaByIds } from "@/lib/db/media-repo";
 import { deleteMediaRows } from "@/lib/media/delete";

@@ -7,20 +7,6 @@ import {
   runPercent,
 } from "@/lib/client/progress";
 
-/**
- * The arithmetic behind the one bar a guest watches.
- *
- * The bug this exists to prevent: the bar filled to about a third, dropped to
- * zero, jumped to a half and then completed. Three separate faults produced
- * that, and each one is a case below - a bar that changed kind halfway through
- * a run, a measurement that only covered one of the several things each file
- * does, and an average over file *count* that could only ever read 0, 50 or
- * 100 for two files.
- *
- * A progress bar that goes backwards is worse than no progress bar, because it
- * tells a guest at a party that their photographs are being lost.
- */
-
 const prepared = (over: Partial<Stages> = {}): Stages => ({
   ...START,
   prepare: 1,
@@ -29,8 +15,6 @@ const prepared = (over: Partial<Stages> = {}): Stages => ({
 
 describe("one file's share of the bar", () => {
   it("leaves something for the confirm, so it never sits at 100 unfinished", () => {
-    // The row is written after the last byte lands. A bar that reaches 100 and
-    // then waits is a bar that has stopped meaning anything.
     expect(fileFraction(prepared({ upload: 1 }))).toBeLessThan(1);
     expect(
       fileFraction({ prepare: 1, upload: 1, confirmed: true }),
@@ -38,16 +22,10 @@ describe("one file's share of the bar", () => {
   });
 
   it("gives a clip's preparing step almost nothing", () => {
-    // All the browser does for a clip is pull one poster frame out of it - a
-    // second or two against minutes of upload. Weighted like a photo's two
-    // encodes it put a 200 MB clip at 21% before a byte had left the phone,
-    // and then left it crawling.
     expect(fileFraction(prepared(), "video")).toBeLessThan(0.05);
     expect(fileFraction(prepared(), "video")).toBeLessThan(
       fileFraction(prepared(), "photo"),
     );
-    // What it loses on preparing goes to uploading, which for a clip is
-    // essentially the whole wait: almost all of its bar is bytes moving.
     const movedByUpload = (kind: "photo" | "video") =>
       fileFraction(prepared({ upload: 1 }), kind) - fileFraction(prepared(), kind);
 
@@ -56,8 +34,6 @@ describe("one file's share of the bar", () => {
   });
 
   it("never reports outside 0 to 1, whatever it is handed", () => {
-    // xhr can report loaded > total on some browsers, and a retry restarts at
-    // zero. Neither may push the bar off the end.
     expect(fileFraction({ prepare: 2, upload: 3, confirmed: false })).toBe(
       fileFraction({ prepare: 1, upload: 1, confirmed: false }),
     );
@@ -67,21 +43,16 @@ describe("one file's share of the bar", () => {
 
 describe("the run as a whole", () => {
   it("weighs a file by its size, not by being one file", () => {
-    // A 200 MB clip and a 2 MB photo are not half the wait each. Counting them
-    // equally is why the bar jumped to 50% while the clip had barely started.
     const clip = { bytes: 200_000_000, stages: START, kind: "video" as const };
     const photo = {
       bytes: 2_000_000,
       stages: { prepare: 1, upload: 1, confirmed: true },
     };
 
-    // The small photo finishing must barely move the bar.
     expect(runPercent([clip, photo])).toBeLessThan(5);
   });
 
   it("never goes backwards across a whole realistic run", () => {
-    // Two files through every step, interleaved the way the two gates actually
-    // run them: one uploads while the other is still being encoded.
     const steps: Stages[][] = [
       [START, START],
       [{ ...START, prepare: 0.5 }, START],

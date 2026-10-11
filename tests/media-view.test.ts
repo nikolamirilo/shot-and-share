@@ -1,20 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { MediaRow } from "@/lib/db/types";
-
-/**
- * Which stored copy each surface is handed.
- *
- * This is where the two-object layout of migration 0016 actually shows up. Get
- * it wrong in one direction and a wall of fifty photographs pulls fifty
- * full-size JPEGs; get it wrong in the other and the lightbox shows a 640px
- * thumbnail blown up to fill the screen.
- *
- * The fallback matters as much as the split. Rows written before 0015 have no
- * thumbnail and are never backfilled, and neither does a photo for the seconds
- * between its confirm and its thumbnail landing - so "no thumbnail" is a normal
- * state, not an error.
- */
+import { type MediaRow } from "@/types/db";
 
 vi.mock("@/lib/storage", () => ({
   storage: {
@@ -74,9 +60,6 @@ describe("which copy each surface gets", () => {
   });
 
   it("shows nothing for a photo the worker has not converted yet", async () => {
-    // A HEIC uploaded from desktop Chrome is in the bucket and is a broken
-    // image icon everywhere that is not Safari, so the grid holds its
-    // placeholder rather than pointing at it.
     const view = await toMediaView(
       photo({
         media_key: `${OWNER}/${EVENT}/full/${ID}.heic`,
@@ -92,8 +75,6 @@ describe("which copy each surface gets", () => {
   });
 
   it("uses a clip's poster frame as its preview and offers no full copy", async () => {
-    // A video has no thumbnail object of its own, and nothing shows it as a
-    // still image - the lightbox plays it from a signed URL instead.
     const view = await toMediaView(
       photo({
         kind: "video",
@@ -110,8 +91,6 @@ describe("which copy each surface gets", () => {
   });
 
   it("points download at the full copy, never the thumbnail", async () => {
-    // The whole point of the change: what a host saves is every pixel the
-    // camera captured.
     const view = await toMediaView(photo(), { withUrl: true });
 
     expect(view.downloadUrl).toContain(`full/${ID}.jpg`);

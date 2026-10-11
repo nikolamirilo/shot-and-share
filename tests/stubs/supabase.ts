@@ -1,16 +1,4 @@
-/**
- * A Supabase client small enough to reason about.
- *
- * The upload handshake is the one place where getting the *order* of database
- * calls wrong is invisible until a host's quota is quietly wrong: reserve, then
- * write, then sign, and undo the first two if the third throws. Asserting on
- * that needs a store that actually holds rows between calls rather than a
- * `vi.fn()` per method, because the interesting bugs are the ones where a row
- * is left behind.
- *
- * It implements exactly the surface the routes use and nothing else. A missing
- * method here should be added when a route starts calling it, not in advance.
- */
+/** A Supabase client small enough to reason about. */
 
 export interface StoredError {
   message: string;
@@ -51,13 +39,12 @@ class Query {
     return this;
   }
 
-  /** The slideshow's cursor: everything that arrived after the last frame. */
   gt(column: string, value: string) {
     this.filters.push((row) => String(row[column]) > value);
     return this;
   }
 
-  /** Only the `not(column, "is", null)` form the retention job uses. */
+  // Only the `not(column, "is", null)` form the retention job uses.
   not(column: string, _operator: string, value: unknown) {
     this.filters.push((row) => row[column] !== value);
     return this;
@@ -83,12 +70,7 @@ class Query {
       this.filters.every((test) => test(row)),
     );
 
-    /*
-     * Ordering and the row limit are applied to reads only. A delete or an
-     * update matches whatever the filters matched - which is what Postgres
-     * does, and what stops a `.limit()` left on a builder from silently
-     * sparing rows the caller meant to remove.
-     */
+    /* Ordering and the row limit are applied to reads only. */
     if (this.mode === "select") {
       if (this.ordering) {
         const { column, ascending } = this.ordering;
@@ -120,8 +102,8 @@ class Query {
     return { data: data[0] ?? null, error };
   }
 
-  // Thenable, so `await client.from(...).delete().eq(...)` resolves the way the
-  // real builder does.
+  // Thenable, so `await client.from(...).delete().eq(...)` resolves the way the real
+  // builder does.
   then<T>(resolve: (value: { data: Row[]; error: null }) => T) {
     return Promise.resolve(this.run()).then(resolve);
   }
@@ -157,10 +139,8 @@ export function createStore() {
   };
 
   return {
-    /** Passed wherever the code under test expects `createAdminClient()`. */
     client,
     rows: (name: string) => table(name),
-    /** Every rpc the route made, in order. */
     calls,
     released() {
       return calls

@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { LoginPanel } from "@/components/auth/login-panel";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
+import { LoginPanel } from "@/components/auth/LoginPanel";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Eyebrow, Hole } from "@/components/ui";
 import { loginErrorMessage } from "@/lib/auth";
 import { hasSupabase } from "@/lib/env";
 import { getSessionUser } from "@/lib/supabase/server";
 import { TIERS, photoCountLabel } from "@/lib/tiers";
 
-/**
- * Crawlable but never indexed. A sign-in page has nothing a searcher wants -
- * the answer to "shot and share login" is the home page - and it is left
- * reachable rather than blocked in robots.txt precisely so this directive is
- * the thing a crawler reads.
- */
 export const metadata: Metadata = {
   title: "Sign in",
   description:
@@ -39,10 +33,7 @@ export default async function LoginPage({
     <>
       <SiteHeader />
       <main className="bg-linen">
-        {/* `min-w-0` on both columns: a grid track sizes to its content's
-            minimum, and an environment variable name with no spaces in it is
-            wider than a small phone. Without this the whole page scrolls
-            sideways to accommodate one word. */}
+        {/* `min-w-0`: a grid track otherwise sizes to its content's minimum. */}
         <div className="mx-auto grid max-w-5xl items-center gap-9 px-4 py-11 sm:gap-12 sm:px-5 sm:py-16 lg:grid-cols-2 lg:py-24">
           <div className="min-w-0">
             <Eyebrow>Hosts only</Eyebrow>

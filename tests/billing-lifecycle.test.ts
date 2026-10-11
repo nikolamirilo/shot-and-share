@@ -2,15 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createStore } from "./stubs/supabase";
 
-/**
- * Entitlement in both directions.
- *
- * The upgrade path had tests. The downgrade path had no code, which is the
- * expensive half: a refund that leaves the plan unlocked is money out and
- * product still delivered, and it is the first thing a payment reviewer looks
- * for when they are trying to predict chargebacks.
- */
-
 const store = createStore();
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -59,11 +50,6 @@ beforeEach(() => {
 });
 
 describe("granting", () => {
-  /*
-   * Buying the cheaper plan after the dearer one is a real thing people do -
-   * usually Keep Forever, occasionally a mistake. The entitlement is derived
-   * from every standing purchase, so the lower one cannot pull the event down.
-   */
   it("does not move the event backwards when a lesser plan is bought after", async () => {
     await grantPurchase({
       eventId: EVENT_ID,
@@ -112,11 +98,6 @@ describe("revoking", () => {
     store.failInsert("purchases", undefined);
   });
 
-  /*
-   * The case a "step the tier down one" implementation gets wrong. Refunding
-   * Pro on an event that also paid for Plus has to land on Plus, and the only
-   * way to be sure is to recompute from what is left rather than to subtract.
-   */
   it("lands on the plan still paid for, not on free", async () => {
     await grantPurchase({
       eventId: EVENT_ID,
@@ -160,8 +141,6 @@ describe("revoking", () => {
     });
 
     expect(event().keep_forever).toBe(false);
-    // A window again, rather than a deletion. The retention job's warnings run
-    // before anything is touched, which is what the refund policy promises.
     expect(event().expires_at).not.toBeNull();
   });
 
@@ -172,7 +151,6 @@ describe("revoking", () => {
       status: "refunded",
     });
 
-    // Not a throw. A 500 here means the provider retries this forever.
     expect(result).toEqual({ applied: false, reason: "no_match" });
   });
 
@@ -224,13 +202,6 @@ describe("recomputing", () => {
 });
 
 describe("the day the window is counted from", () => {
-  /*
-   * The event's own date used to be the anchor, and a host who bought six
-   * months ahead of the wedding kept the whole window. With the date gone the
-   * payment has to do that job: twelve months on Pro has to mean twelve months
-   * from the day the money arrived, or an event that sat on Free since March
-   * and upgraded in December would be handed three months of what it paid for.
-   */
   it("counts a paid window from the day the plan was paid for", async () => {
     store.reset();
     seedEvent({ retention_from: "2026-01-01T00:00:00.000Z" });
@@ -249,16 +220,9 @@ describe("the day the window is counted from", () => {
 
     await recomputeEntitlement(EVENT_ID);
 
-    // 365 days from the payment, not from the event's anchor five months back.
     expect(event().expires_at).toBe("2027-06-01T00:00:00.000Z");
   });
 
-  /*
-   * The case migration 0026 exists to protect. Events that predate it hold
-   * their own event date in `retention_from`, and for a wedding booked months
-   * ahead that date is *after* the payment. Re-anchoring those on the payment
-   * would take the difference off somebody's wedding photographs.
-   */
   it("keeps a later anchor from before the event date was removed", async () => {
     store.reset();
     seedEvent({ retention_from: "2026-12-01T00:00:00.000Z" });
@@ -282,10 +246,6 @@ describe("the day the window is counted from", () => {
 });
 
 describe("keeping, as a yearly subscription", () => {
-  /**
-   * Days between an event's own expiry under its plan and where it actually
-   * sits, which is what a year of keeping is supposed to add.
-   */
   function yearsAdded(): number {
     const { computeExpiry, getTier, KEEPING_DAYS } = tiersModule;
     const base = computeExpiry(
@@ -315,11 +275,6 @@ describe("keeping, as a yearly subscription", () => {
     expect(yearsAdded()).toBe(1);
   });
 
-  /*
-   * The renewal case, and the reason the window is counted rather than stored.
-   * Three payments is three rows is three years, and nothing had to remember
-   * that the first two happened.
-   */
   it("adds another year for every renewal", async () => {
     await buy("pro", "order-plan");
     await buy("keeping_pro", "order-year-1");
@@ -329,11 +284,6 @@ describe("keeping, as a yearly subscription", () => {
     expect(yearsAdded()).toBe(3);
   });
 
-  /*
-   * Lapsing is the absence of the next payment, so there is nothing to assert
-   * about a cancellation except that it changes nothing. This is the promise
-   * made to the customer: you keep the year you paid for.
-   */
   it("keeps the years already paid for when the subscription stops", async () => {
     await buy("pro", "order-plan");
     await buy("keeping_pro", "order-year-1");
@@ -341,7 +291,6 @@ describe("keeping, as a yearly subscription", () => {
 
     const windowBefore = event().expires_at;
 
-    // No further renewal ever arrives. Nothing recomputes it downwards.
     expect(event().expires_at).toBe(windowBefore);
     expect(yearsAdded()).toBe(2);
   });
@@ -361,10 +310,6 @@ describe("keeping, as a yearly subscription", () => {
     expect(yearsAdded()).toBe(1);
   });
 
-  /*
-   * A refund of the plan must not take the keeping years with it. The window
-   * is shorter because Plus is shorter, but the years bought still count.
-   */
   it("keeps the years when the plan underneath is refunded", async () => {
     await buy("pro", "order-plan");
     await buy("keeping_pro", "order-year-1");
@@ -376,13 +321,10 @@ describe("keeping, as a yearly subscription", () => {
     });
 
     expect(event().tier).toBe(TIERS.free.id);
-    // Still one year on top of whatever the (now Free) window is.
     expect(yearsAdded()).toBe(1);
   });
 
   it("never leaves a keeping payment with an open-ended window", async () => {
-    // Only the withdrawn Keep Forever yields a null expiry. A subscription
-    // extends the window; it does not remove it.
     await buy("pro", "order-plan");
     await buy("keeping_pro", "order-year-1");
 

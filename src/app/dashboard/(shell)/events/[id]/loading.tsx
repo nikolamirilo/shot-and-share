@@ -1,4 +1,4 @@
-import { EventConsoleSkeleton } from "@/components/dashboard/dashboard-skeleton";
+import { EventConsoleSkeleton } from "@/components/dashboard/DashboardSkeleton";
 
 export default function Loading() {
   return <EventConsoleSkeleton />;

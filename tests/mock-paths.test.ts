@@ -3,23 +3,10 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-/**
- * The paths inside `vi.mock("...")` are plain strings. TypeScript never checks
- * them and no rename follows them, so moving a module leaves the mock pointing
- * at nothing - and vitest treats a mock of a module nobody imports as a no-op
- * rather than an error. The test then goes on passing while the real module
- * runs underneath it, which is the one way a refactor here can break something
- * quietly.
- *
- * This walks every mock string in the suite and insists it resolves to a file
- * that exists. It costs a millisecond and it is what makes a green run mean
- * something during a move.
- */
-
 const TESTS_DIR = __dirname;
 const SRC_DIR = path.resolve(__dirname, "../src");
 
-/** `vi.mock("<path>"` and `vi.doMock("<path>"`, single or double quoted. */
+// `vi.mock("<path>"` and `vi.doMock("<path>"`, single or double quoted.
 const MOCK_CALL = /\bvi\.(?:do)?[Mm]ock\(\s*["']([^"']+)["']/g;
 
 function testFiles(dir: string): string[] {
@@ -31,8 +18,8 @@ function testFiles(dir: string): string[] {
 }
 
 /**
- * The same resolution vitest does for an aliased specifier: `@` is src, and a
- * bare path may be a .ts, a .tsx, or a folder with an index in it.
+ * The same resolution vitest does: `@` is src, and a bare path may be .ts, .tsx or an
+ * index file.
  */
 function resolves(specifier: string): boolean {
   if (!specifier.startsWith("@/")) return true; // node_modules, not ours to check

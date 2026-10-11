@@ -1,14 +1,6 @@
-import { formatBytes } from "@/lib/format";
+import { formatBytes } from "@/utils/format";
 import { KEEPING, TIERS, photoCountLabel } from "@/lib/tiers";
 
-/**
- * The questions on the landing page.
- *
- * They live here rather than inside the component because two things read
- * them: the page a person sees, and the FAQPage structured data a crawler
- * reads. Structured data that disagrees with the page it describes is worse
- * than none at all, so there is one array and both render from it.
- */
 export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
   [
     [

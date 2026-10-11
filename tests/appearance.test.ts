@@ -37,12 +37,9 @@ import {
   readableInk,
   rgbToHsl,
   tint,
-} from "@/lib/color";
-import {
-  fromEvent,
-  toFields,
-} from "@/components/dashboard/appearance/settings";
-import type { EventRow } from "@/lib/db/types";
+} from "@/utils/color";
+import { fromEvent, toFields } from "@/utils/appearance-settings";
+import { type EventRow } from "@/types/db";
 import { TIERS } from "@/lib/tiers";
 
 describe("colour parsing", () => {
@@ -52,7 +49,6 @@ describe("colour parsing", () => {
   });
 
   it("rejects anything that is not a colour", () => {
-    // These arrive from a form and end up in an inline style attribute.
     expect(parseHex("red")).toBeNull();
     expect(parseHex("#12345")).toBeNull();
     expect(parseHex("javascript:alert(1)")).toBeNull();
@@ -78,7 +74,6 @@ describe("readable ink", () => {
   });
 
   it("pushes the chosen hue to its extreme before abandoning it", () => {
-    // A host's dark plum should become near-black, not jump to pure white.
     const rescued = readableInk("#FFFFFF", "#B07A85");
     expect(meetsContrast(rescued, "#FFFFFF")).toBe(true);
     expect(rescued).not.toBe("#FFFFFF");
@@ -101,9 +96,6 @@ describe("colour derivation", () => {
   });
 
   it("tints without draining the hue", () => {
-    // Mixing towards white hands back a grey with a hint of the colour in it;
-    // a tint hands back the same colour, paler. Lifting a dark custom
-    // background depends entirely on the difference.
     const tinted = parseHex(tint("#0B3D2E", 0.92))!;
     const mixed = parseHex(lighten("#0B3D2E", 0.9))!;
     expect(tinted.g - tinted.r).toBeGreaterThan(mixed.g - mixed.r);
@@ -117,12 +109,6 @@ describe("colour derivation", () => {
 
 describe("built themes", () => {
   it("has no dark preset, and no way to reach one", () => {
-    /*
-     * The rule, not a description of today's list: an event page is looked at
-     * on a phone at the party and on a laptop the next morning, and a dark
-     * page fights every photograph on it. Adding a dark preset should fail
-     * here rather than ship.
-     */
     for (const theme of THEMES) {
       expect(isDark(theme.palette.bg), `${theme.id} background`).toBe(false);
       expect(isDark(theme.palette.surface), `${theme.id} cards`).toBe(false);
@@ -130,13 +116,10 @@ describe("built themes", () => {
   });
 
   it("lifts a dark custom background into the light", () => {
-    // The custom picker is not a hole in the rule above. A host who types
-    // black gets the palest version of it, and the form says so.
     for (const bg of ["#000000", "#101820", "#2A5F3A", "#4B2E83"]) {
       const palette = buildCustomPalette({ bg });
       expect(isDark(palette.bg), bg).toBe(false);
       expect(isDark(palette.surface), `${bg} cards`).toBe(false);
-      // Still legible on it, whatever the lift did.
       expect(meetsContrast(palette.ink, palette.bg)).toBe(true);
     }
   });
@@ -147,8 +130,6 @@ describe("built themes", () => {
   });
 
   it("keeps the hue when it lifts", () => {
-    // Lifting must not turn every dark pick into the same grey: a host who
-    // chose forest green should get the palest green, not the palest anything.
     const lifted = parseHex(lightBackground("#0B3D2E"))!;
     expect(lifted.g).toBeGreaterThan(lifted.r);
     expect(lifted.g).toBeGreaterThan(lifted.b);
@@ -183,7 +164,6 @@ describe("built themes", () => {
   });
 
   it("keeps cards from vanishing into the background", () => {
-    // A surface identical to the page makes every card disappear.
     const palette = buildCustomPalette({ bg: "#FFFFFF", surface: "#FFFFFF" });
     expect(palette.surface).not.toBe(palette.bg);
   });
@@ -201,9 +181,6 @@ describe("built themes", () => {
 
 describe("where the name sits", () => {
   it("falls back to the cover every event already has", () => {
-    // A row written before this column existed, a value from a future option
-    // set, or a hand-made request: all three land on the position that has
-    // always been there rather than moving somebody's page.
     expect(DEFAULT_POSITION).toBe("bottom-left");
     expect(coercePosition(undefined)).toBe(DEFAULT_POSITION);
     expect(coercePosition("bottom")).toBe(DEFAULT_POSITION);
@@ -212,8 +189,6 @@ describe("where the name sits", () => {
   });
 
   it("takes any pairing of a vertical and an alignment", () => {
-    // Nine, not four: the vertical and the alignment are asked separately, so
-    // every combination of them has to survive the round trip.
     expect(COVER_POSITIONS).toHaveLength(9);
     for (const position of COVER_POSITIONS) {
       expect(coercePosition(position.id)).toBe(position.id);
@@ -223,9 +198,6 @@ describe("where the name sits", () => {
   });
 
   it("moves the old one-word middle onto the grid", () => {
-    // 'centre' was the middle row when it had one column. A row still holding
-    // it - or a draft in somebody's browser - keeps the page it describes
-    // rather than snapping back to the default.
     expect(coercePosition("centre")).toBe("middle-centre");
   });
 });
@@ -242,8 +214,6 @@ describe("plan gating", () => {
   };
 
   it("gives a free event the house theme whatever its row says", () => {
-    // The gate is applied on read. A stale row, a downgrade, or any future
-    // path that skips the form must not serve paid styling.
     const appearance = resolveAppearance({ tier: TIERS.free.id, ...customised });
     expect(appearance.themeId).toBe(DEFAULT_THEME_ID);
     expect(appearance.palette).toEqual(THEMES[0].palette);
@@ -278,7 +248,6 @@ describe("plan gating", () => {
       theme: CUSTOM_THEME_ID,
       theme_custom: { bg: "#2A5F3A", accent: "#22DD88", ink: "#101010" },
     });
-    // The hue survives; the darkness does not - see "every page is light".
     expect(appearance.palette.bg).not.toBe("#2A5F3A");
     expect(meetsContrast(appearance.palette.ink, appearance.palette.bg)).toBe(
       true,
@@ -294,8 +263,6 @@ describe("cover variants", () => {
   });
 
   it("has exactly one variant that works without a photo", () => {
-    // Everything else falls back to it before a cover photo is chosen, so
-    // there has to be one and only one.
     const noImage = COVER_VARIANTS.filter((v) => !v.needsImage);
     expect(noImage).toHaveLength(1);
     expect(noImage[0].id).toBe("type");
@@ -312,16 +279,12 @@ describe("upload variants", () => {
 
 describe("type pairings", () => {
   it("falls back to the house pairing rather than rejecting", () => {
-    // `theme_font` is unconstrained in the database on purpose: a removed
-    // pairing has to degrade, not break the page.
     expect(coerceFont("warm")).toBe("warm");
     expect(coerceFont("papyrus")).toBe(DEFAULT_FONT_ID);
     expect(findFontSet("papyrus").id).toBe(DEFAULT_FONT_ID);
   });
 
   it("only asks the browser for a pairing the root layout lacks", () => {
-    // The house pairing is already loaded for every page; a guest on hotel
-    // wifi should not fetch it twice.
     expect(googleFontsHref(findFontSet(DEFAULT_FONT_ID))).toBeNull();
 
     const href = googleFontsHref(findFontSet("classic"));
@@ -330,13 +293,6 @@ describe("type pairings", () => {
   });
 });
 
-/**
- * The panel's own copy of the settings: what a row turns into and what the save
- * sends back.
- *
- * The position is the newest field in both, and a field missed in either one is
- * a setting that previews perfectly and never reaches the database.
- */
 describe("the host's draft of the event page", () => {
   const row = {
     id: "e1",

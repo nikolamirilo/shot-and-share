@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireOwnedEvent } from "@/lib/actions/guards";
+import { requireOwnedEvent } from "@/lib/guards/host-action";
 import { purgePrefix } from "@/lib/cdn/purge";
 import type { ActionState } from "@/lib/actions/types";
 import { archiveKey, eventPrefix, scopeOfEvent } from "@/lib/media";
@@ -11,18 +11,13 @@ import { storage } from "@/lib/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTier } from "@/lib/tiers";
 
-/**
- * The host's own delete. Unlike the retention job this is immediate, because
- * the person asking for it owns the photos and has just confirmed twice.
- */
 export async function deleteEvent(eventId: string): Promise<ActionState> {
   const { event } = await requireOwnedEvent(eventId);
   const admin = createAdminClient();
 
   const prefix = eventPrefix(scopeOfEvent(event));
   await storage.removePrefix(prefix);
-  // One wildcard for the whole event rather than three paths per photograph:
-  // CloudFront meters invalidation paths, and a wedding is a thousand of them.
+  // One wildcard rather than three paths per photograph: CloudFront meters paths.
   await purgePrefix(prefix);
   const { error } = await admin.from("events").delete().eq("id", event.id);
   if (error) return { error: error.message };
@@ -31,13 +26,6 @@ export async function deleteEvent(eventId: string): Promise<ActionState> {
   redirect("/dashboard");
 }
 
-/* -------------------------------------------------------------------------- */
-
-/**
- * Bring back an event that passed its expiry but is still inside the grace
- * window. Nothing has been removed yet at this point - that is the whole reason
- * the grace window exists.
- */
 export async function restoreEvent(eventId: string): Promise<ActionState> {
   const { event } = await requireOwnedEvent(eventId);
   if (event.status !== "expired") return { ok: true };
@@ -50,7 +38,6 @@ export async function restoreEvent(eventId: string): Promise<ActionState> {
       status: "active",
       deleted_at: null,
       warned_at_days: null,
-      // A restore without a purchase gets a short window, not a full new term.
       expires_at: new Date(
         Date.now() + Math.min(30, tier.retentionDays) * 86_400_000,
       ).toISOString(),
@@ -62,9 +49,6 @@ export async function restoreEvent(eventId: string): Promise<ActionState> {
   return { ok: true };
 }
 
-/* -------------------------------------------------------------------------- */
-
-/** Throws away a stale ZIP so the next download rebuilds it. */
 export async function invalidateArchive(eventId: string): Promise<ActionState> {
   const { event } = await requireOwnedEvent(eventId);
   const admin = createAdminClient();

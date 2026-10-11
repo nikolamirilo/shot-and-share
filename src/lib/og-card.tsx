@@ -1,25 +1,13 @@
-import { MARK } from "@/components/layout/logo";
+import { MARK } from "@/components/layout/Logo";
 import type { Palette } from "@/lib/appearance/themes";
 import { SITE } from "@/lib/seo";
 
-/**
- * The picture that represents this site in a feed, drawn rather than
- * screenshotted: an interface photographed at the 200px this is usually seen at
- * is unreadable, and the hero's Archivo would have to be fetched from Google at
- * request time - an OG image that 500s when Google Fonts is slow is worse than
- * a plain one.
- */
 export const OG_SIZE = { width: 1200, height: 630 };
 
 const CLARET = "#7A1230";
 const CHALK = "#FDF6F7";
 
-/**
- * The mark, drawn at the size the card needs it, all in chalk on the claret.
- *
- * Written out as plain shapes on purpose. Satori resolves no components inside
- * an `<svg>`, so the coordinates are imported and the elements are not.
- */
+/** Written out as plain shapes: Satori resolves no components inside an `<svg>`. */
 function Mark({ size, colour = CHALK }: { size: number; colour?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 200 200">
@@ -58,11 +46,6 @@ function Mark({ size, colour = CHALK }: { size: number; colour?: string }) {
   );
 }
 
-/**
- * The mark and the name, drawn together the way the header draws them. Both
- * cards want it and an event's wants it in its own colour, so the colour is
- * passed rather than assumed.
- */
 function Lockup({ colour = CHALK }: { colour?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
@@ -125,8 +108,10 @@ export function OgCard({
             fontWeight: 700,
             lineHeight: 1.05,
             letterSpacing: "-0.03em",
-            /* Two lines at most. A third would push the address off the card
-               on a 1200x630 canvas, and satori does not reflow to fit. */
+            /*
+             * Two lines at most. Satori does not reflow to fit, and a third would push
+             * the address off a 1200x630 canvas.
+             */
             maxWidth: 960,
           }}
         >
@@ -139,23 +124,11 @@ export function OgCard({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  The event's own card                                                       */
-/* -------------------------------------------------------------------------- */
-
-/**
- * The wash under the type, so a name reads over a photograph nobody has seen.
- * The cover's own, and for the same reason: white type on a bright sky is not
- * type. Weaker at the top than the page's, because a card is a third of the
- * height and the same stops read as a darkened photograph.
- */
 const CARD_WASH =
   "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.46) 34%, rgba(0,0,0,0.10) 68%, rgba(0,0,0,0.16) 100%)";
 
 /**
- * Satori does not reflow to fit, so the name is sized here rather than by the
- * layout. Long ones step down and very long ones are cut: a name that runs off
- * the canvas takes the invitation with it.
+ * Satori does not reflow to fit, so the name is sized here rather than by the layout.
  */
 function fitName(name: string): { text: string; fontSize: number } {
   const text = name.length > 64 ? `${name.slice(0, 63).trimEnd()}…` : name;
@@ -165,27 +138,12 @@ function fitName(name: string): { text: string; fontSize: number } {
 
 export interface EventCardProps {
   name: string;
-  /** The cover, as a data URL. Null renders the typographic card instead. */
   photo?: string | null;
   palette: Palette;
-  /** What the card asks for. The page's job, in the page's words. */
   invitation: string;
-  /** Free events carry the mark, exactly as the page does. */
   branding: boolean;
 }
 
-/**
- * What an event's share link turns into in a group chat.
- *
- * A guest is sent this link by a person, not by us, and the card has to answer
- * "is this the right party?" before anybody taps it. So it is the event's
- * cover, the event's name and the event's colours - the page they are about to
- * land on, at thumbnail size - rather than the product's card, which answered
- * a question nobody in that chat was asking.
- *
- * The mark follows the page: a paid event has no header and no footer of ours,
- * so its card carries none either.
- */
 export function EventOgCard({
   name,
   photo,
@@ -194,8 +152,6 @@ export function EventOgCard({
   branding,
 }: EventCardProps) {
   const { text, fontSize } = fitName(name);
-  // On a photograph the type is always chalk over the wash. Without one it is
-  // the pairing the host's theme already guarantees is legible.
   const ink = photo ? CHALK : palette.onAccent;
 
   return (
@@ -209,8 +165,10 @@ export function EventOgCard({
       }}
     >
       {photo && (
-        /* Drawn by satori rather than a browser, so it is a plain img: the
-           alt is there for the linter and lands nowhere. */
+        /*
+         * Drawn by satori rather than a browser, so it is a plain img and the alt lands
+         * nowhere.
+         */
         <img
           alt=""
           src={photo}
@@ -252,9 +210,6 @@ export function EventOgCard({
           color: ink,
         }}
       >
-        {/* The slot stays even when there is no mark in it. Dropped, the type
-            below becomes the only child of a space-between column and rides
-            to the top of the card. */}
         <div style={{ display: "flex" }}>
           {branding && <Lockup colour={ink} />}
         </div>

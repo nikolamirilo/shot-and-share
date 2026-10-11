@@ -13,7 +13,7 @@ import {
   scopeOfMedia,
   thumbKey,
 } from "@/lib/media";
-import { formatBytes, describeRetention } from "@/lib/format";
+import { formatBytes, describeRetention } from "@/utils/format";
 
 describe("media types", () => {
   it("classifies the formats phones actually produce", () => {
@@ -23,58 +23,32 @@ describe("media types", () => {
   });
 
   it("gives HEIF the same extension as HEIC, because it is the same picture", () => {
-    // There were two MIME tables and they disagreed here: one called it
-    // "heif", the other folded HEIF into HEIC and called it "heic". The
-    // presign route imported from both, so which one an uploaded HEIF got
-    // depended on which branch ran. One table now, and this is its answer.
     expect(classify("image/heif")).toEqual({ kind: "photo", ext: "heic" });
     expect(classify("image/heif")).toEqual(classify("image/heic"));
   });
 
-  /**
-   * A MIME-only accept list is why a guest can open the picker, see their
-   * photos greyed out and be unable to choose any of them. The picker matches
-   * on the type the operating system reports, and neither Windows nor most
-   * Android builds have a mapping for HEIC - so `image/heic` matches nothing on
-   * the device that produced the file.
-   */
   it("offers extensions as well as types, so HEIC is selectable", () => {
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".heic");
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".heif");
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".jpg");
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain(".jpeg");
-    // The types stay: an iOS camera capture matches on type, not on a name.
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/jpeg");
   });
 
-  /**
-   * The reported symptom: a guest on a plan that includes video opens the
-   * picker on their phone and can only choose photos.
-   *
-   * The exact-type list is matched against whatever the phone reports for each
-   * item in the camera roll, and for video that is routinely something not on
-   * our list - so every clip greys out. The wildcards are the half phones
-   * handle reliably, and they have to be present for video to be pickable at
-   * all.
-   */
   it("offers video to the picker on a phone, not just exact types", () => {
     expect(ACCEPT_ATTRIBUTE_ALL).toContain("video/*");
     expect(ACCEPT_ATTRIBUTE_ALL).toContain("image/*");
-    // The exact types and extensions stay for desktop file managers.
     expect(ACCEPT_ATTRIBUTE_ALL).toContain("video/mp4");
     expect(ACCEPT_ATTRIBUTE_ALL).toContain(".mov");
   });
 
   it("keeps the photo-only picker photo-only", () => {
-    // Free plan, and a cover photo. Widening the video half must not leak here.
     expect(ACCEPT_ATTRIBUTE_PHOTO).toContain("image/*");
     expect(ACCEPT_ATTRIBUTE_PHOTO).not.toContain("video/");
     expect(ACCEPT_ATTRIBUTE_PHOTO).not.toContain(".mp4");
   });
 
   it("is an allowlist, not a blocklist", () => {
-    // An unauthenticated upload endpoint invites junk, so anything not named
-    // is refused rather than inspected.
     expect(classify("application/zip")).toBeNull();
     expect(classify("text/html")).toBeNull();
     expect(classify("image/svg+xml")).toBeNull();
@@ -95,17 +69,12 @@ describe("key layout", () => {
   ];
 
   it("keeps every object under its event prefix", () => {
-    // Deletion, lifecycle tagging and the ZIP build all rely on this.
     for (const key of everyKind) {
       expect(key.startsWith(eventPrefix(scope))).toBe(true);
     }
   });
 
   it("keeps an event folder shallow: two levels of folders, never more", () => {
-    // The regression this guards: the layout used to nest originals/, display/
-    // and thumbs/ under a `u/` root, so an event was four folders deep and held
-    // three copies of every photo. Photos and videos each have a folder now,
-    // with the copies named inside it, and that is as deep as it goes.
     for (const key of [
       mediaKey(scope, "photo", media, "jpg"),
       thumbKey(scope, media),
@@ -153,7 +122,6 @@ describe("key layout", () => {
   });
 
   it("still serves the flat keys written before the folders existed", () => {
-    // Old rows are not backfilled, so their keys have three segments.
     expect(publicImageType(`${owner}/${event}/${media}.webp`)).toBe(
       "image/webp",
     );
@@ -161,8 +129,6 @@ describe("key layout", () => {
   });
 
   it("allows only the two folders it knows, not any folder", () => {
-    // The rule is a named allowlist, not "one more segment is fine". Anything
-    // else under an event stays unreachable.
     expect(publicImageType(`${owner}/${event}/secret/${media}.jpg`)).toBeNull();
     expect(
       publicImageType(`${owner}/${event}/full/nested/${media}.jpg`),
@@ -170,9 +136,6 @@ describe("key layout", () => {
   });
 
   it("refuses the archive, however the URL is spelled", () => {
-    // `archive` is not one of the two allowed folders. Getting this wrong means
-    // a stranger can pull a 30 GB ZIP through the app process by guessing two
-    // uuids.
     expect(publicImageType(archiveKey(scope))).toBeNull();
     expect(publicImageType(`${owner}/${event}/archive/${event}.zip`)).toBeNull();
     expect(publicImageType(`${owner}/${event}/archive/x.jpg`)).toBeNull();
@@ -193,7 +156,6 @@ describe("key layout", () => {
   });
 
   it("reads a scope off either row shape", () => {
-    // events name the columns id/owner_id; media name them event_id/owner_id.
     expect(scopeOfEvent({ id: event, owner_id: owner })).toEqual(scope);
     expect(scopeOfMedia({ event_id: event, owner_id: owner })).toEqual(scope);
   });

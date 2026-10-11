@@ -2,15 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOwnedEvent } from "@/lib/actions/guards";
+import { requireOwnedEvent } from "@/lib/guards/host-action";
 import type { ActionState } from "@/lib/actions/types";
 import { issueTokenFor } from "@/lib/share-tokens";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Both of these close the current link. Rotating mints a replacement in the
- * same breath; revoking does not.
- */
 async function revokeAll(eventId: string) {
   const { error } = await createAdminClient()
     .from("event_tokens")
@@ -20,11 +16,6 @@ async function revokeAll(eventId: string) {
   return error?.message ?? null;
 }
 
-/**
- * Revoke and reissue. This is how a host shuts down an event that is attracting
- * junk: the old link stops working immediately, and a new one is minted so the
- * people who should still have access can be sent it.
- */
 export async function rotateShareLink(eventId: string): Promise<ActionState> {
   await requireOwnedEvent(eventId);
 
@@ -36,7 +27,6 @@ export async function rotateShareLink(eventId: string): Promise<ActionState> {
   return { ok: true };
 }
 
-/** Closes the event to new uploads without minting a replacement. */
 export async function revokeShareLink(eventId: string): Promise<ActionState> {
   await requireOwnedEvent(eventId);
 

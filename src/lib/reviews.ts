@@ -1,25 +1,12 @@
-/**
- * Host reviews for the landing page.
- *
- * EMPTY ON PURPOSE until real ones exist. The redesign shows the section with
- * three example reviews (below, in `EXAMPLE_REVIEWS`) during development only,
- * so the layout can be judged; production renders the section only from this
- * array. Publishing invented reviews as if hosts wrote them is the one shortcut
- * this page must not take - ask hosts the morning after their ZIP download,
- * and add the answers here with their permission.
- */
 export interface Review {
   stars: 1 | 2 | 3 | 4 | 5;
   text: string;
-  /** First name and initial, as the host agreed to be named. */
   name: string;
-  /** Event · city · month. */
   meta: string;
 }
 
 export const REVIEWS: Review[] = [];
 
-/** Layout fillers for `next dev`. Never rendered in a production build. */
 export const EXAMPLE_REVIEWS: Review[] = [
   {
     stars: 5,

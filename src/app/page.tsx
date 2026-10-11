@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 
-import { ClosingCta } from "@/components/marketing/closing-cta";
-import { Faq } from "@/components/marketing/faq";
-import { Hero } from "@/components/marketing/hero";
-import { LogoStrip } from "@/components/marketing/logo-strip";
-import { PricingSection } from "@/components/marketing/pricing-section";
-import { Problem } from "@/components/marketing/problem";
-import { Proof } from "@/components/marketing/proof";
-import { Steps } from "@/components/marketing/steps";
-import { StickyCta } from "@/components/marketing/sticky-cta";
-import { ThreeScreens } from "@/components/marketing/three-screens";
-import { Why } from "@/components/marketing/why";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
-import { JsonLd } from "@/components/seo/json-ld";
+import { ClosingCta } from "@/components/marketing/ClosingCta";
+import { Faq } from "@/components/marketing/Faq";
+import { Hero } from "@/components/marketing/Hero";
+import { LogoStrip } from "@/components/marketing/LogoStrip";
+import { PricingSection } from "@/components/marketing/PricingSection";
+import { Problem } from "@/components/marketing/Problem";
+import { Proof } from "@/components/marketing/Proof";
+import { Steps } from "@/components/marketing/Steps";
+import { StickyCta } from "@/components/marketing/StickyCta";
+import { ThreeScreens } from "@/components/marketing/ThreeScreens";
+import { Why } from "@/components/marketing/Why";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { hasSupabase } from "@/lib/env";
 import {
   SITE,
@@ -21,7 +21,7 @@ import {
   graph,
   softwareApplicationSchema,
 } from "@/lib/seo";
-import { getSessionUser } from "@/lib/supabase/server";
+import { getSessionUser, headerUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: `${SITE.name} - every photo your guests take`,
@@ -29,11 +29,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-/**
- * In the order a visitor's questions come: what is it, can I trust it, why
- * would I need it, how does it work, show me, why this one, who else uses it,
- * what does it cost, and the objections that are left.
- */
 export default async function LandingPage() {
   const user = hasSupabase ? await getSessionUser() : null;
   const signedIn = Boolean(user);
@@ -41,16 +36,12 @@ export default async function LandingPage() {
 
   return (
     <>
-      {/* The application and its prices, plus the questions that are actually
-          on the page below. Both are built from the same constants the page
-          renders, so the markup cannot promise a price or an answer a visitor
-          will not find. */}
       <JsonLd
         id="ld-home"
         json={graph(softwareApplicationSchema(), faqSchema())}
       />
 
-      <SiteHeader signedIn={signedIn} />
+      <SiteHeader user={headerUser(user)} />
       <main>
         <Hero signedIn={signedIn} />
         <LogoStrip />

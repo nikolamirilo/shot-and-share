@@ -3,16 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "./stubs/supabase";
 import { TIERS } from "@/lib/tiers";
 
-/**
- * Presign, upload, confirm - the three calls a guest's photo actually makes,
- * run against each other rather than against a mock of each other.
- *
- * Every other upload test stubs the storage driver, so the one thing none of
- * them can see is whether the presigned upload the route hands out is one the
- * bucket will accept. That is exactly where a guest's upload fails: the route
- * answers 200, the browser posts the bytes, and storage rejects them.
- */
-
 const store = createStore();
 
 const EVENT = {
@@ -24,9 +14,9 @@ const EVENT = {
   storage_used_bytes: 0,
 };
 
-vi.mock("@/lib/events", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/events")>(
-    "@/lib/events",
+vi.mock("@/lib/guards/guest", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/guards/guest")>(
+    "@/lib/guards/guest",
   );
   return {
     ...actual,
@@ -62,7 +52,6 @@ async function presignFor(file: unknown) {
   return { status: response.status, body: await response.json() };
 }
 
-/** The FormData the browser builds in uploadToPresigned, posted for real. */
 async function sendBytes(
   presigned: { url: string; fields: Record<string, string>; fileField: string },
   body: Blob,
@@ -136,7 +125,6 @@ describe("a photo the browser could not decode", () => {
 });
 
 describe("the whole handshake", () => {
-  /** Presign, post the bytes, confirm. Returns the confirm response body. */
   async function handshake(opts: { sendThumb: boolean }) {
     const full = new Blob([new Uint8Array(90_000)], { type: "image/jpeg" });
     const thumb = new Blob([new Uint8Array(9_000)], { type: "image/webp" });

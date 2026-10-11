@@ -13,7 +13,8 @@ import {
   updatePasswordSchema,
 } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { LIMITS, clientIp, rateLimit } from "@/lib/ratelimit";
+import { LIMITS } from "@/constants/limits";
+import { clientIp, rateLimit } from "@/lib/ratelimit";
 import { createClient } from "@/lib/supabase/server";
 
 export interface AuthState {
@@ -21,7 +22,6 @@ export interface AuthState {
   notice?: string;
 }
 
-/** Only ever redirect within our own site. */
 function safeNext(value: FormDataEntryValue | null): string {
   const next = typeof value === "string" ? value : "";
   return next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
@@ -89,9 +89,7 @@ export async function signUp(
 
   if (error) return { error: authErrorMessage(error) };
 
-  // A session comes back only when email confirmation is switched off in the
-  // Supabase dashboard. Branching on the response rather than on configuration
-  // means the toggle can move either way without a code change.
+  // A session comes back only when email confirmation is switched off in Supabase.
   if (data.session) redirect(next);
 
   return { notice: CHECK_INBOX_MESSAGE };
@@ -104,8 +102,7 @@ export async function requestReset(
   const parsed = resetRequestSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  // Every path below returns the same sentence. A throttle reply that differed
-  // from a success reply would confirm an address just as loudly as an error.
+  // Every path below returns the same sentence, or a reply would confirm an address.
   if (await throttled("passwordReset")) return { notice: RESET_SENT_MESSAGE };
 
   const supabase = await createClient();
@@ -130,8 +127,6 @@ export async function updatePassword(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  // The recovery link established this session. Without one there is nothing
-  // to update, and no way to tell whose password was meant.
   if (!user) redirect("/login?error=session_expired");
 
   const { error } = await supabase.auth.updateUser({

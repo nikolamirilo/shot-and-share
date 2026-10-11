@@ -3,22 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { COVER_PAGE_SIZE } from "@/lib/media";
 import { createStore } from "./stubs/supabase";
 
-/**
- * The page of photographs behind the cover picker.
- *
- * The picker used to show whatever the console had already loaded, cut to two
- * dozen, so a cover shot taken on the second night of a wedding was simply not
- * offered. What matters here is that the cursor is a timestamp rather than an
- * offset - a photo arriving mid-browse must not shuffle a row the host is
- * looking at.
- */
-
 const store = createStore();
 
 const OWNER = "00000000-1111-2222-3333-444444444444";
 const EVENT_ID = "11111111-2222-3333-4444-555555555555";
 
-vi.mock("@/lib/host", () => ({
+vi.mock("@/lib/guards/host-api", () => ({
   requireOwnedEvent: vi.fn(async () => ({ id: EVENT_ID, owner_id: OWNER })),
 }));
 
@@ -43,7 +33,6 @@ function get(before?: string) {
   return GET(new Request(url), { params: Promise.resolve({ id: EVENT_ID }) });
 }
 
-/** A minute apart each, oldest first, so ordering is unambiguous. */
 function seed(count: number, source: "guest" | "cover" = "guest") {
   for (let i = 0; i < count; i++) {
     store.rows("media").push({
@@ -92,11 +81,9 @@ describe("the cover picker's photo pages", () => {
     const second = await (await get(first.nextCursor)).json();
 
     expect(second.items).toHaveLength(5);
-    // No overlap: the cursor is exclusive, so nothing is served twice.
     const seen = new Set(first.items.map((item: { id: string }) => item.id));
     expect(second.items.every((item: { id: string }) => !seen.has(item.id)))
       .toBe(true);
-    // A short page means there is nothing left, so the picker stops asking.
     expect(second.nextCursor).toBeNull();
   });
 });

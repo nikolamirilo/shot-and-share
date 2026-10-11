@@ -2,9 +2,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refreshes the Supabase session cookie on every navigation. Server Components
- * cannot write cookies, so without this a host would be silently signed out the
- * moment their access token expired.
+ * Refreshes the Supabase session cookie on every navigation: Server Components cannot
+ * write cookies.
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -38,9 +37,8 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // getClaims refreshes an expired session the same way getUser does, but
-  // checks the token against the project's signing keys locally instead of
-  // asking the auth server - and this runs on every single navigation.
+  // getClaims refreshes the same way getUser does, but checks the token against the
+  // project's signing keys locally rather than asking the auth server.
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims ?? null;
 
@@ -56,9 +54,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Everything except static assets, images, and the guest media endpoints -
-     * a guest page load must not pay for a session refresh it will never use.
+    /**
+     * Everything except static assets and the guest media endpoints - a guest page load
+     * must not pay for a session refresh.
      */
     "/((?!_next/static|_next/image|favicon.svg|logo.svg|api/media|api/storage|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)$).*)",
   ],

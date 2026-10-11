@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
-import { ClosedPage } from "@/components/event/closed-page";
-import { EventCover, EventThemeRoot } from "@/components/event/event-cover";
-import { GuestExperience } from "@/components/event/guest-experience";
-import { PlatformBar } from "@/components/layout/platform-banner";
+import { ClosedPage } from "@/components/event/ClosedPage";
+import { EventCover, EventThemeRoot } from "@/components/event/EventCover";
+import { GuestExperience } from "@/components/event/GuestExperience";
+import { PlatformBar } from "@/components/layout/PlatformBar";
 import { resolveAppearance } from "@/lib/appearance";
 import { googleFontsHref } from "@/lib/fonts";
 import { resolveGuestToken } from "@/lib/guards/guest";
@@ -12,18 +12,6 @@ import { loadGuestPage } from "@/lib/views/guest-page";
 
 export const dynamic = "force-dynamic";
 
-/**
- * What this link looks like before anybody taps it.
- *
- * Nearly every guest arrives from a chat, so the preview is the page's first
- * impression: the name of their event and whatever the host wrote to them. The
- * words come from `seo.ts` and the picture from the sibling
- * `opengraph-image`, which Next attaches on its own.
- *
- * `openGraph` and `twitter` are set out in full rather than added to, because
- * Next replaces those two blocks per route instead of merging them - inherit
- * half of one and the card is the site's title over the event's picture.
- */
 export async function generateMetadata({
   params,
 }: {
@@ -32,8 +20,6 @@ export async function generateMetadata({
   const { token } = await params;
   const ctx = await resolveGuestToken(token);
 
-  // A share link is not something search engines should hold on to. It stays
-  // crawlable so this directive is read - see DISALLOWED_PATHS.
   const robots = { index: false, follow: false };
 
   if (!ctx) {
@@ -46,8 +32,6 @@ export async function generateMetadata({
   const description = eventLinkDescription(event.name, event.welcome_message);
 
   return {
-    /* A paid event page carries nothing of ours - no header, no footer, and
-       so no "· Shot & Share" appended to the host's own event in a tab. */
     title: platformBranding ? title : { absolute: title },
     description,
     robots,
@@ -91,9 +75,6 @@ export default async function GuestPage({
   const { event, tier, appearance, coverUrl, coverPreviewUrl, fullScreenCover } =
     page;
 
-  // Only the pairing this event uses. Loading all five would put eight font
-  // families on a phone on hotel wifi to render one of them, and the house
-  // pairing is already in the root layout.
   const fontsHref = googleFontsHref(appearance.font);
 
   return (
@@ -106,9 +87,6 @@ export default async function GuestPage({
         <link rel="stylesheet" href={fontsHref} precedence="default" />
       )}
 
-      {/* The thumbnail standing in for the cover is the first pixels of the
-          event a guest sees, so it is asked for in the document rather than
-          when the image element mounts. React hoists this into the head. */}
       {coverPreviewUrl && (
         <link
           rel="preload"
@@ -143,9 +121,6 @@ export default async function GuestPage({
         />
       </main>
 
-      {/* A paid page ends at the gallery. Nothing below the fold is ours - not
-          the small print either, which is the last thing on the page carrying
-          our voice rather than the host's. */}
       {appearance.platformBranding && (
         <div>
           <p className="mx-auto max-w-3xl px-4 py-6 text-[0.8125rem] leading-relaxed text-mist sm:px-5">

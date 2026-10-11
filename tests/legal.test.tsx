@@ -5,15 +5,6 @@ import { OPERATOR, addressLine } from "@/lib/legal/operator";
 import { PUBLIC_ROUTES } from "@/lib/seo";
 import { HARD_DELETE_GRACE_DAYS, TIERS } from "@/lib/tiers";
 
-/**
- * The four documents a merchant of record looks for.
- *
- * These assertions are not about prose. They are about the handful of facts a
- * reviewer scans for in about four seconds, every one of which has been shipped
- * missing by somebody at some point: the trading entity, the registration
- * numbers, an address to write to, and a refund window stated as a number.
- */
-
 const text = (slug: keyof typeof LEGAL_PAGES) => {
   const page = LEGAL_PAGES[slug];
   return [
@@ -38,11 +29,6 @@ describe("the pages exist and are reachable", () => {
 });
 
 describe("the operator is named, not implied", () => {
-  /*
-   * The failure this file exists to prevent. These pages shipped for months
-   * with "[operating company, registered address and company number]" in them,
-   * which reads to a reviewer as a store that has not been set up.
-   */
   it("has no placeholders left anywhere", () => {
     expect(everything).not.toMatch(/\[[a-z][^\]]*\]/i);
     expect(everything.toUpperCase()).not.toContain("REPLACE_ME");
@@ -60,22 +46,12 @@ describe("the operator is named, not implied", () => {
   });
 
   it("names the controller on the privacy policy", () => {
-    // Not the same requirement as the terms: a data protection authority looks
-    // for a controller, not a seller, and they have to be the same entity here.
     expect(text("privacy")).toContain(OPERATOR.legalName);
     expect(text("privacy")).toContain(OPERATOR.registrationNumber);
   });
 });
 
 describe("the answers a reviewer is actually looking for", () => {
-  /*
-   * The terms used to promise that upgrading "charges the difference rather
-   * than the full price again". Nothing in the checkout has ever done that: an
-   * upgrade opens a checkout for the new plan at its own price. A payments page
-   * that describes a discount the buyer does not get is the kind of thing a
-   * card scheme calls a misleading term, so the claim is asserted against here
-   * rather than only removed.
-   */
   it("does not promise a pro-rated upgrade", () => {
     const terms = text("terms").toLowerCase();
     expect(terms).not.toContain("charges the difference");
@@ -86,17 +62,10 @@ describe("the answers a reviewer is actually looking for", () => {
   it("says an upgrade costs the new plan's full price", () => {
     const terms = text("terms");
     expect(terms).toContain("in full");
-    // The figure itself, so the copy cannot drift away from the price table.
     expect(terms).toContain(`costs €${TIERS.pro.priceEur}`);
     expect(terms).toContain("nothing is refunded");
   });
 
-  /*
-   * An upgrade re-anchors the window on the payment - see the anchor tests in
-   * billing-lifecycle. Somebody upgrading an event they created months ago
-   * must not read this and think they are buying the remainder of a window
-   * that has already been running.
-   */
   it("says which day the upgraded window is counted from", () => {
     expect(text("terms")).toContain("counted from the day you upgraded");
   });
@@ -114,8 +83,6 @@ describe("the answers a reviewer is actually looking for", () => {
   it("states where the files are and how long they stay", () => {
     const privacy = text("privacy");
     expect(privacy).toContain("European Union");
-    // Read from the constants the retention job enforces, so the policy cannot
-    // drift away from what the product actually does.
     expect(privacy).toContain(String(TIERS.free.retentionDays));
     expect(privacy).toContain(String(HARD_DELETE_GRACE_DAYS));
   });
@@ -136,11 +103,6 @@ describe("the answers a reviewer is actually looking for", () => {
 });
 
 describe("what the product must not say", () => {
-  /*
-   * A "contact us for a quote" line is the clearest signal that a business
-   * sells services rather than software, and it is what got this store read as
-   * an agency the first time round.
-   */
   it("never invites anyone to negotiate a price", () => {
     expect(everything.toLowerCase()).not.toContain("contact us for");
     expect(everything.toLowerCase()).not.toContain("request a quote");

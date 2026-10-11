@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { handle, ok, parseBody } from "@/lib/api";
-import { requireGuestEvent } from "@/lib/events";
+import { requireGuestEvent } from "@/lib/guards/guest";
 import { confirmReservation } from "@/lib/uploads/confirm";
 import { fingerprintSchema, shareTokenSchema } from "@/lib/uploads/schema";
 
@@ -14,19 +14,10 @@ const bodySchema = z.object({
   mediaId: z.string().uuid(),
   width: z.number().int().positive().max(60_000).nullable().optional(),
   height: z.number().int().positive().max(60_000).nullable().optional(),
-  /** Which of the signed objects actually made it into the bucket. */
   mediaUploaded: z.boolean().default(true),
   posterUploaded: z.boolean().default(false),
   thumbUploaded: z.boolean().default(false),
   failed: z.boolean().default(false),
-  /**
-   * Why the browser gave up, in the app's own words.
-   *
-   * The upload goes straight from the phone to the bucket, so when it fails
-   * there is no request on our side to look at. A bucket whose CORS rules do
-   * not name the live hostname looks exactly like a guest on bad wifi from
-   * here, and the two need completely different repairs.
-   */
   reason: z.string().max(300).optional(),
 });
 
@@ -39,9 +30,7 @@ export async function POST(request: Request) {
       eventId: event.id,
       mediaId: body.mediaId,
       source: "guest",
-      // The fingerprint is the only thing tying a reservation to the guest who
-      // asked for it. It is not authentication - it is what stops one guest's
-      // browser confirming another's upload by guessing a uuid.
+      // Not authentication: it stops one guest's browser confirming another's upload.
       claim: (media) => media.uploader_fingerprint === body.fingerprint,
       mediaUploaded: body.mediaUploaded && !body.failed,
       posterUploaded: body.posterUploaded,
@@ -54,9 +43,6 @@ export async function POST(request: Request) {
       autoScan: event.auto_scan,
     });
 
-    /* The guest is told when their photo is waiting on the host. A photo that
-       uploaded successfully and then never appears in the wall reads as a
-       failed upload, and the guest tries again. */
     return ok({
       confirmed: result.confirmed,
       held: result.confirmed ? Boolean(result.held) : false,

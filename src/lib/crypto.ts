@@ -7,17 +7,6 @@ import {
   scryptSync,
 } from "node:crypto";
 
-/**
- * Share tokens are stored twice: hashed for lookup, and encrypted so the host
- * can see their own QR code again tomorrow.
- *
- * Hash-only storage is the stricter design, and it is the wrong one here: a
- * host who loses the tab would have to reissue the link, which invalidates
- * every printed card on every table. Encrypting instead keeps the useful
- * property - a stolen database dump alone yields no working links - while
- * letting the dashboard render the code on demand.
- */
-
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12;
 
@@ -38,14 +27,14 @@ function key(): Buffer {
     return buf;
   }
 
-  // Development fallback. Set TOKEN_ENCRYPTION_KEY in production: without it a
-  // leaked Supabase secret key is enough to decrypt tokens as well as read rows.
+  // Development fallback. Set TOKEN_ENCRYPTION_KEY in production, or a leaked Supabase
+  // secret key decrypts tokens as well as reading rows.
   const fallback =
     process.env.SUPABASE_SECRET_KEY ??
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
     "shot-and-share-development-secret";
-  // The salt keeps the old brand name on purpose. It is an input to the key, so
-  // changing it would leave every token encrypted under the fallback unreadable.
+  // The salt keeps the old brand name on purpose: changing it would make every token
+  // encrypted under the fallback unreadable.
   keyCache = scryptSync(fallback, "say-cheese-token-v1", 32);
   return keyCache;
 }
@@ -85,7 +74,6 @@ export function decryptToken(payload: string): string | null {
   }
 }
 
-/** Test hook: the key is cached per process. */
 export function resetKeyCache() {
   keyCache = null;
 }

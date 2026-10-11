@@ -7,19 +7,6 @@ import {
 import { SITE } from "@/lib/seo";
 import { HARD_DELETE_GRACE_DAYS, KEEPING, KEEPING_NAME, TIERS, VAT_NOTE } from "@/lib/tiers";
 
-/**
- * The four documents a merchant of record looks for.
- *
- * Everything stated about the system is true of this repository: retention
- * windows come from the constants the product enforces, prices come from the
- * tier table the checkout charges against, and the list of companies that touch
- * the data is the list of services this app calls. Nothing here is a placeholder.
- *
- * Still not a lawyer's documents. Photographs of identifiable people are
- * personal data, the host is their controller, and that split is worth paying
- * someone to check.
- */
-
 export const UPDATED = "10 October 2026";
 
 export interface Section {
@@ -31,21 +18,14 @@ export interface Section {
 export type LegalSlug = "terms" | "privacy" | "refund-policy" | "acceptable-use";
 
 export interface LegalPage {
-  /** The path it is served from, and its key in `LEGAL_PAGES`. */
   slug: LegalSlug;
   title: string;
-  /** Short label for a footer column, where the full title is too long. */
   navLabel: string;
   intro: string;
   sections: Section[];
 }
 
-/** Where to write, said the same way on every page. */
 const CONTACT = `Write to ${SITE.email} and a person answers.`;
-
-/* -------------------------------------------------------------------------- */
-/*  Terms                                                                      */
-/* -------------------------------------------------------------------------- */
 
 const TERMS: LegalPage = {
   slug: "terms",
@@ -173,10 +153,6 @@ const TERMS: LegalPage = {
   ],
 };
 
-/* -------------------------------------------------------------------------- */
-/*  Privacy                                                                    */
-/* -------------------------------------------------------------------------- */
-
 const PRIVACY: LegalPage = {
   slug: "privacy",
   title: "Privacy Policy",
@@ -200,9 +176,6 @@ const PRIVACY: LegalPage = {
       ],
     },
     {
-      /* Its own section because Google's verification of the sign-in button
-         reads this page looking for exactly this, and because a host choosing
-         that button is handing over an account they already have. */
       heading: "Signing in with Google",
       body: [
         `${SITE.name} lets you create a host account with "Continue with Google" instead of a password. If you use it, Google tells us four things: your email address, your name, your profile picture and your Google account ID. Nothing else.`,
@@ -329,10 +302,6 @@ const PRIVACY: LegalPage = {
   ],
 };
 
-/* -------------------------------------------------------------------------- */
-/*  Refunds                                                                    */
-/* -------------------------------------------------------------------------- */
-
 const REFUND_POLICY: LegalPage = {
   slug: "refund-policy",
   title: "Refund Policy",
@@ -398,10 +367,6 @@ const REFUND_POLICY: LegalPage = {
     },
   ],
 };
-
-/* -------------------------------------------------------------------------- */
-/*  Acceptable use                                                             */
-/* -------------------------------------------------------------------------- */
 
 const ACCEPTABLE_USE: LegalPage = {
   slug: "acceptable-use",
@@ -483,8 +448,6 @@ const ACCEPTABLE_USE: LegalPage = {
   ],
 };
 
-/* -------------------------------------------------------------------------- */
-
 export const LEGAL_PAGES: Record<LegalSlug, LegalPage> = {
   terms: TERMS,
   privacy: PRIVACY,
@@ -492,10 +455,6 @@ export const LEGAL_PAGES: Record<LegalSlug, LegalPage> = {
   "acceptable-use": ACCEPTABLE_USE,
 };
 
-/**
- * The order they appear in the footer, and the order a reviewer scans them.
- * Terms first, because it is the one that names the operator.
- */
 export const LEGAL_ORDER: LegalSlug[] = [
   "terms",
   "privacy",

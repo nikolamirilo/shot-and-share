@@ -2,17 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOwnedEvent } from "@/lib/actions/guards";
+import { requireOwnedEvent } from "@/lib/guards/host-action";
 import type { ActionState } from "@/lib/actions/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * The host's side of moderation: releasing something that was held.
- *
- * Deleting is not here. It is the same delete as any other photograph, and
- * giving the review queue its own destructive path would mean two places that
- * remove objects from a bucket.
- */
 export async function approveMedia(
   eventId: string,
   mediaIds: string[],

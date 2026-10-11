@@ -2,16 +2,8 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database, EventRow } from "@/lib/db/types";
+import { type Database, type EventRow } from "@/types/db";
 
-/**
- * Reads of the events table. Writes stay with the action or route that owns
- * them - they each update a different set of columns, and a generic update
- * helper would only hide which.
- *
- * As in media-repo, the client is a parameter: some callers hold the RLS client
- * that proved ownership, others the admin client.
- */
 type Client = SupabaseClient<Database>;
 
 export async function findEvent(
@@ -27,7 +19,6 @@ export async function findEvent(
   return (data as EventRow | null) ?? null;
 }
 
-/** Just the name, for a page title. Avoids pulling the whole row twice. */
 export async function findEventName(
   client: Client,
   id: string,
@@ -40,7 +31,6 @@ export async function findEventName(
   return data?.name ?? null;
 }
 
-/** Every event the signed-in host can see, newest first. */
 export async function listOwnEvents(client: Client): Promise<EventRow[]> {
   const { data, error } = await client
     .from("events")
@@ -50,7 +40,6 @@ export async function listOwnEvents(client: Client): Promise<EventRow[]> {
   return (data ?? []) as EventRow[];
 }
 
-/** An event plus its owner's email, which is all the retention job needs. */
 export type EventWithOwnerEmail = EventRow & {
   profiles: { email: string | null } | null;
 };
@@ -64,7 +53,6 @@ function withOwnerEmail(client: Client) {
     .not("expires_at", "is", null);
 }
 
-/** Active events expiring inside the warning horizon. */
 export async function listExpiringEvents(
   client: Client,
   horizon: string,
@@ -74,7 +62,6 @@ export async function listExpiringEvents(
   return (data ?? []) as unknown as EventWithOwnerEmail[];
 }
 
-/** Active events whose expiry has already passed. */
 export async function listExpiredEvents(
   client: Client,
   now: string,
@@ -84,10 +71,6 @@ export async function listExpiredEvents(
   return (data ?? []) as unknown as EventWithOwnerEmail[];
 }
 
-/**
- * Events past the grace window, ready to be removed for good. owner_id comes
- * back because it is half the storage prefix, so it is not optional here.
- */
 export async function listEventsToPurge(
   client: Client,
   cutoff: string,
