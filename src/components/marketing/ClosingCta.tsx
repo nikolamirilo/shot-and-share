@@ -22,7 +22,7 @@ export function ClosingCta({ signedIn }: { signedIn: boolean }) {
         </p>
         <div id="closing-ctas" className="mt-8 flex flex-col justify-center gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:gap-4">
           <ButtonLink
-            href={signedIn ? "/dashboard" : "/login"}
+            href={signedIn ? "/dashboard" : "/signup"}
             size="lg"
             variant="onDark"
             className="w-full sm:w-auto"

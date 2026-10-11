@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 export default async function LandingPage() {
   const user = hasSupabase ? await getSessionUser() : null;
   const signedIn = Boolean(user);
-  const ctaHref = signedIn ? "/dashboard" : "/login";
+  const ctaHref = signedIn ? "/dashboard" : "/signup";
 
   return (
     <>

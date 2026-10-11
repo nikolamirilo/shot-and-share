@@ -2,7 +2,7 @@ import { PlanFinder } from "@/components/marketing/PlanFinder";
 import { Badge, Eyebrow } from "@/components/ui";
 import { VAT_BADGE, VAT_NOTE } from "@/lib/tiers";
 
-export function PricingSection({ ctaHref = "/login" }: { ctaHref?: string }) {
+export function PricingSection({ ctaHref = "/signup" }: { ctaHref?: string }) {
   return (
     <section id="pricing" className="bg-paper">
       <div className="mx-auto max-w-6xl px-4 pb-14 pt-12 sm:px-5 sm:pb-20 sm:pt-16">

@@ -82,7 +82,7 @@ export function Steps({ signedIn }: { signedIn: boolean }) {
 
         <div className="mt-8 sm:mt-10">
           <ButtonLink
-            href={signedIn ? "/dashboard" : "/login"}
+            href={signedIn ? "/dashboard" : "/signup"}
             size="lg"
             variant="primary"
             className="w-full sm:w-auto"

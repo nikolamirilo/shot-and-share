@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { MdOutlineLogin, MdOutlinePersonAddAlt } from "react-icons/md";
 
 import { signIn, signUp, type AuthState } from "@/lib/actions/auth";
@@ -9,8 +9,13 @@ import { SubmitButton } from "@/components/form/SubmitButton";
 import { Alert, Field, inputClass } from "@/components/ui";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
 
-export function EmailForm({ next }: { next?: string }) {
-  const [creating, setCreating] = useState(false);
+export function EmailForm({
+  next,
+  creating,
+}: {
+  next?: string;
+  creating: boolean;
+}) {
   const [signInState, signInAction] = useActionState<AuthState, FormData>(
     signIn,
     {},
@@ -22,7 +27,7 @@ export function EmailForm({ next }: { next?: string }) {
 
   const state = creating ? signUpState : signInState;
 
-  if (signUpState.notice) {
+  if (creating && signUpState.notice) {
     return (
       <div className="note p-4">
         <p className="text-small font-semibold">{signUpState.notice}</p>
@@ -100,24 +105,16 @@ export function EmailForm({ next }: { next?: string }) {
         className="w-full"
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 text-small">
-        <button
-          type="button"
-          onClick={() => setCreating((value) => !value)}
-          className="font-semibold underline decoration-2 decoration-mist underline-offset-4 hover:decoration-ink"
-        >
-          {creating ? "I already have an account" : "Create an account"}
-        </button>
-
-        {!creating && (
+      {!creating && (
+        <div className="flex justify-end text-small">
           <Link
             href="/login/forgot"
             className="text-ash underline decoration-2 decoration-mist underline-offset-4 hover:decoration-ink"
           >
             Forgot password?
           </Link>
-        )}
-      </div>
+        </div>
+      )}
     </form>
   );
 }

@@ -7,7 +7,7 @@ import {
 import { SITE } from "@/lib/seo";
 import { HARD_DELETE_GRACE_DAYS, KEEPING, KEEPING_NAME, TIERS, VAT_NOTE } from "@/lib/tiers";
 
-export const UPDATED = "10 October 2026";
+export const UPDATED = "11 October 2026";
 
 export interface Section {
   heading: string;
@@ -155,27 +155,32 @@ const TERMS: LegalPage = {
 
 const PRIVACY: LegalPage = {
   slug: "privacy",
-  title: "Privacy Policy",
+  title: `Privacy Policy for ${SITE.name}`,
   navLabel: "Privacy",
   intro:
-    "What we hold, why we are allowed to hold it, who else touches it, and how long it stays. This product processes photographs of people who never signed up for anything, so it matters more here than it does for most software.",
+    `This policy explains what personal data ${SITE.name} collects, how we use it, who we share it with, how long we keep it and what rights you have over it. The product processes photographs of people who never signed up for anything, so it matters more here than it does for most software.`,
   sections: [
     {
-      heading: "Who is responsible for what",
+      heading: "Who is responsible for your personal data",
       body: [
-        `For your host account, meaning your email address, your events and your payments, the controller is ${OPERATOR.legalName}, ${addressLine()}, registration number ${OPERATOR.registrationNumber}, tax number ${OPERATOR.taxNumber}. ${CONTACT}`,
+        `For your host account, meaning your email address, your events and your payments, the data controller is ${OPERATOR.legalName}, ${addressLine()}, registration number ${OPERATOR.registrationNumber}, tax number ${OPERATOR.taxNumber}. ${CONTACT}`,
         "For the photographs your guests upload, you are the controller and we are your processor. They are collected for your event, on your instructions, and we act on them rather than deciding anything about them ourselves.",
         `In practice that means a guest asking for a photo to be taken down should ask you first, and you can remove it in a click. If they cannot reach you, they can ask us and we will act within ${TAKEDOWN_RESPONSE_HOURS} hours.`,
       ],
     },
     {
-      heading: "What we hold about hosts",
+      heading: "Information we collect",
       body: [
-        "The email address you sign in with, the events you create and their settings, and a record of what you paid for. That is the whole account.",
-        "We do not ask for a postal address, a phone number, or a date of birth, because we do not need them.",
+        "Three kinds of personal data, and nothing else:",
+      ],
+      list: [
+        "Host account data. The email address you sign in with, your name if you give one, the events you create and their settings, and a record of what you paid for. We do not collect a postal address, a phone number or a date of birth, because we do not need them.",
+        "Guest data. No account, no email address and no name. A guest uploads and leaves. A random identifier is stored in the guest's own browser so they can delete a photo they have just uploaded by mistake, and so we can count how many separate people contributed. It is not linked to a person, it does not follow them to any other site, and clearing their browser data removes it. We also count how many times a link has been opened, which is a number rather than a log of who opened it.",
+        "Photos and videos. The files your guests upload, which are personal data of everyone in them. They are stored in object storage in the European Union, in the Frankfurt region, encrypted at rest. Thumbnails are served from unguessable addresses and full-resolution originals only through short-lived signed links that expire.",
       ],
     },
     {
+      /* The section Google's verification of the sign-in button reads. */
       heading: "Signing in with Google",
       body: [
         `${SITE.name} lets you create a host account with "Continue with Google" instead of a password. If you use it, Google tells us four things: your email address, your name, your profile picture and your Google account ID. Nothing else.`,
@@ -185,55 +190,39 @@ const PRIVACY: LegalPage = {
       ],
     },
     {
-      heading: "What we hold about guests",
+      heading: "How we use your information",
       body: [
-        "No account, no email address, and no name. A guest uploads and leaves.",
-        "A random identifier is stored in the guest's own browser so they can delete a photo they have just uploaded by mistake, and so we can count how many separate people contributed. It is not linked to a person, it does not follow them to any other site, and clearing their browser data removes it.",
-        "We count how many times a link has been opened. That is a number, not a log of who opened it.",
+        "Every use of your personal data is on this list:",
+      ],
+      list: [
+        "To run your account and sign you in.",
+        "To create and serve your events, which means storing the uploads, making the thumbnails and previews the gallery displays, packaging an event into a ZIP when you ask, and serving photos to whoever holds your link.",
+        "To take payment and to keep the records tax law requires.",
+        "To email you about your own events, such as the warnings before a storage window ends.",
+        "To check uploads for prohibited content, where you have switched that on.",
+        "To count photos, uploaders and link opens, so we know whether the product works.",
+        "To answer you when you write to us, and to act on a takedown or erasure request.",
       ],
     },
     {
-      heading: "The photos and videos",
+      heading: "What we never do with your information",
       body: [
-        "They are stored in object storage in the European Union, in the Frankfurt region, encrypted at rest. Thumbnails are served from unguessable addresses and full-resolution originals only through short-lived signed links that expire.",
-        "We do not browse your photographs, we do not use them to advertise the product, and we do not use them to train machine-learning models. No human at our end opens an event's gallery unless you ask us to help with a specific problem, or unless a photo has been flagged or reported and has to be looked at.",
+        "We do not sell your personal data. We do not share it with advertisers or data brokers. We do not browse your photographs, we do not use them to advertise the product, and we do not use them to train machine-learning models.",
+        "No human at our end opens an event's gallery unless you ask us to help with a specific problem, or unless a photo has been flagged or reported and has to be looked at.",
       ],
     },
     {
-      heading: "Location data in photographs",
+      heading: "Legal basis for using your personal data",
       body: [
-        "Phone cameras write hidden data into a photo file, and it often includes the exact place the picture was taken. At a party in someone's home that is a home address, attached to a file the guest did not think twice about.",
-        "So we remove it. Photos are re-encoded in the guest's browser before they are uploaded, which drops the embedded camera data including location, and the copy that reaches our storage no longer carries it. Video has its location data stripped on our side during processing.",
-        "The consequence is worth knowing: the ZIP you download does not contain the original camera metadata either. An address that cannot leak is worth more than an exposure setting nobody reads.",
-      ],
-    },
-    {
-      heading: "Moderation",
-      body: [
-        "Hosts can switch on an automatic check of every photo as it arrives, before it becomes visible in any gallery. It is off unless the host turns it on, and while it is off no photograph from their event is sent to any moderation service at all. The check uses Amazon Rekognition content moderation and runs in the same EU region the files are stored in. Video is checked on the still frame taken from the clip.",
-        "It returns category labels and nothing else. No photograph is retained by that service and nothing is sent anywhere for any other purpose. A flagged upload is held out of the gallery and shown only to the host, who approves or deletes it.",
-        "Guests can also report a photo from inside the gallery. A reported photo is hidden at once and the host is emailed.",
-      ],
-    },
-    {
-      heading: "Why we are allowed to hold it",
-      body: [
-        "For host accounts and payments: because we need it to give you the service you asked for, and because tax law requires us to keep records of what was sold.",
+        "For host accounts and payments: we need it to give you the service you asked for, and tax law requires us to keep records of what was sold.",
         "For the photographs: on your instructions, as the controller. The lawful basis for collecting them from your guests is yours to have, and in practice it is the guest's own decision to upload.",
-        "For the moderation check, where a host has switched it on, and the small number of counts we keep, meaning photos, uploaders and link opens: our legitimate interest in running a service that is not used for illegal content, and in knowing whether the product works. They are counts and category labels, never profiles.",
+        "For the moderation check, where a host has switched it on, and for the counts we keep, meaning photos, uploaders and link opens: our legitimate interest in running a service that is not used for illegal content, and in knowing whether the product works. They are counts and category labels, never profiles.",
       ],
     },
     {
-      heading: "Cookies",
+      heading: "How we share your information",
       body: [
-        "One cookie keeps you signed in. There is no advertising cookie, no analytics cookie, and no third-party tracker on any page of this site.",
-        "The identifier stored in a guest's browser is not a cookie and is not sent to anyone else.",
-      ],
-    },
-    {
-      heading: "Who else touches the data",
-      body: [
-        "As few companies as we can manage. Each does one specific job, each is bound by a data processing agreement, and none may use anything for their own purposes:",
+        "We share personal data with as few companies as we can manage. Each does one specific job, each is bound by a data processing agreement, and none may use anything for their own purposes:",
       ],
       list: [
         "Supabase - accounts and the database holding your events.",
@@ -245,32 +234,55 @@ const PRIVACY: LegalPage = {
       ],
     },
     {
-      heading: "Where it is",
+      heading: "International data transfers",
       body: [
         "Files are stored in the European Union and the moderation check runs in the same region, so no photograph leaves the EU.",
         "Some of the companies above are incorporated in the United States and may process account or billing data there. Where they do, the transfer runs on the European Commission's standard contractual clauses.",
       ],
     },
     {
-      heading: "How long it stays",
+      heading: "How long we keep your information",
       body: [
-        `Photographs live as long as the event's storage window: ${TIERS.free.retentionDays} days on ${TIERS.free.name}, six months on ${TIERS.plus.name}, twelve months on ${TIERS.pro.name}, counted from the day the plan was paid for - or from the day the event was created, on ${TIERS.free.name}.`,
+        `Photographs are retained for as long as the event's storage window: ${TIERS.free.retentionDays} days on ${TIERS.free.name}, six months on ${TIERS.plus.name}, twelve months on ${TIERS.pro.name}, counted from the day the plan was paid for - or from the day the event was created, on ${TIERS.free.name}.`,
         `After that the event is paused for ${HARD_DELETE_GRACE_DAYS} days, during which nothing has been removed and the host can restore it. At the end of those ${HARD_DELETE_GRACE_DAYS} days the files are deleted permanently by a job that runs every day. While a ${KEEPING_NAME} subscription is active the window is extended a year at a time and none of this runs; if it lapses, the event keeps the year already paid for and then follows the ordinary schedule above.`,
-        "Deleting an event deletes its files immediately. Your account stays until you ask us to close it, at which point it and everything in it goes, except the payment records tax law requires us to keep.",
+        "Deleting an event deletes its files immediately. Your account data is kept until you ask us to close the account, at which point it and everything in it goes, except the payment records tax law requires us to keep.",
       ],
     },
     {
-      heading: "How it is protected",
+      heading: "Data security",
       body: [
         "Files are encrypted at rest and everything travels over HTTPS. Share links are long random tokens, stored hashed, so a database leak does not hand over working links, and a revoked link stops working at once.",
         "Galleries are private. There is no public index, no browsable list of events, and no guessable id anywhere in a share link. Access to production data is limited to the people who need it to run the service.",
       ],
     },
     {
-      heading: "Your rights",
+      heading: "Cookies and tracking technologies",
       body: [
-        "If you are in the EU or the UK you can ask us for a copy of what we hold about you, ask us to correct it, ask us to delete it, ask us to restrict or stop a particular use, object to it, and ask for it in a portable form.",
+        "One cookie keeps you signed in. There is no advertising cookie, no analytics cookie, and no third-party tracker on any page of this site.",
+        "The identifier stored in a guest's browser is not a cookie and is not sent to anyone else.",
+      ],
+    },
+    {
+      heading: "Your data protection rights",
+      body: [
+        "If you are in the EU or the UK you can ask us for a copy of the personal data we hold about you, ask us to correct it, ask us to delete it, ask us to restrict or stop a particular use, object to it, and ask for it in a portable form.",
         `${CONTACT} We answer within a month, and usually the same week. Most of it you can also do yourself and faster: your gallery is your export, and deleting an event deletes its contents.`,
+      ],
+    },
+    {
+      heading: "Location data in photographs",
+      body: [
+        "Phone cameras write hidden data into a photo file, and it often includes the exact place the picture was taken. At a party in someone's home that is a home address, attached to a file the guest did not think twice about.",
+        "So we remove it. Photos are re-encoded in the guest's browser before they are uploaded, which drops the embedded camera data including location, and the copy that reaches our storage no longer carries it. Video has its location data stripped on our side during processing.",
+        "The consequence is worth knowing: the ZIP you download does not contain the original camera metadata either. An address that cannot leak is worth more than an exposure setting nobody reads.",
+      ],
+    },
+    {
+      heading: "Content moderation",
+      body: [
+        "Hosts can switch on an automatic check of every photo as it arrives, before it becomes visible in any gallery. It is off unless the host turns it on, and while it is off no photograph from their event is sent to any moderation service at all. The check uses Amazon Rekognition content moderation and runs in the same EU region the files are stored in. Video is checked on the still frame taken from the clip.",
+        "It returns category labels and nothing else. No photograph is retained by that service and nothing is sent anywhere for any other purpose. A flagged upload is held out of the gallery and shown only to the host, who approves or deletes it.",
+        "Guests can also report a photo from inside the gallery. A reported photo is hidden at once and the host is emailed.",
       ],
     },
     {
@@ -281,7 +293,7 @@ const PRIVACY: LegalPage = {
       ],
     },
     {
-      heading: "Children",
+      heading: "Children's privacy",
       body: [
         "The service is not directed at children and we do not knowingly collect data from them directly.",
         `Children do appear in event photographs. Uploading a photo of a child without their guardian's permission is not allowed, a guardian who wants one removed can use the same route as anyone else, and we treat those requests as urgent rather than waiting the full ${TAKEDOWN_RESPONSE_HOURS} hours.`,
@@ -294,9 +306,16 @@ const PRIVACY: LegalPage = {
       ],
     },
     {
-      heading: "Changes to this policy",
+      heading: "Changes to this privacy policy",
       body: [
         "If we change it in a way that matters, we will email the address on your account. The date at the top of this page always says when it last changed.",
+      ],
+    },
+    {
+      heading: "Contact us",
+      body: [
+        `Questions about this policy, or about the personal data we hold, go to ${SITE.email}, and a person answers.`,
+        `The data controller is ${OPERATOR.legalName}, ${OPERATOR.form}, ${addressLine()}. Registration number ${OPERATOR.registrationNumber}, tax number ${OPERATOR.taxNumber}.`,
       ],
     },
   ],

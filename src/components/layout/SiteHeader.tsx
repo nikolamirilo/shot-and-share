@@ -45,7 +45,7 @@ const NAV = [
 export function SiteHeader({ user = null }: { user?: HeaderUser | null }) {
   const cta = user
     ? { href: "/dashboard", label: "My events", icon: MdOutlinePhotoLibrary }
-    : { href: "/login", label: "Get Started", icon: BsRocketTakeoff };
+    : { href: "/signup", label: "Get Started", icon: BsRocketTakeoff };
   const CtaIcon = cta.icon;
 
   const ctaButton = (close: () => void) => (

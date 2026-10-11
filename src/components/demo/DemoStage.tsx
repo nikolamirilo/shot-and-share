@@ -126,7 +126,7 @@ export function DemoStage() {
       <p className="mt-3 text-center text-[0.9375rem] text-ash">
         Nothing is uploaded here, because there is no real event behind this
         page - your photos are kept on this device and go no further.{" "}
-        <Link href="/login" className="underline underline-offset-2">
+        <Link href="/signup" className="underline underline-offset-2">
           Create a free event
         </Link>{" "}
         and the same button sends them to your gallery.

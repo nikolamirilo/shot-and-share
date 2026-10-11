@@ -48,7 +48,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             style={{ animationDelay: "180ms" }}
           >
             <ButtonLink
-              href={signedIn ? "/dashboard" : "/login"}
+              href={signedIn ? "/dashboard" : "/signup"}
               size="lg"
               variant="primary"
               className="w-full sm:w-auto"

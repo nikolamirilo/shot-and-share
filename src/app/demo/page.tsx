@@ -58,7 +58,7 @@ export default function DemoPage() {
             </ol>
 
             <div className="mt-5 flex flex-wrap gap-2.5 sm:gap-3">
-              <ButtonLink href="/login" size="lg">
+              <ButtonLink href="/signup" size="lg">
                 <MdOutlineAddCircleOutline
                   aria-hidden
                   className="shrink-0 text-[1.25em]"

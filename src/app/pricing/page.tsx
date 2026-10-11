@@ -56,7 +56,7 @@ export default async function PricingPage() {
 
             <div className="mt-9 sm:mt-12">
               <PricingTable
-                ctaHref={user ? "/dashboard/events/new" : "/login"}
+                ctaHref={user ? "/dashboard/events/new" : "/signup"}
               />
             </div>
 
@@ -88,7 +88,7 @@ export default async function PricingPage() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
               <ButtonLink
-                href={user ? "/dashboard/events/new" : "/login"}
+                href={user ? "/dashboard/events/new" : "/signup"}
                 size="lg"
                 className="w-full sm:w-auto"
               >

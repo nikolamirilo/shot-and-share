@@ -42,7 +42,7 @@ function featureList(key: (typeof TIER_ORDER)[number]): string[] {
 }
 
 export function PricingTable({
-  ctaHref = "/login",
+  ctaHref = "/signup",
   recommended = "plus",
   badge = "Most weddings",
 }: {
