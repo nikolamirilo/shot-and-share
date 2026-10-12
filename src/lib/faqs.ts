@@ -1,46 +1,81 @@
 import { formatBytes } from "@/utils/format";
 import { KEEPING, TIERS, photoCountLabel } from "@/lib/tiers";
 
-export const FAQS: ReadonlyArray<readonly [question: string, answer: string]> =
-  [
-    [
-      "Do my guests need an app or an account?",
-      "No. They scan the code, the page opens in their browser, and they pick photos. There is no sign-in anywhere on the guest side, on purpose: every sign-in prompt is a guest who gives up.",
-    ],
-    [
-      "Does it work on iPhone and Android?",
-      "Yes, in any modern browser. iPhones save photos as HEIC, which many Windows and Android devices can't open, so they are stored in a format every device can.",
-    ],
-    [
-      "Are the photos compressed, like in WhatsApp?",
-      "They keep every pixel they were taken with. Each photo is re-encoded into a smaller file on the guest's phone before it uploads, which is why uploads finish on venue wifi, but nothing is scaled down.",
-    ],
-    [
-      "How many photos actually fit?",
-      `${TIERS.plus.name} holds about ${photoCountLabel(TIERS.plus.quotaBytes)} and ${TIERS.pro.name} about ${photoCountLabel(TIERS.pro.quotaBytes)}, based on a 7 MB photo. Modern phones vary, which is exactly why the limit is in gigabytes rather than a photo count.`,
-    ],
-    [
-      "Do I have to pay before the event?",
-      `No. Create the event and print the QR code for free, and upgrade whenever you like. If you expect more than about ${photoCountLabel(TIERS.free.quotaBytes)} photos, upgrade before the day so no guest finds a full event.`,
-    ],
-    [
-      "Can guests see the photos everyone else uploaded?",
-      "That is your choice per event. The shared gallery is on by default because guests like seeing the night from other people's phones, and you can turn it off.",
-    ],
-    [
-      "What if someone uploads something they shouldn't?",
-      "Uploads are screened before they appear in the gallery, guests can report a photo, and you can delete anything. If the link ends up somewhere it shouldn't, revoke it and it stops working at once.",
-    ],
-    [
-      "What happens when the storage window ends?",
-      `You get emails 14, 7 and 1 days before. When it ends the event is paused rather than deleted, and stays restorable for another 14 days. You can also keep the photos online past the window for €${KEEPING.plus.priceEur} a year on Plus or €${KEEPING.pro.priceEur} on Pro, cancellable whenever you like.`,
-    ],
-    [
-      "Is video included?",
-      `On the paid plans: up to ${formatBytes(TIERS.plus.maxFileBytes, 0)} a clip on ${TIERS.plus.name}, and up to ${formatBytes(TIERS.pro.maxFileBytes, 0)} on ${TIERS.pro.name}. The free plan is photos only: one large video can eat the entire free allowance, which would make the free plan useless for what it is meant to prove.`,
-    ],
-    [
-      "What if it doesn't work on the day?",
-      "Then you get a full refund, even after the event. If uploads failed, the gallery didn't load, the QR code didn't work or you couldn't download your photos, write to us and the money goes back to your card.",
-    ],
-  ];
+export type FaqTopic = "guests" | "photos" | "paying";
+
+export interface Faq {
+  topic: FaqTopic;
+  question: string;
+  /** The answer in a word or two, set in bold ahead of the rest. */
+  short: string;
+  answer: string;
+}
+
+export const FAQ_TOPICS: ReadonlyArray<readonly [topic: FaqTopic, label: string]> = [
+  ["guests", "Guests"],
+  ["photos", "Photos"],
+  ["paying", "Paying"],
+];
+
+export const FAQS: ReadonlyArray<Faq> = [
+  {
+    topic: "guests",
+    question: "Do guests need an app or account?",
+    short: "No.",
+    answer: "They scan the code, it opens in the browser, and they pick photos.",
+  },
+  {
+    topic: "guests",
+    question: "Does it work on iPhone and Android?",
+    short: "Both.",
+    answer: "Any modern browser. iPhone photos are saved in a format every device opens.",
+  },
+  {
+    topic: "guests",
+    question: "Can guests see each other's photos?",
+    short: "If you want.",
+    answer: "The shared gallery is on by default. Turn it off per event.",
+  },
+  {
+    topic: "photos",
+    question: "Do photos lose quality?",
+    short: "No.",
+    answer: "Every pixel stays. The file gets smaller, the picture doesn't.",
+  },
+  {
+    topic: "photos",
+    question: "How many photos fit?",
+    short: `Up to ${photoCountLabel(TIERS.pro.quotaBytes)}.`,
+    answer: `About ${photoCountLabel(TIERS.free.quotaBytes)} free, ${photoCountLabel(TIERS.plus.quotaBytes)} on ${TIERS.plus.name} and ${photoCountLabel(TIERS.pro.quotaBytes)} on ${TIERS.pro.name}.`,
+  },
+  {
+    topic: "photos",
+    question: "Is video included?",
+    short: "On paid plans.",
+    answer: `Up to ${formatBytes(TIERS.plus.maxFileBytes, 0)} a clip on ${TIERS.plus.name}, ${formatBytes(TIERS.pro.maxFileBytes, 0)} on ${TIERS.pro.name}.`,
+  },
+  {
+    topic: "photos",
+    question: "What if someone uploads something bad?",
+    short: "You remove it.",
+    answer: "Uploads are screened, guests can report, and you can delete anything or revoke the link.",
+  },
+  {
+    topic: "paying",
+    question: "Do I pay before the event?",
+    short: "No.",
+    answer: `Create the event and print the code free. Expecting more than ${photoCountLabel(TIERS.free.quotaBytes)} photos? Upgrade before the day.`,
+  },
+  {
+    topic: "paying",
+    question: "What happens when storage ends?",
+    short: "It pauses.",
+    answer: `Reminders 14, 7 and 1 days before, then 14 days to restore. Keep it online from €${KEEPING.plus.priceEur} a year.`,
+  },
+  {
+    topic: "paying",
+    question: "What if it fails on the day?",
+    short: "Full refund.",
+    answer: "Even after the event. Write to us and the money goes back to your card.",
+  },
+];

@@ -163,10 +163,10 @@ export function faqSchema(): Json {
   return {
     "@type": "FAQPage",
     "@id": `${siteUrl()}/#faq`,
-    mainEntity: FAQS.map(([question, answer]) => ({
+    mainEntity: FAQS.map(({ question, short, answer }) => ({
       "@type": "Question",
       name: question,
-      acceptedAnswer: { "@type": "Answer", text: answer },
+      acceptedAnswer: { "@type": "Answer", text: `${short} ${answer}` },
     })),
   };
 }
