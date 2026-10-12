@@ -70,7 +70,7 @@ const TERMS: LegalPage = {
       body: [
         `Every plan is a one-time payment for one event. ${TIERS.plus.name} is €${TIERS.plus.priceEur} and ${TIERS.pro.name} is €${TIERS.pro.priceEur}. Keeping an event online after its included window ends is a yearly subscription - €${KEEPING.plus.priceEur} a year on ${TIERS.plus.name}, €${KEEPING.pro.priceEur} on ${TIERS.pro.name} - which you can cancel at any time, and which only ever begins after the window the plan already included.`,
         "No plan renews and no trial turns into a charge. The yearly keeping subscription described above is the only recurring charge, it is never started without you choosing it, and you can cancel it at any time. No card of yours is stored by us either way - Creem holds it.",
-        `Payment is handled by Creem, who act as merchant of record. Your card details never reach us and your receipt comes from them. ${VAT_NOTE}`,
+        `Payment is handled by Creem, who act as merchant of record. We pass them your email address and which plan you are buying; your card and your billing details you give to them, on their page, and those never reach us. Your receipt comes from them. ${VAT_NOTE}`,
         `Upgrading an event pays the new plan's price in full. Nothing is taken off for the plan you already bought and nothing is refunded, so moving from ${TIERS.plus.name} to ${TIERS.pro.name} costs €${TIERS.pro.priceEur}, not the €${TIERS.pro.priceEur - TIERS.plus.priceEur} difference.`,
         `The event moves onto the better plan as soon as the payment reaches us. Its storage allowance becomes the new plan's, and its photos are kept for the new plan's full window, counted from the day you upgraded - so none of the time you paid for has already been spent on the plan before it. The earlier payment stays on record, which is why a refunded upgrade drops the event back to the plan it was on before instead of to ${TIERS.free.name}.`,
       ],
@@ -175,6 +175,7 @@ const PRIVACY: LegalPage = {
       ],
       list: [
         "Host account data. The email address you sign in with, your name if you give one, the events you create and their settings, and a record of what you paid for. We do not collect a postal address, a phone number or a date of birth, because we do not need them.",
+        "Payment data. When you buy a plan, we keep the confirmation Creem sends us: which plan, which event, the amount, the currency, and the email address the order was made under. Where Creem also tells us the name or the country you gave them for VAT, that is kept with it. Your card number never reaches us.",
         "Guest data. No account, no email address and no name. A guest uploads and leaves. A random identifier is stored in the guest's own browser so they can delete a photo they have just uploaded by mistake, and so we can count how many separate people contributed. It is not linked to a person, it does not follow them to any other site, and clearing their browser data removes it. We also count how many times a link has been opened, which is a number rather than a log of who opened it.",
         "Photos and videos. The files your guests upload, which are personal data of everyone in them. They are stored in object storage in the European Union, in the Frankfurt region, encrypted at rest. Thumbnails are served from unguessable addresses and full-resolution originals only through short-lived signed links that expire.",
       ],
@@ -228,7 +229,7 @@ const PRIVACY: LegalPage = {
         "Supabase - accounts and the database holding your events.",
         "Amazon Web Services - the photograph and video files themselves, stored in Frankfurt, and the automated moderation check.",
         "Vercel - running and serving the website.",
-        "Creem - payment, as merchant of record. They hold your payment details and we never see them.",
+        "Creem - payment, as merchant of record. We send them your email address, which plan you are buying and which event it is for. You give them your card and your billing details directly, on their checkout page, and we never see either. They hold them, and the receipt comes from them.",
         "Resend - sending the emails this product sends, such as the warnings before a storage window ends.",
         "Google - only if you choose to sign in with Google. It is the sign-in provider rather than one of our processors, and all it does is confirm who you are and pass on your name, email address and profile picture.",
       ],
