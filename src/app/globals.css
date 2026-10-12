@@ -956,6 +956,18 @@
   animation: count-bump 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* A guest's seat filling with their photo on the landing page's floor plan. */
+@keyframes seat-pop {
+  from {
+    scale: 0.25;
+    opacity: 0.2;
+  }
+}
+
+.seat-pop {
+  animation: seat-pop 500ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
 @keyframes slow-zoom {
   from {
     transform: scale(1);
@@ -973,6 +985,7 @@
   .live-dot,
   .tap-ring::after,
   .count-bump,
+  .seat-pop,
   .slow-zoom {
     animation: none !important;
   }

@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { ClosingCta } from "@/components/marketing/ClosingCta";
 import { Faq } from "@/components/marketing/Faq";
 import { Hero } from "@/components/marketing/Hero";
-import { LogoStrip } from "@/components/marketing/LogoStrip";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { Problem } from "@/components/marketing/Problem";
 import { Proof } from "@/components/marketing/Proof";
@@ -44,7 +43,6 @@ export default async function LandingPage() {
       <SiteHeader user={headerUser(user)} />
       <main>
         <Hero signedIn={signedIn} />
-        <LogoStrip />
         <Problem />
         <Steps signedIn={signedIn} />
         <ThreeScreens />

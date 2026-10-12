@@ -9,18 +9,25 @@ import { ButtonLink } from "@/components/ui";
 export function ClosingCta({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="bg-claret text-chalk">
-      <div id="closing" className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5 sm:py-20 lg:py-28">
-        <LottiePlayer data={markOnClaret} rest={95} once className="mx-auto mb-6 h-22 w-22">
+      <div
+        id="closing"
+        className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-7 gap-y-5 px-4 py-8 sm:px-5 sm:py-9"
+      >
+        <LottiePlayer data={markOnClaret} rest={95} once className="h-14 w-14 shrink-0">
           <LogoMark variant="reversed" className="h-full w-full" />
         </LottiePlayer>
-        <h2 className="text-[2.25rem] [word-spacing:0.1em] sm:text-[4rem]">
-          Set it up tonight. It costs nothing to try.
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-body text-chalk/75 sm:text-lead">
-          Make the event, print the code, send the link to one friend and watch
-          a photo arrive. Then decide whether to pay.
-        </p>
-        <div id="closing-ctas" className="mt-8 flex flex-col justify-center gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:gap-4">
+        <div className="min-w-0 flex-[1_1_18rem]">
+          <h2 className="text-[1.875rem] [word-spacing:0.1em] sm:text-[2.5rem]">
+            Set it up tonight. Free to try.
+          </h2>
+          <p className="mt-2 font-mono text-micro uppercase tracking-[0.16em] text-chalk/72">
+            No card · About a minute
+          </p>
+        </div>
+        <div
+          id="closing-ctas"
+          className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-6"
+        >
           <ButtonLink
             href={signedIn ? "/dashboard" : "/signup"}
             size="lg"
@@ -34,7 +41,7 @@ export function ClosingCta({ signedIn }: { signedIn: boolean }) {
             href="/pricing"
             className="inline-flex min-h-12 items-center justify-center font-semibold underline decoration-2 underline-offset-4 decoration-chalk/45 hover:decoration-chalk"
           >
-            Compare the plans
+            Compare plans
           </Link>
         </div>
       </div>

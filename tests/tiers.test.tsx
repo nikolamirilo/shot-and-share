@@ -38,7 +38,7 @@ describe("tiers", () => {
 describe("what the marketing copy promises", () => {
   it("names each paid plan's clip size in the FAQ", async () => {
     const { FAQS } = await import("@/lib/faqs");
-    const answer = FAQS.find(([q]) => q === "Is video included?")?.[1] ?? "";
+    const answer = FAQS.find((f) => f.question === "Is video included?")?.answer ?? "";
     expect(answer).toContain("200 MB");
     expect(answer).toContain("500 MB");
   });
