@@ -132,10 +132,15 @@ export function isKeepingProduct(product: string): boolean {
   return product === "keeping_plus" || product === "keeping_pro";
 }
 
+/**
+ * One claim, written once, wherever a price is shown. The Creem products are
+ * configured tax-exclusive, so VAT is added on top at checkout rather than
+ * being part of the figure on the pricing page.
+ */
 export const VAT_NOTE =
-  "Every price includes EU VAT. The number you see is the number you pay.";
+  "Prices are before VAT. Your country's VAT is added at checkout, so you see the full total before you pay.";
 
-export const VAT_BADGE = "VAT included";
+export const VAT_BADGE = "+ VAT at checkout";
 
 export type PaidPlanKey = Exclude<PlanKey, "free">;
 export type KeepingId = Keeping["key"];
@@ -158,6 +163,23 @@ export type LegacyProductId = (typeof LEGACY_PRODUCTS)[number];
 export const TIER_ORDER: PlanKey[] = ["free", "plus", "pro"];
 
 export const BIG_PICK = 300;
+
+/**
+ * How many events one account may hold on Free at once. Mirrored by the insert
+ * trigger in migration 0027, which is what stops a direct API insert. The copy
+ * below, the pricing list and the terms are written for one; raising it means
+ * rewording all three.
+ */
+export const MAX_FREE_EVENTS = 1;
+
+/** What the trigger raises, so the action can recognise it and say the line below. */
+export const FREE_LIMIT_SIGNAL = "free_event_limit_reached";
+
+export const FREE_LIMIT_NOTICE =
+  "Free covers one event at a time. Upgrade it, or delete it, to start another.";
+
+/** The same rule in the voice the pricing page and the terms use. */
+export const FREE_LIMIT_CLAIM = "One free event at a time";
 
 const BY_ID = new Map<string, Tier>(
   TIER_ORDER.map((key) => [TIERS[key].id, TIERS[key]]),
@@ -185,6 +207,16 @@ export function approxPhotos(bytes: number): number {
 
 export function photoCountLabel(bytes: number): string {
   return formatCount(approxPhotos(bytes));
+}
+
+/** How long a plan keeps the photos, in the words the marketing pages use. */
+export function retentionLabel(tier: Tier): string {
+  if (tier.retentionDays % 365 === 0) {
+    const years = tier.retentionDays / 365;
+    return years === 1 ? "12 months" : `${years * 12} months`;
+  }
+  if (tier.retentionDays >= 180) return `${Math.round(tier.retentionDays / 30.5)} months`;
+  return `${tier.retentionDays} days`;
 }
 
 export function computeExpiry(from: string | Date, tier: Tier): Date {

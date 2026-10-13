@@ -9,7 +9,14 @@ import type { ActionState } from "@/lib/actions/types";
 import { LIMITS } from "@/constants/limits";
 import { rateLimit } from "@/lib/ratelimit";
 import { issueTokenFor } from "@/lib/share-tokens";
-import { TIERS, computeExpiry } from "@/lib/tiers";
+import { countFreeEvents } from "@/lib/db/event-repo";
+import {
+  FREE_LIMIT_NOTICE,
+  FREE_LIMIT_SIGNAL,
+  MAX_FREE_EVENTS,
+  TIERS,
+  computeExpiry,
+} from "@/lib/tiers";
 
 const createSchema = z.object({
   name: z
@@ -34,6 +41,10 @@ export async function createEvent(
     return { error: "That is a lot of events at once. Try again shortly." };
   }
 
+  if ((await countFreeEvents(supabase, user.id)) >= MAX_FREE_EVENTS) {
+    return { error: FREE_LIMIT_NOTICE };
+  }
+
   const parsed = createSchema.safeParse({ name: formData.get("name") });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -56,7 +67,6 @@ export async function createEvent(
       gallery_visible: true,
       require_approval: false,
       auto_scan: false,
-      welcome_message: null,
       cover_media_id: null,
       archive_key: null,
       archive_built_at: null,
@@ -68,6 +78,10 @@ export async function createEvent(
     .single();
 
   if (error || !event) {
+    // The trigger from migration 0027 fires when two creates race past the count above.
+    if (error?.message.includes(FREE_LIMIT_SIGNAL)) {
+      return { error: FREE_LIMIT_NOTICE };
+    }
     return { error: error?.message ?? "Could not create the event." };
   }
 
@@ -81,7 +95,6 @@ const settingsSchema = z.object({
   gallery_visible: z.boolean(),
   require_approval: z.boolean(),
   auto_scan: z.boolean(),
-  welcome_message: z.string().trim().max(400).nullable(),
 });
 
 export async function updateEventSettings(
@@ -91,13 +104,11 @@ export async function updateEventSettings(
 ): Promise<ActionState> {
   const { supabase } = await requireOwnedEvent(eventId);
 
-  const welcome = String(formData.get("welcome_message") ?? "").trim();
   const parsed = settingsSchema.safeParse({
     name: formData.get("name"),
     gallery_visible: formData.get("gallery_visible") === "on",
     require_approval: formData.get("require_approval") === "on",
     auto_scan: formData.get("auto_scan") === "on",
-    welcome_message: welcome.length > 0 ? welcome : null,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message ?? "Check the form." };
@@ -114,7 +125,6 @@ export async function updateEventSettings(
       gallery_visible: parsed.data.gallery_visible,
       require_approval: parsed.data.require_approval,
       auto_scan: parsed.data.auto_scan,
-      welcome_message: parsed.data.welcome_message,
     })
     .eq("id", eventId);
 

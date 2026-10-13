@@ -1,7 +1,7 @@
 export { cx } from "@/utils/cx";
 
 export { Alert } from "@/components/ui/Alert";
-export { Badge } from "@/components/ui/Badge";
+export { Badge, FreeTag } from "@/components/ui/Badge";
 export {
   BUTTON_FILL,
   Button,
@@ -9,6 +9,7 @@ export {
   ButtonLink,
 } from "@/components/ui/Button";
 export { Card } from "@/components/ui/Card";
+export { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 export { Eyebrow } from "@/components/ui/Eyebrow";
 export { Field, inputClass } from "@/components/ui/Field";
 export { Hole } from "@/components/ui/Hole";

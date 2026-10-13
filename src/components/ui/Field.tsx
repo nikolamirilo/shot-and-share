@@ -31,4 +31,4 @@ export function Field({
 }
 
 export const inputClass =
-  "w-full min-h-11 rounded-xl bg-linen inset-shadow-well px-3.5 py-2.5 text-body placeholder:text-mist/60 focus:outline-none focus-visible:outline-3 focus-visible:outline-ink";
+  "w-full min-h-11 rounded-control bg-linen inset-shadow-well px-3.5 py-2.5 text-body placeholder:text-mist/60 focus:outline-none focus-visible:outline-3 focus-visible:outline-ink";

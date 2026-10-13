@@ -36,7 +36,7 @@ export async function LegalDocument({ slug }: { slug: LegalSlug }) {
 
       <SiteHeader user={user} />
       <main className="bg-linen">
-        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-5 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16">
           <Eyebrow>Legal</Eyebrow>
           <h1 className="mt-3 text-[2.25rem] leading-[1.05] sm:text-h1">
             {page.title}

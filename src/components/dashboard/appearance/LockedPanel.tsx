@@ -19,12 +19,11 @@ export function LockedPanel({ eventId }: { eventId: string }) {
 
   return (
     <section className="card p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-h3">The event page</h2>
-        <Badge tone="outline">
-          {TIERS.plus.name} and {TIERS.pro.name}
-        </Badge>
-      </div>
+      <Badge tone="outline">Not available on {TIERS.free.name} plan</Badge>
+
+      <h2 className="mt-3 text-h3">
+        Switch to {TIERS.plus.name} or {TIERS.pro.name}
+      </h2>
 
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-ash">
         On the free plan your guests see the Shot & Share theme, a fixed cover and

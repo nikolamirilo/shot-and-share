@@ -47,7 +47,7 @@ export function SelectionBar({
           type="button"
           onClick={onDownload}
           disabled={count === 0 || downloading}
-          className="flex shrink-0 items-center gap-2 rounded-2xl bg-claret px-4 py-3 text-small font-semibold text-chalk shadow-md transition-transform disabled:opacity-45 enabled:active:scale-95"
+          className="flex shrink-0 items-center gap-2 rounded-control border border-claret-deep bg-claret px-4 py-3 text-small font-semibold text-chalk shadow-md transition-transform disabled:opacity-45 enabled:active:scale-95"
         >
           <MdOutlineFileDownload aria-hidden className="shrink-0 text-[1.25em]" />
           {downloading ? "Preparing…" : "Download"}

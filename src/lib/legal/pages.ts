@@ -7,7 +7,7 @@ import {
 import { SITE } from "@/lib/seo";
 import { HARD_DELETE_GRACE_DAYS, KEEPING, KEEPING_NAME, TIERS, VAT_NOTE } from "@/lib/tiers";
 
-export const UPDATED = "11 October 2026";
+export const UPDATED = "13 October 2026";
 
 export interface Section {
   heading: string;
@@ -15,7 +15,7 @@ export interface Section {
   list?: string[];
 }
 
-export type LegalSlug = "terms" | "privacy" | "refund-policy" | "acceptable-use";
+export type LegalSlug = "terms" | "privacy" | "refund" | "acceptable-use";
 
 export interface LegalPage {
   slug: LegalSlug;
@@ -68,6 +68,7 @@ const TERMS: LegalPage = {
     {
       heading: "Plans and payment",
       body: [
+        `${TIERS.free.name} holds one event at a time per account. Upgrading that event, or deleting it, lets you create another, and an event on a paid plan never counts against it. There is no limit on how many paid events you may run at once.`,
         `Every plan is a one-time payment for one event. ${TIERS.plus.name} is €${TIERS.plus.priceEur} and ${TIERS.pro.name} is €${TIERS.pro.priceEur}. Keeping an event online after its included window ends is a yearly subscription - €${KEEPING.plus.priceEur} a year on ${TIERS.plus.name}, €${KEEPING.pro.priceEur} on ${TIERS.pro.name} - which you can cancel at any time, and which only ever begins after the window the plan already included.`,
         "No plan renews and no trial turns into a charge. The yearly keeping subscription described above is the only recurring charge, it is never started without you choosing it, and you can cancel it at any time. No card of yours is stored by us either way - Creem holds it.",
         `Payment is handled by Creem, who act as merchant of record. We pass them your email address and which plan you are buying; your card and your billing details you give to them, on their page, and those never reach us. Your receipt comes from them. ${VAT_NOTE}`,
@@ -323,7 +324,7 @@ const PRIVACY: LegalPage = {
 };
 
 const REFUND_POLICY: LegalPage = {
-  slug: "refund-policy",
+  slug: "refund",
   title: "Refund Policy",
   navLabel: "Refunds",
   intro:
@@ -471,13 +472,13 @@ const ACCEPTABLE_USE: LegalPage = {
 export const LEGAL_PAGES: Record<LegalSlug, LegalPage> = {
   terms: TERMS,
   privacy: PRIVACY,
-  "refund-policy": REFUND_POLICY,
+  "refund": REFUND_POLICY,
   "acceptable-use": ACCEPTABLE_USE,
 };
 
 export const LEGAL_ORDER: LegalSlug[] = [
   "terms",
   "privacy",
-  "refund-policy",
+  "refund",
   "acceptable-use",
 ];

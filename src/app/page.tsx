@@ -8,7 +8,6 @@ import { Problem } from "@/components/marketing/Problem";
 import { Proof } from "@/components/marketing/Proof";
 import { Steps } from "@/components/marketing/Steps";
 import { StickyCta } from "@/components/marketing/StickyCta";
-import { ThreeScreens } from "@/components/marketing/ThreeScreens";
 import { Why } from "@/components/marketing/Why";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -45,7 +44,6 @@ export default async function LandingPage() {
         <Hero signedIn={signedIn} />
         <Problem />
         <Steps signedIn={signedIn} />
-        <ThreeScreens />
         <Why />
         <Proof />
         <PricingSection ctaHref={ctaHref} />

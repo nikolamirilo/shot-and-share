@@ -1,8 +1,8 @@
-import { MdCheck, MdOutlineAddCircleOutline } from "react-icons/md";
+import { MdCheck } from "react-icons/md";
 
 import { HeroScene } from "@/components/marketing/HeroScene";
 import { TryGuestButton } from "@/components/marketing/TryGuestButton";
-import { ButtonLink, Eyebrow } from "@/components/ui";
+import { ButtonLink, Eyebrow, FreeTag } from "@/components/ui";
 import { HERO } from "@/lib/seo";
 
 export function Hero({ signedIn }: { signedIn: boolean }) {
@@ -54,8 +54,8 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               variant="primary"
               className="w-full sm:w-auto"
             >
-              <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-              Create your free event
+              Create your event
+              <FreeTag />
             </ButtonLink>
             <TryGuestButton />
           </div>

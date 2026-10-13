@@ -42,7 +42,6 @@ export function Lightbox({
   onReported,
   favorite,
   onToggleFavorite,
-  demo,
 }: {
   token: string;
   item: MediaView;
@@ -56,7 +55,6 @@ export function Lightbox({
   onReported?: (id: string) => void;
   favorite?: boolean;
   onToggleFavorite?: (id: string) => void;
-  demo?: boolean;
 }) {
   const [full, setFull] = useState<MediaView | null>(null);
   const [linkPending, setLinkPending] = useState(true);
@@ -82,12 +80,6 @@ export function Lightbox({
     let live = true;
     setFull(null);
 
-    if (demo) {
-      setFull({ ...item, downloadUrl: item.fullUrl ?? undefined });
-      setLinkPending(false);
-      return;
-    }
-
     setLinkPending(true);
     const params = new URLSearchParams({ token, id: item.id });
     fetch(`/api/photo?${params}`)
@@ -98,7 +90,7 @@ export function Lightbox({
     return () => {
       live = false;
     };
-  }, [token, item, demo]);
+  }, [token, item]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

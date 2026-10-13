@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import {
-  MdOutlineAddCircleOutline,
-  MdOutlinePhotoLibrary,
-} from "react-icons/md";
+import { MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { ComparisonTable } from "@/components/marketing/ComparisonTable";
 import { PricingDetail } from "@/components/marketing/PricingDetail";
@@ -21,6 +18,22 @@ export const metadata: Metadata = {
   description: `One payment per event. A free plan that holds about ${photoCountLabel(TIERS.free.quotaBytes)} photos, and keeping them online afterwards from €${KEEPING.plus.priceEur} a year.`,
   alternates: { canonical: "/pricing" },
 };
+
+/** The fine print under the table, split so none of it reads as a wall. */
+const NOTES: Array<[string, string]> = [
+  [
+    "VAT at checkout",
+    `${VAT_NOTE} Our payment provider is the merchant of record, so they charge the VAT and it appears on the receipt they send you.`,
+  ],
+  [
+    "Nothing renews",
+    "Every plan is a single payment for a single event, and no plan is hidden behind a sales call.",
+  ],
+  [
+    "The one recurring charge",
+    "Keeping the photos online after your window ends - you choose it, it starts only when that window actually runs out, and cancelling always leaves the year you paid for standing.",
+  ],
+];
 
 export default async function PricingPage() {
   const user = hasSupabase ? await getSessionUser() : null;
@@ -60,49 +73,43 @@ export default async function PricingPage() {
               />
             </div>
 
-            <p className="mt-6 max-w-2xl text-[0.9375rem] text-ash">
-              {VAT_NOTE} Our payment provider is the merchant of record, so the
-              VAT on your invoice is already handled.
-            </p>
-            <p className="mt-2 max-w-2xl text-[0.9375rem] text-ash">
-              Every plan is a single payment for a single event and none of
-              them renew. The one recurring charge is keeping the photos online
-              after your window ends - you choose it, it starts only when that
-              window actually runs out, and cancelling always leaves the year
-              you paid for standing. No plan is hidden behind a sales call.
-            </p>
+            <dl className="mt-9 grid gap-x-8 gap-y-6 sm:mt-11 sm:grid-cols-3">
+              {NOTES.map(([label, body]) => (
+                <div key={label} className="border-t border-edge pt-4">
+                  <dt className="eyebrow">{label}</dt>
+                  <dd className="mt-2 text-small leading-relaxed text-ash">
+                    {body}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
 
         <ComparisonTable />
         <PricingDetail />
 
-        <section className="bg-blush">
-          <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5 sm:py-20">
-            <h2 className="text-[2.25rem] sm:text-h1">
-              Try it before you pay for it.
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-body text-ash sm:text-lead">
-              The free plan is a working product, not a demo. Clean QR code, bulk
-              download, unlimited guests. Upgrade when you know it works.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+        <section className="bg-claret text-chalk">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-10 gap-y-5 px-4 py-8 sm:px-5 sm:py-9">
+            <div className="min-w-0 flex-[1_1_20rem]">
+              <h2 className="text-[1.875rem] [word-spacing:0.1em] sm:text-[2.5rem]">
+                Try it before you pay for it.
+              </h2>
+              <p className="mt-2 max-w-xl text-small text-chalk/75">
+                The free plan is a working product, not a demo. Clean QR code,
+                bulk download, unlimited guests, one event at a time. Upgrade
+                when you know it works.
+              </p>
+            </div>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-6">
               <ButtonLink
                 href={user ? "/dashboard/events/new" : "/signup"}
                 size="lg"
+                variant="onDark"
                 className="w-full sm:w-auto"
               >
                 <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
                 Create an event
-              </ButtonLink>
-              <ButtonLink
-                href="/demo"
-                variant="secondary"
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                <MdOutlinePhotoLibrary aria-hidden className="shrink-0 text-[1.25em]" />
-                See a real gallery
               </ButtonLink>
             </div>
           </div>

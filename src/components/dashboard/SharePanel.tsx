@@ -5,6 +5,7 @@ import {
   MdOutlineAutorenew,
   MdOutlineCheck,
   MdOutlineContentCopy,
+  MdOutlineExpandMore,
   MdOutlineFileDownload,
   MdOutlineLinkOff,
   MdOutlineOpenInNew,
@@ -13,24 +14,25 @@ import {
 import { useServerAction } from "@/hooks/useServerAction";
 
 import { revokeShareLink, rotateShareLink } from "@/lib/actions/share-links";
-import { Alert, Button, ButtonLink, Panel, Stat, cx } from "@/components/ui";
+import { Alert, Button, ButtonLink, Panel, Stat } from "@/components/ui";
 import { pluralise } from "@/utils/format";
 
 export function SharePanel({
   eventId,
   link,
+  codeSvg,
   revoked,
   opens,
   uploaders,
 }: {
   eventId: string;
   link: string | null;
+  codeSvg: string | null;
   revoked: boolean;
   opens: number;
   uploaders: number;
 }) {
   const [copied, setCopied] = useState(false);
-  const [codeReady, setCodeReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const { pending, error, setError, run } = useServerAction();
 
@@ -100,30 +102,12 @@ export function SharePanel({
         <>
           <div className="mt-5 grid gap-4 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-start sm:gap-5 lg:grid-cols-[8.5rem_16rem_minmax(0,1fr)] lg:gap-6">
             <div className="mx-auto aspect-square w-10/12 max-w-[250px] rounded-xl bg-paper p-2 shadow-md sm:mx-0 sm:size-[8.5rem] sm:max-w-none">
-              <div className="relative size-full">
-                {!codeReady && (
-                  <div
-                    aria-hidden
-                    className="absolute inset-0 animate-pulse rounded-md bg-blush"
-                  >
-                    <span className="absolute top-[8%] left-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
-                    <span className="absolute top-[8%] right-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
-                    <span className="absolute bottom-[8%] left-[8%] size-[26%] rounded-[0.3rem] border-[0.35rem] border-edge" />
-                  </div>
-                )}
-                <img
-                  src={`/api/events/${eventId}/qr`}
-                  alt="QR code for this event"
-                  className={cx(
-                    "size-full transition-opacity duration-200",
-                    codeReady ? "opacity-100" : "opacity-0",
-                  )}
-                  width={512}
-                  height={512}
-                  onLoad={() => setCodeReady(true)}
-                  onError={() => setCodeReady(true)}
+              {codeSvg && (
+                <div
+                  className="size-full [&>svg]:size-full"
+                  dangerouslySetInnerHTML={{ __html: codeSvg }}
                 />
-              </div>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-2 sm:max-w-64 sm:items-stretch">
@@ -171,8 +155,8 @@ export function SharePanel({
             </p>
           </div>
 
-          <div className="mt-6 border-t border-edge pt-5 lg:flex lg:items-end lg:justify-between lg:gap-8">
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-md lg:flex-1">
+          <div className="mt-6 border-t border-edge pt-5">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-md">
               <Stat label="Link opened" value={pluralise(opens, "time")} />
               <Stat
                 label="Opened then uploaded"
@@ -187,26 +171,35 @@ export function SharePanel({
               />
             </dl>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 lg:mt-0 lg:shrink-0">
-              <Button
-                onClick={rotate}
-                variant="secondary"
-                size="sm"
-                disabled={pending}
-              >
-                <MdOutlineAutorenew aria-hidden className="shrink-0 text-[1.25em]" />
-                Reissue link
-              </Button>
-              <Button
-                onClick={revoke}
-                variant="ghost"
-                size="sm"
-                disabled={pending}
-              >
-                <MdOutlineLinkOff aria-hidden className="shrink-0 text-[1.25em]" />
-                Turn the link off
-              </Button>
-            </div>
+            <details className="group mt-6 border-t border-edge pt-4">
+              <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 text-small font-semibold text-ash marker:hidden [&::-webkit-details-marker]:hidden">
+                Advanced options
+                <MdOutlineExpandMore
+                  aria-hidden
+                  className="shrink-0 text-[1.25em] transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <Button
+                  onClick={rotate}
+                  variant="secondary"
+                  size="sm"
+                  disabled={pending}
+                >
+                  <MdOutlineAutorenew aria-hidden className="shrink-0 text-[1.25em]" />
+                  Reissue link
+                </Button>
+                <Button
+                  onClick={revoke}
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                >
+                  <MdOutlineLinkOff aria-hidden className="shrink-0 text-[1.25em]" />
+                  Turn the link off
+                </Button>
+              </div>
+            </details>
           </div>
         </>
       )}

@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { MdArrowForward, MdOutlineEdit } from "react-icons/md";
 
 import { EventCardMenu } from "@/components/dashboard/EventCardMenu";
-import { Badge, ButtonLink, Hole, ProgressBar } from "@/components/ui";
+import { Badge, ButtonLink, cx, Hole, ProgressBar } from "@/components/ui";
 import { type EventRow } from "@/types/db";
 import { storageSummary } from "@/lib/events";
 import { describeRetention, formatBytes } from "@/utils/format";
@@ -20,7 +21,7 @@ export function EventCard({
   const expired = event.status === "expired";
 
   return (
-    <li className="card relative flex h-full min-w-0 flex-col p-5 transition-transform hover:-translate-y-0.5">
+    <li className="card relative flex h-full min-w-0 flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
@@ -71,16 +72,32 @@ export function EventCard({
         </p>
       </div>
 
-      <div className="relative z-10 mt-auto pt-5">
+      <div className="relative z-10 mt-auto flex gap-2 pt-4">
+        <ButtonLink
+          href={`/dashboard/events/${event.id}#settings`}
+          variant="secondary"
+          size="sm"
+          aria-label={`Edit ${event.name}`}
+          className={COMPACT}
+        >
+          <MdOutlineEdit aria-hidden className="shrink-0" />
+          Edit
+        </ButtonLink>
         <ButtonLink
           href={`/dashboard/events/${event.id}`}
           size="sm"
           aria-label={`View ${event.name}`}
-          className="w-full"
+          className={cx(COMPACT, "group")}
         >
           View event
+          <MdArrowForward
+            aria-hidden
+            className="shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"
+          />
         </ButtonLink>
       </div>
     </li>
   );
 }
+
+const COMPACT = "min-h-9 flex-1 gap-1.5 px-3.5 py-1.5 text-[0.875rem]";

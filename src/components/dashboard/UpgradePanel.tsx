@@ -15,6 +15,7 @@ import {
   KEEPING_NAME,
   type PurchasableId,
   TIERS,
+  VAT_NOTE,
   getTier,
   keepingFor,
 } from "@/lib/tiers";
@@ -93,7 +94,7 @@ export function UpgradePanel({
     <Panel title="More room, or more time">
       <p className="mt-2 max-w-prose text-[0.9375rem] text-ash">
         Plans are one payment per event. Upgrading during the night works fine -
-        the limit lifts the moment the payment clears.
+        the limit lifts the moment the payment clears. {VAT_NOTE}
       </p>
 
       <ul className="mt-5 space-y-3">

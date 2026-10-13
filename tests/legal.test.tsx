@@ -66,16 +66,20 @@ describe("the answers a reviewer is actually looking for", () => {
     expect(terms).toContain("nothing is refunded");
   });
 
+  it("states how many events the free plan holds", () => {
+    expect(text("terms")).toContain("holds one event at a time");
+  });
+
   it("says which day the upgraded window is counted from", () => {
     expect(text("terms")).toContain("counted from the day you upgraded");
   });
 
   it("states the refund window as a number of days", () => {
-    expect(text("refund-policy").toLowerCase()).toContain("fourteen days");
+    expect(text("refund").toLowerCase()).toContain("fourteen days");
   });
 
   it("answers what happens once the event has already taken place", () => {
-    const refunds = text("refund-policy").toLowerCase();
+    const refunds = text("refund").toLowerCase();
     expect(refunds).toContain("already happened");
     expect(refunds).toContain("chargeback");
   });

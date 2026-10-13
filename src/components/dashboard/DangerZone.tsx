@@ -6,13 +6,13 @@ import { MdOutlineDeleteForever, MdOutlineRestore } from "react-icons/md";
 import { useServerAction } from "@/hooks/useServerAction";
 
 import { deleteEvent, restoreEvent } from "@/lib/actions/lifecycle";
-import { Alert, Button, cx, inputClass } from "@/components/ui";
+import { Alert, Button, ConfirmDialog } from "@/components/ui";
 import { type EventRow } from "@/types/db";
 import { HARD_DELETE_GRACE_DAYS } from "@/lib/tiers";
 import { daysUntil } from "@/utils/format";
 
 export function DangerZone({ event }: { event: EventRow }) {
-  const [confirmText, setConfirmText] = useState("");
+  const [asking, setAsking] = useState(false);
   const { pending, error, run } = useServerAction();
 
   const graceLeft =
@@ -30,7 +30,7 @@ export function DangerZone({ event }: { event: EventRow }) {
 
   return (
     <section className="inset-shadow-well rounded-[1.25rem] bg-mist/8 p-5 sm:p-6">
-      <h2 className="text-h3">Ending things</h2>
+      <h2 className="text-h3">Delete event</h2>
 
       {event.status === "expired" && (
         <div className="mt-4 note p-4">
@@ -53,39 +53,31 @@ export function DangerZone({ event }: { event: EventRow }) {
         </div>
       )}
 
-      <p className="mt-5 max-w-prose text-[0.9375rem] leading-relaxed text-ash">
-        Deleting removes the event, every photo in it, and the share link
-        immediately. There is no grace period on this one, because you asked for
-        it directly. To confirm, type{" "}
-        <strong className="break-words font-mono text-ink">{event.name}</strong>{" "}
-        below.
+      <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-ash">
+        Removes the event, every photo in it, and the share link.
       </p>
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        {/* 17px, not 15: Safari zooms in on a focused field under 16px. */}
-        <input
-          value={confirmText}
-          onChange={(e) => setConfirmText(e.target.value)}
-          placeholder="Event name"
-          aria-label={`Type "${event.name}" to confirm deletion`}
-          className={cx(inputClass, "font-mono sm:w-64 sm:min-w-0")}
-        />
-
-        <Button
-          onClick={remove}
-          variant="secondary"
-          disabled={pending || confirmText.trim() !== event.name}
-          className="w-full sm:w-auto sm:shrink-0"
-        >
-          <MdOutlineDeleteForever
-            aria-hidden
-            className="shrink-0 text-[1.25em]"
-          />
-          {pending ? "Deleting…" : "Delete this event and everything in it"}
-        </Button>
-      </div>
+      <Button
+        onClick={() => setAsking(true)}
+        variant="secondary"
+        disabled={pending}
+        className="mt-4 w-full sm:w-auto"
+      >
+        <MdOutlineDeleteForever aria-hidden className="shrink-0 text-[1.25em]" />
+        Delete event
+      </Button>
 
       {error && <Alert className="mt-4">{error}</Alert>}
+
+      {asking && (
+        <ConfirmDialog
+          title={`Delete "${event.name}"?`}
+          body="Every photo and the share link go with it. This cannot be undone."
+          pending={pending}
+          onConfirm={remove}
+          onCancel={() => setAsking(false)}
+        />
+      )}
     </section>
   );
 }

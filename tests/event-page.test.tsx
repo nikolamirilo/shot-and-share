@@ -113,10 +113,9 @@ function preview(props: Partial<Parameters<typeof EventPreview>[0]> = {}) {
 
 describe("the drawing of the guest page", () => {
   it("draws the page a guest actually lands on", () => {
-    const html = preview({ message: "Send us the ones you took." });
+    const html = preview();
 
     expect(html).toContain("Romeo and Juliet");
-    expect(html).toContain("Send us the ones you took.");
     expect(html).toContain("Add your photos");
     expect(html).toContain(uploadWording(TIERS.free).hint);
     expect(html).toContain("Everyone&#x27;s photos");
@@ -231,15 +230,13 @@ describe("the name's position on the cover", () => {
     expect(cover({ position: "middle-right" })).toContain("at 74% 50%");
   });
 
-  it("aligns the type, and the message and cue with it", () => {
-    const right = cover({ position: "bottom-right", message: "Thank you." });
+  it("aligns the type and the cue with it", () => {
+    const right = cover({ position: "bottom-right" });
     expect(right).toContain("text-right");
-    expect(right).toContain("ml-auto");
     expect(right).toContain("justify-end");
 
-    const centre = cover({ position: "bottom-centre", message: "Thank you." });
+    const centre = cover({ position: "bottom-centre" });
     expect(centre).toContain("text-center");
-    expect(centre).toContain("sm:text-lead mx-auto");
     expect(centre).toContain("justify-center");
   });
 

@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { type Database, type EventRow } from "@/types/db";
+import { TIERS } from "@/lib/tiers";
 
 type Client = SupabaseClient<Database>;
 
@@ -38,6 +39,20 @@ export async function listOwnEvents(client: Client): Promise<EventRow[]> {
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as EventRow[];
+}
+
+/** Events still on Free. A purchase moves the row off `free`, which frees a slot. */
+export async function countFreeEvents(
+  client: Client,
+  ownerId: string,
+): Promise<number> {
+  const { count, error } = await client
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", ownerId)
+    .eq("tier", TIERS.free.id);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
 }
 
 export type EventWithOwnerEmail = EventRow & {

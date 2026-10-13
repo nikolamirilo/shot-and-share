@@ -14,7 +14,6 @@ import type { UploadWording } from "@/lib/media";
 
 export interface EventPreviewProps {
   name: string;
-  message?: string | null;
   palette: Palette;
   font: FontSet;
   cover: CoverVariant;
@@ -29,7 +28,6 @@ export interface EventPreviewProps {
 
 export function EventPreview({
   name,
-  message,
   palette,
   font,
   cover,
@@ -48,7 +46,6 @@ export function EventPreview({
           <EventCover
             variant={cover}
             name={name}
-            message={message}
             coverUrl={coverUrl ?? null}
             photoLabel={coverChosen ? "your photo" : "no photo yet"}
             palette={palette}

@@ -68,6 +68,12 @@ export const FAQS: ReadonlyArray<Faq> = [
   },
   {
     topic: "paying",
+    question: "How many events can I run for free?",
+    short: "One at a time.",
+    answer: `${TIERS.free.name} holds one event at a time. Upgrade it or delete it and you can start another, and an event on a paid plan never counts against it.`,
+  },
+  {
+    topic: "paying",
     question: "What happens when storage ends?",
     short: "It pauses.",
     answer: `Reminders 14, 7 and 1 days before, then 14 days to restore. Keep it online from €${KEEPING.plus.priceEur} a year.`,

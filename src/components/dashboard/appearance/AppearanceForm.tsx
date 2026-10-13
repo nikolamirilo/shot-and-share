@@ -125,7 +125,6 @@ export function AppearanceForm({
         <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
           <EventPreview
             name={event.name || "Your event"}
-            message={event.welcome_message}
             palette={palette}
             font={font}
             cover={settings.cover}
@@ -245,7 +244,7 @@ export function AppearanceForm({
               {settings.cover !== "type" && (
                 <Group
                   label="Name position"
-                  hint="Where the name, date and message sit on the photo. Pick how far down it goes and which way it is aligned."
+                  hint="Where the name sits on the photo. Pick how far down it goes and which way it is aligned."
                 >
                   <PositionPicker
                     value={settings.coverPosition}

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { ComparisonTable } from "@/components/marketing/ComparisonTable";
 import { PricingTable } from "@/components/marketing/PricingTable";
-import { KEEPING, TIERS, photoCountLabel } from "@/lib/tiers";
+import { FREE_LIMIT_CLAIM, KEEPING, TIERS, photoCountLabel } from "@/lib/tiers";
 
 const markup = (element: React.ReactElement) => renderToStaticMarkup(element);
 
@@ -34,6 +34,12 @@ describe("the rounding is honest", () => {
     expect(photoCountLabel(TIERS.free.quotaBytes)).toBe("150");
     expect(photoCountLabel(TIERS.plus.quotaBytes)).toBe("1,500");
     expect(photoCountLabel(TIERS.pro.quotaBytes)).toBe("4,400");
+  });
+});
+
+describe("the free plan's limits are on the card", () => {
+  it("says it runs one event at a time", () => {
+    expect(markup(<PricingTable />)).toContain(FREE_LIMIT_CLAIM);
   });
 });
 

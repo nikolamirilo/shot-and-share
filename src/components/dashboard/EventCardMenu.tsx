@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   MdMoreVert,
   MdOutlineCheck,
@@ -26,9 +27,10 @@ export function EventCardMenu({
   shareLink: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [spot, setSpot] = useState({ top: 0, left: 0 });
   const [copied, setCopied] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const items = useRef<Array<HTMLElement | null>>([]);
   const { pending, error, setError, run } = useServerAction();
 
@@ -36,19 +38,28 @@ export function EventCardMenu({
     if (!open) return;
 
     function onPointerDown(event: PointerEvent) {
-      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (buttonRef.current?.contains(target)) return;
+      if (!menuRef.current?.contains(target)) setOpen(false);
     }
     function onKey(event: globalThis.KeyboardEvent) {
       if (event.key !== "Escape") return;
       setOpen(false);
       buttonRef.current?.focus();
     }
+    function close() {
+      setOpen(false);
+    }
 
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
     };
   }, [open]);
 
@@ -83,6 +94,25 @@ export function EventCardMenu({
     usable[next].focus();
   }
 
+  // The menu is portalled out of the card, so it is placed off the button's own box.
+  function place() {
+    const at = buttonRef.current?.getBoundingClientRect();
+    if (!at) return;
+    const room = window.innerHeight - at.bottom;
+    setSpot({
+      top: room < HEIGHT + 12 ? Math.max(8, at.top - HEIGHT - 6) : at.bottom + 6,
+      left: Math.min(
+        Math.max(8, at.right - WIDTH),
+        Math.max(8, window.innerWidth - WIDTH - 8),
+      ),
+    });
+  }
+
+  function toggle() {
+    if (!open) place();
+    setOpen((was) => !was);
+  }
+
   async function copy() {
     if (!shareLink) return;
     setError(null);
@@ -105,11 +135,11 @@ export function EventCardMenu({
   }
 
   return (
-    <div ref={wrapRef} className="relative">
+    <>
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => setOpen((was) => !was)}
+        onClick={toggle}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Options for ${eventName}`}
@@ -123,78 +153,86 @@ export function EventCardMenu({
         <MdMoreVert aria-hidden />
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          aria-label={`Options for ${eventName}`}
-          onKeyDown={move}
-          className="card absolute right-0 top-[calc(100%+0.375rem)] z-50 w-56 p-1.5 shadow-lg"
-        >
-          <Link
-            ref={(el) => {
-              items.current[0] = el;
-            }}
-            role="menuitem"
-            href={`/dashboard/events/${eventId}#settings`}
-            onClick={() => setOpen(false)}
-            className={ITEM}
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={`Options for ${eventName}`}
+            onKeyDown={move}
+            style={{ top: spot.top, left: spot.left, width: WIDTH }}
+            className="card fixed z-[60] p-1.5 shadow-lg"
           >
-            <MdOutlineEdit aria-hidden className="shrink-0 text-[1.25em]" />
-            Edit
-          </Link>
+            <Link
+              ref={(el) => {
+                items.current[0] = el;
+              }}
+              role="menuitem"
+              href={`/dashboard/events/${eventId}#settings`}
+              onClick={() => setOpen(false)}
+              className={ITEM}
+            >
+              <MdOutlineEdit aria-hidden className="shrink-0 text-[1.25em]" />
+              Edit
+            </Link>
 
-          <button
-            ref={(el) => {
-              items.current[1] = el;
-            }}
-            role="menuitem"
-            type="button"
-            onClick={copy}
-            disabled={!shareLink}
-            className={ITEM}
-          >
-            {shareLink === null ? (
-              <MdOutlineLinkOff aria-hidden className="shrink-0 text-[1.25em]" />
-            ) : copied ? (
-              <MdOutlineCheck aria-hidden className="shrink-0 text-[1.25em]" />
-            ) : (
-              <MdOutlineContentCopy
+            <button
+              ref={(el) => {
+                items.current[1] = el;
+              }}
+              role="menuitem"
+              type="button"
+              onClick={copy}
+              disabled={!shareLink}
+              className={ITEM}
+            >
+              {shareLink === null ? (
+                <MdOutlineLinkOff aria-hidden className="shrink-0 text-[1.25em]" />
+              ) : copied ? (
+                <MdOutlineCheck aria-hidden className="shrink-0 text-[1.25em]" />
+              ) : (
+                <MdOutlineContentCopy
+                  aria-hidden
+                  className="shrink-0 text-[1.25em]"
+                />
+              )}
+              {shareLink === null ? "No active link" : copied ? "Copied" : "Copy link"}
+            </button>
+
+            <hr className="my-1.5 border-edge" />
+
+            <button
+              ref={(el) => {
+                items.current[2] = el;
+              }}
+              role="menuitem"
+              type="button"
+              onClick={remove}
+              disabled={pending}
+              className={cx(ITEM, "text-claret")}
+            >
+              <MdOutlineDeleteForever
                 aria-hidden
                 className="shrink-0 text-[1.25em]"
               />
+              {pending ? "Deleting…" : "Delete"}
+            </button>
+
+            {error && (
+              <p className="px-3 pb-1.5 pt-1 text-[0.8125rem] leading-snug text-claret">
+                {error}
+              </p>
             )}
-            {shareLink === null ? "No active link" : copied ? "Copied" : "Copy link"}
-          </button>
-
-          <hr className="my-1.5 border-edge" />
-
-          <button
-            ref={(el) => {
-              items.current[2] = el;
-            }}
-            role="menuitem"
-            type="button"
-            onClick={remove}
-            disabled={pending}
-            className={cx(ITEM, "text-claret")}
-          >
-            <MdOutlineDeleteForever
-              aria-hidden
-              className="shrink-0 text-[1.25em]"
-            />
-            {pending ? "Deleting…" : "Delete"}
-          </button>
-
-          {error && (
-            <p className="px-3 pb-1.5 pt-1 text-[0.8125rem] leading-snug text-claret">
-              {error}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
+
+const WIDTH = 224;
+// Only used to decide whether the menu opens downwards or up out of the button.
+const HEIGHT = 160;
 
 const ITEM =
   "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[0.9375rem] font-semibold leading-tight transition-colors hover:bg-blush focus:outline-none focus-visible:bg-blush disabled:opacity-45 disabled:pointer-events-none";

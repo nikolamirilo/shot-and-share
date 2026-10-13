@@ -22,5 +22,3 @@ export const FINGERPRINT_KEY = "shot-and-share:fingerprint";
 /** Marks an event link as already opened on this device. */
 export const OPENED_PREFIX = "shot-and-share:opened:";
 
-/** Photos a visitor added on the demo page. They never leave the browser. */
-export const DEMO_PHOTOS_KEY = "shot-and-share:demo-photos";

@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { MdOutlineAddCircleOutline, MdVerifiedUser } from "react-icons/md";
 
-import { Badge, ButtonLink, Hole, cx } from "@/components/ui";
+import { Badge, ButtonLink, cx } from "@/components/ui";
 import { formatBytes } from "@/utils/format";
 import {
+  FREE_LIMIT_CLAIM,
   KEEPING,
   KEEPING_NAME,
   TIER_ORDER,
   TIERS,
   photoCountLabel,
+  retentionLabel,
   type PlanKey,
 } from "@/lib/tiers";
 
@@ -20,21 +22,16 @@ const FOR: Record<PlanKey, string> = {
 
 function featureList(key: (typeof TIER_ORDER)[number]): string[] {
   const t = TIERS[key];
-  const retention =
-    t.retentionDays >= 365
-      ? "12 months"
-      : t.retentionDays >= 180
-        ? "6 months"
-        : `${t.retentionDays} days`;
 
   return [
     `${formatBytes(t.quotaBytes, 0)} of storage, about ${photoCountLabel(t.quotaBytes)} photos`,
     "Unlimited guests",
-    `Photos kept for ${retention}`,
+    `Photos kept for ${retentionLabel(t)}`,
     t.video
       ? `Video, up to ${formatBytes(t.maxFileBytes, 0)} a clip`
       : "Photos only",
     "Bulk ZIP download",
+    ...(t.key === "free" ? [FREE_LIMIT_CLAIM] : []),
     ...(t.cleanQr ? ["Clean QR code, no watermark"] : []),
     ...(t.customPage ? ["Custom event page"] : []),
     ...(t.slideshow ? ["Live slideshow at the venue"] : []),
@@ -82,7 +79,7 @@ export function PricingTable({
                   €{tier.priceEur}
                 </span>
                 <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-                  {tier.priceEur === 0 ? "No card" : "once, per event"}
+                  {tier.priceEur === 0 ? "No card" : "once, per event + VAT"}
                 </span>
               </p>
               {planKey === "plus" && (
@@ -94,7 +91,10 @@ export function PricingTable({
               <ul className="mt-5 flex-1 space-y-2.5">
                 {featureList(planKey).map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
-                    <Hole size={9} className="mt-2" />
+                    <span
+                      aria-hidden
+                      className="mt-2 size-[9px] shrink-0 rounded-full bg-claret"
+                    />
                     <span className="text-[0.9375rem] leading-snug">{line}</span>
                   </li>
                 ))}
@@ -138,7 +138,7 @@ export function PricingTable({
             €{KEEPING.plus.priceEur}–{KEEPING.pro.priceEur}
           </span>
           <span className="ml-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-mist">
-            a year
+            a year + VAT
           </span>
         </p>
       </div>
@@ -150,7 +150,7 @@ export function PricingTable({
           <p className="mt-0.5 text-[0.9375rem] text-ash">
             And if Shot &amp; Share didn&apos;t work at your event, you get your
             money back even after the event.{" "}
-            <Link href="/refund-policy" className="underline underline-offset-2">
+            <Link href="/refund" className="underline underline-offset-2">
               Read the refund policy
             </Link>
           </p>

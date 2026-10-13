@@ -24,12 +24,10 @@ export interface UploadPanelProps {
   onDropFiles?: (files: FileList) => void;
   children?: React.ReactNode;
   preview?: boolean;
-  /** Off on /demo, where a photo never leaves the device. */
-  consent?: boolean;
 }
 
 export function UploadPanel(props: UploadPanelProps) {
-  const { variant, preview, consent = true } = props;
+  const { variant, preview } = props;
 
   return (
     <section
@@ -46,7 +44,7 @@ export function UploadPanel(props: UploadPanelProps) {
       ) : (
         <BigButton {...props} />
       )}
-      {!preview && consent && <Consent />}
+      {!preview && <Consent />}
     </section>
   );
 }
@@ -280,7 +278,7 @@ function Action({
     return (
       <span
         className={cx(
-          "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 text-label font-semibold shadow-md",
+          "inline-flex items-center justify-center gap-1.5 rounded-control px-3 text-label font-semibold shadow-md",
           BUTTON_FILL[variant],
           className,
         )}

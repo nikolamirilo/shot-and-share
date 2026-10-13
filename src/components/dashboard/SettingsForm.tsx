@@ -28,22 +28,6 @@ export function SettingsForm({ event }: { event: EventRow }) {
         />
       </Field>
 
-      <Field
-        label="Message for guests"
-        htmlFor="welcome_message"
-        hint="Shown above the upload button. Optional."
-      >
-        <textarea
-          id="welcome_message"
-          name="welcome_message"
-          rows={3}
-          maxLength={400}
-          defaultValue={event.welcome_message ?? ""}
-          placeholder="Thank you for coming. Please add anything you took tonight."
-          className={cx(inputClass, "sm:max-w-2xl")}
-        />
-      </Field>
-
       <label className="flex items-start gap-3 sm:max-w-2xl">
         <input
           type="checkbox"

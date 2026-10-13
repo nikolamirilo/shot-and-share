@@ -1,0 +1,23 @@
+-- ---------------------------------------------------------------------------
+-- The message for guests comes off the event.
+--
+-- It was a free-text line a host could write under the event name, shown on
+-- the cover of the guest page and used as the share link's preview text. Few
+-- hosts filled it in, and the ones who did wrote what the page already says:
+-- add your photos. The cover now carries the name alone, and the share preview
+-- falls back to the sentence in `eventLinkDescription` for every event.
+--
+-- Per 0009, 0015 and 0026, a column drop has to go looking for the function
+-- bodies that name it, because Postgres does not record them as dependencies:
+--
+--   select p.proname
+--     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--    where n.nspname = 'public' and p.prosrc ~ 'welcome_message';
+--
+-- That returns nothing. The only thing attached to the column was its own
+-- length check from 0001, which goes with it.
+--
+-- This drops text a host typed, and there is no backfill that brings it back.
+-- ---------------------------------------------------------------------------
+
+alter table public.events drop column if exists welcome_message;

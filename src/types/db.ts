@@ -52,7 +52,6 @@ export type EventRow = {
   cover_variant: string;
   cover_position: string;
   upload_variant: string;
-  welcome_message: string | null;
   cover_media_id: string | null;
   link_opens: number;
   archive_key: string | null;

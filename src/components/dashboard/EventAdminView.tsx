@@ -83,7 +83,6 @@ export function EventAdminView({
           <EventCover
             variant={appearance.cover}
             name={event.name}
-            message={event.welcome_message}
             coverUrl={coverUrl}
             coverPreviewUrl={coverPreviewUrl}
             palette={appearance.palette}

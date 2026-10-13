@@ -25,7 +25,6 @@ function markup(over: Partial<Parameters<typeof Lightbox>[0]> = {}) {
   return renderToStaticMarkup(
     <Lightbox
       token="token"
-      demo
       item={PHOTO}
       prev={{ ...PHOTO, id: "photo-0" }}
       next={{ ...PHOTO, id: "photo-2" }}

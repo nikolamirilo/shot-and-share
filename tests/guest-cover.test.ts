@@ -14,7 +14,6 @@ const EVENT = {
   owner_id: OWNER,
   name: "Romeo and Juliet",
   retention_from: "2026-08-01T00:00:00.000Z",
-  welcome_message: null,
   tier: TIERS.plus.id,
   status: "active",
   expires_at: null,

@@ -56,7 +56,7 @@ export function MobileMenu({
 
   return (
     /*
-     * Deliberately not `relative`: the panel is measured against the *header*, which
+     * Deliberately not `relative`: the panel is measured against the *bar*, which
      * every caller positions - see HeaderShell.
      */
     <div ref={wrapRef} className={cx("flex items-center", className)}>
@@ -77,9 +77,8 @@ export function MobileMenu({
         <div
           id="mobile-menu-panel"
           /*
-           * An absolute inset is measured from the containing block's padding box, and
-           * the header's padding is the page gutter - so `inset-x-0` lands on the bar's
-           * edges.
+           * The bar is the containing block - see HeaderShell - so `inset-x-0` lands
+           * on its edges and the panel always matches the bar's width.
            */
           className="absolute inset-x-0 top-full z-50 mt-2 flex flex-col items-end gap-1 rounded-2xl bg-paper px-4 py-4 text-right shadow-md"
         >

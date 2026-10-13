@@ -29,7 +29,7 @@ export async function generateMetadata({
   const event = ctx.event;
   const { platformBranding } = resolveAppearance(event);
   const title = eventLinkTitle(event.name);
-  const description = eventLinkDescription(event.name, event.welcome_message);
+  const description = eventLinkDescription(event.name);
 
   return {
     title: platformBranding ? title : { absolute: title },
@@ -100,7 +100,6 @@ export default async function GuestPage({
         <EventCover
           variant={appearance.cover}
           name={event.name}
-          message={event.welcome_message}
           coverUrl={coverUrl}
           coverPreviewUrl={coverPreviewUrl}
           palette={appearance.palette}

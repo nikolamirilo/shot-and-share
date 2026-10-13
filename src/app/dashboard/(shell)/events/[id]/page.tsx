@@ -13,21 +13,20 @@ import { AppearanceForm } from "@/components/dashboard/appearance/AppearanceForm
 import { ArchivePanel } from "@/components/dashboard/ArchivePanel";
 import { DangerZone } from "@/components/dashboard/DangerZone";
 import { EventAdminView } from "@/components/dashboard/EventAdminView";
+import { PlanStats } from "@/components/dashboard/PlanStats";
 import { PurchaseBanner } from "@/components/dashboard/PurchaseBanner";
 import { SettingsForm } from "@/components/dashboard/SettingsForm";
 import { SharePanel } from "@/components/dashboard/SharePanel";
 import { StoragePanel } from "@/components/dashboard/StoragePanel";
 import { UpgradePanel } from "@/components/dashboard/UpgradePanel";
-import { Alert, Badge, ButtonLink, Stat } from "@/components/ui";
+import { Alert, Badge, ButtonLink } from "@/components/ui";
 import { TabPanel, Tabs, type TabItem } from "@/components/ui/tabs";
 import { findEventName } from "@/lib/db/event-repo";
-import { formatBytes } from "@/utils/format";
 import { createClient } from "@/lib/supabase/server";
 import { KEEPING_NAME, PURCHASABLE_IDS, TIERS, isKeepingProduct } from "@/lib/tiers";
 import { recoverPurchases } from "@/lib/payments/recover";
 import { getSessionUser } from "@/lib/supabase/server";
 import { loadEventConsole } from "@/lib/views/event-console";
-import { formatCount } from "@/utils/format";
 
 export const dynamic = "force-dynamic";
 
@@ -147,6 +146,7 @@ export default async function EventPage({
           <SharePanel
             eventId={event.id}
             link={view.shareLink}
+            codeSvg={view.codeSvg}
             revoked={view.shareLink === null}
             opens={event.link_opens}
             uploaders={view.uploaderCount}
@@ -185,20 +185,14 @@ export default async function EventPage({
           id="upgrade"
           className="mt-5 space-y-4 sm:mt-6 sm:space-y-6 lg:mt-0"
         >
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-5 sm:max-w-xl sm:grid-cols-4">
-            <Stat label="Photos" value={formatCount(view.photos)} />
-            <Stat label="Videos" value={formatCount(view.videos)} />
-            <Stat
-              label="Guests"
-              value={formatCount(view.uploaderCount)}
-              hint="Phones that uploaded"
-            />
-            <Stat
-              label="Storage"
-              value={formatBytes(summary.used)}
-              hint={`of ${formatBytes(summary.quota, 0)}`}
-            />
-          </dl>
+          <PlanStats
+            planName={tier.name}
+            photos={view.photos}
+            videos={view.videos}
+            uploaders={view.uploaderCount}
+            summary={summary}
+            video={tier.video}
+          />
 
           <StoragePanel event={event} summary={summary} />
           <UpgradePanel

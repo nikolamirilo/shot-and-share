@@ -38,11 +38,10 @@ export function absoluteUrl(path = "/"): string {
 
 export const PUBLIC_ROUTES = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
-  { path: "/demo", changeFrequency: "monthly", priority: 0.9 },
   { path: "/pricing", changeFrequency: "weekly", priority: 0.8 },
   { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
-  { path: "/refund-policy", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/refund", changeFrequency: "yearly", priority: 0.3 },
   { path: "/acceptable-use", changeFrequency: "yearly", priority: 0.3 },
 ] as const;
 
@@ -62,21 +61,8 @@ export function eventLinkTitle(name: string): string {
   return `${name}`;
 }
 
-export function eventLinkDescription(
-  name: string,
-  message?: string | null,
-): string {
-  const written = message?.trim();
-  if (written) return clip(written, 200);
-
+export function eventLinkDescription(name: string): string {
   return `Add the photos you took at ${name}. Open the link, pick your photos, and they go straight to the host - no app and no account.`;
-}
-
-function clip(text: string, limit: number): string {
-  if (text.length <= limit) return text;
-  const cut = text.slice(0, limit);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }
 
 type Json = Record<string, unknown>;

@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MdOutlineAddCircleOutline } from "react-icons/md";
 
-import { ButtonLink, cx } from "@/components/ui";
+import { ButtonLink, cx, FreeTag } from "@/components/ui";
 
 export function StickyCta({ href }: { href: string }) {
   const [show, setShow] = useState(false);
@@ -33,13 +32,13 @@ export function StickyCta({ href }: { href: string }) {
       )}
     >
       <ButtonLink href={href} variant="primary" className="flex-1">
-        <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-        Create your free event
+        Create your event
+        <FreeTag />
       </ButtonLink>
       <span className="font-mono text-[0.625rem] uppercase leading-snug tracking-[0.14em] text-mist">
-        Free
+        No
         <br />
-        No card
+        card
       </span>
     </div>
   );

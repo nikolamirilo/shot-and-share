@@ -5,18 +5,49 @@ import { MdOutlineLogout } from "react-icons/md";
 
 import { Button, cx } from "@/components/ui";
 
+/*
+ * `max-w-full` is load-bearing: a <button> sizes shrink-to-fit, so without it the
+ * badge stays as wide as the name instead of letting it ellipsise.
+ */
+const BADGE = "flex max-w-full items-center gap-2 rounded-full";
+
+/*
+ * The one sign-out control, in the dropdown on a desktop and inline on a phone.
+ * The button fills the form, so the form's width decides: block in the dropdown
+ * means full width, a flex item in the phone menu means button-sized.
+ */
+export function SignOutButton({
+  className,
+  variant = "primary",
+}: {
+  className?: string;
+  variant?: "primary" | "secondary";
+}) {
+  return (
+    <form action="/auth/signout" method="post" className={className}>
+      <Button type="submit" size="sm" variant={variant} className="w-full">
+        <MdOutlineLogout aria-hidden className="shrink-0 text-[1.25em]" />
+        Sign out
+      </Button>
+    </form>
+  );
+}
+
 export function AccountMenu({
   name,
   email,
   avatarUrl,
   align = "right",
   showName = false,
+  interactive = true,
 }: {
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
   align?: "left" | "right";
   showName?: boolean | "wide";
+  /** Off on a phone: the menu it would open is already the menu it sits in. */
+  interactive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -45,6 +76,34 @@ export function AccountMenu({
     };
   }, [open]);
 
+  const badge = (
+    <>
+      <Face
+        name={displayName}
+        avatarUrl={avatarUrl}
+        size={40}
+        className="shadow-md"
+      />
+      {showName && (
+        <span
+          className={cx(
+            "min-w-0 truncate pr-1 text-[0.9375rem] font-semibold leading-tight",
+            showName === "wide" ? "hidden xs:block" : "block",
+          )}
+        >
+          {displayName}
+        </span>
+      )}
+    </>
+  );
+
+  if (!interactive)
+    return (
+      <div className={cx(BADGE, "min-w-0")} title={displayName}>
+        {badge}
+      </div>
+    );
+
   return (
     <div ref={wrapRef} className="relative min-w-0">
       <button
@@ -57,31 +116,12 @@ export function AccountMenu({
         aria-label={`Account: ${displayName}`}
         title={displayName}
         className={cx(
-          /*
-           * `max-w-full` is load-bearing: a <button> sizes shrink-to-fit, so without it
-           * the badge stays as wide as the name instead of letting it ellipsise.
-           */
-          "flex min-w-0 max-w-full touch-manipulation items-center gap-2 rounded-full transition-transform duration-150",
+          BADGE,
+          "min-w-0 touch-manipulation",
           "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink",
-          open ? "translate-y-0" : "hover:-translate-y-0.5",
         )}
       >
-        <Face
-          name={displayName}
-          avatarUrl={avatarUrl}
-          size={40}
-          className="shadow-md"
-        />
-        {showName && (
-          <span
-            className={cx(
-              "min-w-0 truncate pr-1 text-[0.9375rem] font-semibold leading-tight",
-              showName === "wide" ? "hidden xs:block" : "block",
-            )}
-          >
-            {displayName}
-          </span>
-        )}
+        {badge}
       </button>
 
       {open && (
@@ -101,19 +141,14 @@ export function AccountMenu({
                 {displayName}
               </p>
               {showEmail && (
-                <p className="mt-1 truncate font-mono text-micro lowercase tracking-[0.06em] text-mist">
+                <p className="mt-1 truncate font-mono text-[0.625rem] lowercase tracking-[0.06em] text-mist">
                   {email}
                 </p>
               )}
             </div>
           </div>
 
-          <form action="/auth/signout" method="post" className="mt-4">
-            <Button type="submit" size="sm" className="w-full">
-              <MdOutlineLogout aria-hidden className="shrink-0 text-[1.25em]" />
-              Sign out
-            </Button>
-          </form>
+          <SignOutButton className="mt-4" />
         </div>
       )}
     </div>

@@ -20,7 +20,6 @@ const EVENT: Record<string, unknown> = {
   owner_id: OWNER,
   name: "Romeo and Juliet",
   retention_from: "2026-08-01T00:00:00.000Z",
-  welcome_message: null,
   tier: TIERS.plus.id,
   status: "active",
   expires_at: null,
@@ -186,25 +185,6 @@ describe("what the preview says", () => {
     expect(meta.title).toEqual({ absolute: "Romeo and Juliet" });
     expect(meta.openGraph?.title).toBe("Romeo and Juliet");
     expect(meta.description).toContain("Romeo and Juliet");
-  });
-
-  it("prefers the host's own welcome message", async () => {
-    event = { ...EVENT, welcome_message: "  Bring your dancing shoes.  " };
-
-    const meta = await metadata();
-
-    expect(meta.description).toBe("Bring your dancing shoes.");
-    expect(meta.openGraph?.description).toBe("Bring your dancing shoes.");
-  });
-
-  it("keeps a long welcome message inside what a preview shows", async () => {
-    event = { ...EVENT, welcome_message: `${"word ".repeat(80)}end` };
-
-    const meta = await metadata();
-
-    expect(meta.description!.length).toBeLessThanOrEqual(201);
-    expect(meta.description!.endsWith("…")).toBe(true);
-    expect(meta.description).not.toMatch(/wo…$/);
   });
 
   it("never lets a share link into the index", async () => {

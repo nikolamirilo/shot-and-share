@@ -12,22 +12,24 @@ type Size = "sm" | "md" | "lg";
  * which puts a 17px label in a 56px box. `min-h` is the 44px tap target.
  */
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-2xl text-center font-semibold leading-tight touch-manipulation transition-transform transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-control text-center font-semibold leading-tight touch-manipulation transition-shadow duration-150 disabled:opacity-45 disabled:pointer-events-none";
 
-const LIFT =
-  "shadow-md hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:shadow-sm";
+const LIFT = "shadow-md hover:shadow-lg active:shadow-sm";
 
+/* Every filled variant carries a 1px edge so the box reads as a button on any
+   ground - `secondary` is paper on paper the moment it lands on a card. The
+   transparent one keeps the metrics equal across variants. */
 export const BUTTON_FILL: Record<Variant, string> = {
-  primary: "bg-claret text-chalk",
-  secondary: "bg-paper text-ink",
-  onDark: ON_SCRIM,
+  primary: "border border-claret-deep bg-claret text-chalk",
+  secondary: "border border-edge bg-paper text-ink",
+  onDark: `border border-transparent ${ON_SCRIM}`,
   ghost: "text-ink underline decoration-2 underline-offset-4 decoration-claret",
 };
 
 const VARIANTS: Record<Variant, string> = {
   primary: `${BUTTON_FILL.primary} ${LIFT}`,
   secondary: `${BUTTON_FILL.secondary} ${LIFT}`,
-  onDark: `${BUTTON_FILL.onDark} hover:-translate-y-0.5`,
+  onDark: BUTTON_FILL.onDark,
   ghost: `${BUTTON_FILL.ghost} hover:decoration-ink`,
 };
 

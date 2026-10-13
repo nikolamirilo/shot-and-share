@@ -59,12 +59,6 @@ const ALIGNS: Record<CoverHorizontal, string> = {
   right: "text-right",
 };
 
-const NUDGES: Record<CoverHorizontal, string> = {
-  left: "",
-  centre: "mx-auto",
-  right: "ml-auto",
-};
-
 const CUE_JUSTIFY: Record<CoverHorizontal, string> = {
   left: "justify-start",
   centre: "justify-center",
@@ -130,7 +124,6 @@ function bannerWashFor(place: Placement): string {
 export interface CoverProps {
   variant: CoverVariant;
   name: string;
-  message?: string | null;
   coverUrl?: string | null;
   coverPreviewUrl?: string | null;
   palette: Palette;
@@ -160,17 +153,13 @@ export function EventCover(props: CoverProps) {
 
 function Title({
   name,
-  message,
   preview,
   hero,
-  horizontal = "left",
   className,
 }: {
   name: string;
-  message?: string | null;
   preview?: boolean;
   hero?: boolean;
-  horizontal?: CoverHorizontal;
   className?: string;
 }) {
   return (
@@ -189,19 +178,6 @@ function Title({
       >
         {name}
       </h1>
-      {message && (
-        <p
-          className={cx(
-            "text-ash",
-            preview
-              ? "mt-1.5 line-clamp-2 text-micro leading-snug"
-              : "mt-3 max-w-xl text-body sm:mt-4 sm:text-lead",
-            NUDGES[horizontal],
-          )}
-        >
-          {message}
-        </p>
-      )}
     </div>
   );
 }
@@ -249,7 +225,6 @@ function CoverPhoto({
  */
 function PhotoCover({
   name,
-  message,
   coverUrl,
   coverPreviewUrl,
   preview,
@@ -340,13 +315,7 @@ function PhotoCover({
         )}
       >
         <div className="text-white [&_.eyebrow]:text-white/75 [&_h1]:text-white [&_p]:text-white/85">
-          <Title
-            name={name}
-            message={message}
-            preview={preview}
-            horizontal={place.horizontal}
-            hero
-          />
+          <Title name={name} preview={preview} hero />
           {!half && cueTrailsTitle && (
             <ScrollCue preview={preview} horizontal={place.horizontal} />
           )}
@@ -354,18 +323,19 @@ function PhotoCover({
       </div>
 
       {!half && !cueTrailsTitle && (
+        /* The wash spans the cover; only the cue inside it is held to the text column. */
         <div
           className={cx(
-            "absolute inset-x-0 bottom-0 mx-auto max-w-3xl text-white [&_.eyebrow]:text-white/85",
+            "absolute inset-x-0 bottom-0 text-white [&_.eyebrow]:text-white/85",
             "bg-linear-to-t from-black/55 to-transparent",
-            place.align,
-            sides,
             preview
               ? "pb-3 pt-8"
               : "pb-[max(2rem,env(safe-area-inset-bottom))] pt-16 sm:pb-12",
           )}
         >
-          <ScrollCue preview={preview} horizontal={place.horizontal} />
+          <div className={cx("mx-auto max-w-3xl", place.align, sides)}>
+            <ScrollCue preview={preview} horizontal={place.horizontal} />
+          </div>
         </div>
       )}
     </header>
@@ -408,7 +378,6 @@ function ScrollCue({
 
 function ClassicCover({
   name,
-  message,
   coverUrl,
   coverPreviewUrl,
   preview,
@@ -470,38 +439,15 @@ function ClassicCover({
           )}
         >
           <div className="text-white [&_.eyebrow]:text-white/70 [&_h1]:text-white">
-            <Title
-              name={name}
-              preview={preview}
-              horizontal={place.horizontal}
-            />
+            <Title name={name} preview={preview} />
           </div>
         </div>
       </div>
-      {message && (
-        <div
-          className={cx(
-            "mx-auto max-w-3xl",
-            preview ? "px-4 py-2" : "px-4 py-5 sm:px-5",
-          )}
-        >
-          <p
-            className={cx(
-              "text-ash",
-              preview
-                ? "line-clamp-2 text-micro leading-snug"
-                : "max-w-xl text-body sm:text-lead",
-            )}
-          >
-            {message}
-          </p>
-        </div>
-      )}
     </header>
   );
 }
 
-function TypeCover({ name, message, preview }: CoverProps) {
+function TypeCover({ name, preview }: CoverProps) {
   return (
     <header className="relative z-10 bg-blush shadow-md">
       <div
@@ -517,7 +463,6 @@ function TypeCover({ name, message, preview }: CoverProps) {
         </div>
         <Title
           name={name}
-          message={message}
           preview={preview}
           className={preview ? "mt-2" : "mt-5 sm:mt-6"}
         />

@@ -25,3 +25,12 @@ export function Badge({
     </span>
   );
 }
+
+/** Rides inside a CTA; `bg-current` keeps it legible on any button fill. */
+export function FreeTag() {
+  return (
+    <span className="shrink-0 rounded-full bg-current/15 px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.14em]">
+      Free
+    </span>
+  );
+}

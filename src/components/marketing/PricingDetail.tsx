@@ -9,7 +9,7 @@ export function PricingDetail() {
     ],
     [
       "Why the free plan is properly usable",
-      "You cannot judge this product on fifty photos. The thing you most want to test is what happens when a hundred arrive at once, so the free plan lets you do exactly that.",
+      "You cannot judge this product on fifty photos. The thing you most want to test is what happens when a hundred arrive at once, so the free plan lets you do exactly that. It runs one event at a time - upgrade that event or delete it, and the next one is free again.",
     ],
     [
       `Why ${KEEPING_NAME} is billed yearly`,
@@ -23,21 +23,30 @@ export function PricingDetail() {
 
   return (
     <section className="bg-linen">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-5 sm:py-16">
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-5 sm:py-20 lg:py-24">
         <div className="flex flex-wrap items-center gap-3">
           <Eyebrow>The reasoning</Eyebrow>
           <Badge tone="outline">Plans never renew</Badge>
         </div>
+        <h2 className="mt-3 max-w-2xl text-[2.25rem] [word-spacing:0.1em] sm:text-[3.5rem]">
+          Why the prices are what they are.
+        </h2>
 
-        <div className="mt-8 grid gap-x-10 gap-y-8 sm:mt-9 sm:grid-cols-2">
-          {points.map(([title, body]) => (
-            <div key={title}>
-              <h3 className="text-[1.3rem] font-extrabold tracking-[-0.03em]">
-                {title}
-              </h3>
-              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ash">
-                {body}
-              </p>
+        <div className="mt-8 grid gap-4 sm:mt-10 sm:gap-5 md:grid-cols-2">
+          {points.map(([title, body], i) => (
+            <div key={title} className="card flex gap-4 p-5 sm:gap-5 sm:p-6">
+              <span
+                aria-hidden
+                className="mt-1 font-mono text-micro tracking-[0.16em] text-mist tabular-nums"
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <h3 className="text-[1.3rem] tracking-[-0.03em]">{title}</h3>
+                <p className="mt-2 text-small leading-relaxed text-ash">
+                  {body}
+                </p>
+              </div>
             </div>
           ))}
         </div>

@@ -34,7 +34,6 @@ function event(over: Record<string, unknown> = {}) {
   return {
     id: "11111111-2222-3333-4444-555555555555",
     name: "Romeo and Juliet",
-    welcome_message: "Bring the camera",
     tier: TIERS.pro.id,
     gallery_visible: true,
     gallery_layout: "masonry",

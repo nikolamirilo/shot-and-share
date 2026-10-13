@@ -19,11 +19,17 @@ const termsText = LEGAL_PAGES.terms.sections
   .join("\n");
 
 describe("VAT is one claim, not three", () => {
-  it("has dropped the phrasing that implied tax might be added on top", () => {
+  it("never says a price includes VAT, because the checkout adds it", () => {
     const rendered = marketing();
-    expect(rendered).not.toContain("VAT handled at checkout");
-    expect(rendered).not.toContain("handled at checkout");
+    expect(rendered).not.toContain("includes EU VAT");
+    expect(rendered).not.toContain("VAT included");
     expect(termsText).not.toContain("where it applies");
+  });
+
+  it("says so next to every price that is charged", () => {
+    const rendered = marketing();
+    expect(rendered).toContain("once, per event + VAT");
+    expect(rendered).toContain("a year + VAT");
   });
 
   it("uses the same sentence in the terms as on the pricing page", () => {

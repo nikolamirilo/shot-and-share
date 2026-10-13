@@ -13,6 +13,7 @@ import { getActiveShareToken, storageSummary } from "@/lib/events";
 import { type MediaView } from "@/types/media";
 import { toMediaViews } from "@/lib/media/view";
 import { countKeepingYears } from "@/lib/payments/grant";
+import { codeColours, qrSvg } from "@/lib/qr";
 import { createClient } from "@/lib/supabase/server";
 import { type Tier, getTier } from "@/lib/tiers";
 import { shareUrl } from "@/lib/tokens";
@@ -34,6 +35,8 @@ export interface EventConsole extends CoverUrls {
   uploaderCount: number;
   keptYears: number;
   shareLink: string | null;
+  /** The code travels with the page: a second request for it left the box loading. */
+  codeSvg: string | null;
 }
 
 export async function loadEventConsole(
@@ -64,6 +67,8 @@ export async function loadEventConsole(
     loadCoverUrls(event, appearance),
   ]);
 
+  const shareLink = active ? shareUrl(env.siteUrl, active.token) : null;
+
   const counts = stats?.[0] ?? {
     photo_count: 0,
     video_count: 0,
@@ -84,7 +89,10 @@ export async function loadEventConsole(
     videos: Number(counts.video_count),
     uploaderCount: Number(counts.uploader_count),
     keptYears,
-    shareLink: active ? shareUrl(env.siteUrl, active.token) : null,
+    shareLink,
+    codeSvg: shareLink
+      ? qrSvg(shareLink, codeColours(appearance.palette))
+      : null,
     ...cover,
   };
 }

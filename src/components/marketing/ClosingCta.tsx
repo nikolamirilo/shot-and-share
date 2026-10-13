@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { LogoMark } from "@/components/layout/Logo";
 import { LottiePlayer } from "@/components/marketing/LottiePlayer";
 import markOnClaret from "@/components/marketing/lottie/markOnClaret.json";
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, FreeTag } from "@/components/ui";
 
 export function ClosingCta({ signedIn }: { signedIn: boolean }) {
   return (
@@ -34,8 +33,8 @@ export function ClosingCta({ signedIn }: { signedIn: boolean }) {
             variant="onDark"
             className="w-full sm:w-auto"
           >
-            <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
-            Create your free event
+            Create your event
+            <FreeTag />
           </ButtonLink>
           <Link
             href="/pricing"
