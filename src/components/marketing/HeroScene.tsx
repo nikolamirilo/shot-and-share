@@ -6,7 +6,7 @@ import { MdCheck, MdOutlineAddAPhoto } from "react-icons/md";
 import { LottiePlayer, type LottieHandle } from "@/components/marketing/LottiePlayer";
 import mark from "@/components/marketing/lottie/mark.json";
 import scan from "@/components/marketing/lottie/scan.json";
-import { QrGlyph } from "@/components/marketing/QrGlyph";
+import { QR_GLYPH_QUIET, QrGlyph } from "@/components/marketing/QrGlyph";
 import { Photo, cx } from "@/components/ui";
 import { formatCount } from "@/utils/format";
 import { heroFrame } from "@/utils/hero";
@@ -96,6 +96,20 @@ export function HeroScene() {
     await wait(2600);
     setStage("idle");
   }, [stage, land]);
+
+  // The hero's "Try it as a guest" button reaches in here.
+  useEffect(() => {
+    const onTry = () => {
+      const el = root.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const inView = r.top >= 0 && r.bottom <= window.innerHeight;
+      if (!inView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(run, inView ? 0 : 520);
+    };
+    window.addEventListener("try-guest", onTry);
+    return () => window.removeEventListener("try-guest", onTry);
+  }, [run]);
 
   return (
     <div ref={root} className="mx-auto w-full max-w-135">
@@ -266,9 +280,12 @@ export function HeroScene() {
           <p className="font-mono text-[1.85cqw] uppercase leading-[1.3] tracking-[0.16em] text-mist max-sm:text-[2.3cqw]">
             Scan to add your photos
           </p>
-          <div className="relative mx-auto mt-[2.6cqw] aspect-square w-[74%]">
+          <div className="relative mx-auto mt-[2.6cqw] aspect-square w-[92%]">
             <QrGlyph className="block h-full w-full" />
-            <LottiePlayer data={scan} rest={92} className="pointer-events-none absolute! -inset[-14%]" />
+            {/* The reticle tracks the modules, not the quiet zone around them. */}
+            <div className="absolute" style={{ inset: QR_GLYPH_QUIET }}>
+              <LottiePlayer data={scan} rest={92} className="pointer-events-none absolute! -inset-[14%]" />
+            </div>
           </div>
           <p
             className="mt-[3.4cqw] font-display text-[5.4cqw] font-extrabold leading-none tracking-[-0.046em] [word-spacing:0.1em]"

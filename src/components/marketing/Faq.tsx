@@ -53,11 +53,10 @@ export function Faq() {
             hidden={topic !== key}
             className="border-t border-edge md:col-start-2 md:row-start-1"
           >
-            {FAQS.filter((f) => f.topic === key).map((f, i) => (
+            {FAQS.filter((f) => f.topic === key).map((f) => (
               <details
                 key={f.question}
                 name={`faq-${key}`}
-                open={i === 0}
                 className="group border-b border-edge"
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4.5 font-display text-[1.2rem] font-extrabold leading-tight tracking-[-0.03em] [font-stretch:86%] [word-spacing:0.1em] marker:hidden sm:text-[1.3rem] [&::-webkit-details-marker]:hidden">

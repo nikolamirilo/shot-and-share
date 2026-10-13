@@ -1,6 +1,7 @@
-import { MdCheck, MdOutlineAddCircleOutline, MdOutlineTouchApp } from "react-icons/md";
+import { MdCheck, MdOutlineAddCircleOutline } from "react-icons/md";
 
 import { HeroScene } from "@/components/marketing/HeroScene";
+import { TryGuestButton } from "@/components/marketing/TryGuestButton";
 import { ButtonLink, Eyebrow } from "@/components/ui";
 import { HERO } from "@/lib/seo";
 
@@ -56,15 +57,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               <MdOutlineAddCircleOutline aria-hidden className="shrink-0 text-[1.25em]" />
               Create your free event
             </ButtonLink>
-            <ButtonLink
-              href="/demo"
-              size="lg"
-              variant="secondary"
-              className="w-full sm:w-auto"
-            >
-              <MdOutlineTouchApp aria-hidden className="shrink-0 text-[1.25em]" />
-              Try it as a guest
-            </ButtonLink>
+            <TryGuestButton />
           </div>
           <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 font-mono text-micro uppercase tracking-[0.14em] text-mist sm:justify-start">
             {["Free to start", "No card needed"].map((line) => (
@@ -74,9 +67,6 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
               </li>
             ))}
           </ul>
-          <p className="mx-auto mt-6 max-w-[33rem] text-[0.9375rem] leading-relaxed text-ash sm:mx-0">
-            {HERO.purpose}
-          </p>
         </div>
 
         <HeroScene />
