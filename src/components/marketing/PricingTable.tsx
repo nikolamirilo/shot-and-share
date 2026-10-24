@@ -14,12 +14,6 @@ import {
   type PlanKey,
 } from "@/lib/tiers";
 
-const FOR: Record<PlanKey, string> = {
-  free: "For a dinner or a small party.",
-  plus: "For most weddings.",
-  pro: "For big weddings and whole weekends.",
-};
-
 function featureList(key: (typeof TIER_ORDER)[number]): string[] {
   const t = TIERS[key];
 
@@ -41,7 +35,7 @@ function featureList(key: (typeof TIER_ORDER)[number]): string[] {
 export function PricingTable({
   ctaHref = "/signup",
   recommended = "plus",
-  badge = "Most weddings",
+  badge = "Most popular",
 }: {
   ctaHref?: string;
   recommended?: PlanKey;
@@ -69,7 +63,7 @@ export function PricingTable({
                 <h3 className="text-h3">{tier.name}</h3>
                 {highlighted && <Badge tone="dark">{badge}</Badge>}
               </div>
-              <p className="mt-1 text-[0.9375rem] text-ash">{FOR[planKey]}</p>
+              <p className="mt-1 text-[0.9375rem] text-ash">{tier.meaning}</p>
 
               <p className="mt-5 flex items-baseline gap-2">
                 <span

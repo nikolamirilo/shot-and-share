@@ -53,7 +53,7 @@ export function EmailForm({
             name="full_name"
             maxLength={120}
             autoComplete="name"
-            placeholder="Ana Marić"
+            placeholder="Juliet"
             className={inputClass}
           />
         </Field>
