@@ -215,26 +215,35 @@ can only be found by looking at what each device actually did.
 
 ### Compression
 
-Photos are re-encoded **on the device that took them**, before upload. The phone
-has the pixels decoded already, the guest is looking at the screen anyway, and a
-4 MB photo becomes a ~1 MB upload - which on venue wifi is the difference
-between a guest finishing and a guest giving up.
+Photos are re-encoded **on the device that took them**, before upload, at the
+resolution they were taken - nothing is resized. The phone has the pixels
+decoded already, the guest is looking at the screen anyway, and a 4 MB photo
+from a 12 MP camera is aimed at about 1.9 MB - which on venue wifi is the
+difference between a guest finishing and a guest giving up. The stored photo is
+a JPEG. Only the gallery thumbnail is scaled down, to 640px on its longest edge.
 
-Measured in Chromium on a deliberately hard case (12 MP of pure noise, which is
-the worst thing you can hand an encoder):
+Quality is held roughly constant by encoding to a **budget of bytes per
+megapixel** (160,000, so 1.92 MB for 12 MP) rather than a fixed encoder quality.
+A flat quality setting gives a plain sky and a confetti-covered dance floor
+wildly different file sizes; a budget pushes the encoder harder exactly where
+there is more going on, which is what "looks the same, weighs less" actually
+requires. The budget stops at a quality floor of 0.62: a photo too busy to fit
+at that quality is stored over budget rather than with visible artefacts.
+
+Measured in headless Chromium on a deliberately hard case (12 MP of pure noise
+saved as a quality-0.92 JPEG, which is the worst thing you can hand an encoder):
 
 | | |
 |---|---|
-| Source | 6.35 MB JPEG |
-| Stored | 1.56 MB WebP at 2560px |
-| Saving | **75%** |
-| Encode time | 829 ms |
+| Source | 10.56 MB JPEG, 4000×3000 |
+| Stored | 5.07 MB JPEG, 4000×3000 |
+| Saving | **52%** |
+| Encode time | ~730 ms |
 
-Quality is held roughly constant by encoding to a **budget of bytes per
-megapixel** rather than a fixed encoder quality. A flat quality setting gives a
-plain sky and a confetti-covered dance floor wildly different file sizes; a
-budget pushes the encoder harder exactly where there is more going on, which is
-what "looks the same, weighs less" actually requires.
+Noise cannot get under the 1.92 MB budget, so the encoder stops at the floor:
+this stored size shows the floor, not the budget. The encode time is the median
+of five runs on a Linux server, not a phone, and includes decoding the source
+and making the thumbnail.
 
 **Why not AVIF.** It beats WebP by 15–20% at these sizes, and it is still the
 wrong choice here. Chromium's `canvas.toBlob` cannot encode it at all - asked
@@ -295,10 +304,10 @@ screen, and it had to be chosen *before* the event, when a host had no way to
 judge it. Storing three renditions of the same picture had the same shape: three
 times the bill, and an event folder no human could read at a glance.
 
-What is stored is full resolution for any screen and for printing up to A4
-(2560px on the longest edge), so the gallery, the projector, the ZIP and the
-lightbox all read the same file. A video keeps a second small object for its
-poster frame, because a clip has no still of itself to show in a grid.
+What is stored is the photo at the resolution it was taken, so the gallery,
+the projector, the ZIP and the lightbox all read the same file. A video keeps a
+second small object for its poster frame, because a clip has no still of itself
+to show in a grid.
 
 ### When the image optimiser runs out
 
